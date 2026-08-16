@@ -12,12 +12,10 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class LoginPage extends Application {
+public class LoginPage {
 
-    @Override
-    public void start(Stage stage) {
-
-        
+        private Scene loginPageScene;
+        Scene getloginPageScene(Runnable callBackAction){
         String navy = "#082E6B";
         String lightBlue = "#7EAED4";
         String background = "#F6F8FA";
@@ -355,18 +353,13 @@ public class LoginPage extends Application {
         );
 
        
-        Scene scene = new Scene(root, 1530, 900);
+        Scene scene = new Scene(root, 1550, 750);
+        loginPageScene = scene;
+        return loginPageScene;
+        }
 
-        stage.setTitle("EventXpert - Login");
-        stage.setScene(scene);
-
-        stage.setMinWidth(900);
-        stage.setMinHeight(700);
-
-        stage.show();
+        public void backToLoginPage(){
+                LandingPage.landingPageStage.setScene(loginPageScene);
+        }
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
-}

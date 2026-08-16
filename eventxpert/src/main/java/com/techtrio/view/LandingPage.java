@@ -101,7 +101,18 @@ public class LandingPage extends Application {
 
         Button loginBtn = new Button("Login");
         loginBtn.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: " + WHITE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-border-color: " + PRIMARY_BLUE + "; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 7 20; -fx-cursor: hand;");
-        loginBtn.setOnAction(e -> System.out.println("Login clicked"));
+        loginBtn.setOnAction(e -> {
+                System.out.println("Login clicked");
+                LoginPage loginPage = new LoginPage();
+
+                Runnable callBackAction = new Runnable() {
+                        public void run(){
+                                backToLandingPage();
+                        }
+                };
+
+                landingPageStage.setScene(loginPage.getloginPageScene(callBackAction));
+        });
 
         Button registerBtn = new Button("Register");
         registerBtn.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: " + NAVY + "; -fx-text-fill: " + WHITE + "; -fx-background-radius: 8; -fx-padding: 8 22; -fx-cursor: hand;");
@@ -416,7 +427,9 @@ root.setBottom(createFooterBar());
 root.setStyle(
         "-fx-background-color: " + BACKGROUND + ";"
 );
-         Scene scene = new Scene(root, 1550, 785);
+         Scene scene = new Scene(root, 1550, 750);
+         landingPageScene = scene;
+         landingPageStage.setScene(landingPageScene);
           primaryStage.setTitle("EventXpert");
           primaryStage.setScene(scene);
           primaryStage.setResizable(true);
@@ -541,6 +554,10 @@ private HBox createFooterBar() {
 
         item.getChildren().addAll(top, d);
         return item;
+    }
+
+    public void backToLandingPage(){
+        landingPageStage.setScene(landingPageScene);
     }
 
 
