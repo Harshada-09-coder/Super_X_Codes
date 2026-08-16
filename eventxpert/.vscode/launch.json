@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "EventDetails",
+            "request": "launch",
+            "mainClass": "com.techtrio.view.EventDetails",
+            "projectName": "eventxpert"
+        },
+        {
+            "type": "java",
+            "name": "OrganizerDashboard",
+            "request": "launch",
+            "mainClass": "com.techtrio.view.OrganizerDashboard",
+            "projectName": "eventxpert"
+        },
+        {
+            "type": "java",
             "name": "EventXpertApp",
             "request": "launch",
             "mainClass": "com.techtrio.view.EventXpertApp",

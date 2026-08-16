@@ -4,1016 +4,580 @@ import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Separator;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * EventXpert - Organizer Dashboard
- * <p>
- * Main landing screen of the Organizer Portal. Gives the organizer an
- * at-a-glance overview of events, requests, budget, vendors, schedule,
- * weather and recent activity.
- * <p>
- * Layout: BorderPane
- *   LEFT   -> Sidebar (fixed navigation)
- *   TOP    -> TopBar (search + notifications + profile)
- *   CENTER -> ScrollPane -> dashboardContent (VBox)
- */
 public class OrganizerDashboard extends Application {
 
-    // ======================================================
-    // COLOR PALETTE (EventXpert)
-    // ======================================================
+    // --- EVENTXPERT COLOR PALETTE ---
     private static final String NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
     private static final String BRIGHT_BLUE = "#2563C7";
     private static final String LIGHT_BLUE = "#EAF3FF";
     private static final String BACKGROUND = "#F7FAFE";
     private static final String WHITE = "#FFFFFF";
-    private static final String MAIN_TEXT = "#102A43";
+    private static final String TEXT_MAIN = "#102A43";
     private static final String SECONDARY_TEXT = "#52677D";
-    private static final String BORDER = "#DCE5F0";
-    private static final String GREEN = "#1E9E5A";
-    private static final String ORANGE = "#E9A23B";
-    private static final String RED = "#D9342B";
+    private static final String BORDER_COLOR = "#DCE5F0";
+    
+    // Status & Accent Colors
+    private static final String GREEN_BG = "#E6F4EA";
+    private static final String GREEN_TEXT = "#137333";
+    private static final String RED_BG = "#FCE8E6";
+    private static final String RED_TEXT = "#C5221F";
+    private static final String AMBER_TEXT = "#B06000";
 
-    private Stage primaryStage;
+    private static final String FONT_FAMILY = "-fx-font-family: 'Poppins', 'Segoe UI', 'Helvetica Neue', sans-serif;";
+
+    // Common SVG Icons Data
+    private static final String SVG_DASHBOARD = "M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z";
+    private static final String SVG_CALENDAR = "M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z";
+    private static final String SVG_USERS = "M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z";
+    private static final String SVG_BELL = "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z";
+    private static final String SVG_SEARCH = "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z";
+    private static final String SVG_CHECK = "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z";
+    private static final String SVG_ALERT = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z";
 
     @Override
-    public void start(Stage stage) {
-        this.primaryStage = stage;
-
+    public void start(Stage primaryStage) {
         BorderPane root = new BorderPane();
-        root.getStyleClass().add("root-pane");
-        root.setStyle("-fx-background-color: " + BACKGROUND + ";");
+        root.setStyle("-fx-background-color: " + BACKGROUND + "; " + FONT_FAMILY);
 
-        root.setLeft(buildSidebar());
-        root.setTop(buildTopBar());
-        root.setCenter(buildCenterScrollPane());
+        // 1. LEFT SIDEBAR
+        VBox sidebar = createSidebar();
+        root.setLeft(sidebar);
 
-        Scene scene = new Scene(root, 1440, 900);
-        java.net.URL cssUrl = getClass().getResource("/OrganizerDashboard.css");
-        if (cssUrl != null) {
-            scene.getStylesheets().add(cssUrl.toExternalForm());
-        }
+        // 2. RIGHT CONTAINER (TopBar + Main Dashboard ScrollPane)
+        VBox rightContainer = new VBox();
+        HBox topBar = createTopBar();
+        
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
 
-        stage.setTitle("EventXpert - Organizer Dashboard");
-        stage.setScene(scene);
-        stage.setMinWidth(1100);
-        stage.setMinHeight(700);
-        stage.show();
+        VBox dashboardContent = createDashboardContent();
+        scrollPane.setContent(dashboardContent);
+
+        rightContainer.getChildren().addAll(topBar, scrollPane);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+        root.setCenter(rightContainer);
+
+        Scene scene = new Scene(root, 1550, 785);
+        primaryStage.setTitle("EventXpert");
+        primaryStage.setScene(scene);
+        primaryStage.setMinHeight(785);
+        primaryStage.setMinWidth(1550);
+        primaryStage.setResizable(true);
+        primaryStage.show();
     }
 
-    // ======================================================
-    // SIDEBAR
-    // ======================================================
-    private VBox buildSidebar() {
+    // ==========================================
+    // 1. SIDEBAR IMPLEMENTATION
+    // ==========================================
+    private VBox createSidebar() {
         VBox sidebar = new VBox();
-        sidebar.getStyleClass().add("sidebar");
-        sidebar.setPrefWidth(260);
-        sidebar.setMinWidth(260);
+        sidebar.setPrefWidth(250);
+        sidebar.setStyle("-fx-background-color: " + NAVY + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 1 0 0; ");
+        sidebar.setPadding(new Insets(20, 12, 20, 12));
+        sidebar.setSpacing(15);
 
-        // ---- Brand ----
-        HBox brandBox = new HBox(10);
-        brandBox.setAlignment(Pos.CENTER_LEFT);
-        brandBox.setPadding(new Insets(22, 20, 18, 20));
+        // Brand Title
+        VBox brandBox = new VBox(2);
+        brandBox.setPadding(new Insets(0, 0, 10, 10));
+        HBox logoBox = new HBox(8);
+        logoBox.setAlignment(Pos.CENTER_LEFT);
+        
+        SVGPath logoIcon = createSVGIcon(SVG_CALENDAR, WHITE, 1.2);
+        Label brandName = new Label("EventXpert");
+        brandName.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + WHITE + ";");
+        logoBox.getChildren().addAll(logoIcon, brandName);
 
-        SVGPath brandIcon = createIcon(IconPaths.CALENDAR, PRIMARY_BLUE, 24);
-        VBox brandText = new VBox(1);
-        Label brandTitle = new Label("EventXpert");
-        brandTitle.getStyleClass().add("sidebar-brand-title");
-        Label brandSubtitle = new Label("Corporate Event Management");
-        brandSubtitle.getStyleClass().add("sidebar-brand-subtitle");
-        brandText.getChildren().addAll(brandTitle, brandSubtitle);
-        brandBox.getChildren().addAll(brandIcon, brandText);
+        Label tagline = new Label("Plan. Manage. Celebrate.");
+        tagline.setStyle("-fx-font-size: 11px; -fx-text-fill: " + WHITE + ";");
 
-        // ---- Navigation (scrollable middle section) ----
-        VBox navBox = new VBox(4);
-        navBox.setPadding(new Insets(6, 14, 6, 14));
+        brandBox.getChildren().addAll(logoBox, tagline);
 
-        navBox.getChildren().add(sectionLabel("EVENT MANAGEMENT"));
-        navBox.getChildren().add(sidebarItemActive("Dashboard", IconPaths.GRID));
-        navBox.getChildren().add(sidebarItem("Event Requests", IconPaths.INBOX, () -> navigateTo("EventRequests")));
-        navBox.getChildren().add(sidebarItem("My Events", IconPaths.CALENDAR, () -> navigateTo("MyEvents")));
+        // Nav Scroll / Links
+        VBox navBox = new VBox(10);
+        
 
-        navBox.getChildren().add(spacer(10));
-        navBox.getChildren().add(sectionLabel("EVENT PLANNING"));
-        navBox.getChildren().add(sidebarItem("AI Planner", IconPaths.SPARKLE, () -> navigateTo("AIEventPlanner")));
-        navBox.getChildren().add(sidebarItem("Budget", IconPaths.WALLET, () -> navigateTo("BudgetExpenseTracker")));
-        navBox.getChildren().add(sidebarItem("Venue", IconPaths.PIN, () -> navigateTo("VenueManagement")));
-        navBox.getChildren().add(sidebarItem("Vendors", IconPaths.STORE, () -> navigateTo("VendorManagement")));
-        navBox.getChildren().add(sidebarItem("Schedule", IconPaths.CLOCK, () -> navigateTo("Schedule")));
 
-        navBox.getChildren().add(spacer(10));
-        navBox.getChildren().add(sectionLabel("EVENT EXECUTION"));
-        navBox.getChildren().add(sidebarItem("Guest Management", IconPaths.USERS, () -> navigateTo("GuestManagement")));
-        navBox.getChildren().add(sidebarItem("QR Check-In", IconPaths.QR, () -> navigateTo("QRCheckIn")));
-        navBox.getChildren().add(sidebarItem("Live Event", IconPaths.PULSE, () -> navigateTo("LiveEventDashboard")));
+        navBox.getChildren().add(createSidebarItem("Dashboard", SVG_DASHBOARD, true, ""));
+        navBox.getChildren().add(createSidebarItem("Event Requests", SVG_CALENDAR, false, "3"));
+        navBox.getChildren().add(createSidebarItem("My Events", SVG_CALENDAR, false, ""));
+        navBox.getChildren().add(createSidebarItem("AI Planner", SVG_DASHBOARD, false, ""));
+       // navBox.getChildren().add(createSidebarItem("Budget", SVG_DASHBOARD, false, ""));
+       //navBox.getChildren().add(createSidebarItem("Venue", SVG_DASHBOARD, false, ""));
+        navBox.getChildren().add(createSidebarItem("Vendors", SVG_USERS, false, ""));
+        navBox.getChildren().add(createSidebarItem("Schedule", SVG_CALENDAR, false, ""));
+       //navBox.getChildren().add(createSidebarItem("Guest Management", SVG_USERS, false, ""));
+       //navBox.getChildren().add(createSidebarItem("QR Check-In", SVG_CHECK, false, ""));
+       // navBox.getChildren().add(createSidebarItem("Live Event", SVG_ALERT, false, ""));
 
+
+       
+        
         ScrollPane navScroll = new ScrollPane(navBox);
         navScroll.setFitToWidth(true);
-        navScroll.getStyleClass().add("scroll-pane-transparent");
-        navScroll.setStyle("-fx-background-color: transparent; -fx-border-width: 0;");
+        navScroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
+
+        sidebar.getChildren().addAll(brandBox, navScroll );
         VBox.setVgrow(navScroll, Priority.ALWAYS);
 
-        // ---- Bottom section ----
-        VBox bottomBox = new VBox(4);
-        bottomBox.setPadding(new Insets(10, 14, 14, 14));
-
-        Separator sep = new Separator();
-        sep.getStyleClass().add("sidebar-separator");
-
-        bottomBox.getChildren().add(sep);
-        bottomBox.getChildren().add(spacer(6));
-        bottomBox.getChildren().add(sidebarItem("Notifications", IconPaths.BELL, () -> navigateTo("Notifications")));
-        bottomBox.getChildren().add(sidebarItem("Settings", IconPaths.GEAR, () -> navigateTo("Settings")));
-        bottomBox.getChildren().add(sidebarItem("Help Center", IconPaths.HELP, () -> navigateTo("Support")));
-        bottomBox.getChildren().add(spacer(8));
-        bottomBox.getChildren().add(buildProfileBox());
-
-        sidebar.getChildren().addAll(brandBox, navScroll, bottomBox);
         return sidebar;
     }
 
-    private HBox buildProfileBox() {
-        HBox box = new HBox(10);
-        box.getStyleClass().add("sidebar-profile-box");
-        box.setAlignment(Pos.CENTER_LEFT);
-
-        Circle avatar = new Circle(16);
-        avatar.getStyleClass().add("sidebar-avatar");
-
-        VBox textBox = new VBox(1);
-        Label name = new Label("Admin User");
-        name.getStyleClass().add("sidebar-profile-name");
-        Label email = new Label("admin@eventxpert.com");
-        email.getStyleClass().add("sidebar-profile-email");
-        textBox.getChildren().addAll(name, email);
-
-        box.getChildren().addAll(avatar, textBox);
-        return box;
+    private Label createSidebarSectionHeader(String title) {
+        Label header = new Label(title);
+        header.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-padding: 12 0 4 8;");
+        return header;
     }
 
-    private Label sectionLabel(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().add("sidebar-section-label");
-        label.setPadding(new Insets(10, 4, 6, 4));
-        return label;
+    private HBox createSidebarItem(String title, String svgData, boolean isActive, String badgeCount) {
+        HBox item = new HBox(10);
+        item.setAlignment(Pos.CENTER_LEFT);
+        item.setPadding(new Insets(8, 12, 8, 12));
+        item.setCursor(javafx.scene.Cursor.HAND);
+
+        SVGPath icon = createSVGIcon(svgData, isActive ? WHITE : SECONDARY_TEXT, 1.0);
+        Label label = new Label(title);
+
+        if (isActive) {
+            item.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-background-radius: 6px;");
+            label.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        } else {
+            item.setStyle("-fx-background-color: transparent;");
+            label.setStyle("-fx-font-size: 13px; -fx-text-fill: " + WHITE + ";");
+        }
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        item.getChildren().addAll(icon, label, spacer);
+
+        if (!badgeCount.isEmpty()) {
+            Label badge = new Label(badgeCount);
+            badge.setStyle("-fx-background-color: " + BRIGHT_BLUE + "; -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-padding: 2 6 2 6;");
+            item.getChildren().add(badge);
+        }
+
+        item.setOnMouseClicked(e -> showToast("Clicked: " + title));
+
+        return item;
     }
 
-    /** Currently-active sidebar item ("Dashboard") with left indicator bar. */
-    private HBox sidebarItemActive(String text, String iconPath) {
-        HBox row = new HBox(10);
-        row.getStyleClass().add("sidebar-item-active");
-        row.setAlignment(Pos.CENTER_LEFT);
-
-        Region indicator = new Region();
-        indicator.getStyleClass().add("sidebar-active-indicator");
-        indicator.setPrefWidth(3);
-        indicator.setPrefHeight(18);
-
-        SVGPath icon = createIcon(iconPath, PRIMARY_BLUE, 16);
-        Label label = new Label(text);
-        label.setStyle("-fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 13px;");
-
-        row.getChildren().addAll(indicator, icon, label);
-        return row;
-    }
-
-    private HBox sidebarItem(String text, String iconPath, Runnable onClick) {
-        HBox row = new HBox(10);
-        row.getStyleClass().add("sidebar-item");
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(9, 12, 9, 15));
-
-        SVGPath icon = createIcon(iconPath, SECONDARY_TEXT, 16);
-        Label label = new Label(text);
-        label.setStyle("-fx-text-fill: " + MAIN_TEXT + "; -fx-font-size: 13px;");
-
-        row.getChildren().addAll(icon, label);
-        row.setOnMouseClicked(e -> onClick.run());
-        return row;
-    }
-
-    private Region spacer(double height) {
-        Region r = new Region();
-        r.setPrefHeight(height);
-        return r;
-    }
-
-    // ======================================================
-    // TOP BAR
-    // ======================================================
-    private HBox buildTopBar() {
-        HBox topBar = new HBox(16);
-        topBar.getStyleClass().add("topbar");
+    
+    private HBox createTopBar() {
+        HBox topBar = new HBox();
+        topBar.setPrefHeight(65);
         topBar.setAlignment(Pos.CENTER_LEFT);
+        topBar.setPadding(new Insets(0, 30, 0, 30));
+        topBar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
 
-        // Search field
+        // Search Field Box
         HBox searchBox = new HBox(8);
-        searchBox.getStyleClass().add("search-field");
         searchBox.setAlignment(Pos.CENTER_LEFT);
-        SVGPath searchIcon = createIcon(IconPaths.SEARCH, SECONDARY_TEXT, 15);
-        TextField searchField = new TextField();
-        searchField.setPromptText("Search events, guests, vendors...");
-        searchField.setStyle("-fx-background-color: transparent; -fx-border-width: 0; -fx-font-size: 13px;");
-        HBox.setHgrow(searchField, Priority.ALWAYS);
-        searchBox.getChildren().addAll(searchIcon, searchField);
+        searchBox.setPrefWidth(380);
+        searchBox.setTranslateX(-32);
+        searchBox.setPadding(new Insets(8, 12, 8, 12));
+        searchBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px;");
 
-        Region gap = new Region();
-        HBox.setHgrow(gap, Priority.ALWAYS);
+        SVGPath searchIcon = createSVGIcon(SVG_SEARCH, SECONDARY_TEXT, 0.9);
+        TextField searchInput = new TextField();
+        searchInput.setPromptText("Search events, vendors, guests...");
+        searchInput.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0; -fx-font-size: 12px;");
+        HBox.setHgrow(searchInput, Priority.ALWAYS);
 
-        // Notification bell with badge
-        StackPane bellBtn = iconButtonWithBadge(IconPaths.BELL, () -> navigateTo("Notifications"));
+        searchBox.getChildren().addAll(searchIcon, searchInput);
 
-        // Help icon
-        StackPane helpBtn = new StackPane(createIcon(IconPaths.HELP, MAIN_TEXT, 17));
-        helpBtn.getStyleClass().add("topbar-icon-btn");
-        helpBtn.setOnMouseClicked(e -> navigateTo("Support"));
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // Profile
-        HBox profileBox = new HBox(8);
-        profileBox.setAlignment(Pos.CENTER_LEFT);
-        Circle avatar = new Circle(16);
-        avatar.getStyleClass().add("sidebar-avatar");
-        Label profileName = new Label("Admin User");
-        profileName.getStyleClass().add("topbar-user-name");
-        profileBox.getChildren().addAll(avatar, profileName);
-        profileBox.setOnMouseClicked(e -> navigateTo("Profile"));
-        profileBox.setStyle("-fx-cursor: hand;");
+        // Right side info / Avatar
+        HBox rightNav = new HBox(15);
+        rightNav.setAlignment(Pos.CENTER);
 
-        topBar.getChildren().addAll(searchBox, gap, bellBtn, helpBtn, profileBox);
+        Button bellBtn = createIconButton(SVG_BELL);
+        Button helpBtn = createIconButton(SVG_ALERT);
+
+        rightNav.getChildren().addAll(bellBtn, helpBtn);
+
+        topBar.getChildren().addAll(searchBox, spacer, rightNav);
         return topBar;
     }
 
-    private StackPane iconButtonWithBadge(String iconPath, Runnable onClick) {
-        StackPane pane = new StackPane();
-        pane.getStyleClass().add("topbar-icon-btn");
-        SVGPath icon = createIcon(iconPath, MAIN_TEXT, 17);
-        Circle badge = new Circle(4);
-        badge.getStyleClass().add("badge-dot");
-        StackPane.setAlignment(badge, Pos.TOP_RIGHT);
-        badge.setTranslateX(-4);
-        badge.setTranslateY(4);
-        pane.getChildren().addAll(icon, badge);
-        pane.setOnMouseClicked(e -> onClick.run());
-        return pane;
-    }
+    // ==========================================
+    // 3. MAIN DASHBOARD CONTENT AREA
+    // ==========================================
+    private VBox createDashboardContent() {
+        VBox content = new VBox(20);
+        content.setPadding(new Insets(25, 30, 30, 30));
 
-    // ======================================================
-    // CENTER CONTENT
-    // ======================================================
-    private ScrollPane buildCenterScrollPane() {
-        VBox dashboardContent = new VBox(20);
-        dashboardContent.setPadding(new Insets(24));
-        dashboardContent.setStyle("-fx-background-color: " + BACKGROUND + ";");
-
-        dashboardContent.getChildren().add(buildHeaderRow());
-        dashboardContent.getChildren().add(buildSummaryCardsRow());
-
-        // Two-column body: left (main) + right (side panels)
-        HBox bodyRow = new HBox(20);
-
-        VBox leftColumn = new VBox(20);
-        leftColumn.getChildren().add(buildUpcomingEventsCard());
-        leftColumn.getChildren().add(buildEventRequestsCard());
-        leftColumn.getChildren().add(buildEventPerformanceCard());
-        leftColumn.getChildren().add(buildRecentActivityCard());
-        HBox.setHgrow(leftColumn, Priority.ALWAYS);
-
-        VBox rightColumn = new VBox(20);
-        rightColumn.setPrefWidth(340);
-        rightColumn.setMinWidth(300);
-        rightColumn.getChildren().add(buildBudgetOverviewCard());
-        rightColumn.getChildren().add(buildVendorStatusCard());
-        rightColumn.getChildren().add(buildScheduleStatusCard());
-        rightColumn.getChildren().add(buildWeatherAlertCard());
-        rightColumn.getChildren().add(buildQuickActionsCard());
-
-        bodyRow.getChildren().addAll(leftColumn, rightColumn);
-        dashboardContent.getChildren().add(bodyRow);
-
-        ScrollPane scrollPane = new ScrollPane(dashboardContent);
-        scrollPane.setFitToWidth(true);
-        scrollPane.getStyleClass().add("scroll-pane-transparent");
-        scrollPane.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-width: 0;");
-        return scrollPane;
-    }
-
-    // ---------------- HEADER ----------------
-    private HBox buildHeaderRow() {
+        // Header section: Greeting + Action Button
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
 
         VBox titleBox = new VBox(4);
-        Label title = new Label("Good Morning, Admin \uD83D\uDC4B");
-        title.getStyleClass().add("page-title");
-        Label subtitle = new Label("Here's what's happening with your events today.");
-        subtitle.getStyleClass().add("page-subtitle");
-        titleBox.getChildren().addAll(title, subtitle);
+        Label greeting = new Label("Welcome Organizer 👋");
+        greeting.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+        Label subGreeting = new Label("Here's what's happening with your events today.");
+        subGreeting.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        titleBox.getChildren().addAll(greeting, subGreeting);
 
-        Region gap = new Region();
-        HBox.setHgrow(gap, Priority.ALWAYS);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        VBox rightBox = new VBox(8);
-        rightBox.setAlignment(Pos.CENTER_RIGHT);
-        Label date = new Label("13 August 2026");
-        date.getStyleClass().add("header-date");
+        header.getChildren().addAll(titleBox, spacer);
 
-        Button createEventBtn = new Button("+  Create Event");
-        createEventBtn.getStyleClass().add("primary-button");
-        createEventBtn.setOnAction(e -> navigateTo("CreateEvent"));
+        // Summary Stat Cards Row
+        GridPane summaryGrid = new GridPane();
+        summaryGrid.setHgap(15);
+        summaryGrid.setVgap(15);
 
-        rightBox.getChildren().addAll(date, createEventBtn);
-
-        header.getChildren().addAll(titleBox, gap, rightBox);
-        return header;
-    }
-
-    // ---------------- SUMMARY CARDS ----------------
-    private HBox buildSummaryCardsRow() {
-        HBox row = new HBox(16);
-
-        VBox c1 = summaryCard(IconPaths.CALENDAR, "TOTAL EVENTS", "24", "+12% from last month", true);
-        VBox c2 = summaryCard(IconPaths.INBOX, "PENDING REQUESTS", "06", "Requires attention", false);
-        VBox c3 = summaryCard(IconPaths.CALENDAR_CHECK, "UPCOMING EVENTS", "08", "Next 30 days", true);
-        VBox c4 = summaryCard(IconPaths.CHECK_CIRCLE, "ACTIVE EVENTS", "03", "Currently running", true);
-
-        for (VBox c : List.of(c1, c2, c3, c4)) {
-            HBox.setHgrow(c, Priority.ALWAYS);
-            c.setMaxWidth(Double.MAX_VALUE);
-        }
-
-        row.getChildren().addAll(c1, c2, c3, c4);
-        return row;
-    }
-
-    private VBox summaryCard(String iconPath, String label, String value, String trendText, boolean positive) {
-        VBox card = new VBox(10);
-        card.getStyleClass().add("summary-card");
-
-        StackPane iconBox = new StackPane(createIcon(iconPath, PRIMARY_BLUE, 18));
-        iconBox.getStyleClass().add("summary-icon-box");
-
-        Label valueLabel = new Label(value);
-        valueLabel.getStyleClass().add("summary-value");
-
-        Label nameLabel = new Label(label);
-        nameLabel.getStyleClass().add("summary-label");
-
-        Label trendLabel = new Label(trendText);
-        trendLabel.getStyleClass().add(positive ? "summary-trend-positive" : "summary-trend-warning");
-
-        card.getChildren().addAll(iconBox, valueLabel, nameLabel, trendLabel);
-        return card;
-    }
-
-    // ---------------- UPCOMING EVENTS ----------------
-    private VBox buildUpcomingEventsCard() {
-        VBox card = new VBox(14);
-        card.getStyleClass().add("card");
-        card.setPadding(new Insets(20));
-
-        HBox headerRow = cardHeaderWithLink("Upcoming Events", "View All \u2192", () -> navigateTo("MyEvents"));
-
-        // Column headers
-        HBox colHeaders = new HBox();
-        colHeaders.setPadding(new Insets(6, 0, 6, 0));
-        Label hName = tableHeader("EVENT NAME", 220);
-        Label hDate = tableHeader("DATE & VENUE", 190);
-        Label hGuests = tableHeader("GUESTS", 90);
-        Label hStatus = tableHeader("STATUS", 110);
-        Label hAction = tableHeader("ACTION", 80);
-        colHeaders.getChildren().addAll(hName, hDate, hGuests, hStatus, hAction);
-
-        VBox rowsBox = new VBox();
-
-        List<EventItem> events = MockData.upcomingEvents();
-        for (int i = 0; i < events.size(); i++) {
-            rowsBox.getChildren().add(buildEventRow(events.get(i)));
-            if (i < events.size() - 1) {
-                Region sep = new Region();
-                sep.getStyleClass().add("row-separator");
-                sep.setPrefHeight(1);
-                rowsBox.getChildren().add(sep);
-            }
-        }
-
-        card.getChildren().addAll(headerRow, colHeaders, rowsBox);
-        return card;
-    }
-
-    private Label tableHeader(String text, double width) {
-        Label l = new Label(text);
-        l.getStyleClass().add("table-header-label");
-        l.setPrefWidth(width);
-        return l;
-    }
-
-    private HBox buildEventRow(EventItem event) {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(12, 0, 12, 0));
-
-        VBox nameBox = new VBox(2);
-        nameBox.setPrefWidth(220);
-        Label name = new Label(event.name);
-        name.getStyleClass().add("event-name");
-        nameBox.getChildren().add(name);
-
-        VBox dateBox = new VBox(2);
-        dateBox.setPrefWidth(190);
-        Label date = new Label(event.date);
-        date.getStyleClass().add("event-meta");
-        Label venue = new Label(event.venue);
-        venue.getStyleClass().add("event-meta");
-        dateBox.getChildren().addAll(date, venue);
-
-        Label guests = new Label(event.guests + " Guests");
-        guests.getStyleClass().add("event-meta");
-        guests.setPrefWidth(90);
-
-        Label status = statusBadge(event.status);
-        HBox statusBox = new HBox(status);
-        statusBox.setPrefWidth(110);
-
-        Button viewBtn = new Button("View");
-        viewBtn.getStyleClass().add("secondary-button");
-        viewBtn.setStyle(viewBtn.getStyle() + "-fx-padding: 5 14 5 14; -fx-font-size: 12px;");
-        viewBtn.setOnAction(e -> navigateTo("EventDetails"));
-        HBox actionBox = new HBox(viewBtn);
-        actionBox.setPrefWidth(80);
-
-        row.getChildren().addAll(nameBox, dateBox, guests, statusBox, actionBox);
-        return row;
-    }
-
-    private Label statusBadge(String status) {
-        Label badge = new Label(status);
-        badge.getStyleClass().add("status-badge");
-        switch (status) {
-            case "Confirmed":
-                badge.getStyleClass().add("status-confirmed");
-                break;
-            case "Pending":
-                badge.getStyleClass().add("status-pending");
-                break;
-            case "Active":
-                badge.getStyleClass().add("status-active");
-                break;
-            case "Cancelled":
-                badge.getStyleClass().add("status-cancelled");
-                break;
-            default:
-                badge.getStyleClass().add("status-planning");
-        }
-        return badge;
-    }
-
-    // ---------------- EVENT REQUESTS ----------------
-    private VBox buildEventRequestsCard() {
-        VBox card = new VBox(14);
-        card.getStyleClass().add("card");
-        card.setPadding(new Insets(20));
-
-        HBox headerRow = cardHeaderWithLink("Event Requests", "View All Requests \u2192",
-                () -> navigateTo("EventRequests"));
-
-        VBox rowsBox = new VBox();
-        List<RequestItem> requests = MockData.eventRequests();
-        for (int i = 0; i < requests.size(); i++) {
-            rowsBox.getChildren().add(buildRequestRow(requests.get(i)));
-            if (i < requests.size() - 1) {
-                Region sep = new Region();
-                sep.getStyleClass().add("row-separator");
-                sep.setPrefHeight(1);
-                rowsBox.getChildren().add(sep);
-            }
-        }
-
-        card.getChildren().addAll(headerRow, rowsBox);
-        return card;
-    }
-
-    private HBox buildRequestRow(RequestItem request) {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(12, 0, 12, 0));
-
-        VBox infoBox = new VBox(2);
-        HBox.setHgrow(infoBox, Priority.ALWAYS);
-        Label name = new Label(request.name);
-        name.getStyleClass().add("event-name");
-        Label meta = new Label(request.type + "  \u2022  " + request.guests + " Guests");
-        meta.getStyleClass().add("event-meta");
-        infoBox.getChildren().addAll(name, meta);
-
-        Label status = statusBadge(request.status);
-
-        row.getChildren().addAll(infoBox, status);
-        return row;
-    }
-
-    // ---------------- EVENT PERFORMANCE ----------------
-    private VBox buildEventPerformanceCard() {
-        VBox card = new VBox(16);
-        card.getStyleClass().add("card");
-        card.setPadding(new Insets(20));
-
-        Label title = new Label("Event Overview");
-        title.getStyleClass().add("section-title");
-
-        GridPane grid = new GridPane();
-        grid.setHgap(16);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(6, 0, 0, 0));
-
-        grid.add(performanceStat("Events Completed", "18", GREEN), 0, 0);
-        grid.add(performanceStat("Upcoming", "08", PRIMARY_BLUE), 1, 0);
-        grid.add(performanceStat("Active", "03", BRIGHT_BLUE), 2, 0);
-        grid.add(performanceStat("Cancelled", "01", RED), 3, 0);
+        summaryGrid.add(createSummaryCard("04", "Active Events", SVG_CALENDAR, PRIMARY_BLUE), 0, 0);
+        summaryGrid.add(createSummaryCard("03", "Pending Requests", SVG_ALERT, AMBER_TEXT), 1, 0);
+        summaryGrid.add(createSummaryCard("06", "Upcoming Events", SVG_CALENDAR, BRIGHT_BLUE), 2, 0);
+        summaryGrid.add(createSummaryCard("08", "Tasks Due Today", SVG_CHECK, GREEN_TEXT), 3, 0);
 
         for (int i = 0; i < 4; i++) {
-            ColumnConstraints col = new ColumnConstraints();
-            col.setPercentWidth(25);
-            grid.getColumnConstraints().add(col);
+            ColumnConstraints cc = new ColumnConstraints();
+            cc.setPercentWidth(25);
+            summaryGrid.getColumnConstraints().add(cc);
         }
 
-        card.getChildren().addAll(title, grid);
-        return card;
+        // Dashboard Main Split Layout (Left Column & Right Column)
+        HBox mainGrid = new HBox(20);
+
+        // LEFT COLUMN (65% Width)
+        VBox leftColumn = new VBox(20);
+        leftColumn.prefWidthProperty().bind(mainGrid.widthProperty().multiply(0.66));
+
+        leftColumn.getChildren().addAll(
+                createUpcomingEventsCard(),
+                createGlobalHealthCard()
+        );
+
+        // RIGHT COLUMN (35% Width)
+        VBox rightColumn = new VBox(20);
+        rightColumn.prefWidthProperty().bind(mainGrid.widthProperty().multiply(0.34));
+
+        rightColumn.getChildren().addAll(
+                createSmartAlertsCard(),
+                createTasksCard(),
+                createQuickActionsCard()
+        );
+
+        mainGrid.getChildren().addAll(leftColumn, rightColumn);
+
+        content.getChildren().addAll(header, summaryGrid, mainGrid);
+        return content;
     }
 
-    private VBox performanceStat(String label, String value, String colorHex) {
-        VBox box = new VBox(6);
-        box.setAlignment(Pos.CENTER_LEFT);
+    // ==========================================
+    // UI CARD COMPONENTS
+    // ==========================================
 
-        Region bar = new Region();
-        bar.setPrefHeight(6);
-        bar.setStyle("-fx-background-color: " + colorHex + "; -fx-background-radius: 6;");
-
-        Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + MAIN_TEXT + ";");
-
-        Label nameLabel = new Label(label);
-        nameLabel.getStyleClass().add("event-meta");
-
-        box.getChildren().addAll(bar, valueLabel, nameLabel);
-        return box;
-    }
-
-    // ---------------- RECENT ACTIVITY ----------------
-    private VBox buildRecentActivityCard() {
-        VBox card = new VBox(14);
-        card.getStyleClass().add("card");
-        card.setPadding(new Insets(20));
-
-        Label title = new Label("Recent Activity");
-        title.getStyleClass().add("section-title");
-
-        VBox list = new VBox(14);
-        for (ActivityItem item : MockData.recentActivity()) {
-            list.getChildren().add(buildActivityRow(item));
-        }
-
-        card.getChildren().addAll(title, list);
-        return card;
-    }
-
-    private HBox buildActivityRow(ActivityItem item) {
-        HBox row = new HBox(12);
-        row.setAlignment(Pos.TOP_LEFT);
-
-        StackPane iconBox = new StackPane(createIcon(item.icon, PRIMARY_BLUE, 14));
-        iconBox.getStyleClass().add("summary-icon-box");
-        iconBox.setMinSize(30, 30);
-        iconBox.setMaxSize(30, 30);
-
-        VBox textBox = new VBox(2);
-        Label time = new Label(item.time);
-        time.getStyleClass().add("activity-time");
-        Label text = new Label(item.text);
-        text.getStyleClass().add("activity-text");
-        text.setWrapText(true);
-        textBox.getChildren().addAll(time, text);
-        HBox.setHgrow(textBox, Priority.ALWAYS);
-
-        row.getChildren().addAll(iconBox, textBox);
-        return row;
-    }
-
-    // ---------------- BUDGET OVERVIEW ----------------
-    private VBox buildBudgetOverviewCard() {
-        VBox card = new VBox(14);
-        card.getStyleClass().add("card");
-        card.setPadding(new Insets(20));
-
-        HBox headerRow = cardHeaderWithLink("Budget Overview", "View Budget \u2192",
-                () -> navigateTo("BudgetExpenseTracker"));
-
-        VBox statsBox = new VBox(8);
-        statsBox.getChildren().add(budgetLine("Total Planned", "\u20B912,50,000"));
-        statsBox.getChildren().add(budgetLine("Spent", "\u20B98,40,000"));
-        statsBox.getChildren().add(budgetLine("Remaining", "\u20B94,10,000"));
-
-        // Progress bar (spent / planned = 67.2%)
-        StackPane track = new StackPane();
-        track.getStyleClass().add("progress-bar-track");
-        track.setPrefHeight(10);
-        Region fill = new Region();
-        fill.getStyleClass().add("progress-bar-fill-blue");
-        fill.setPrefHeight(10);
-        fill.setMaxWidth(Region.USE_PREF_SIZE);
-        fill.prefWidthProperty().bind(track.widthProperty().multiply(0.672));
-        StackPane.setAlignment(fill, Pos.CENTER_LEFT);
-        track.getChildren().add(fill);
-
-        Label statusLabel = new Label("\u25CF  Within Budget");
-        statusLabel.setStyle("-fx-text-fill: " + GREEN + "; -fx-font-size: 12px; -fx-font-weight: bold;");
-
-        card.getChildren().addAll(headerRow, statsBox, track, statusLabel);
-        return card;
-    }
-
-    private HBox budgetLine(String label, String value) {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
-        Label l = new Label(label);
-        l.getStyleClass().add("event-meta");
-        Region gap = new Region();
-        HBox.setHgrow(gap, Priority.ALWAYS);
-        Label v = new Label(value);
-        v.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + MAIN_TEXT + ";");
-        row.getChildren().addAll(l, gap, v);
-        return row;
-    }
-
-    // ---------------- VENDOR STATUS ----------------
-    private VBox buildVendorStatusCard() {
-        VBox card = new VBox(14);
-        card.getStyleClass().add("card");
-        card.setPadding(new Insets(20));
-
-        HBox headerRow = cardHeaderWithLink("Vendor Status", "Manage Vendors \u2192",
-                () -> navigateTo("VendorManagement"));
-
-        VBox list = new VBox(12);
-        for (VendorItem vendor : MockData.vendors()) {
-            list.getChildren().add(buildVendorRow(vendor));
-        }
-
-        card.getChildren().addAll(headerRow, list);
-        return card;
-    }
-
-    private HBox buildVendorRow(VendorItem vendor) {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
-
-        Label name = new Label(vendor.name);
-        name.getStyleClass().add("vendor-name");
-
-        Region gap = new Region();
-        HBox.setHgrow(gap, Priority.ALWAYS);
-
-        Label status = vendor.confirmed
-                ? new Label("\u2713 Confirmed")
-                : new Label("Pending");
-        status.getStyleClass().add("status-badge");
-        status.getStyleClass().add(vendor.confirmed ? "status-confirmed" : "status-pending");
-
-        row.getChildren().addAll(name, gap, status);
-        return row;
-    }
-
-    // ---------------- SCHEDULE STATUS ----------------
-    private VBox buildScheduleStatusCard() {
-        VBox card = new VBox(14);
-        card.getStyleClass().add("card");
-        card.setPadding(new Insets(20));
-
-        Label title = new Label("Schedule Status");
-        title.getStyleClass().add("section-title");
-
-        Label todayLabel = new Label("Today's Schedule");
-        todayLabel.getStyleClass().add("event-meta");
-        Label activityCount = new Label("08 Activities");
-        activityCount.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + MAIN_TEXT + ";");
-
-        HBox statsRow = new HBox(24);
-        statsRow.getChildren().add(smallStat("Completed", "05", GREEN));
-        statsRow.getChildren().add(smallStat("Upcoming", "03", PRIMARY_BLUE));
-
-        HBox conflictBox = new HBox(8);
-        conflictBox.setAlignment(Pos.CENTER_LEFT);
-        conflictBox.setPadding(new Insets(10));
-        conflictBox.setStyle("-fx-background-color: #FFF4E5; -fx-background-radius: 8;");
-        SVGPath warnIcon = createIcon(IconPaths.WARNING, ORANGE, 15);
-        Label conflictText = new Label("One schedule conflict detected.");
-        conflictText.setStyle("-fx-font-size: 12px; -fx-text-fill: #8A5A00; -fx-wrap-text: true;");
-        conflictBox.getChildren().addAll(warnIcon, conflictText);
-
-        Button resolveBtn = new Button("Resolve Conflict \u2192");
-        resolveBtn.getStyleClass().add("link-button");
-        resolveBtn.setOnAction(e -> navigateTo("Schedule"));
-
-        card.getChildren().addAll(title, todayLabel, activityCount, statsRow, conflictBox, resolveBtn);
-        return card;
-    }
-
-    private VBox smallStat(String label, String value, String colorHex) {
-        VBox box = new VBox(2);
-        Label v = new Label(value);
-        v.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + colorHex + ";");
-        Label l = new Label(label);
-        l.getStyleClass().add("event-meta");
-        box.getChildren().addAll(v, l);
-        return box;
-    }
-
-    // ---------------- WEATHER ALERT ----------------
-    private VBox buildWeatherAlertCard() {
+    // Summary Card Component
+    private VBox createSummaryCard(String count, String label, String svgPath, String color) {
         VBox card = new VBox(10);
-        card.getStyleClass().add("weather-card");
+        card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
 
         HBox topRow = new HBox();
         topRow.setAlignment(Pos.CENTER_LEFT);
-        Label title = new Label("Weather Alert \u2022 Pune");
-        title.getStyleClass().add("weather-title");
-        topRow.getChildren().add(title);
 
-        HBox tempRow = new HBox(14);
-        tempRow.setAlignment(Pos.CENTER_LEFT);
-        Label temp = new Label("28\u00B0C");
-        temp.getStyleClass().add("weather-temp");
-        VBox descBox = new VBox(2);
-        Label desc = new Label("Partly Cloudy");
-        desc.getStyleClass().add("weather-desc");
-        Label rain = new Label("Rain Probability: 40%");
-        rain.getStyleClass().add("weather-desc");
-        descBox.getChildren().addAll(desc, rain);
-        tempRow.getChildren().addAll(temp, descBox);
+        StackPane iconPane = new StackPane();
+        Circle bg = new Circle(18, Color.web(color).deriveColor(0, 1, 1, 0.12));
+        SVGPath icon = createSVGIcon(svgPath, color, 0.9);
+        iconPane.getChildren().addAll(bg, icon);
 
-        Label message = new Label("Keep a covered entry route available for the evening session.");
-        message.getStyleClass().add("weather-message");
-        message.setMaxWidth(280);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button viewWeatherBtn = new Button("View Weather \u2192");
-        viewWeatherBtn.getStyleClass().add("weather-button");
-        viewWeatherBtn.setOnAction(e -> navigateTo("VenueManagement"));
+        topRow.getChildren().addAll(iconPane, spacer);
 
-        card.getChildren().addAll(topRow, tempRow, message, viewWeatherBtn);
+        Label numberLabel = new Label(count);
+        numberLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+
+        Label descLabel = new Label(label);
+        descLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        card.getChildren().addAll(topRow, numberLabel, descLabel);
         return card;
     }
 
-    // ---------------- QUICK ACTIONS ----------------
-    private VBox buildQuickActionsCard() {
-        VBox card = new VBox(14);
-        card.getStyleClass().add("quick-actions-card");
+    // Upcoming Events Table-style Card
+    private VBox createUpcomingEventsCard() {
+        VBox card = new VBox(15);
+        card.setPadding(new Insets(20));
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
 
-        Label title = new Label("\u26A1 Quick Actions");
-        title.getStyleClass().add("quick-actions-title");
+        // Header
+        HBox header = new HBox();
+        header.setAlignment(Pos.CENTER_LEFT);
+        Label title = new Label("Upcoming Events");
+        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button viewAll = new Button("View All");
+        viewAll.setStyle("-fx-background-color: transparent; -fx-text-fill: " + BRIGHT_BLUE + "; -fx-font-weight: bold; -fx-cursor: hand;");
+
+        header.getChildren().addAll(title, spacer, viewAll);
+
+        // Events Table Box
+        VBox table = new VBox(0);
+
+        // Header Row
+        HBox tableHeader = new HBox(150);
+        tableHeader.setAlignment(Pos.CENTER);
+        tableHeader.setPadding(new Insets(6, 8, 6, 8));
+        tableHeader.setStyle("-fx-background-color: " + BACKGROUND + ";");
+
+        Label col1 = createTableLabel("EVENT NAME", 0.35, true);
+        Label col2 = createTableLabel("DATE & LOCATION", 0.30, true);
+        Label col3 = createTableLabel("GUESTS", 0.15, true);
+        Label col4 = createTableLabel("STATUS", 0.20, true);
+
+        tableHeader.getChildren().addAll(col1, col2, col3, col4);
+        table.getChildren().add(tableHeader);
+
+        // Event Rows
+        table.getChildren().add(createEventRow( "TechVision Annual Summit", "18 May 2026\nPune, India", "250", "In Planning", LIGHT_BLUE, PRIMARY_BLUE));
+        table.getChildren().add(createEventRow( " Bussiness Leadership Meet", "22 May 2026\nPune, India", "120", "Confirmed", GREEN_BG, GREEN_TEXT));
+        table.getChildren().add(createEventRow( "Startup Networking Night", "28 May 2026\nPune, India", "180", "In Planning", LIGHT_BLUE, PRIMARY_BLUE));
+
+        card.getChildren().addAll(header, table);
+        return card;
+    }
+
+    private HBox createEventRow(String name, String dateLoc, String guests, String status, String statusBg, String statusFg) {
+        HBox row = new HBox(100);
+        row.setAlignment(Pos.CENTER);
+        row.setPadding(new Insets(12));
+        row.setStyle("-fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
+
+        Label nameLbl = createTableLabel(name, 0.35, false);
+        nameLbl.setStyle("-fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+
+        Label dateLbl = createTableLabel(dateLoc, 0.30, false);
+        dateLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        Label guestsLbl = createTableLabel(guests, 0.15, false);
+
+        // Status Badge
+        Label statusLbl = new Label("• " + status);
+        statusLbl.setStyle("-fx-background-color: " + statusBg + "; -fx-text-fill: " + statusFg + "; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 4 8 4 8; -fx-background-radius: 12px;");
+        HBox statusBox = new HBox(statusLbl);
+        statusBox.prefWidthProperty().bind(row.widthProperty().multiply(0.20));
+
+        row.getChildren().addAll(nameLbl, dateLbl, guestsLbl, statusBox);
+        return row;
+    }
+
+    private Label createTableLabel(String text, double widthPercent, boolean isHeader) {
+        Label label = new Label(text);
+        if (isHeader) {
+            label.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        } else {
+            label.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
+        }
+        return label;
+    }
+
+    // Global Event Health Card
+    private VBox createGlobalHealthCard() {
+        VBox card = new VBox(15);
+        card.setPadding(new Insets(20));
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+        Label title = new Label("Global Event Health");
+        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+
+        HBox metrics = new HBox(20);
+
+        // Budget Progress
+        VBox budgetBox = createHealthMetric("Budget Utilization", "77%", "₹38,500 / ₹50,000", 0.77, PRIMARY_BLUE);
+        // Vendor Progress
+        VBox vendorBox = createHealthMetric("Vendor Status", "80%", "8/10 Confirmed", 0.80, BRIGHT_BLUE);
+        // Check-In Progress
+        VBox guestBox = createHealthMetric("Guest Check-In", "62%", "156/250 Arrived", 0.62, NAVY);
+
+        budgetBox.prefWidthProperty().bind(metrics.widthProperty().multiply(0.33));
+        vendorBox.prefWidthProperty().bind(metrics.widthProperty().multiply(0.33));
+        guestBox.prefWidthProperty().bind(metrics.widthProperty().multiply(0.33));
+
+        metrics.getChildren().addAll(budgetBox, vendorBox, guestBox);
+        card.getChildren().addAll(title, metrics);
+        return card;
+    }
+
+    private VBox createHealthMetric(String label, String percentStr, String subtext, double progress, String color) {
+        VBox box = new VBox(6);
+
+        HBox topRow = new HBox();
+        Label titleLbl = new Label(label);
+        titleLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label percentLbl = new Label(percentStr);
+        percentLbl.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+        topRow.getChildren().addAll(titleLbl, spacer, percentLbl);
+
+        ProgressBar bar = new ProgressBar(progress);
+        bar.setMaxWidth(Double.MAX_VALUE);
+        bar.setStyle("-fx-accent: " + color + "; -fx-control-inner-background: " + BACKGROUND + ";");
+
+        Label subLbl = new Label(subtext);
+        subLbl.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        box.getChildren().addAll(topRow, bar, subLbl);
+        return box;
+    }
+
+    // Smart Alerts Widget
+    private VBox createSmartAlertsCard() {
+        VBox card = new VBox(10);
+        card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+        HBox header = new HBox(6);
+        header.setAlignment(Pos.CENTER_LEFT);
+        SVGPath alertIcon = createSVGIcon(SVG_ALERT, RED_TEXT, 0.9);
+        Label title = new Label("Smart Alerts");
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+        header.getChildren().addAll(alertIcon, title);
+
+        VBox alertBox = new VBox(4);
+        alertBox.setPadding(new Insets(10));
+        alertBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px;");
+
+        Label alertTitle = new Label("Weather Update");
+        alertTitle.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        Label alertDesc = new Label("Rain expected for outdoor setup tomorrow.");
+        alertDesc.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        alertBox.getChildren().addAll(alertTitle, alertDesc);
+        card.getChildren().addAll(header, alertBox);
+        return card;
+    }
+
+    // Today's Tasks Card
+    private VBox createTasksCard() {
+        VBox card = new VBox(12);
+        card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+        Label title = new Label("Today's Tasks");
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+
+        VBox taskList = new VBox(8);
+
+        taskList.getChildren().add(createTaskItem("Confirm catering menu", "HIGH", true));
+        taskList.getChildren().add(createTaskItem("Finalize seating arrangement", "MEDIUM", true));
+        taskList.getChildren().add(createTaskItem("Review A/V quotation", "MEDIUM", true));
+        taskList.getChildren().add(createTaskItem("Check sound & lighting", "HIGH", false));
+        taskList.getChildren().add(createTaskItem("Verify guest list final count", "LOW", false));
+
+        card.getChildren().addAll(title, taskList);
+        return card;
+    }
+
+    private HBox createTaskItem(String text, String priority, boolean checked) {
+        HBox row = new HBox(8);
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        CheckBox cb = new CheckBox();
+        cb.setSelected(checked);
+
+        Label label = new Label(text);
+        if (checked) {
+            label.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-strikethrough: true;");
+        } else {
+            label.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
+        }
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        String tagBg = LIGHT_BLUE;
+        String tagFg = BRIGHT_BLUE;
+        if (priority.equals("HIGH")) {
+            tagBg = RED_BG;
+            tagFg = RED_TEXT;
+        } else if (priority.equals("LOW")) {
+            tagBg = BACKGROUND;
+            tagFg = SECONDARY_TEXT;
+        }
+
+        Label pTag = new Label(priority);
+        pTag.setStyle("-fx-background-color: " + tagBg + "; -fx-text-fill: " + tagFg + "; -fx-font-size: 9px; -fx-font-weight: bold; -fx-padding: 2 6 2 6; -fx-background-radius: 4px;");
+
+        row.getChildren().addAll(cb, label, spacer, pTag);
+        return row;
+    }
+
+    // Quick Action Grid Card
+    private VBox createQuickActionsCard() {
+        VBox card = new VBox(12);
+        card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-background-radius: 8px;");
+
+        Label title = new Label("⚡ Quick Actions");
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
 
-        grid.add(quickActionButton("Create Event", () -> navigateTo("CreateEvent")), 0, 0);
-        grid.add(quickActionButton("AI Plan Event", () -> navigateTo("AIEventPlanner")), 1, 0);
-        grid.add(quickActionButton("Add Vendor", () -> navigateTo("VendorManagement")), 0, 1);
-        grid.add(quickActionButton("Manage Guests", () -> navigateTo("GuestManagement")), 1, 1);
-        grid.add(quickActionButton("Scan QR", () -> navigateTo("QRCheckIn")), 0, 2);
-        grid.add(quickActionButton("View Schedule", () -> navigateTo("Schedule")), 1, 2);
+        grid.add(createActionButton("Review Requests"), 0, 0);
+        grid.add(createActionButton("Open My Events"), 1, 0);
+        grid.add(createActionButton("Schedule"), 0, 1);
+        grid.add(createActionButton("Check Vendors"), 1, 1);
 
         for (int i = 0; i < 2; i++) {
-            ColumnConstraints col = new ColumnConstraints();
-            col.setPercentWidth(50);
-            grid.getColumnConstraints().add(col);
+            ColumnConstraints cc = new ColumnConstraints();
+            cc.setPercentWidth(50);
+            grid.getColumnConstraints().add(cc);
         }
 
         card.getChildren().addAll(title, grid);
         return card;
     }
 
-    private Button quickActionButton(String text, Runnable onClick) {
-        Button btn = new Button(text);
-        btn.getStyleClass().add("quick-action-btn");
+    private Button createActionButton(String label) {
+        Button btn = new Button(label);
         btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setWrapText(true);
-        GridPane.setHgrow(btn, Priority.ALWAYS);
-        btn.setOnAction(e -> onClick.run());
+        btn.setStyle("-fx-background-color: rgba(255,255,255,0.15); -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 6px; -fx-cursor: hand;");
+        btn.setOnAction(e -> showToast("Action Executed: " + label));
         return btn;
     }
 
-    // ======================================================
-    // SHARED HELPERS
-    // ======================================================
-    private HBox cardHeaderWithLink(String titleText, String linkText, Runnable onClick) {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
-        Label title = new Label(titleText);
-        title.getStyleClass().add("section-title");
-        Region gap = new Region();
-        HBox.setHgrow(gap, Priority.ALWAYS);
-        Button link = new Button(linkText);
-        link.getStyleClass().add("link-button");
-        link.setOnAction(e -> onClick.run());
-        row.getChildren().addAll(title, gap, link);
-        return row;
+    // Helper Utility: Build Icon Buttons
+    private Button createIconButton(String svgPath) {
+        Button btn = new Button();
+        btn.setGraphic(createSVGIcon(svgPath, SECONDARY_TEXT, 0.9));
+        btn.setStyle("-fx-background-color: transparent; -fx-cursor: hand; -fx-padding: 6;");
+        return btn;
     }
 
-    /** Creates a colored SVG icon of the given size from path data. */
-    private SVGPath createIcon(String pathData, String colorHex, double size) {
-        SVGPath icon = new SVGPath();
-        icon.setContent(pathData);
-        icon.setFill(Color.web(colorHex));
-        // Icons are authored on a 24x24 grid; scale to requested size.
-        double scale = size / 24.0;
-        icon.setScaleX(scale);
-        icon.setScaleY(scale);
-        return icon;
+    // Helper Utility: SVG Path Generator
+    private SVGPath createSVGIcon(String content, String colorHex, double scale) {
+        SVGPath svgPath = new SVGPath();
+        svgPath.setContent(content);
+        svgPath.setFill(Color.web(colorHex));
+        svgPath.setScaleX(scale);
+        svgPath.setScaleY(scale);
+        return svgPath;
     }
 
-    // ======================================================
-    // NAVIGATION
-    // ======================================================
-    /**
-     * Central navigation handler. Each sidebar / card action calls this with
-     * a logical screen name. Wire this up to your real view classes as they
-     * become available (EventRequests.java, MyEvents.java, etc.). Currently
-     * this is a safe placeholder that will not crash the application if a
-     * target screen has not been implemented yet.
-     */
-    private void navigateTo(String screenName) {
-        System.out.println("Navigate -> " + screenName);
-        // TODO: Replace with real navigation once the target view class exists, e.g.:
-        //
-        // switch (screenName) {
-        //     case "EventRequests" -> new EventRequests().start(primaryStage);
-        //     case "MyEvents"      -> new MyEvents().start(primaryStage);
-        //     case "AIEventPlanner"-> new AIEventPlanner().start(primaryStage);
-        //     case "BudgetExpenseTracker" -> new BudgetExpenseTracker().start(primaryStage);
-        //     case "VenueManagement"      -> new VenueManagement().start(primaryStage);
-        //     case "VendorManagement"     -> new VendorManagement().start(primaryStage);
-        //     case "Schedule"             -> new Schedule().start(primaryStage);
-        //     case "GuestManagement"      -> new GuestManagement().start(primaryStage);
-        //     case "QRCheckIn"            -> new QRCheckIn().start(primaryStage);
-        //     case "LiveEventDashboard"   -> new LiveEventDashboard().start(primaryStage);
-        //     case "Notifications"        -> new Notifications().start(primaryStage);
-        //     case "Settings"             -> new Settings().start(primaryStage);
-        //     case "Support"              -> new Support().start(primaryStage);
-        //     case "Profile"              -> new Profile().start(primaryStage);
-        //     case "EventDetails"         -> new EventDetails().start(primaryStage);
-        //     default -> System.out.println("No screen wired up for: " + screenName);
-        // }
-    }
-
-    public static void main(String[] args) {
-        launch(args);
-    }
-
-    // ======================================================
-    // MOCK DATA MODELS
-    // ======================================================
-    private static class EventItem {
-        final String name, date, venue, status;
-        final int guests;
-
-        EventItem(String name, String date, String venue, int guests, String status) {
-            this.name = name;
-            this.date = date;
-            this.venue = venue;
-            this.guests = guests;
-            this.status = status;
-        }
-    }
-
-    private static class RequestItem {
-        final String name, type, status;
-        final int guests;
-
-        RequestItem(String name, String type, int guests, String status) {
-            this.name = name;
-            this.type = type;
-            this.guests = guests;
-            this.status = status;
-        }
-    }
-
-    private static class VendorItem {
-        final String name;
-        final boolean confirmed;
-
-        VendorItem(String name, boolean confirmed) {
-            this.name = name;
-            this.confirmed = confirmed;
-        }
-    }
-
-    private static class ActivityItem {
-        final String time, text, icon;
-
-        ActivityItem(String time, String text, String icon) {
-            this.time = time;
-            this.text = text;
-            this.icon = icon;
-        }
-    }
-
-    /** Centralized static mock data. Replace with a service/DB layer later. */
-    private static class MockData {
-
-        static List<EventItem> upcomingEvents() {
-            List<EventItem> list = new ArrayList<>();
-            list.add(new EventItem("TechVision Annual Summit", "18 May 2026",
-                    "Grand Convention Center", 250, "Confirmed"));
-            list.add(new EventItem("Corporate Leadership Meet", "25 May 2026",
-                    "Pune Business Hub", 180, "In Planning"));
-            list.add(new EventItem("Product Launch 2026", "02 June 2026",
-                    "Skyline Convention Hall", 320, "In Planning"));
-            return list;
-        }
-
-        static List<RequestItem> eventRequests() {
-            List<RequestItem> list = new ArrayList<>();
-            list.add(new RequestItem("TechVision Annual Summit", "Corporate Conference", 250, "Pending"));
-            list.add(new RequestItem("GreenTech Business Meet", "Corporate Event", 150, "Pending"));
-            list.add(new RequestItem("Startup Connect 2026", "Networking Event", 200, "Pending"));
-            return list;
-        }
-
-        static List<VendorItem> vendors() {
-            List<VendorItem> list = new ArrayList<>();
-            list.add(new VendorItem("VisionPro AV", true));
-            list.add(new VendorItem("FreshBite Catering", true));
-            list.add(new VendorItem("PixelFrame Studios", false));
-            list.add(new VendorItem("Security Services", true));
-            return list;
-        }
-
-        static List<ActivityItem> recentActivity() {
-            List<ActivityItem> list = new ArrayList<>();
-            list.add(new ActivityItem("10:42 AM", "Rahul Sharma submitted a new event request.", IconPaths.INBOX));
-            list.add(new ActivityItem("10:15 AM", "FreshBite Catering confirmed the vendor booking.", IconPaths.CHECK_CIRCLE));
-            list.add(new ActivityItem("09:48 AM", "AI Event Planner generated a schedule recommendation.", IconPaths.SPARKLE));
-            list.add(new ActivityItem("09:20 AM", "18 guests completed QR registration.", IconPaths.QR));
-            list.add(new ActivityItem("Yesterday", "Budget updated for TechVision Annual Summit.", IconPaths.WALLET));
-            return list;
-        }
-    }
-
-    /**
-     * Reusable line-icon path data (24x24 viewbox), used with createIcon().
-     * Simple, consistent, professional line-style icons.
-     */
-    private static class IconPaths {
-        static final String CALENDAR =
-                "M7 2v3M17 2v3M3.5 8h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z";
-        static final String CALENDAR_CHECK =
-                "M7 2v3M17 2v3M3.5 8h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z M8 14l2.5 2.5L16 11";
-        static final String GRID =
-                "M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z";
-        static final String INBOX =
-                "M3 12l2.5-7A2 2 0 0 1 7.4 3.5h9.2a2 2 0 0 1 1.9 1.5L21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6Z M3 12h5l1.5 3h5L16 12h5";
-        static final String SPARKLE =
-                "M12 2l1.8 4.9L19 8.5l-4.9 1.8L12 15l-1.8-4.7L5 8.5l5.2-1.6L12 2Z M18 15l.9 2.4L21 18l-2.1.6L18 21l-.9-2.4L15 18l2.1-.6L18 15Z";
-        static final String WALLET =
-                "M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z M16 12h3v2h-3a1.5 1.5 0 0 1 0-2Z";
-        static final String PIN =
-                "M12 22s7-7.2 7-12A7 7 0 0 0 5 10c0 4.8 7 12 7 12Z M12 12.5A2.5 2.5 0 1 0 12 7.5a2.5 2.5 0 0 0 0 5Z";
-        static final String STORE =
-                "M4 9l1-5h14l1 5M4 9h16M4 9v10a1 1 0 0 0 1 1h3v-6h8v6h3a1 1 0 0 0 1-1V9";
-        static final String CLOCK =
-                "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M12 7v5l3.5 2";
-        static final String USERS =
-                "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z M3 21v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1 M17 11a3 3 0 1 0 0-6 M17 21v-1a5 5 0 0 0-3-4.6";
-        static final String QR =
-                "M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm14 0h1v1h-1zm3 0h1v3h-3v-1h2zm-4 3h1v4h-4v-1h3z";
-        static final String PULSE =
-                "M3 12h4l2-7 4 14 2-7h6";
-        static final String BELL =
-                "M6 9a6 6 0 1 1 12 0v5l1.8 2.6a1 1 0 0 1-.8 1.6H5a1 1 0 0 1-.8-1.6L6 14V9Z M9.5 19a2.5 2.5 0 0 0 5 0";
-        static final String GEAR =
-                "M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V20a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H4a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.6V4a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.6 1H20a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1Z";
-        static final String HELP =
-                "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M9.5 9a2.5 2.5 0 1 1 3.7 2.2c-.8.5-1.2.9-1.2 1.8v.5 M12 17h.01";
-        static final String SEARCH =
-                "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z M21 21l-4.3-4.3";
-        static final String CHECK_CIRCLE =
-                "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M8 12l2.5 2.5L16 9";
-        static final String WARNING =
-                "M12 3 2 20h20L12 3Z M12 10v4 M12 17h.01";
+    // Helper Utility: Show Toast Notification on Click
+    private void showToast(String message) {
+        System.out.println("[EventXpert Log]: " + message);
     }
 }
