@@ -277,9 +277,12 @@ public class LoginPage extends Application {
 
             } else {
 
-                System.out.println("Email: " + email);
-                System.out.println("Password: " + password);
+                ActiveCustomerDashboard dashboard =
+        new ActiveCustomerDashboard();
 
+        stage.setScene(
+        dashboard.getActiveCustomerDashboardScene()
+);   
             
             }
         });

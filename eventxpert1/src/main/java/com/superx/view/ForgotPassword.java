@@ -11,6 +11,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -184,7 +185,8 @@ public class ForgotPassword extends Application {
 
         VBox rightSide = new VBox();
 
-        rightSide.setPrefWidth(865);
+        rightSide.setMaxWidth(Double.MAX_VALUE);
+HBox.setHgrow(rightSide, Priority.ALWAYS);
 
         rightSide.setPadding(
                 new Insets(
@@ -384,6 +386,8 @@ public class ForgotPassword extends Application {
                 leftSide,
                 rightSide);
 
+                
+
         Scene scene = new Scene(
                 root,
                 1365,
@@ -394,7 +398,7 @@ public class ForgotPassword extends Application {
 
         stage.setScene(scene);
 
-        stage.setMinWidth(1550);
+        stage.setMinWidth(1365);
 
         stage.setMinHeight(900);
 

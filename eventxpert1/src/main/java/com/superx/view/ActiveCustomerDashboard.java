@@ -14,7 +14,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class ActiveCustomerDashboard extends Application {
+public class ActiveCustomerDashboard  {
 
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
@@ -23,8 +23,7 @@ public class ActiveCustomerDashboard extends Application {
     private static final String BORDER = "#D7DEE8";
     private static final String LIGHT_BLUE = "#BFE5FF";
 
-    @Override
-    public void start(Stage stage) {
+    public Scene getActiveCustomerDashboardScene() {
 
         
         BorderPane root = new BorderPane();
@@ -513,20 +512,7 @@ public class ActiveCustomerDashboard extends Application {
                 800
         );
 
-        stage.setTitle(
-                "EventXpert - Active Customer Dashboard"
-        );
-
-        stage.setScene(
-                scene
-        );
-
-        stage.setMinWidth(1100);
-        stage.setMinHeight(700);
-
-        stage.setMaximized(true);
-
-        stage.show();
+        return scene;
     }
 
    
@@ -1297,10 +1283,5 @@ VBox.setVgrow(
     }
 
     
-    public static void main(
-            String[] args
-    ) {
 
-        launch(args);
-    }
 }
