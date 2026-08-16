@@ -45,16 +45,15 @@ public class LandingPage extends Application {
 
     private ScrollPane scrollPane;
 
-
-
     // Font Family Fallback
     private static final String FONT_FAMILY = "'Poppins', 'Segoe UI', 'Helvetica Neue', sans-serif";
 
-
+    public static Stage landingPageStage;
+    public Scene landingPageScene;
 
     @Override
     public void start(Stage primaryStage) {
-
+        landingPageStage = primaryStage;
 
         StackPane logoIcon = new StackPane();
         Rectangle iconBg = new Rectangle(36, 36);
