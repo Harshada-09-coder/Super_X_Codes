@@ -1,0 +1,65 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+    
+        {
+            "type": "java",
+            "name": "ReviewConflict",
+            "request": "launch",
+            "mainClass": "com.superx.view.ReviewConflict",
+            "projectName": "eventxpert"
+        },
+        {
+            "type": "java",
+            "name": "ConflictDetectionReview",
+            "request": "launch",
+            "mainClass": "com.superx.view.ConflictDetectionReview",
+            "projectName": "eventxpert"
+        },
+        {
+            "type": "java",
+            "name": "VendorDetails",
+            "request": "launch",
+            "mainClass": "com.superx.view.VendorDetails",
+            "projectName": "eventxpert"
+        },
+        {
+            "type": "java",
+            "name": "OrganizerDetails",
+            "request": "launch",
+            "mainClass": "com.superx.view.OrganizerDetails",
+            "projectName": "eventxpert"
+        },
+        {
+            "type": "java",
+            "name": "AdminDashboard",
+            "request": "launch",
+            "mainClass": "com.superx.AdminDashboard",
+            "projectName": "eventxpert"
+        },
+        {
+            "type": "java",
+            "name": "AdminDashboard",
+            "request": "launch",
+            "mainClass": "com.superx.view.AdminDashboard",
+            "projectName": "eventxpert"
+        },
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.superx.Main",
+            "projectName": "eventxpert",
+            "vmArgs": "--module-path \"D://Java26//javafx-sdk-21.0.12//lib\" --add-modules javafx.controls,javafx.fxml"
+        }
+    ]
+}
