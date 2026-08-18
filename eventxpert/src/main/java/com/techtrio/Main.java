@@ -1,7 +1,7 @@
 package com.techtrio;
 
-
 import com.techtrio.view.LandingPage;
+
 import javafx.application.Application;
 
 public class Main {

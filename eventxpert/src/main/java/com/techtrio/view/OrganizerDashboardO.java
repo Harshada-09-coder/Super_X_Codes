@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,9 +8,10 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
-import javafx.stage.Stage;
 
-public class OrganizerDashboardO extends Application {
+public class OrganizerDashboardO{
+
+    private Scene organizerDashboardScene;
 
     // --- EVENTXPERT COLOR PALETTE ---
     private static final String NAVY = "#062A60";
@@ -42,8 +42,8 @@ public class OrganizerDashboardO extends Application {
     private static final String SVG_CHECK = "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z";
     private static final String SVG_ALERT = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z";
 
-    @Override
-    public void start(Stage primaryStage) {
+    
+    Scene getorganizerDashboardScene(Runnable callBackAction) {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + "; " + FONT_FAMILY);
 
@@ -67,12 +67,8 @@ public class OrganizerDashboardO extends Application {
         root.setCenter(rightContainer);
 
         Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert");
-        primaryStage.setScene(scene);
-        primaryStage.setMinHeight(785);
-        primaryStage.setMinWidth(1550);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        organizerDashboardScene = scene;
+        return organizerDashboardScene;
     }
 
     // ==========================================
@@ -106,21 +102,71 @@ public class OrganizerDashboardO extends Application {
         
 
 
-        navBox.getChildren().add(createSidebarItem("Dashboard", SVG_DASHBOARD, true, ""));
-        navBox.getChildren().add(createSidebarItem("Event Requests", SVG_CALENDAR, false, "3"));
-        navBox.getChildren().add(createSidebarItem("My Events", SVG_CALENDAR, false, ""));
-        navBox.getChildren().add(createSidebarItem("AI Planner", SVG_DASHBOARD, false, ""));
-       // navBox.getChildren().add(createSidebarItem("Budget", SVG_DASHBOARD, false, ""));
-       //navBox.getChildren().add(createSidebarItem("Venue", SVG_DASHBOARD, false, ""));
-        navBox.getChildren().add(createSidebarItem("Vendors", SVG_USERS, false, ""));
-        navBox.getChildren().add(createSidebarItem("Schedule", SVG_CALENDAR, false, ""));
-       //navBox.getChildren().add(createSidebarItem("Guest Management", SVG_USERS, false, ""));
-       //navBox.getChildren().add(createSidebarItem("QR Check-In", SVG_CHECK, false, ""));
-       // navBox.getChildren().add(createSidebarItem("Live Event", SVG_ALERT, false, ""));
+        navBox.getChildren().add(createSidebarItem("Dashboard", SVG_DASHBOARD, true, "",() -> {
+            OrganizerDashboardO organizerDashboardO = new OrganizerDashboardO();
 
+            Runnable callBackAction = () -> {
+                backToOrganizerDashboard();
+            };
 
+            LandingPage.landingPageStage.setScene(
+                    organizerDashboardO.getorganizerDashboardScene(callBackAction)
+            );
+        }));
+        navBox.getChildren().add(createSidebarItem("Event Requests", SVG_CALENDAR, false, "3",() -> {
+            EventRequestsO eventRequestsO = new EventRequestsO();
+
+            Runnable callBackAction = () -> {
+                backToOrganizerDashboard();
+            };
+
+            LandingPage.landingPageStage.setScene(
+                    eventRequestsO.geteventRequestsOScene(callBackAction)
+            );
+        }));
+        navBox.getChildren().add(createSidebarItem("My Events", SVG_CALENDAR, false, "",() -> {
+            MyEventsO myEventsO = new MyEventsO();
+
+            Runnable callBackAction = () -> {
+                backToOrganizerDashboard();
+            };
+
+            LandingPage.landingPageStage.setScene(
+                    myEventsO.getMyEventsOScene(callBackAction)
+            );
+        }));
+        navBox.getChildren().add(createSidebarItem("AI Planner", SVG_DASHBOARD, false, "",() -> {
+            AIEventPlannerO aiEventPlannerO = new AIEventPlannerO();
+
+            Runnable callBackAction = () -> {
+                backToOrganizerDashboard();
+            };
+
+            LandingPage.landingPageStage.setScene(
+                    aiEventPlannerO.getAIPageScene(callBackAction)
+            );
+        }));
+        /*navBox.getChildren().add(createSidebarItem("Vendors", SVG_USERS, false, "",() -> {
+            VendorManagementO vendorManagementO = new VendorManagementO();
+            Runnable callBackAction = () -> {
+                backToOrganizerDashboard();
+            };
+
+            LandingPage.landingPageStage.setScene(
+                    vendorManagementO.getvendorManagementOScene(callBackAction)
+            );
+        }));
+        navBox.getChildren().add(createSidebarItem("Schedule", SVG_CALENDAR, false, "",() -> {
+            //ScheduleO scheduleO = new ScheduleO();
+            Runnable callBackAction = () -> {
+                backToOrganizerDashboard();
+            };
+
+            LandingPage.landingPageStage.setScene(
+                   // scheduleO.getscheduleOScene(callBackAction)
+            );
+        }));*/
        
-        
         ScrollPane navScroll = new ScrollPane(navBox);
         navScroll.setFitToWidth(true);
         navScroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;");
@@ -131,13 +177,8 @@ public class OrganizerDashboardO extends Application {
         return sidebar;
     }
 
-    private Label createSidebarSectionHeader(String title) {
-        Label header = new Label(title);
-        header.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-padding: 12 0 4 8;");
-        return header;
-    }
 
-    private HBox createSidebarItem(String title, String svgData, boolean isActive, String badgeCount) {
+    private HBox createSidebarItem(String title, String svgData, boolean isActive, String badgeCount, Runnable action) {
         HBox item = new HBox(10);
         item.setAlignment(Pos.CENTER_LEFT);
         item.setPadding(new Insets(8, 12, 8, 12));
@@ -579,5 +620,9 @@ public class OrganizerDashboardO extends Application {
     // Helper Utility: Show Toast Notification on Click
     private void showToast(String message) {
         System.out.println("[EventXpert Log]: " + message);
+    }
+    public void backToOrganizerDashboard(){
+
+        LandingPage.landingPageStage.setScene(organizerDashboardScene);
     }
 }
