@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,9 +8,9 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import javafx.stage.Stage;
 
-public class MyEventsO extends Application {
+public class MyEventsO{
+    private Scene MyEventsOScene;
 
     // Color Palette
     private static final String NAVY = "#062A60";
@@ -34,8 +33,7 @@ public class MyEventsO extends Application {
     private ComboBox<String> typeFilter;
     private ComboBox<String> dateFilter;
 
-    @Override
-    public void start(Stage primaryStage) {
+    Scene getMyEventsOScene(Runnable callBackAction) {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;");
 
@@ -56,9 +54,8 @@ public class MyEventsO extends Application {
         root.setCenter(scrollPane);
 
         Scene scene = new Scene(root, 1440, 900);
-        primaryStage.setTitle("EventXpert - My Events");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        MyEventsOScene = scene;
+        return MyEventsOScene;
     }
 
     // ==========================================

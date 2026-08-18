@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,9 +8,10 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import javafx.stage.Stage;
 
-public class AIEventPlannerO extends Application {
+public class AIEventPlannerO {
+
+    private Scene AIPageScene;
 
     // Color Palette
     private static final String NAVY = "#062A60";
@@ -34,8 +34,7 @@ public class AIEventPlannerO extends Application {
 
     private TextField aiPromptInput;
 
-    @Override
-    public void start(Stage primaryStage) {
+        Scene getAIPageScene(Runnable callBackAction){
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;");
 
@@ -55,10 +54,9 @@ public class AIEventPlannerO extends Application {
 
         root.setCenter(scrollPane);
 
-        Scene scene = new Scene(root, 1440, 900);
-        primaryStage.setTitle("EventXpert - AI Event Planner");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        Scene scene = new Scene(root, 1550, 750);
+        AIPageScene = scene;
+        return AIPageScene;  
     }
 
     // ==========================================

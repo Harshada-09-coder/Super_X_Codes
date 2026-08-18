@@ -116,7 +116,18 @@ public class LandingPage extends Application {
 
         Button registerBtn = new Button("Register");
         registerBtn.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: " + NAVY + "; -fx-text-fill: " + WHITE + "; -fx-background-radius: 8; -fx-padding: 8 22; -fx-cursor: hand;");
-        registerBtn.setOnAction(e -> System.out.println("Register clicked"));
+        registerBtn.setOnAction(e -> {
+                System.out.println("Register clicked");
+                CommonRegistration commonRegistrationPage = new CommonRegistration();
+
+                Runnable callBackAction = new Runnable() {
+                        public void run(){
+                               backToLandingPage(); 
+                        }
+                };
+
+                landingPageStage.setScene(commonRegistrationPage.getcommonRegistration(callBackAction));
+    });
 
 
         HBox headBox = new HBox(50, logoGroup, navigation, loginBtn, registerBtn);
@@ -392,8 +403,7 @@ contactText.setStyle(
 
 contactSection.getChildren().addAll(
         contactTitle,
-        contactText
-);
+        contactText);
 
 l6.setOnMouseClicked(e -> {
     scrollToSection(contactSection);

@@ -1,4 +1,4 @@
-package com.techtrio.view;
+/*package com.techtrio.view;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -15,7 +15,9 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ScheduleO extends Application {
+public class ScheduleO{
+
+    private Scene scheduleOScene;
 
     // Color Palette Constants
     private static final String NAVY = "#062A60";
@@ -60,48 +62,37 @@ public class ScheduleO extends Application {
     private Label conflictCountLabel;
     private int conflictCount = 1;
 
-    @Override
-    public void start(Stage primaryStage) {
+    Scene getscheduleOScene(Runnable callBackAction) {
         initSampleSchedule();
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // 1. Sidebar (Left)
-        VBox sidebar = createSidebar(primaryStage);
+        VBox sidebar = createSidebar();
         root.setLeft(sidebar);
 
-        // 2. Top Bar (Top)
-        HBox topBar = createTopBar(primaryStage);
+        HBox topBar = createTopBar();
         root.setTop(topBar);
 
-        // 3. Main Center Scrollable Content
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
 
         VBox mainContent = new VBox(20);
         mainContent.setPadding(new Insets(24));
-        mainContent.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // Assemble Layout Sections
         mainContent.getChildren().addAll(
-                createPageHeader(primaryStage),
+                createPageHeader(),
                 createSummaryCardsRow(),
-                createConflictAlertBanner(primaryStage),
-                createTimelineSection(primaryStage),
-                createBottomInsightsAndAiRow(primaryStage)
+                createConflictAlertBanner(),
+                createTimelineSection(),
+                createBottomInsightsAndAiRow()
         );
 
         scrollPane.setContent(mainContent);
         root.setCenter(scrollPane);
 
-        // Scene Setup
-        Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert - Event Schedule");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        scheduleOScene = new Scene(root, 1550, 785);
+
+        return scheduleOScene;
     }
 
     private void initSampleSchedule() {
@@ -120,7 +111,7 @@ public class ScheduleO extends Application {
     // ==========================================
     // 1. SIDEBAR NAVIGATION
     // ==========================================
-    private VBox createSidebar(Stage stage) {
+    private VBox createSidebar(Scene scene) {
         VBox sidebar = new VBox();
         sidebar.setPrefWidth(240);
         sidebar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 1 0 0;");
@@ -520,7 +511,7 @@ public class ScheduleO extends Application {
             statusBadge.setStyle(getStatusStyle(item.status));
 
             Button editBtn = createSecondaryButton("Edit");
-            editBtn.setOnAction(e -> openEditActivityModal(stage, item));
+            editBtn.setOnAction(e -> openEditActivityModal(item));
 
             contentBox.getChildren().addAll(textGroup, sp, statusBadge, editBtn);
 
@@ -632,7 +623,7 @@ public class ScheduleO extends Application {
                         assignInput.getText().isEmpty() ? "Event Staff" : assignInput.getText(),
                         "UPCOMING", false
                 ));
-                renderTimeline(parentStage);
+                renderTimeline();
                 showToast(parentStage, "✓ Added activity '" + titleInput.getText() + "'");
                 modal.close();
             } else {
@@ -648,10 +639,10 @@ public class ScheduleO extends Application {
         modal.show();
     }
 
-    private void openEditActivityModal(Stage parentStage, ScheduleItem item) {
+    private void openEditActivityModal( ScheduleItem item) {
         Stage modal = new Stage();
         modal.initModality(Modality.APPLICATION_MODAL);
-        modal.initOwner(parentStage);
+        modal.initOwner(scheduleOScene.getWindow());
         modal.setTitle("Edit Activity - " + item.title);
 
         VBox layout = new VBox(12);
@@ -670,8 +661,8 @@ public class ScheduleO extends Application {
             item.time = timeInput.getText();
             item.title = titleInput.getText();
             item.location = locInput.getText();
-            renderTimeline(parentStage);
-            showToast(parentStage, "Updated " + item.title);
+            renderTimeline();
+            showToast( "Updated " + item.title);
             modal.close();
         });
 
@@ -774,4 +765,4 @@ public class ScheduleO extends Application {
         alert.initOwner(stage);
         alert.show();
     }
-}
+}*/
