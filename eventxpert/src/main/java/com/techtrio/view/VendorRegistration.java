@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
+import com.techtrio.controller.SignUpResult;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -68,7 +69,7 @@ public class VendorRegistration {
     /**
      * Root container builder - Embeddable in existing JavaFX navigation layouts.
      */
-    public Parent createRootPane() {
+       public Parent createRootPane() {
         HBox root = new HBox();
         root.setStyle("-fx-background-color: " + COLOR_WHITE + ";");
 
@@ -166,7 +167,7 @@ public class VendorRegistration {
     /**
      * Self-contained Vector Illustration Component
      */
-    private VBox createIllustrationContainer() {
+        private VBox createIllustrationContainer() {
         VBox box = new VBox();
         box.setPrefSize(280, 240);
         box.setMaxSize(300, 260);
@@ -216,8 +217,7 @@ public class VendorRegistration {
         lblEmailError = createErrorLabel();
         txtFullName = createTextField("Enter full name");
         txtEmailAddress = createTextField("Enter business name");
-        HBox row1 = createTwoColumnRow(
-            createFieldGroup("Full Name", txtFullName, lblFullNameError),
+        HBox row1 = createTwoColumnRow(createFieldGroup("Full Name", txtFullName, lblFullNameError),
             createFieldGroup("Email Address", txtEmailAddress, lblEmailError)
         );
 
@@ -326,20 +326,25 @@ public class VendorRegistration {
             "-fx-background-radius: 6px;" +
             "-fx-cursor: hand;"
         ));
-        btnRegister.setOnAction(e -> handleRegistration());
         btnRegister.setOnAction(e -> {
 
-            boolean flag = controller.signUp(txtEmailAddress.getText(), txtPassword.getText());
-            if (flag) {
-                System.out.println("Sign Up Successfully");
-                output.setText("Sign Up Successfully");
-            }else{
-                System.out.println("Sign Up Failed");
-                output.setText("Sign Up Failed");
-            }
+            handleRegistration();
+            SignUpResult result = controller.signUp(
+            txtFullName.getText().trim(),
+            txtEmailAddress.getText().trim(),
+            txtPhone.getText().trim(),
+            txtPassword.getText(),
+            "vendor"
+         );
+
+    if (result != null) {
+
+        System.out.println("Registration successful");
+    } else {
+        System.out.println("Registration Failed");
+    }
         });
-
-
+        
         // Footer Login Link
         HBox footerBox = new HBox();
         footerBox.setAlignment(Pos.CENTER);
