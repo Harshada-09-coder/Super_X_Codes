@@ -1,4 +1,5 @@
 package com.techtrio.view;
+import com.techtrio.controller.NavigationManager;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
@@ -9,6 +10,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
 
 public class AdminDashboardA {
     private Scene adminDashboardScene;
@@ -18,7 +20,7 @@ public class AdminDashboardA {
     private final String LIGHT = "#C2E0F4";
     private final String BACKGROUND = "#F8FAFC";
 
-     Scene getadminDashboardScene() {
+    public Scene getadminDashboardScene() {
 
         VBox sidebar = new VBox(12);
         sidebar.setPadding(new Insets(25,15,20,15));
@@ -39,18 +41,33 @@ public class AdminDashboardA {
         String[] menuItems = {"Dashboard","Event Requests","Events","Calendar","Customers","Organizers","Vendors","Conflict Detection","Reports & Analytics"
         };
 
-        for(String item : menuItems) {
-            Label menuLabel = new Label(item);
-            menuLabel.setMaxWidth(Double.MAX_VALUE);
-            menuLabel.setPadding(new Insets(10,12,10,12));
-            menuLabel.setFont(Font.font("Arial",FontWeight.BOLD,13));
-            menuLabel.setTextFill(Color.WHITE);
+               for(String item : menuItems) {
 
-            if(item.contains("Dashboard"))
-                menuLabel.setStyle("-fx-background-color:" + LIGHT + ";" +"-fx-text-fill:" + PRIMARY + ";" +"-fx-background-radius:7;");
+    Label menuLabel = new Label(item);
 
-            menu.getChildren().add(menuLabel);
-        }
+    menuLabel.setMaxWidth(Double.MAX_VALUE);
+    menuLabel.setPadding(new Insets(10,12,10,12));
+    menuLabel.setFont(Font.font("Arial",FontWeight.BOLD,13));
+    menuLabel.setTextFill(Color.WHITE);
+
+    if(item.equals("Dashboard")) {
+        menuLabel.setStyle(
+            "-fx-background-color:" + LIGHT + ";" +
+            "-fx-text-fill:" + PRIMARY + ";" +
+            "-fx-background-radius:7;"
+        );
+    }
+
+    menuLabel.setOnMouseClicked(e -> {
+
+    Stage stage = (Stage) menuLabel.getScene().getWindow();
+    NavigationManager.navigate(item, stage);
+
+
+});
+
+    menu.getChildren().add(menuLabel);
+}
 
         Region sidebarSpace = new Region();
         VBox.setVgrow(sidebarSpace,Priority.ALWAYS);

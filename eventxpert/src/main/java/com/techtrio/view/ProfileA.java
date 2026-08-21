@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -23,7 +24,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class ProfileA extends Application {
+public class ProfileA  {
+
+        private Scene profilScene;
 
     // ---------- COLORS ----------
     private final String NAVY = "#062653";
@@ -35,17 +38,9 @@ public class ProfileA extends Application {
     private final String GREY = "#657080";
     private final String LIGHT_GREY = "#F1F3F6";
 
-  
+    public Scene getprofileScene(){
 
-   
-
-    @Override
-    public void start(Stage stage) {
-
-        // =====================================================
-        // SIDEBAR
-        // =====================================================
-
+        
         VBox sidebar = new VBox(8);
         sidebar.setPrefWidth(280);
         sidebar.setMinWidth(280);
@@ -94,8 +89,31 @@ public class ProfileA extends Application {
         };
 
         for (String item : menu) {
-            sidebar.getChildren().add(sideItem(item, false));
-        }
+
+    Label menuItem = sideItem(item, false);
+
+    menuItem.setOnMouseClicked(e -> {
+
+        Stage stage =
+                (Stage) menuItem.getScene().getWindow();
+
+        String page = item
+                .replace("▦", "")
+                .replace("▣", "")
+                .replace("⌁", "")
+                .replace("♙", "")
+                .replace("▱", "")
+                .replace("△", "")
+                .replace("▤", "")
+                .trim();
+
+        NavigationManager.navigate(page, stage);
+    });
+
+    sidebar.getChildren().add(menuItem);
+}
+
+         
 
         // Push bottom menu down
         Region spacer = new Region();
@@ -106,12 +124,63 @@ public class ProfileA extends Application {
         separator.setStyle("-fx-background-color:#294875;");
         sidebar.getChildren().add(separator);
 
-        sidebar.getChildren().add(sideItem("♟   Notifications", false));
-        sidebar.getChildren().add(sideItem("⚙   Settings", false));
-        sidebar.getChildren().add(sideItem("●   Profile", true));
-        sidebar.getChildren().add(sideItem("?   Support", false));
+        Label notifications =
+        sideItem("♟   Notifications", false);
+
+Label settings =
+        sideItem("⚙   Settings", false);
+
+Label profile =
+        sideItem("●   Profile", true);
+
+Label support =
+        sideItem("?   Support", false);
 
 
+notifications.setOnMouseClicked(e -> {
+
+    Stage stage =
+            (Stage) notifications.getScene().getWindow();
+
+    NavigationManager.navigate("Notifications", stage);
+});
+
+
+settings.setOnMouseClicked(e -> {
+
+    Stage stage =
+            (Stage) settings.getScene().getWindow();
+
+    NavigationManager.navigate("Settings", stage);
+});
+
+
+profile.setOnMouseClicked(e -> {
+
+    Stage stage =
+            (Stage) profile.getScene().getWindow();
+
+    NavigationManager.navigate("Profile", stage);
+});
+
+
+support.setOnMouseClicked(e -> {
+
+    Stage stage =
+            (Stage) support.getScene().getWindow();
+
+    NavigationManager.navigate("Support", stage);
+});
+
+
+sidebar.getChildren().addAll(
+        notifications,
+        settings,
+        profile,
+        support
+);
+
+       
         // =====================================================
         // MAIN CONTENT
         // =====================================================
@@ -518,18 +587,11 @@ public class ProfileA extends Application {
         // SCENE
         // =====================================================
 
-        Scene scene = new Scene(
-                root,
-                1550,
-                750
-        );
-
-        stage.setTitle("EventXpert - Profile");
-        stage.setScene(scene);
-        stage.setMinWidth(1200);
-        stage.setMinHeight(650);
-        stage.show();
-    }
+        Scene scene = new Scene(root,1550,750);
+        profilScene =  scene;
+        
+    return profilScene;
+}
 
 
     // =====================================================
@@ -781,13 +843,9 @@ public class ProfileA extends Application {
         return row;
     }
 
-
-    // =====================================================
-    // MAIN
-    // =====================================================
-
-    public static void main(String[] args) {
-
-        launch(args);
-    }
 }
+  
+
+   
+
+    

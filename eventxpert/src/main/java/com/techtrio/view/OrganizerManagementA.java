@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -24,7 +25,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-public class OrganizerManagementA extends Application {
+public class OrganizerManagementA  {
+
+    private Scene organizerScene;
+
 
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC";
 
@@ -87,6 +91,14 @@ public class OrganizerManagementA extends Application {
             if(x.equals("Organizers"))
                 l.setStyle("-fx-background-color:#1264A3;"+
                         "-fx-background-radius:6;-fx-font-weight:bold;");
+
+            l.setOnMouseClicked(e -> {
+
+        Stage stage =
+            (Stage) l.getScene().getWindow();
+
+        NavigationManager.navigate(x, stage);
+    });
 
             menu.getChildren().add(l);
         }
@@ -185,10 +197,10 @@ public class OrganizerManagementA extends Application {
                 o.getLocation().toLowerCase().contains(q)));
     }
 
-    @Override
-    public void start(Stage stage){
 
-        BorderPane root=new BorderPane();
+    public Scene getorganizerScene(){
+
+         BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
 
         root.setLeft(sidebar());
@@ -274,12 +286,11 @@ public class OrganizerManagementA extends Application {
         root.setCenter(scroll);
 
         Scene scene=new Scene(root,1550,750);
-
-        stage.setTitle("EventXpert - Organizer Management");
-        stage.setScene(scene);
-        stage.setMinWidth(1200);
-        stage.setMinHeight(700);
-        stage.show();
+        organizerScene = scene;
+        
+        return organizerScene;
+    
+       
     }
 
     public static class Organizer{
@@ -307,3 +318,10 @@ public class OrganizerManagementA extends Application {
 
 
 }
+
+
+
+    
+
+
+       

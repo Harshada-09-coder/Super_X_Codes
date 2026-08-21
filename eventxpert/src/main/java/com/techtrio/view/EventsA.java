@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -25,7 +26,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class EventsA extends Application{
+public class EventsA{
+    private Scene eventsScene;
 
       final String P="#002A60",S="#8CAFC6",L="#C2E0F4";
 
@@ -122,11 +124,8 @@ public class EventsA extends Application{
         a.showAndWait();
     }
 
-     @Override
-    public void start(Stage stage){
-
-
-    VBox sidebar=new VBox(7);
+    public Scene geteventsScene(){
+     VBox sidebar=new VBox(7);
         sidebar.setPrefWidth(260);
         sidebar.setMinWidth(260);
         sidebar.setPadding(new Insets(25,18,18,18));
@@ -146,8 +145,18 @@ public class EventsA extends Application{
             m.setTextFill(Color.WHITE);
             m.setMaxWidth(Double.MAX_VALUE);
             m.setPadding(new Insets(9,13,9,13));
+            
             if(s.equals("Events"))
                 m.setStyle("-fx-background-color:#07539A;-fx-background-radius:5;");
+
+             m.setOnMouseClicked(e -> {
+
+        Stage stage =
+            (Stage) m.getScene().getWindow();
+
+        NavigationManager.navigate(s, stage);
+    });
+
             menu.getChildren().add(m);
         }
 
@@ -285,13 +294,19 @@ public class EventsA extends Application{
         root.setCenter(center);
 
         Scene scene=new Scene(root,1550,750);
-        stage.setTitle("EventXpert - Events");
-        stage.setScene(scene);
-        stage.setWidth(1550);
-        stage.setHeight(750);
-        stage.show();
+        eventsScene = scene;
+        return eventsScene;
+       
     }
 
     }
     
 
+
+
+
+    
+   
+
+
+   

@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -21,19 +22,19 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class SettingsA extends Application {
+public class SettingsA  {
+
+        private Scene settingScene;
 
 
-  
     final String NAVY = "#062B63";
     final String BLUE = "#BFE3FA";
     final String BG = "#F5F7FA";
     final String BORDER = "#D5DDE6";
 
-    @Override
-    public void start(Stage stage) {
+public Scene getsettingScene(){
 
-        /* ================= SIDEBAR ================= */
+         /* ================= SIDEBAR ================= */
 
         VBox side = new VBox(5);
         side.setPrefWidth(235);
@@ -68,18 +69,65 @@ public class SettingsA extends Application {
         };
 
         for (String s : menu) {
-            Label item = sideItem(s, false);
-            side.getChildren().add(item);
-        }
+
+    Label item = sideItem(s, false);
+
+    item.setOnMouseClicked(e -> {
+
+        Stage stage =
+                (Stage) item.getScene().getWindow();
+
+        String page = s
+                .replace("▦", "")
+                .replace("▣", "")
+                .replace("□", "")
+                .replace("♧", "")
+                .replace("♣", "")
+                .replace("▤", "")
+                .replace("ⓘ", "")
+                .trim();
+
+        NavigationManager.navigate(page, stage);
+    });
+
+    side.getChildren().add(item);
+}
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
         side.getChildren().add(spacer);
 
-        side.getChildren().add(sideItem("🔔   Notifications", false));
-        side.getChildren().add(sideItem("⚙   Settings", true));
-        side.getChildren().add(sideItem("👤   Profile", false));
-        side.getChildren().add(sideItem("?   Support", false));
+Label notifications = sideItem("🔔   Notifications", false);
+Label settings = sideItem("⚙   Settings", true);
+Label profile = sideItem("👤   Profile", false);
+Label support = sideItem("?   Support", false);
+
+notifications.setOnMouseClicked(e -> {
+    Stage stage = (Stage) notifications.getScene().getWindow();
+    NavigationManager.navigate("Notifications", stage);
+});
+
+settings.setOnMouseClicked(e -> {
+    Stage stage = (Stage) settings.getScene().getWindow();
+    NavigationManager.navigate("Settings", stage);
+});
+
+profile.setOnMouseClicked(e -> {
+    Stage stage = (Stage) profile.getScene().getWindow();
+    NavigationManager.navigate("Profile", stage);
+});
+
+support.setOnMouseClicked(e -> {
+    Stage stage = (Stage) support.getScene().getWindow();
+    NavigationManager.navigate("Support", stage);
+});
+
+side.getChildren().addAll(
+    notifications,
+    settings,
+    profile,
+    support
+);
 
         /* ================= MAIN AREA ================= */
 
@@ -237,15 +285,18 @@ public class SettingsA extends Application {
 
         /* Notification Rules */
 
-        VBox notifications = card();
-        notifications.getChildren().add(sectionTitle("♧", "Notification Rules"));
+        VBox notificationRules = card();
 
-        notifications.getChildren().addAll(
-                rule("Event Request Notifications", true),
-                rule("Payment Notifications", true),
-                rule("Conflict Detection Alerts", true),
-                rule("New User Registration Alerts", true),
-                rule("Email Notifications (Admin)", true)
+notificationRules.getChildren().add(
+        sectionTitle("♧", "Notification Rules")
+);
+
+notificationRules.getChildren().addAll(
+        rule("Event Request Notifications", true),
+        rule("Payment Notifications", true),
+        rule("Conflict Detection Alerts", true),
+        rule("New User Registration Alerts", true),
+        rule("Email Notifications (Admin)", true)
         );
 
         /* Security */
@@ -376,11 +427,9 @@ public class SettingsA extends Application {
         root.setCenter(scroll);
 
         Scene scene = new Scene(root, 1550, 750);
-        stage.setTitle("EventXpert - Settings");
-        stage.setScene(scene);
-        stage.setMinWidth(1200);
-        stage.setMinHeight(650);
-        stage.show();
+        settingScene  = scene;
+        return settingScene;
+       
     }
 
     /* ================= HELPERS ================= */
@@ -507,3 +556,8 @@ public class SettingsA extends Application {
     }
 
 }
+
+      
+
+
+       

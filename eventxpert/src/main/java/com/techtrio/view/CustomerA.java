@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -24,12 +25,14 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-public class CustomerA extends Application {
+public class CustomerA  {
+
+    private Scene customerScene;
 
 
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6", LIGHT="#C2E0F4", BG="#F6F9FC";
     final String WHITE="#FFFFFF";
-    
+
     
     TableView<CustomerData> table=new TableView<>();
     ObservableList<CustomerData> data=FXCollections.observableArrayList();
@@ -37,9 +40,9 @@ public class CustomerA extends Application {
     TextField search=new TextField();
     ComboBox<String> status=new ComboBox<>(), activity=new ComboBox<>(), date=new ComboBox<>();
 
-    @Override
-    public void start(Stage stage) {
+    public Scene getcustomerScene(){
 
+        
         BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
 
@@ -68,6 +71,14 @@ public class CustomerA extends Application {
             m.setPadding(new Insets(9,13,9,13));
             if(s.equals("Event Requests"))
                 m.setStyle("-fx-background-color:#07539A;-fx-background-radius:5;");
+
+            m.setOnMouseClicked(e -> {
+
+    Stage stage =
+        (Stage) m.getScene().getWindow();
+
+    NavigationManager.navigate(s, stage);
+});
             menu.getChildren().add(m);
         }
 
@@ -203,9 +214,9 @@ public class CustomerA extends Application {
         root.setCenter(center);
 
         Scene scene=new Scene(root,1550,750);
-        stage.setTitle("EventXpert - Customer Management");
-        stage.setScene(scene);
-        stage.show();
+        customerScene = scene;
+        return customerScene;
+        
     }
 
     void createTable(){
@@ -313,3 +324,10 @@ public class CustomerA extends Application {
         public String getStatus(){return status;}
     }
 }
+
+
+
+       
+    
+
+  
