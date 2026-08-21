@@ -15,7 +15,8 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EventRequestsO extends Application {
+public class EventRequestsO {
+    private Scene eventRequestsOScene;
 
     // --- EVENTXPERT COLOR PALETTE ---
     private static final String NAVY = "#062A60";
@@ -72,9 +73,8 @@ public class EventRequestsO extends Application {
     private VBox requestsContainer;
     private Stage primaryStage;
 
-    @Override
-    public void start(Stage primaryStage) {
-        this.primaryStage = primaryStage;
+    Scene geteventRequestsOScene(Runnable callBackAction) {
+        
         initSampleData();
 
         BorderPane root = new BorderPane();
@@ -100,10 +100,8 @@ public class EventRequestsO extends Application {
 
         // Scene & Stage Setup
         Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        eventRequestsOScene = scene;
+       return eventRequestsOScene;
     }
 
     private void initSampleData() {
@@ -749,9 +747,5 @@ public class EventRequestsO extends Application {
     // Console Log / Toast Simulation
     private void showToast(String message) {
         System.out.println("[EventXpert Notification]: " + message);
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }

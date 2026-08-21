@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.AuthController;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,14 +11,12 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
+import javafx.scene.text.Text;
 
-public class LoginPage extends Application {
+public class LoginPage {
 
-    @Override
-    public void start(Stage stage) {
-
-        
+        private Scene loginPageScene;
+        Scene getloginPageScene(Runnable callBackAction){
         String navy = "#082E6B";
         String lightBlue = "#7EAED4";
         String background = "#F6F8FA";
@@ -65,7 +64,6 @@ public class LoginPage extends Application {
 
         welcome.setFont(Font.font("Arial", FontWeight.BOLD, 26));
         welcome.setTextFill(Color.web(navy));
-
         
         Label subtitle = new Label("Sign in to continue to EventXpert");
 
@@ -218,6 +216,11 @@ public class LoginPage extends Application {
             System.out.println("Forgot Password clicked");
         });
 
+        Text output = new Text();
+        output.setStyle("-fx-fill: white");
+
+        AuthController controller = new AuthController();
+
         Button signInButton = new Button("Sign In");
 
         signInButton.setPrefWidth(280);
@@ -283,8 +286,17 @@ public class LoginPage extends Application {
             
             }
         });
-
-        
+   
+        signInButton.setOnAction(e -> {
+            boolean flag = controller.signIn(emailField.getText(), passwordField.getText());
+            if (flag) {
+                System.out.println("Sign In Successfully");
+                output.setText("Sign In Successfully");
+            }else{
+                System.out.println("Sign In Failed");
+                output.setText("Sign In Failed");
+            }
+        });
         Separator separator = new Separator();
 
         separator.setMaxWidth(Double.MAX_VALUE);
@@ -332,41 +344,27 @@ public class LoginPage extends Application {
         card.getChildren().addAll(
                 welcome,
                 subtitle,
-
                 emailLabel,
                 emailField,
-
                 passwordLabel,
                 passwordContainer,
-
                 forgotBox,
-
                 signInBox,
-
                 separator,
-
-                createAccountBox
+                createAccountBox,
+                output
         );
 
        
-        root.getChildren().addAll(
-                logo,
-                card
-        );
-
+        root.getChildren().addAll(logo, card);
        
-        Scene scene = new Scene(root, 1530, 900);
+        Scene scene = new Scene(root, 1550, 750);
+        loginPageScene = scene;
+        return loginPageScene;
+        }
 
-        stage.setTitle("EventXpert - Login");
-        stage.setScene(scene);
-
-        stage.setMinWidth(900);
-        stage.setMinHeight(700);
-
-        stage.show();
+        public void backToLoginPage(){
+                LandingPage.landingPageStage.setScene(loginPageScene);
+        }
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
-}

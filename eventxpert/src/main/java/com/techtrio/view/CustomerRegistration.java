@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.AuthController;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -19,18 +20,18 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
+import javafx.scene.text.Text;
 
-public class RegistrationPage extends Application {
+public class CustomerRegistration{
 
+    private Scene CustomerRegistrationScene;
     private final String NAVY = "#082E6B";
 
-    @Override
-    public void start(Stage stage) {
+    Scene getCustomerRegistrationScene(Runnable callBackAction) {
 
             HBox root = new HBox();
 
-            root.setPrefSize(1365, 900);
+            root.setPrefSize(1550, 785);
 
             VBox leftSide = new VBox();
 
@@ -47,18 +48,27 @@ public class RegistrationPage extends Application {
             Button backToLogin = new Button("←  Back to Login");
 
             backToLogin.setFont(
-                            Font.font(
-                                            "Arial",
-                                            15));
+                            Font.font("Arial",15));
 
-            backToLogin.setTextFill(
-                            Color.WHITE);
+            backToLogin.setTextFill(Color.WHITE);
 
             backToLogin.setStyle(
                             "-fx-background-color: transparent;" +
                                             "-fx-border-color: transparent;" +
                                             "-fx-padding: 5 0 5 0;" +
                                             "-fx-cursor: hand;");
+            backToLogin.setOnAction(e -> {
+            System.out.println("Back To Login Page");
+            LoginPage backToLoginPage = new LoginPage();
+            Runnable callBackAction1 = new Runnable() {
+                        public void run(){
+                                backToCustomerRegistration();
+                        }
+                };
+
+                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
+      
+        });
 
             Image logoImage = new Image("assets\\images\\logo .png");
             ImageView logoView = new ImageView(logoImage);
@@ -72,34 +82,23 @@ public class RegistrationPage extends Application {
 
             Label eventXpertText = new Label("EventXpert");
 
-            eventXpertText.setFont(
-                            Font.font(
-                                            "Arial",
-                                            FontWeight.BOLD,
-                                            25));
+            eventXpertText.setFont( Font.font("Arial",FontWeight.BOLD,25));
 
-            eventXpertText.setTextFill(
-                            Color.WHITE);
+            eventXpertText.setTextFill(Color.WHITE);
 
             HBox logoBox = new HBox();
 
-            logoBox.setAlignment(
-                            Pos.CENTER_LEFT);
+            logoBox.setAlignment(Pos.CENTER_LEFT);
 
             logoBox.setSpacing(1);
 
-            logoBox.getChildren().addAll(
-                            logoView,
-                            eventXpertText);
+            logoBox.getChildren().addAll(logoView,eventXpertText);
 
-            VBox.setMargin(
-                            logoBox,
-                            new Insets( 30, 0, 20, 40));
+            VBox.setMargin(logoBox, new Insets( 30, 0, 20, 40));
 
             Image registrationImage = new Image("assets\\images\\reg image.png");
 
-            ImageView registrationImageView = new ImageView(
-                            registrationImage);
+            ImageView registrationImageView = new ImageView(registrationImage);
 
             registrationImageView.setFitWidth(420);
             registrationImageView.setFitHeight(400);
@@ -113,103 +112,53 @@ public class RegistrationPage extends Application {
             imageBox.setPrefWidth(420);
             imageBox.setPrefHeight(400);
 
-            imageBox.setAlignment(
-                            Pos.CENTER);
+            imageBox.setAlignment(Pos.CENTER);
 
-            imageBox.getChildren().add(
-                            registrationImageView);
+            imageBox.getChildren().add(registrationImageView);
 
-            VBox.setMargin(
-                            imageBox,
-                            new Insets( 5, 0,10,0));
+            VBox.setMargin(imageBox,new Insets( 5, 0,10,0));
 
-            Label joinCustomer = new Label(
-                            "Join as Customer");
+            Label joinCustomer = new Label("Join as Customer");
 
-            joinCustomer.setFont(
-                            Font.font(
-                                            "Arial",
-                                            FontWeight.BOLD,
-                                            24));
+            joinCustomer.setFont(Font.font( "Arial",FontWeight.BOLD, 24));
 
-            joinCustomer.setTextFill(
-                            Color.WHITE);
+            joinCustomer.setTextFill( Color.WHITE);
 
-            VBox.setMargin(
-                            joinCustomer,
-                            new Insets(5,0,8,0));
+            VBox.setMargin(joinCustomer,new Insets(5,0,8,0));
 
-            Label customerDescription = new Label(
-                            "Book events, explore services,\nand manage your bookings easily.");
+            Label customerDescription = new Label("Book events, explore services,\nand manage your bookings easily.");
 
-            customerDescription.setFont(
-                            Font.font(
-                                            "Arial",
-                                            15));
+            customerDescription.setFont( Font.font("Arial",15));
 
-            customerDescription.setTextFill(
-                            Color.web("#D9E2F2"));
+            customerDescription.setTextFill(Color.web("#D9E2F2"));
 
             customerDescription.setLineSpacing(5);
 
-            leftSide.getChildren().addAll(
-
-                            backToLogin,
-
-                            logoBox,
-
-                            imageBox,
-
-                            joinCustomer,
-
-                            customerDescription
-
-            );
+            leftSide.getChildren().addAll( backToLogin, logoBox, imageBox, joinCustomer, customerDescription);
 
             VBox rightSide = new VBox();
 
             rightSide.setPrefWidth(865);
 
-            rightSide.setPadding(
-                            new Insets(55,85,40,85));
+            rightSide.setPadding(new Insets(55,85,40,85));
 
-            rightSide.setStyle(
-                            "-fx-background-color: white;");
+            rightSide.setStyle( "-fx-background-color: white;");
 
             Label rightLogo = new Label("EventXpert");
 
-            rightLogo.setFont(
-                            Font.font(
-                                            "Arial",
-                                            FontWeight.BOLD,
-                                            27));
+            rightLogo.setFont( Font.font( "Arial",FontWeight.BOLD,27));
 
-            rightLogo.setTextFill(
-                            Color.web(NAVY));
+            rightLogo.setTextFill(Color.web(NAVY));
 
-            Label heading = new Label(
-                            "Create your EventXpert\naccount");
+            Label heading = new Label("Create your EventXpert\naccount");
 
-            heading.setFont(
-                            Font.font(
-                                            "Arial",
-                                            FontWeight.BOLD,
-                                            32));
+            heading.setFont( Font.font( "Arial",FontWeight.BOLD,32));
 
-            heading.setTextFill(
-                            Color.web("#111111"));
+            heading.setTextFill(Color.web("#111111"));
 
-            VBox.setMargin(
-                            heading,
-                            new Insets(28,0,7,0));
+            VBox.setMargin( heading, new Insets(28,0,7,0));
 
-            Label subtitle = new Label(
-                            "Plan, manage and organize your events effortlessly.");
-
-            subtitle.setFont(
-                            Font.font(
-                                            "Arial",
-                                            17));
+            Label subtitle = new Label( "Plan, manage and organize your events effortlessly.");
 
             subtitle.setTextFill(
                             Color.web("#303746"));
@@ -302,8 +251,10 @@ public class RegistrationPage extends Application {
                             termsBox,
                             new Insets( 0, 0,22, 0));
 
-            Button createAccountButton = new Button(
-                            "Create Account");
+            Button createAccountButton = new Button("Create Account");
+            Text output = new Text();
+            output.setStyle("-fx-fill: white");
+            AuthController controller = new AuthController();
 
             createAccountButton.setPrefHeight(45);
 
@@ -366,6 +317,7 @@ public class RegistrationPage extends Application {
                                                     .getText();
 
                                     if (name.isEmpty()
+                                                    || name.isEmpty()
                                                     || email.isEmpty()
                                                     || mobile.isEmpty()
                                                     || password.isEmpty()
@@ -377,8 +329,7 @@ public class RegistrationPage extends Application {
                                             return;
                                     }
 
-                                    if (!password.equals(
-                                                    confirmPasswordText)) {
+                                    if (!password.equals(confirmPasswordText)) {
 
                                             showAlert(
                                                             "Passwords do not match.");
@@ -393,13 +344,22 @@ public class RegistrationPage extends Application {
 
                                             return;
                                     }
-
-                                
-
-                                    showAlert(
+                                 showAlert(
                                                     "Account created successfully!");
 
                             });
+
+                            createAccountButton.setOnAction(e -> {
+
+            boolean flag = controller.signUp(emailField.getText(), passwordField.getText());
+            if (flag) {
+                System.out.println("Sign Up Successfully");
+                output.setText("Sign Up Successfully");
+            }else{
+                System.out.println("Sign Up Failed");
+                output.setText("Sign Up Failed");
+            }
+        });
 
             Label alreadyAccount = new Label(
                             "Already have an account?");
@@ -477,21 +437,10 @@ public class RegistrationPage extends Application {
                             leftSide,
                             rightSide);
 
-            Scene scene = new Scene(
-                            root,
-                            1365,
-                            900);
+            Scene scene = new Scene(root,1550,785);
+            CustomerRegistrationScene = scene;
+            return CustomerRegistrationScene;
 
-            stage.setTitle(
-                            "EventXpert - Registration");
-
-            stage.setScene(scene);
-
-            stage.setMinWidth(1100);
-
-            stage.setMinHeight(750);
-
-            stage.show();
     }
 
     private Label createLabel(
@@ -619,9 +568,8 @@ public class RegistrationPage extends Application {
             alert.showAndWait();
     }
 
-    public static void main(
-                    String[] args) {
+    public void backToCustomerRegistration(){
 
-            launch(args);
+        LandingPage.landingPageStage.setScene(CustomerRegistrationScene);
     }
 }

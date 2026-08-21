@@ -17,18 +17,14 @@ public class BookingDetailsV extends Application {
     // Color Palette Constants
     private static final String SIDEBAR_NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
-    private static final String BRIGHT_BLUE = "#2563C7";
     private static final String LIGHT_BLUE = "#EAF3FF";
     private static final String BACKGROUND = "#F7FAFE";
     private static final String WHITE = "#FFFFFF";
     private static final String TEXT_MAIN = "#102A43";
     private static final String SECONDARY_TEXT = "#52677D";
     private static final String BORDER_COLOR = "#DCE5F0";
-    private static final String GREEN_BG = "#E6F4EA";
+    private static final String GREEN_BG = "#42d16b";
     private static final String GREEN_TEXT = "#16A34A";
-    private static final String WARNING_BG = "#FEF7E0";
-    private static final String WARNING_TEXT = "#D97706";
-    private static final String RED_BG = "#FEF2F2";
     private static final String RED_TEXT = "#DC2626";
 
     @Override
