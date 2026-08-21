@@ -1,0 +1,4 @@
+eventxpert/target/
+git/target/
+**/target/
+*.class
