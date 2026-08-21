@@ -1,5 +1,5 @@
 
-package com.superx.view;
+package com.techtrio.view;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
