@@ -205,11 +205,11 @@ homeSection1.getChildren().addAll(
 
 Image homeImg = new Image("assets\\images\\FrontImg.jpeg");
 ImageView homeImgView = new ImageView(homeImg);
-homeImgView.setFitHeight(400);
-homeImgView.setFitWidth(650);
+homeImgView.setFitHeight(450);
+homeImgView.setFitWidth(750);
 homeImgView.setStyle("-fx-padding: 20px , 20px");
-homeImgView.setTranslateX(250);
-homeImgView.setTranslateY(-40);
+homeImgView.setTranslateX(200);
+homeImgView.setTranslateY(-80);
 
 VBox homeSection2 = new VBox(10);
         homeSection2.setAlignment(Pos.TOP_RIGHT);

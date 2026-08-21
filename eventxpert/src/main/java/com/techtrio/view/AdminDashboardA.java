@@ -25,7 +25,7 @@ public class AdminDashboardA {
         sidebar.setPrefWidth(235);
         sidebar.setStyle("-fx-background-color:" + PRIMARY + ";");
 
-        Label logo = new Label("EventXpert");
+        Label logo = new Label("EventXpert   ");
         logo.setTextFill(Color.WHITE);
         logo.setFont(Font.font("Arial",FontWeight.BOLD,24));
 
