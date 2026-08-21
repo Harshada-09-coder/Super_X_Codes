@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
+import com.techtrio.controller.SignUpResult;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -238,18 +239,13 @@ public class CustomerRegistration{
 
             HBox termsBox = new HBox();
 
-            termsBox.setAlignment(
-                            Pos.CENTER_LEFT);
+            termsBox.setAlignment(Pos.CENTER_LEFT);
 
             termsBox.setSpacing(10);
 
-            termsBox.getChildren().addAll(
-                            termsCheckBox,
-                            termsLabel);
+            termsBox.getChildren().addAll(termsCheckBox,termsLabel);
 
-            VBox.setMargin(
-                            termsBox,
-                            new Insets( 0, 0,22, 0));
+            VBox.setMargin(termsBox,new Insets( 0, 0,22, 0));
 
             Button createAccountButton = new Button("Create Account");
             Text output = new Text();
@@ -344,22 +340,27 @@ public class CustomerRegistration{
 
                                             return;
                                     }
-                                 showAlert(
-                                                    "Account created successfully!");
+            SignUpResult result =
+            controller.signUp(
+                    name,
+                    email,
+                    mobile,
+                    password,
+                    "customer"
+            );
+
+    if (result != null) {
+
+        System.out.println("Registration successful");
+
+        showAlert("Account created successfully!");
+
+    } else {
+
+        showAlert("Registration failed.");
+    }
 
                             });
-
-                            createAccountButton.setOnAction(e -> {
-
-            boolean flag = controller.signUp(emailField.getText(), passwordField.getText());
-            if (flag) {
-                System.out.println("Sign Up Successfully");
-                output.setText("Sign Up Successfully");
-            }else{
-                System.out.println("Sign Up Failed");
-                output.setText("Sign Up Failed");
-            }
-        });
 
             Label alreadyAccount = new Label(
                             "Already have an account?");

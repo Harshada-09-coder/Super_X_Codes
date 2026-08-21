@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
+import com.techtrio.controller.SignInResult;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -285,18 +286,55 @@ public class LoginPage {
 
             
             }
-        });
-   
-        signInButton.setOnAction(e -> {
-            boolean flag = controller.signIn(emailField.getText(), passwordField.getText());
-            if (flag) {
-                System.out.println("Sign In Successfully");
-                output.setText("Sign In Successfully");
-            }else{
-                System.out.println("Sign In Failed");
-                output.setText("Sign In Failed");
-            }
-        });
+
+        SignInResult result = controller.signIn(email.trim(),password);
+        if (result != null) {
+
+    System.out.println("Login Successful");
+
+    String uid = result.getUid();
+    String idToken = result.getIdToken();
+
+    System.out.println("UID: " + uid);
+    System.out.println("ID Token received");
+
+    String role =
+            controller.getUserRole(uid, idToken);
+
+    System.out.println(
+            "User Role: " + role
+    );
+
+    if (role == null) {
+
+        Alert alert = new Alert(
+                Alert.AlertType.ERROR
+        );
+        alert.setTitle("Login");
+        alert.setHeaderText(null);
+        alert.setContentText(
+                "User role not found."
+        );
+        alert.showAndWait();
+        return;
+    }
+    if (role.equalsIgnoreCase("customer")) {
+        System.out.println("Opening Customer Dashboard");
+        ActiveCustomerDashboardC customerDashboardC = new ActiveCustomerDashboardC();
+
+        Runnable callBackAction1 = new Runnable() {
+                public void run(){
+                        backToLoginPage();
+                }
+        };
+       LandingPage.landingPageStage.setScene( customerDashboardC.getactiveCustomerScene(callBackAction1));
+
+    } else if (role.equalsIgnoreCase("organizer")) {
+         System.out.println( "Opening Organizer Dashboard");
+   } else if (role.equalsIgnoreCase("vendor")) {
+        System.out.println( "Opening Vendor Dashboard");
+    }
+}});
         Separator separator = new Separator();
 
         separator.setMaxWidth(Double.MAX_VALUE);
