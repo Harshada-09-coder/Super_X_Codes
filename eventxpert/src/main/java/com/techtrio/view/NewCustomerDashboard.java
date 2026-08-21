@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,9 +9,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class NewCustomerDashboard extends Application {
+public class NewCustomerDashboard {
+        private Scene newCustomerScene;
 
     private final String NAVY = "#082E6B";
     private final String BLUE = "#174A88";
@@ -20,8 +19,7 @@ public class NewCustomerDashboard extends Application {
     private final String TEXT = "#082E6B";
     private final String GRAY = "#526071";
 
-    @Override
-    public void start(Stage stage) {
+   Scene getnewCustomerScene(Runnable callBackAction1) {
 
         
         VBox sidebar = new VBox(18);
@@ -273,10 +271,8 @@ public class NewCustomerDashboard extends Application {
         HBox.setHgrow(mainArea, Priority.ALWAYS);
 
         Scene scene = new Scene(root, 1500, 900);
-
-        stage.setTitle("EventXpert - Customer Dashboard");
-        stage.setScene(scene);
-        stage.show();
+        newCustomerScene = scene;
+        return newCustomerScene;
     }
 
     
@@ -395,9 +391,5 @@ public class NewCustomerDashboard extends Application {
                 "-fx-font-size:14;" +
                 "-fx-background-radius:7;" +
                 "-fx-padding:0 22;";
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }

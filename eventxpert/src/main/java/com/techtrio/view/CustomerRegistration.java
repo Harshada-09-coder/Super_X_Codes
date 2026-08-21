@@ -352,11 +352,18 @@ public class CustomerRegistration{
     if (result != null) {
 
         System.out.println("Registration successful");
-
         showAlert("Account created successfully!");
+        
+         NewCustomerDashboard customerDashboardC = new NewCustomerDashboard();
+         Runnable callBackAction1 = new Runnable() {
+          public void run(){
+            backToCustomerRegistration();
+          }
+        };
 
-    } else {
-
+        LandingPage.landingPageStage.setScene(customerDashboardC.getnewCustomerScene(callBackAction1));
+     
+    }else {
         showAlert("Registration failed.");
     }
 
