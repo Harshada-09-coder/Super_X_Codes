@@ -358,7 +358,18 @@ public class VendorRegistration {
             "-fx-underline: false;" +
             "-fx-border-color: transparent;"
         );
-        loginLink.setOnAction(e -> handleNavigateLogin());
+        loginLink.setOnAction(e -> {
+            handleNavigateLogin();
+            LoginPage backToLoginPage = new LoginPage();
+            Runnable callBackAction1 = new Runnable() {
+                        public void run(){
+                                backToVendorRegistration();
+                        }
+                };
+
+                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
+      
+        });
         footerBox.getChildren().addAll(lblAlready, loginLink);
 
         // Assemble Form Container

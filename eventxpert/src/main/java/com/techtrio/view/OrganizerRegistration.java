@@ -344,7 +344,17 @@ public class OrganizerRegistration{
 
         Hyperlink loginLink = new Hyperlink("Login");
         loginLink.getStyleClass().add("inline-link");
-        loginLink.setOnAction(e -> handleNavigateLogin());
+        loginLink.setOnAction(e -> {handleNavigateLogin();
+            LoginPage backToLoginPage = new LoginPage();
+            Runnable callBackAction1 = new Runnable() {
+                        public void run(){
+                                backToOrganizerRegistration();
+                        }
+                };
+
+                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
+      
+        });
 
         footerBox.getChildren().addAll(lblAlready, loginLink);
 

@@ -372,8 +372,14 @@ public class LoginPage {
 
         createAccount.setOnAction(e -> {
             System.out.println("Create Account clicked");
+            CommonRegistration commonRegistrationPage = new CommonRegistration();
 
-            
+                Runnable callBackAction1 = new Runnable() {
+                        public void run(){
+                               backToLoginPage(); 
+                        }
+                };
+                LandingPage.landingPageStage.setScene(commonRegistrationPage.getcommonRegistration(callBackAction1));  
         });
 
         HBox createAccountBox = new HBox();

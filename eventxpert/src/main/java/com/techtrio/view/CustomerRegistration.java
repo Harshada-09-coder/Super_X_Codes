@@ -46,31 +46,6 @@ public class CustomerRegistration{
 
             leftSide.setStyle("-fx-background-color:  #082E6B");
 
-            Button backToLogin = new Button("←  Back to Login");
-
-            backToLogin.setFont(
-                            Font.font("Arial",15));
-
-            backToLogin.setTextFill(Color.WHITE);
-
-            backToLogin.setStyle(
-                            "-fx-background-color: transparent;" +
-                                            "-fx-border-color: transparent;" +
-                                            "-fx-padding: 5 0 5 0;" +
-                                            "-fx-cursor: hand;");
-            backToLogin.setOnAction(e -> {
-            System.out.println("Back To Login Page");
-            LoginPage backToLoginPage = new LoginPage();
-            Runnable callBackAction1 = new Runnable() {
-                        public void run(){
-                                backToCustomerRegistration();
-                        }
-                };
-
-                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
-      
-        });
-
             Image logoImage = new Image("assets\\images\\logo .png");
             ImageView logoView = new ImageView(logoImage);
 
@@ -135,7 +110,7 @@ public class CustomerRegistration{
 
             customerDescription.setLineSpacing(5);
 
-            leftSide.getChildren().addAll( backToLogin, logoBox, imageBox, joinCustomer, customerDescription);
+            leftSide.getChildren().addAll(logoBox, imageBox, joinCustomer, customerDescription);
 
             VBox rightSide = new VBox();
 
@@ -366,32 +341,21 @@ public class CustomerRegistration{
     }else {
         showAlert("Registration failed.");
     }
+ });
 
-                            });
+            Label alreadyAccount = new Label("Already have an account?");
 
-            Label alreadyAccount = new Label(
-                            "Already have an account?");
+            alreadyAccount.setFont(Font.font("Arial",16));
 
-            alreadyAccount.setFont(
-                            Font.font("Arial",16));
+            alreadyAccount.setTextFill(Color.web("#303746"));
 
-            alreadyAccount.setTextFill(
-                            Color.web("#303746"));
+            Hyperlink signIn = new Hyperlink("Sign In");
 
-            Hyperlink signIn = new Hyperlink(
-                            "Sign In");
+            signIn.setFont(Font.font("Arial",FontWeight.BOLD,16));
 
-            signIn.setFont(
-                            Font.font(
-                                            "Arial",
-                                            FontWeight.BOLD,
-                                            16));
+            signIn.setTextFill(Color.web(NAVY));
 
-            signIn.setTextFill(
-                            Color.web(NAVY));
-
-            signIn.setStyle(
-                            "-fx-background-color: transparent;" +
+            signIn.setStyle( "-fx-background-color: transparent;" +
                                             "-fx-border-color: transparent;" +
                                             "-fx-cursor: hand;");
 
@@ -405,45 +369,42 @@ public class CustomerRegistration{
             signInBox.getChildren().addAll(
                             alreadyAccount,
                             signIn);
+           signIn.setOnAction(e -> {
+            System.out.println("Go To Login Page");
+            LoginPage backToLoginPage = new LoginPage();
+            Runnable callBackAction1 = new Runnable() {
+                        public void run(){
+                                backToCustomerRegistration();
+                        }
+                };
 
-            VBox.setMargin(
-                            signInBox,
-                            new Insets( 25, 0, 0, 0));
+                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
+      
+        });
+
+            VBox.setMargin(signInBox,new Insets( 25, 0, 0, 0));
 
             rightSide.getChildren().addAll(
 
                             rightLogo,
-
                             heading,
-
                             subtitle,
-
                             fullNameLabel,
                             fullNameField,
-
                             emailLabel,
                             emailField,
-
                             mobileLabel,
                             mobileField,
-
                             passwordLabel,
                             passwordBox,
-
                             confirmPasswordLabel,
                             confirmPasswordBox,
-
                             termsBox,
-
                             createAccountButton,
-
                             signInBox
+                        );
 
-            );
-
-            root.getChildren().addAll(
-                            leftSide,
-                            rightSide);
+            root.getChildren().addAll(leftSide,rightSide);
 
             Scene scene = new Scene(root,1550,785);
             CustomerRegistrationScene = scene;
@@ -451,19 +412,13 @@ public class CustomerRegistration{
 
     }
 
-    private Label createLabel(
-                    String text) {
+    private Label createLabel(String text) {
 
             Label label = new Label(text);
 
-            label.setFont(
-                            Font.font(
-                                            "Arial",
-                                            FontWeight.BOLD,
-                                            15));
+            label.setFont(Font.font("Arial", FontWeight.BOLD,15));
 
-            label.setTextFill(
-                            Color.web("#111111"));
+            label.setTextFill(Color.web("#111111"));
 
             return label;
     }
@@ -473,14 +428,11 @@ public class CustomerRegistration{
 
             TextField field = new TextField();
 
-            field.setPromptText(
-                            prompt);
+            field.setPromptText( prompt);
 
             field.setPrefHeight(48);
 
-            field.setFont(
-                            Font.font(
-                                            "Arial", 15));
+            field.setFont(Font.font( "Arial", 15));
 
             field.setStyle(
                             "-fx-background-color: white;" +
