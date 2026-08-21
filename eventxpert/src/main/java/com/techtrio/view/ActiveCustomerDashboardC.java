@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -12,9 +11,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class ActiveCustomerDashboardC extends Application {
+public class ActiveCustomerDashboardC {
+        private Scene activeCustomerScene;
 
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
@@ -23,17 +22,10 @@ public class ActiveCustomerDashboardC extends Application {
     private static final String BORDER = "#D7DEE8";
     private static final String LIGHT_BLUE = "#BFE5FF";
 
-    @Override
-    public void start(Stage stage) {
-
-        
+        Scene getactiveCustomerScene(Runnable callBackAction1){   
         BorderPane root = new BorderPane();
 
-        root.setStyle(
-                "-fx-background-color:" + BG + ";"
-        );
-
-       
+        root.setStyle("-fx-background-color:" + BG + ";");
 
         VBox sidebar = new VBox();
 
@@ -41,20 +33,13 @@ public class ActiveCustomerDashboardC extends Application {
         sidebar.setMinWidth(250);
         sidebar.setMaxWidth(250);
 
-        sidebar.setStyle(
-                "-fx-background-color:" + NAVY + ";"
-        );
-
-        
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
         VBox logoBox = new VBox(2);
 
-        logoBox.setPadding(
-                new Insets(24, 20, 20, 20)
-        );
+        logoBox.setPadding(new Insets(24, 20, 20, 20));
 
         logoBox.getChildren().addAll(
-
                 styledLabel(
                         "EventXpert",
                         23,
@@ -70,13 +55,9 @@ public class ActiveCustomerDashboardC extends Application {
                 )
         );
 
-        
-
         VBox menu = new VBox(5);
 
-        menu.setPadding(
-                new Insets(8, 12, 8, 12)
-        );
+        menu.setPadding(new Insets(8, 12, 8, 12));
 
         menu.getChildren().addAll(
 
@@ -120,8 +101,6 @@ public class ActiveCustomerDashboardC extends Application {
                 Priority.ALWAYS
         );
 
-        
-
         VBox bottomMenu = new VBox(5);
 
         bottomMenu.setPadding(
@@ -155,24 +134,16 @@ public class ActiveCustomerDashboardC extends Application {
                 bottomMenu
         );
 
-        
-
         BorderPane rightArea = new BorderPane();
-
-        
 
         HBox topBar = new HBox(12);
 
         topBar.setPrefHeight(64);
         topBar.setMinHeight(64);
 
-        topBar.setAlignment(
-                Pos.CENTER_LEFT
-        );
+        topBar.setAlignment(Pos.CENTER_LEFT );
 
-        topBar.setPadding(
-                new Insets(10, 20, 10, 20)
-        );
+        topBar.setPadding(new Insets(10, 20, 10, 20));
 
         topBar.setStyle(
                 "-fx-background-color:white;" +
@@ -180,13 +151,9 @@ public class ActiveCustomerDashboardC extends Application {
                 "-fx-border-width:0 0 1 0;"
         );
 
-        
-
         TextField search = new TextField();
 
-        search.setPromptText(
-                "Search"
-        );
+        search.setPromptText("Search");
 
         search.setPrefWidth(330);
         search.setMinWidth(270);
@@ -214,9 +181,7 @@ public class ActiveCustomerDashboardC extends Application {
                 19,
                 FontWeight.NORMAL,
                 NAVY
-        );
-
-        
+        );   
 
         Circle avatarCircle = new Circle(
                 18,
@@ -235,8 +200,6 @@ public class ActiveCustomerDashboardC extends Application {
                 avatarLetter
         );
 
-        
-
         topBar.getChildren().addAll(
                 search,
                 topSpace,
@@ -245,25 +208,15 @@ public class ActiveCustomerDashboardC extends Application {
                 
         );
 
-        
-
         VBox main = new VBox(12);
 
-        main.setPadding(
-                new Insets(15, 20, 15, 20)
-        );
+        main.setPadding(new Insets(15, 20, 15, 20));
 
-        main.setStyle(
-                "-fx-background-color:" + BG + ";"
-        );
-
-        
+        main.setStyle("-fx-background-color:" + BG + ";");
 
         HBox welcome = new HBox();
 
-        welcome.setAlignment(
-                Pos.CENTER_LEFT
-        );
+        welcome.setAlignment(Pos.CENTER_LEFT);
 
         VBox welcomeText = new VBox(3);
 
@@ -291,14 +244,9 @@ public class ActiveCustomerDashboardC extends Application {
                 Priority.ALWAYS
         );
 
-        Button createEvent = new Button(
-                "+  Create New Event"
-        );
+        Button createEvent = new Button("+  Create New Event");
 
-        createEvent.setPrefSize(
-                175,
-                36
-        );
+        createEvent.setPrefSize(175,36);
 
         createEvent.setStyle(
                 "-fx-background-color:" + NAVY + ";" +
@@ -344,18 +292,11 @@ public class ActiveCustomerDashboardC extends Application {
         
         HBox lower = new HBox(14);
 
-        VBox.setVgrow(
-                lower,
-                Priority.ALWAYS
-        );
-
-        
+        VBox.setVgrow(lower, Priority.ALWAYS);
 
         VBox previous = new VBox(12);
 
-        previous.setPadding(
-                new Insets(16)
-        );
+        previous.setPadding(new Insets(16));
 
         previous.setStyle(
                 "-fx-background-color:white;" +
@@ -364,16 +305,11 @@ public class ActiveCustomerDashboardC extends Application {
                 "-fx-background-radius:12;"
         );
 
-        VBox.setVgrow(
-                previous,
-                Priority.ALWAYS
-        );
+        VBox.setVgrow(previous,Priority.ALWAYS);
 
         HBox previousHeader = new HBox();
 
-        previousHeader.setAlignment(
-                Pos.CENTER_LEFT
-        );
+        previousHeader.setAlignment(Pos.CENTER_LEFT);
 
         VBox previousTitle = new VBox(4);
 
@@ -487,8 +423,6 @@ public class ActiveCustomerDashboardC extends Application {
                 lower
         );
 
-        
-
         rightArea.setTop(
                 topBar
         );
@@ -503,34 +437,12 @@ public class ActiveCustomerDashboardC extends Application {
 
         root.setCenter(
                 rightArea
-        );
+        ); 
 
-        
-
-        Scene scene = new Scene(
-                root,
-                1365,
-                800
-        );
-
-        stage.setTitle(
-                "EventXpert - Active Customer Dashboard"
-        );
-
-        stage.setScene(
-                scene
-        );
-
-        stage.setMinWidth(1100);
-        stage.setMinHeight(700);
-
-        stage.setMaximized(true);
-
-        stage.show();
+        Scene scene = new Scene(root,1550,785);
+        activeCustomerScene = scene;
+        return activeCustomerScene;
     }
-
-   
-    
 
     private VBox aiPlanningCard() {
 
@@ -540,13 +452,9 @@ public class ActiveCustomerDashboardC extends Application {
         card.setMinHeight(185);
         card.setMaxHeight(185);
 
-        card.setMaxWidth(
-                Double.MAX_VALUE
-        );
+        card.setMaxWidth(Double.MAX_VALUE);
 
-        card.setPadding(
-                new Insets(16)
-        );
+        card.setPadding(new Insets(16));
 
         card.setStyle(
                 "-fx-background-color:#0D3979;" +
@@ -555,9 +463,7 @@ public class ActiveCustomerDashboardC extends Application {
 
         HBox header = new HBox();
 
-        header.setAlignment(
-                Pos.CENTER_LEFT
-        );
+        header.setAlignment(Pos.CENTER_LEFT);
 
         VBox titleBox = new VBox(3);
 
@@ -1170,14 +1076,9 @@ VBox.setVgrow(
                 )
         );
 
-        row.getChildren().addAll(
-                iconBox,
-                text
-        );
+        row.getChildren().addAll(iconBox,text);
 
-        card.getChildren().add(
-                row
-        );
+        card.getChildren().add(row);
 
         HBox.setHgrow(
                 card,
@@ -1186,8 +1087,6 @@ VBox.setVgrow(
 
         return card;
     }
-
-    
 
     private HBox menuItem(
             String icon,
@@ -1245,18 +1144,11 @@ VBox.setVgrow(
     }
 
     
-    private Button smallButton(
-            String text,
-            String background
-    ) {
+    private Button smallButton(String text,String background) {
 
-        Button button = new Button(
-                text
-        );
+        Button button = new Button(text);
 
-        button.setPrefHeight(
-                27
-        );
+        button.setPrefHeight(27);
 
         button.setStyle(
                 "-fx-background-color:" +
@@ -1277,9 +1169,7 @@ VBox.setVgrow(
             String color
     ) {
 
-        Label label = new Label(
-                text
-        );
+        Label label = new Label(text);
 
         label.setFont(
                 Font.font(
@@ -1289,18 +1179,7 @@ VBox.setVgrow(
                 )
         );
 
-        label.setTextFill(
-                Color.web(color)
-        );
-
+        label.setTextFill(Color.web(color) );
         return label;
-    }
-
-    
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
     }
 }
