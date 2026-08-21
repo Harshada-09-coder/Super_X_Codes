@@ -318,7 +318,15 @@ public class LoginPage {
         alert.showAndWait();
         return;
     }
-    if (role.equalsIgnoreCase("customer")) {
+    if (role.equalsIgnoreCase("admin")) {
+
+    System.out.println("Opening Admin Dashboard");
+
+    AdminDashboardA adminDashboard = new AdminDashboardA();
+
+    LandingPage.landingPageStage.setScene(adminDashboard.getadminDashboardScene()
+      );
+      } else if (role.equalsIgnoreCase("customer")) {
         System.out.println("Opening Customer Dashboard");
         ActiveCustomerDashboardC customerDashboardC = new ActiveCustomerDashboardC();
 
@@ -329,9 +337,9 @@ public class LoginPage {
         };
        LandingPage.landingPageStage.setScene( customerDashboardC.getactiveCustomerScene(callBackAction1));
 
-    } else if (role.equalsIgnoreCase("organizer")) {
+     } else if (role.equalsIgnoreCase("organizer")) {
          System.out.println( "Opening Organizer Dashboard");
-   } else if (role.equalsIgnoreCase("vendor")) {
+     } else if (role.equalsIgnoreCase("vendor")) {
         System.out.println( "Opening Vendor Dashboard");
     }
 }});

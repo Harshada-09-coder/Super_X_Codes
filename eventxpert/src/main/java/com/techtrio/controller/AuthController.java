@@ -250,6 +250,7 @@ if (role.equalsIgnoreCase("customer")) {
         String projectId = "eventxpert-6f453";
 
         String[] collections = {
+                "Admin",
                 "Customers",
                 "Organizers",
                 "Vendors"

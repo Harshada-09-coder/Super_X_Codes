@@ -321,11 +321,20 @@ public class OrganizerRegistration{
     if (result != null) {
 
         System.out.println("Registration successful");
+         OrganizerDashboardO organizerDashboardO = new OrganizerDashboardO();
+         Runnable callBackAction = new Runnable() {
+          public void run(){
+            backToOrganizerRegistration();
+          }
+        };
+
+        LandingPage.landingPageStage.setScene(organizerDashboardO.getorganizerDashboardScene(callBackAction));
+     
     } else {
         System.out.println("Registration Failed");
     }
-          
-        });
+
+         });
        
         // FOOTER LOGIN LINK
         HBox footerBox = new HBox();
