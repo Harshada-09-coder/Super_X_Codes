@@ -178,11 +178,12 @@ public class VendorManagementA {
             Button b=button("View");
 
             {
-                b.setOnAction(e->{
-                    Vendor v=getTableView().getItems().get(getIndex());
-                    new Alert(Alert.AlertType.INFORMATION,
-                            "Vendor: "+v.getName()).showAndWait();
-                });
+                        b.setOnAction(e -> {
+
+                                Stage stage = (Stage) b.getScene().getWindow();
+
+                                NavigationManager.navigate("Vendor Details", stage);
+                        });
             }
 
             @Override
@@ -250,6 +251,7 @@ public class VendorManagementA {
                 stat("New Vendors","12","This month"),
                 stat("Inactive Vendors","16","Need attention")
         );
+        stats.setCursor(javafx.scene.Cursor.HAND);
 
         stats.setStyle("-fx-font-size:18px;");
 

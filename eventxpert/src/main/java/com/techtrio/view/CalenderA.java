@@ -237,6 +237,7 @@ public class CalenderA{
                 summary("Upcoming","18 Events","→",false),
                 summary("Conflicts","1 Detected","⚠",true)
         );
+        cards.setCursor(javafx.scene.Cursor.HAND);
 
         /* ================= CALENDAR TOOLBAR ================= */
 
@@ -364,12 +365,20 @@ public class CalenderA{
 
         /* ================= UPCOMING ================= */
 
-        HBox upcomingTitle=new HBox(
-                label("Upcoming Events",20,true),
-                new Region(),
-                label("View All",13,true)
-        );
-        HBox.setHgrow(upcomingTitle.getChildren().get(1),Priority.ALWAYS);
+        Label viewAll = label("View All", 13, true);
+
+        viewAll.setOnMouseClicked(e -> {
+                Stage stage = (Stage) viewAll.getScene().getWindow();
+                NavigationManager.navigate("Events", stage);
+        });
+
+        HBox upcomingTitle = new HBox(
+                        label("Upcoming Events", 20, true),
+                        new Region(),
+                        viewAll);
+
+        HBox.setHgrow(upcomingTitle.getChildren().get(1), Priority.ALWAYS);
+      
 
         VBox upcomingBox=new VBox(
                 16,

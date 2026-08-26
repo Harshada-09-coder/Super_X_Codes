@@ -1,5 +1,7 @@
 package com.techtrio.view;
 
+import com.techtrio.controller.NavigationManager;
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -10,7 +12,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-public class VendorDetailsA extends Application {
+public class VendorDetailsA  {
+
+        private Scene vendorDetailScene;
 
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC";
 
@@ -330,9 +334,7 @@ public class VendorDetailsA extends Application {
 
     /* ================= MAIN ================= */
 
-    @Override
-    public void start(Stage stage){
-
+   public Scene getvendorDetailScene(){
         BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
 
@@ -342,7 +344,13 @@ public class VendorDetailsA extends Application {
         VBox content=new VBox(16);
         content.setPadding(new Insets(20,25,25,25));
 
-        Button back=btn("←  Back to Vendors");
+        Button back = btn("←  Back to Vendors");
+        back.setOnAction(e -> {
+
+                Stage stage = (Stage) back.getScene().getWindow();
+
+                NavigationManager.navigate("Vendors", stage);
+        });
 
         Label title=lbl("Vendor Details",32,true);
         Label sub=lbl(
@@ -366,6 +374,7 @@ public class VendorDetailsA extends Application {
                 stat("UPCOMING","5"),
                 stat("CANCELLED","2")
         );
+        stats.setCursor(javafx.scene.Cursor.HAND);
 
         for(javafx.scene.Node n:stats.getChildren())
             HBox.setHgrow(n,Priority.ALWAYS);
@@ -406,14 +415,16 @@ public class VendorDetailsA extends Application {
         root.setCenter(scroll);
 
         Scene scene=new Scene(root,1550,750);
+        vendorDetailScene = scene;
+        
+        return vendorDetailScene;
 
-        stage.setTitle("EventXpert - Vendor Details");
-        stage.setScene(scene);
-        stage.setResizable(false);
-        stage.show();
+        
     }
 
-    public static void main(String[] args){
-        launch(args);
-    }
+    
 }
+
+
+
+        

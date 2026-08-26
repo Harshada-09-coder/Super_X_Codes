@@ -553,6 +553,8 @@ support.setOnMouseClicked(e -> {
             });
 
             notificationBox.getChildren().add(review);
+            notificationBox.setCursor(javafx.scene.Cursor.HAND);
+
         }
 
         notificationList.getChildren().add(notificationBox);

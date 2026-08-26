@@ -1,5 +1,7 @@
 package com.techtrio.view;
 
+import com.techtrio.controller.NavigationManager;
+
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
@@ -22,7 +24,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class EventRequesReviewA extends Application {
+public class EventRequesReviewA  {
+
+    private Scene eventRequestReviewScene;
 
     private final String PRIMARY = "#002A60";
     private final String SECONDARY = "#8CAFC6";
@@ -67,10 +71,9 @@ public class EventRequesReviewA extends Application {
     }
 
 
-    @Override
-    public void start(Stage stage) throws Exception {
+   public Scene geteventRequestReviewScene(){
 
-        VBox sidebar=new VBox(7);
+     VBox sidebar=new VBox(7);
         sidebar.setPrefWidth(260);
         sidebar.setMinWidth(260);
         sidebar.setPadding(new Insets(25,18,18,18));
@@ -147,9 +150,10 @@ public class EventRequesReviewA extends Application {
         back.setStyle("-fx-background-color:white;-fx-border-color:#8B949E;"+
                 "-fx-border-radius:7;");
 
-        back.setOnAction(e->alert("Navigation",
-                "Back to Requests",
-                "Return to Event Requests screen."));
+        back.setOnAction(e -> {
+            Stage stage = (Stage) back.getScene().getWindow();
+            NavigationManager.navigate("Event Requests", stage);
+        });
 
         Region ts=new Region();
         HBox.setHgrow(ts,Priority.ALWAYS);
@@ -253,21 +257,33 @@ public class EventRequesReviewA extends Application {
         notes.setWrapText(true);
         notes.setPrefRowCount(3);
 
-        Button assign=btn("Assign Organizer",true);
+        Button assign = btn("Assign Organizer", true);
+        assign.setOnAction(e -> {
+            Stage stage = (Stage) assign.getScene().getWindow();
+            NavigationManager.navigate("Assign Organizer", stage);
+        });
+
+
         Button reject=btn("Reject Request",false);
 
-        assign.setOnAction(e->alert(
-            "Organizer Assignment",
-            "Request Ready for Assignment",
-            "Proceed to Organizer Assignment screen."));
+        reject.setOnAction(e -> {
 
-        reject.setOnAction(e->{
-            Alert a=new Alert(Alert.AlertType.CONFIRMATION);
+            Alert a = new Alert(Alert.AlertType.CONFIRMATION);
+
             a.setTitle("Reject Request");
             a.setHeaderText("Reject Event Request?");
             a.setContentText("Are you sure you want to reject this request?");
-            a.showAndWait().ifPresent(r->{
-                if(r==ButtonType.OK)status.setValue("Rejected");
+
+            a.showAndWait().ifPresent(result -> {
+
+                if (result == ButtonType.OK) {
+
+                    status.setValue("Rejected");
+
+                    Stage stage = (Stage) reject.getScene().getWindow();
+
+                    NavigationManager.navigate("Event Requests", stage);
+                }
             });
         });
 
@@ -305,11 +321,9 @@ public class EventRequesReviewA extends Application {
         root.setCenter(center);
 
         Scene scene=new Scene(root,1550,750);
-        stage.setTitle("EventXpert - Review Event Request");
-        stage.setScene(scene);
-        stage.setWidth(1550);
-        stage.setHeight(750);
-        stage.show();
+        eventRequestReviewScene = scene;
+        return eventRequestReviewScene;
+       
     }
 
     VBox summary(String t,String v){
@@ -333,3 +347,9 @@ public class EventRequesReviewA extends Application {
     
 
         
+
+    
+
+   
+
+       

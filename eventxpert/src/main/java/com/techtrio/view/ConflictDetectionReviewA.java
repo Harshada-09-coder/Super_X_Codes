@@ -1,4 +1,6 @@
 package com.techtrio.view;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -12,16 +14,16 @@ import javafx.stage.Stage;
 
   
 
-public class ConflictDetectionReviewA extends Application {
+public class ConflictDetectionReviewA {
+
+    private Scene conflictDetectionReviewScene;
 
     final String NAVY = "#002A60";
     final String BLUE = "#1976B8";
     final String BG = "#F6F9FC";
 
-    @Override
-    public void start(Stage stage) {
-
-        BorderPane root = new BorderPane();
+  public Scene getconflictDetectionReviewScene(){
+     BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
         /* ================= SIDEBAR ================= */
@@ -90,6 +92,14 @@ public class ConflictDetectionReviewA extends Application {
 
         HBox backRow = new HBox();
         Button back = new Button("← Back to Conflicts");
+        back.setOnAction(e -> {
+
+    Stage stage = (Stage) back.getScene().getWindow();
+
+    NavigationManager.navigate("Conflict Detection", stage);
+
+});
+
         back.setStyle("-fx-background-color:NAVY");
         back.setFont(Font.font("Arial", 18));
         back.setTextFill(Color.web("#F6F9FC"));
@@ -248,6 +258,8 @@ public class ConflictDetectionReviewA extends Application {
         HBox.setHgrow(event2, Priority.ALWAYS);
 
         events.getChildren().addAll(event1, event2);
+        events.setCursor(javafx.scene.Cursor.HAND);
+
 
         VBox impact = card();
         impact.getChildren().add(sectionTitle("⌁  Potential Impact"));
@@ -384,12 +396,10 @@ public class ConflictDetectionReviewA extends Application {
         root.setCenter(scroll);
 
         Scene scene = new Scene(root, 1550, 750);
+        conflictDetectionReviewScene = scene;
+        return conflictDetectionReviewScene;
 
-        stage.setTitle("EventXpert - Review Conflict");
-        stage.setScene(scene);
-        stage.setMinWidth(1100);
-        stage.setMinHeight(650);
-        stage.show();
+       
     }
 
     /* ================= SIDEBAR BUTTON ================= */
@@ -573,7 +583,10 @@ public class ConflictDetectionReviewA extends Application {
         v.getChildren().addAll(t, h, d);
 
         return v;
-    }
+    } 
+}
 
     
-}
+  
+
+       

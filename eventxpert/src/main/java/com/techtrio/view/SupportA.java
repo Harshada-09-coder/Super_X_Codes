@@ -302,6 +302,8 @@ for (String item : menu) {
         // ================= HELP CARDS =================
         HBox helpCards = new HBox(25);
         helpCards.setFillHeight(true);
+        helpCards.setCursor(javafx.scene.Cursor.HAND);
+
 
         VBox guide = helpCard(
                 "▤",
@@ -409,7 +411,7 @@ for (String item : menu) {
         // Description
         Label descLabel = formLabel("Description");
         TextArea description = new TextArea();
-        description.setPrefRowCount(5);
+        description.setPrefRowCount(3);
         description.setWrapText(true);
         description.setStyle(
                 "-fx-border-color:#C9D2DE;" +

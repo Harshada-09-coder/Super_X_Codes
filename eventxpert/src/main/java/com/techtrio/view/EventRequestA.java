@@ -151,6 +151,7 @@ public class EventRequestA {
         headingBox.setPadding(new Insets(15,30,15,30));
 
         HBox cards=new HBox(25);
+        cards.setCursor(javafx.scene.Cursor.HAND);
         cards.setPadding(new Insets(5,30,20,30));
 
         cards.getChildren().addAll(
@@ -226,16 +227,25 @@ public class EventRequestA {
 
             {
                 review.setStyle(
-                        "-fx-background-color:#FFFFFF;"+
-                        "-fx-border-color:"+PRIMARY+";"+
-                        "-fx-text-fill:"+PRIMARY+";"+
-                        "-fx-border-radius:7;"
-                );
+                        "-fx-background-color:#FFFFFF;" +
+                                "-fx-border-color:" + PRIMARY + ";" +
+                                "-fx-text-fill:" + PRIMARY + ";" +
+                                "-fx-border-radius:7;");
 
-                review.setOnAction(e->{
-                    Event selected=getTableView().getItems().get(getIndex());
+                review.setOnAction(e -> {
+                    Event selected = getTableView().getItems().get(getIndex());
                     showReview(selected);
                 });
+
+                review.setOnAction(e -> {
+                    Stage stage = (Stage) review.getScene().getWindow();
+
+                    EventRequesReviewA reviewPage = new EventRequesReviewA();
+
+                    stage.setScene(reviewPage.geteventRequestReviewScene());
+                });
+
+
             }
 
             @Override

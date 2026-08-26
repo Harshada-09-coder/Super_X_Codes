@@ -112,7 +112,7 @@ public class ReportA  {
         month.setValue("This Month");
         month.setPrefWidth(130);
 
-        Button back = new Button(" Back to Dashboard");
+       /* Button back = new Button(" Back to Dashboard");
         back.setStyle(
                 "-fx-background-color:NAVY;" +
                 "-fx-border-color:" + NAVY + ";" +
@@ -121,6 +121,7 @@ public class ReportA  {
                 "-fx-font-weight:bold;"+
                 "-fx-font-size:15;"
         );
+        */
         
 
         Button export = new Button("⇩  Export Report");
@@ -154,6 +155,8 @@ public class ReportA  {
         /* ================= KPI CARDS ================= */
 
         HBox cards = new HBox(12);
+        cards.setCursor(javafx.scene.Cursor.HAND);
+
 
         cards.getChildren().addAll(
                 card("TOTAL EVENTS", "45", "All events"),
@@ -222,6 +225,8 @@ public class ReportA  {
                 "Events by Type",
                 pie
         );
+        typeBox.setCursor(javafx.scene.Cursor.HAND);
+
 
         HBox charts = new HBox(18, eventBox, typeBox);
         HBox.setHgrow(eventBox, Priority.ALWAYS);
@@ -445,7 +450,7 @@ public class ReportA  {
 
         main.getChildren().addAll(
 
-                back,
+            //    back,
                 heading,
                 cards,
                 charts,

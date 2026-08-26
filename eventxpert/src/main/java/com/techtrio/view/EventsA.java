@@ -78,17 +78,21 @@ public class EventsA{
             TableColumn<String[],String> c=new TableColumn<>(heads[i]);
             c.setCellValueFactory(d->new javafx.beans.property.SimpleStringProperty(d.getValue()[x]));
             c.setPrefWidth(widths[i]);
+
+
             if(i==9){
                 c.setCellFactory(col->new TableCell<>(){
                     final Button b=button("View",false);
+
                     { b.setPrefHeight(30); }
                     protected void updateItem(String item,boolean empty){
                         super.updateItem(item,empty);
                         if(empty){setGraphic(null);return;}
-                        b.setOnAction(e->{
-                            String[] r=getTableView().getItems().get(getIndex());
-                            showView(r);
-                        });
+                        b.setOnAction(e -> {
+                            Stage stage = (Stage) b.getScene().getWindow();
+
+                            NavigationManager.navigate("Event Details", stage);
+});
                         setGraphic(b);
                     }
                 });
@@ -214,6 +218,9 @@ public class EventsA{
                 card("Upcoming Events","18","◷"),
                 card("Ongoing Events","5","●"),
                 card("Completed Events","25","✓"));
+                
+        cards.setCursor(javafx.scene.Cursor.HAND);
+    
                
     
         /* FILTERS */

@@ -7,15 +7,22 @@ import com.techtrio.view.AdminDashboardA;
 import com.techtrio.view.EventRequestA;
 import com.techtrio.view.EventsA;
 import com.techtrio.view.NotificationsA;
+import com.techtrio.view.OrganizerAssignA;
+import com.techtrio.view.OrganizerDetailsA;
 import com.techtrio.view.OrganizerManagementA;
 import com.techtrio.view.ProfileA;
 import com.techtrio.view.ReportA;
 import com.techtrio.view.SettingsA;
 import com.techtrio.view.SupportA;
+import com.techtrio.view.VendorDetailsA;
 import com.techtrio.view.VendorManagementA;
 import com.techtrio.view.CalenderA;
 import com.techtrio.view.ConflictDetectionA;
+import com.techtrio.view.ConflictDetectionReviewA;
 import com.techtrio.view.CustomerA;
+import com.techtrio.view.CustomerDetailsA;
+import com.techtrio.view.EventDetailsA;
+import com.techtrio.view.EventRequesReviewA;
 
 public class NavigationManager {
 
@@ -33,9 +40,19 @@ public class NavigationManager {
                     new EventRequestA().geteventRequestScene());
                 break;
 
+            case "Event Request Review":
+                stage.setScene(
+                        new EventRequesReviewA().geteventRequestReviewScene());
+                break;
+
             case "Events":
                 stage.setScene(
                     new EventsA().geteventsScene());
+                break;
+
+            case "Event Details":
+                stage.setScene(
+                        new EventDetailsA().geteventDetailsScene());
                 break;
 
             case "Calendar":
@@ -48,9 +65,25 @@ public class NavigationManager {
                     new CustomerA().getcustomerScene());
                 break;
 
+            case "Customer Details":
+                stage.setScene(
+                    new CustomerDetailsA().getcustomerDetailsScene());
+                break;
+                
+
             case "Organizers":
                 stage.setScene(
                     new OrganizerManagementA().getorganizerScene());
+                break;
+
+            case "Organizer Details":
+                stage.setScene(
+                        new OrganizerDetailsA().getorganizerDetailsScene());
+                break;
+
+               case "Assign Organizer":
+                stage.setScene(
+                        new OrganizerAssignA().getorganizerAssignScene());
                 break;
 
             case "Vendors":
@@ -58,12 +91,21 @@ public class NavigationManager {
                     new VendorManagementA().getvendorScene());
                 break;    
 
+            case "Vendor Details":
+                stage.setScene(new VendorDetailsA().getvendorDetailScene());
+                break;
+
             case "Conflict Detection":
                 stage.setScene(
                     new ConflictDetectionA().getconflictDetectionScene());
                 break;
 
-            case "Report & Analytics":
+            case "Conflict Detection Review":
+                stage.setScene(
+                        new ConflictDetectionReviewA().getconflictDetectionReviewScene());
+                break;
+
+            case "Reports & Analytics":
                 stage.setScene(
                     new ReportA().getreportScene());
                 break;
@@ -73,7 +115,7 @@ public class NavigationManager {
                     new NotificationsA().getnotificationsScene());
                 break;
 
-            case "Setting":
+            case "Settings":
                 stage.setScene(
                     new SettingsA().getsettingScene());
                 break;

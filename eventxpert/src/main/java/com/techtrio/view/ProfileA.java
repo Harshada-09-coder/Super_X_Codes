@@ -294,6 +294,8 @@ sidebar.getChildren().addAll(
         );
 
         profileCenter.setAlignment(Pos.CENTER);
+        profileCenter.setCursor(javafx.scene.Cursor.HAND);
+
 
         Label emailIcon = new Label("✉");
         Label emailText = new Label("admin@eventxpert.com");

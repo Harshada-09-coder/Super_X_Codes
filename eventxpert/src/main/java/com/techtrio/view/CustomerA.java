@@ -69,9 +69,10 @@ public class CustomerA  {
             m.setTextFill(Color.WHITE);
             m.setMaxWidth(Double.MAX_VALUE);
             m.setPadding(new Insets(9,13,9,13));
-            if(s.equals("Event Requests"))
-                m.setStyle("-fx-background-color:#07539A;-fx-background-radius:5;");
+            if(s.equals("Customer"))
+                m.setStyle( "-fx-background-color:#084A8F;" + "-fx-text-fill:white;" + "-fx-background-radius:4;");
 
+                                           
             m.setOnMouseClicked(e -> {
 
     Stage stage =
@@ -120,7 +121,7 @@ public class CustomerA  {
         Label title=lbl("Customer Management",30,true);
         title.setTextFill(Color.web(PRIMARY));
 
-        Label sub=lbl("Manage and monitor all registered customers on EventXpert.",15,false);
+        Label sub=lbl(" Manage and monitor all registered customers on EventXpert.",15,false);
         VBox heading=new VBox(3,title,sub);
 
         // CARDS
@@ -129,6 +130,7 @@ public class CustomerA  {
                 card("Active Customers","1,120","Currently active"),
                 card("New Customers","48","This month"),
                 card("Inactive Customers","128","Need attention"));
+         cards.setCursor(javafx.scene.Cursor.HAND);
 
         // FILTERS
         search.setPromptText("Search customers...");
@@ -240,9 +242,10 @@ public class CustomerA  {
 
             {
                 view.setPrefWidth(60);
-                view.setOnAction(e->{
-                    // Navigation later
-                });
+                view.setOnAction(e -> {
+                    Stage stage = (Stage) view.getScene().getWindow();
+                    NavigationManager.navigate("Customer Details", stage);
+});
             }
 
             @Override

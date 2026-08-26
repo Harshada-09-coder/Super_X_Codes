@@ -164,11 +164,15 @@ public class OrganizerManagementA  {
         action.setCellFactory(c->new TableCell<>(){
             Button b=button("View");
             {
-                b.setOnAction(e->{
-                    Organizer o=getTableView().getItems().get(getIndex());
-                    new Alert(Alert.AlertType.INFORMATION,
-                            "Organizer: "+o.getName()).showAndWait();
+                 b.setOnAction(e -> {
+
+                    Stage stage = (Stage) b.getScene().getWindow();
+
+                    NavigationManager.navigate("Organizer Details", stage);
+
                 });
+               
+
             }
             @Override protected void updateItem(String s,boolean empty){
                 super.updateItem(s,empty);
@@ -229,6 +233,7 @@ public class OrganizerManagementA  {
                 stat("New Organizers","8","This month"),
                 stat("Inactive Organizers","6","Need attention"));
             stats.setStyle("fx-font-size:18");
+        stats.setCursor(javafx.scene.Cursor.HAND);
 
         for(javafx.scene.Node n:stats.getChildren())
             HBox.setHgrow(n,Priority.ALWAYS);

@@ -179,11 +179,13 @@ s.setOnMouseClicked(e -> {
             Button review=button("Review");
 
             {
-                review.setOnAction(e->{
-                    Conflict x=getTableView().getItems().get(getIndex());
-                    new Alert(Alert.AlertType.INFORMATION,
-                            "Conflict: "+x.getConflict()).showAndWait();
-                });
+                review.setOnAction(e -> {
+
+                    Stage stage = (Stage) review.getScene().getWindow();
+
+                    NavigationManager.navigate("Conflict Detection Review", stage);
+
+    });
             }
 
             @Override
@@ -265,6 +267,7 @@ s.setOnMouseClicked(e -> {
                 stat("PENDING RESOLUTION","6","Needs admin action"),
                 stat("RESOLVED","3","Successfully resolved")
         );
+        stats.setCursor(javafx.scene.Cursor.HAND);
 
         for(javafx.scene.Node n:stats.getChildren())
             HBox.setHgrow(n,Priority.ALWAYS);

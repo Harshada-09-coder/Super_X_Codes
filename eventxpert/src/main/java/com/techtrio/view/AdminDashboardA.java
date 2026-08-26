@@ -137,33 +137,96 @@ public class AdminDashboardA {
 
         VBox titleBox = new VBox(4,title,subtitle);
 
-        Button manageButton = new Button("+  Create ");
-        manageButton.setStyle(
+
+       /* Button nextButton = new Button("Next");
+        nextButton.setStyle(
             "-fx-background-color:" + PRIMARY + ";" +
             "-fx-text-fill:white;" +
             "-fx-font-weight:bold;" +
             "-fx-padding:10 18;" +
             "-fx-background-radius:7;"
         );
+        */
+
+       
+        
 
         Region titleSpace = new Region();
         HBox.setHgrow(titleSpace,Priority.ALWAYS);
 
         HBox titleRow = new HBox(
-            15,titleBox,titleSpace,manageButton
+            15,titleBox,titleSpace
         );
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
         // KPI CARDS
         HBox cards = new HBox(12);
 
-        cards.getChildren().addAll(
+       /*  cards.getChildren().addAll(
             createCard("Total Customers","1,248","50 this month"),
             createCard("Total Organizers","86","72 Active"),
             createCard("Total Vendors","214","198 Active"),
             createCard("Active Events","45","Planning"),
             createCard("Pending Requests","10","Need review")
         );
+        */
+
+       VBox customerCard = createCard(
+               "Total Customers",
+               "1,248",
+               "50 this month");
+
+       VBox organizerCard = createCard(
+               "Total Organizers",
+               "86",
+               "72 Active");
+
+       VBox vendorCard = createCard(
+               "Total Vendors",
+               "214",
+               "198 Active");
+
+       VBox activeEventsCard = createCard(
+               "Active Events",
+               "45",
+               "Planning");
+
+       VBox pendingRequestsCard = createCard(
+               "Pending Requests",
+               "10",
+               "Need review");
+
+       cards.getChildren().addAll(
+               customerCard,
+               organizerCard,
+               vendorCard,
+               activeEventsCard,
+               pendingRequestsCard);
+
+              customerCard.setOnMouseClicked(e -> {
+           Stage stage = (Stage) customerCard.getScene().getWindow();
+           NavigationManager.navigate("Customers", stage);
+       });
+
+       organizerCard.setOnMouseClicked(e -> {
+           Stage stage = (Stage) organizerCard.getScene().getWindow();
+           NavigationManager.navigate("Organizers", stage);
+       });
+
+       vendorCard.setOnMouseClicked(e -> {
+           Stage stage = (Stage) vendorCard.getScene().getWindow();
+           NavigationManager.navigate("Vendors", stage);
+       });
+
+       activeEventsCard.setOnMouseClicked(e -> {
+           Stage stage = (Stage) activeEventsCard.getScene().getWindow();
+           NavigationManager.navigate("Events", stage);
+       });
+
+       pendingRequestsCard.setOnMouseClicked(e -> {
+           Stage stage = (Stage) pendingRequestsCard.getScene().getWindow();
+           NavigationManager.navigate("Event Requests", stage);
+       });
 
         // PENDING EVENT REQUESTS
         VBox requestBox = new VBox(10);
@@ -233,6 +296,26 @@ public class AdminDashboardA {
         Button customers = actionButton("Manage Customers");
         Button organizers = actionButton("Manage Organizers");
         Button calendar = actionButton("View Calendar");
+
+        review.setOnAction(e -> {
+    Stage stage = (Stage) review.getScene().getWindow();
+    NavigationManager.navigate("Event Requests", stage);
+});
+
+customers.setOnAction(e -> {
+    Stage stage = (Stage) customers.getScene().getWindow();
+    NavigationManager.navigate("Customers", stage);
+});
+
+organizers.setOnAction(e -> {
+    Stage stage = (Stage) organizers.getScene().getWindow();
+    NavigationManager.navigate("Organizers", stage);
+});
+
+calendar.setOnAction(e -> {
+    Stage stage = (Stage) calendar.getScene().getWindow();
+    NavigationManager.navigate("Calendar", stage);
+});
 
         GridPane actionGrid = new GridPane();
         actionGrid.setHgap(8);
@@ -330,6 +413,7 @@ public class AdminDashboardA {
     private VBox createCard(String title,String value,String sub) {
 
         VBox card = new VBox(6);
+        card.setCursor(javafx.scene.Cursor.HAND);
         card.setPrefWidth(220);
         card.setPrefHeight(105);
         card.setPadding(new Insets(14));
