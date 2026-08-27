@@ -1,5 +1,8 @@
 package com.techtrio.view;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.techtrio.model.VendorProfile;
 import com.techtrio.services.VendorProfileService;
 
@@ -554,36 +557,141 @@ public class ProfileV {
     }
 
     private void openEditProfileModal(Stage parentStage) {
+        if (vendorId == null || vendorId.isBlank()) {
+            showToast(parentStage, "User session not found. Cannot edit profile.");
+            return;
+        }
+
         Stage modal = new Stage();
         modal.initModality(Modality.APPLICATION_MODAL);
         modal.initOwner(parentStage);
         modal.setTitle("Edit Vendor Profile");
 
-        VBox layout = new VBox(10);
+        VBox layout = new VBox(12);
         layout.setPadding(new Insets(20));
         layout.setStyle("-fx-background-color: " + WHITE + ";");
 
         Label title = new Label("✏ Edit Business Profile");
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + SIDEBAR_NAVY + ";");
 
-        TextField nameIn = new TextField(busNameLabel.getText());
-        TextField phoneIn = new TextField(busPhoneLabel.getText().replace("📞 ", ""));
-        TextField emailIn = new TextField(busEmailLabel.getText().replace("✉ ", ""));
+        String currentBusName = busNameLabel != null ? busNameLabel.getText() : "";
+        String currentPhone = busPhoneLabel != null ? busPhoneLabel.getText().replace("📞 ", "") : "";
+        String currentEmail = busEmailLabel != null ? busEmailLabel.getText().replace("✉ ", "") : "";
+        String currentBio = busBioLabel != null ? busBioLabel.getText() : "";
+
+        TextField nameIn = new TextField(currentBusName);
+        nameIn.setPromptText("Enter Business Name");
+
+        TextField phoneIn = new TextField(currentPhone);
+        phoneIn.setPromptText("Enter Phone Number");
+
+        TextField emailIn = new TextField(currentEmail);
+        emailIn.setPromptText("Enter Email Address");
+
+        TextArea bioIn = new TextArea(currentBio);
+        bioIn.setPromptText("Enter About Business / Bio");
+        bioIn.setPrefRowCount(3);
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: #DC2626; -fx-font-size: 12px;");
+        errorLabel.setVisible(false);
+        errorLabel.setManaged(false);
 
         Button saveBtn = createPrimaryButton("Save Changes");
+
         saveBtn.setOnAction(e -> {
-            busNameLabel.setText(nameIn.getText());
-            busPhoneLabel.setText("📞 " + phoneIn.getText());
-            busEmailLabel.setText("✉ " + emailIn.getText());
-            showToast(parentStage, "✓ Profile updated!");
-            modal.close();
+            String newBusName = nameIn.getText().trim();
+            String newPhone = phoneIn.getText().trim();
+            String newEmail = emailIn.getText().trim();
+            String newBio = bioIn.getText().trim();
+
+            // Validation
+            if (newBusName.isEmpty()) {
+                showModalError(errorLabel, "Business name cannot be empty.");
+                return;
+            }
+            if (newPhone.isEmpty()) {
+                showModalError(errorLabel, "Phone number cannot be empty.");
+                return;
+            }
+            if (newEmail.isEmpty() || !newEmail.contains("@") || !newEmail.contains(".")) {
+                showModalError(errorLabel, "Please enter a valid email address.");
+                return;
+            }
+
+            errorLabel.setVisible(false);
+            errorLabel.setManaged(false);
+            saveBtn.setDisable(true);
+            saveBtn.setText("Saving...");
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("businessName", newBusName);
+            updates.put("phone", newPhone);
+            updates.put("email", newEmail);
+            updates.put("bio", newBio);
+
+            Task<Boolean> updateTask = new Task<>() {
+                @Override
+                protected Boolean call() {
+                    VendorProfileService service = new VendorProfileService();
+                    return service.updateVendorProfileFields(vendorId, updates);
+                }
+            };
+
+            updateTask.setOnSucceeded(evt -> {
+                boolean success = updateTask.getValue();
+                saveBtn.setDisable(false);
+                saveBtn.setText("Save Changes");
+
+                if (success) {
+                    // Update JavaFX UI Controls
+                    Platform.runLater(() -> {
+                        if (busNameLabel != null) busNameLabel.setText(newBusName);
+                        if (busPhoneLabel != null) busPhoneLabel.setText("📞 " + newPhone);
+                        if (busEmailLabel != null) busEmailLabel.setText("✉ " + newEmail);
+                        if (busBioLabel != null) busBioLabel.setText(newBio);
+                        if (businessNameInfoLabel != null) businessNameInfoLabel.setText(newBusName);
+                    });
+
+                    showToast(parentStage, "Profile updated successfully!");
+                    modal.close();
+                } else {
+                    showModalError(errorLabel, "Unable to update vendor profile. Please try again.");
+                }
+            });
+
+            updateTask.setOnFailed(evt -> {
+                Throwable ex = updateTask.getException();
+                if (ex != null) ex.printStackTrace();
+                saveBtn.setDisable(false);
+                saveBtn.setText("Save Changes");
+                showModalError(errorLabel, "Unable to update vendor profile. Please try again.");
+            });
+
+            Thread thread = new Thread(updateTask);
+            thread.setDaemon(true);
+            thread.start();
         });
 
-        layout.getChildren().addAll(title, new Label("Business Name:"), nameIn, new Label("Phone:"), phoneIn, new Label("Email:"), emailIn, saveBtn);
+        layout.getChildren().addAll(
+                title,
+                new Label("Business Name:"), nameIn,
+                new Label("Phone:"), phoneIn,
+                new Label("Email:"), emailIn,
+                new Label("About Business:"), bioIn,
+                errorLabel,
+                saveBtn
+        );
 
-        Scene scene = new Scene(layout, 360, 320);
+        Scene scene = new Scene(layout, 380, 420);
         modal.setScene(scene);
         modal.show();
+    }
+
+    private void showModalError(Label errorLabel, String message) {
+        errorLabel.setText(message);
+        errorLabel.setVisible(true);
+        errorLabel.setManaged(true);
     }
 
     private VBox createCardContainer() {
@@ -629,6 +737,7 @@ public class ProfileV {
             String em = safeText(vendor.getEmail(), "Email not available");
             String avail = safeText(vendor.getAvailability(), "Available");
             String vId = safeText(vendor.getVendorId(), vendorId);
+            String bio = safeText(vendor.getBio(), bName + " provides high-quality " + cat.toLowerCase() + " services for events across " + addr + ". Registered as an active EventXpert vendor.");
 
             busNameLabel.setText(bName);
             busCategoryLabel.setText(cat);
@@ -643,7 +752,7 @@ public class ProfileV {
             if (availabilityInfoLabel != null) availabilityInfoLabel.setText(avail);
 
             if (busBioLabel != null) {
-                busBioLabel.setText(bName + " provides high-quality " + cat.toLowerCase() + " services for events across " + addr + ". Registered as an active EventXpert vendor.");
+                busBioLabel.setText(bio);
             }
         });
     }

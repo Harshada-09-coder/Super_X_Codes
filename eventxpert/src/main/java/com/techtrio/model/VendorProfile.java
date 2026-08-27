@@ -15,6 +15,7 @@ public class VendorProfile {
     private String experience;
     private String gstNumber;
     private String availability;
+    private String bio;
 
     // Vendor Onboarding & State fields (Firestore)
     private boolean profileCompleted;
@@ -138,6 +139,14 @@ public class VendorProfile {
 
     public void setAvailability(String availability) {
         this.availability = availability;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
     }
 
     public boolean isProfileCompleted() {
