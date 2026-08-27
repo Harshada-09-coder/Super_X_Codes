@@ -1,6 +1,6 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -9,7 +9,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
 
-public class AiPlanningC extends Application {
+public class AiPlanningC  {
 
     private final String NAVY = "#002A60";
     private final String BLUE = "#0057B8";
@@ -18,10 +18,10 @@ public class AiPlanningC extends Application {
     private final String TEXT = "#102A43";
     private final String GREY = "#667085";
     private final String LIGHT = "#C2F0F4";
-
-    @Override
-    public void start(Stage stage) {
-
+public Scene getAiPlanningScene(
+        Runnable backAction,
+        Runnable nextAction
+) {
 
 
         VBox sidebar = new VBox(7);
@@ -352,18 +352,41 @@ enableAI.setStyle(
 
 enableAI.setOnAction(e -> {
 
-    enableAI.setStyle(
-            "-fx-background-color:" + NAVY + ";" +
-            "-fx-background-radius:7;" +
-            "-fx-text-fill:white;" +
-            "-fx-font-weight:bold;"
+    AIPage aiPage = new AIPage();
+
+    LandingPage.landingPageStage.setScene(
+            aiPage.getAIPageScene(
+
+                    // BACK → AI PLANNING
+                    () -> {
+
+                        AiPlanningC aiPlanningPage =
+                                new AiPlanningC();
+
+                        LandingPage.landingPageStage.setScene(
+                                aiPlanningPage.getAiPlanningScene(
+                                        null,
+                                        null
+                                )
+                        );
+
+                    }
+
+            )
     );
 
-    enableAI.setText("✓  AI Planning Enabled");
-});
-
-        Button skip =
+});        Button skip =
                 new Button("Skip for Now");
+
+                skip.setOnAction(e -> {
+
+    ReviewPageC reviewPage = new ReviewPageC();
+
+    LandingPage.landingPageStage.setScene(
+            reviewPage.getReviewScene()
+    );
+
+});
 
         skip.setPrefSize(
                 125,
@@ -416,26 +439,29 @@ enableAI.setOnAction(e -> {
                         100,
                         false
                 );
+back.setOnAction(e -> {
 
-        Button save =
-                footerButton(
-                        "Save Draft",
-                        110,
-                        false
-                );
+    BudgetC budgetPage = new BudgetC();
 
-        Button next =
-                footerButton(
-                        "Next",
-                        90,
-                        true
-                );
+    LandingPage.landingPageStage.setScene(
+            budgetPage.getBudgetScene(
+                    null,
+                    () -> {
+                        // NEXT → AI Planning
+                    }
+            )
+    );
+
+});
+
+        
+
+
 
         HBox leftButtons =
                 new HBox(
                         10,
-                        back,
-                        save
+                        back
                 );
 
         leftButtons.setAlignment(
@@ -453,8 +479,7 @@ enableAI.setOnAction(e -> {
         HBox footer =
                 new HBox(
                         leftButtons,
-                        footerSpace,
-                        next
+                        footerSpace
                 );
 
         footer.setAlignment(
@@ -510,15 +535,7 @@ enableAI.setOnAction(e -> {
         Scene scene =
                 new Scene(root);
 
-        stage.setTitle(
-                "EventXpert - AI Planning"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMaximized(true);
-
-        stage.show();
+        return scene;
     }
 
     
@@ -706,7 +723,5 @@ enableAI.setOnAction(e -> {
         return b;
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
+    
 }

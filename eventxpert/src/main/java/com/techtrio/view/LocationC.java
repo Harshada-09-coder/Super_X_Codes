@@ -1,6 +1,6 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,7 +13,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class LocationC extends Application {
+public class LocationC {
 
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
@@ -23,8 +23,12 @@ public class LocationC extends Application {
     private static final String TEXT = "#101828";
     private static final String GREY = "#667085";
 
-    @Override
-    public void start(Stage stage) {
+    public Scene getLocationScene(
+        Runnable backAction,
+        Runnable nextAction
+) {
+
+    
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
@@ -394,50 +398,50 @@ public class LocationC extends Application {
        
         Image mapImage = new Image("assets\\images\\map img.jpg");
 
-ImageView mapView = new ImageView(mapImage);
+        ImageView mapView = new ImageView(mapImage);
 
-mapView.setFitWidth(440);
-mapView.setFitHeight(335);
+        mapView.setFitWidth(440);
+        mapView.setFitHeight(335);
 
-mapView.setPreserveRatio(false);
-mapView.setSmooth(true);
+        mapView.setPreserveRatio(false);
+        mapView.setSmooth(true);
 
-StackPane mapPanel = new StackPane(
-        mapView
-);
+        StackPane mapPanel = new StackPane(
+                mapView
+        );
 
-mapPanel.setPrefSize(
-        520,
-        360
-);
+        mapPanel.setPrefSize(
+                520,
+                360
+        );
 
-mapPanel.setMinSize(
-        520,
-        360
-);
+        mapPanel.setMinSize(
+                520,
+                360
+        );
 
-mapPanel.setStyle(
-        "-fx-background-color:#DCE2E8;" +
-        "-fx-background-radius:6;" +
-        "-fx-border-color:" + BORDER + ";" +
-        "-fx-border-radius:6;"
-);
+        mapPanel.setStyle(
+                "-fx-background-color:#DCE2E8;" +
+                "-fx-background-radius:6;" +
+                "-fx-border-color:" + BORDER + ";" +
+                "-fx-border-radius:6;"
+        );
 
         
         VBox leftColumn = new VBox(18);
 
-leftColumn.setPrefWidth(360);
-leftColumn.setMaxWidth(Double.MAX_VALUE);
+        leftColumn.setPrefWidth(360);
+        leftColumn.setMaxWidth(Double.MAX_VALUE);
 
         leftColumn.setPrefWidth(370);
+
         leftColumn.getChildren().addAll(
                 locationCard,
                 helpBox
         );
 
         HBox mainRow =
-                new HBox(45
-                );
+                new HBox(45);
 
         mainRow.setAlignment(
                 Pos.TOP_LEFT
@@ -536,19 +540,27 @@ leftColumn.setMaxWidth(Double.MAX_VALUE);
                 )
         );
 
-        back.setOnAction(e ->
-                showMessage(
-                        "Back",
-                        "Returning to Requirements."
-                )
-        );
+        back.setOnAction(e -> {
 
-        next.setOnAction(e ->
-                showMessage(
-                        "Next Step",
-                        "Moving to Budget."
-                )
-        );
+            if (backAction != null) {
+                backAction.run();
+            }
+
+        });
+
+        // LOCATION → BUDGET
+        next.setOnAction(e -> {
+
+            BudgetC budgetPage = new BudgetC();
+
+            LandingPage.landingPageStage.setScene(
+                    budgetPage.getBudgetScene(
+                            backAction,
+                            nextAction
+                    )
+            );
+
+        });
 
         footer.getChildren().addAll(
                 copyright,
@@ -604,16 +616,7 @@ leftColumn.setMaxWidth(Double.MAX_VALUE);
                         850
                 );
 
-        stage.setTitle(
-                "EventXpert - Location"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMinWidth(1100);
-        stage.setMinHeight(700);
-
-        stage.show();
+        return scene;
     }
 
     
@@ -770,10 +773,5 @@ leftColumn.setMaxWidth(Double.MAX_VALUE);
 
     
 
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
-    }
+     
 }

@@ -1,15 +1,13 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.*;
-import javafx.stage.Stage;
 
-public class BudgetC extends Application {
+public class BudgetC {
 
     private final String NAVY = "#002A60";
     private final String BLUE = "#0057B8";
@@ -21,10 +19,10 @@ public class BudgetC extends Application {
 
     private Label totalAmount;
 
-    @Override
-    public void start(Stage stage) {
-
-        
+    public Scene getBudgetScene(
+            Runnable backAction,
+            Runnable nextAction
+    ) {
 
         VBox sidebar = new VBox(7);
 
@@ -38,8 +36,9 @@ public class BudgetC extends Application {
 
         // FULL BLUE SIDEBAR
         sidebar.setStyle(
-        "-fx-background-color:" + NAVY + ";"
-);
+                "-fx-background-color:" + NAVY + ";"
+        );
+
         Label logo = label(
                 "EventXpert",
                 21,
@@ -92,8 +91,6 @@ public class BudgetC extends Application {
                 sidebarSpace
         );
 
-        
-
         HBox topBar = new HBox(24);
 
         topBar.setAlignment(
@@ -133,8 +130,6 @@ public class BudgetC extends Application {
                 )
         );
 
-
-
         VBox title = new VBox(
                 4,
                 label(
@@ -154,8 +149,6 @@ public class BudgetC extends Application {
         title.setPadding(
                 new Insets(22, 32, 18, 32)
         );
-
-
 
         VBox estimated = card();
 
@@ -222,7 +215,6 @@ public class BudgetC extends Application {
                 Priority.ALWAYS
         );
 
-        
         ToggleButton toggle =
                 new ToggleButton("ON");
 
@@ -336,8 +328,6 @@ public class BudgetC extends Application {
                 Priority.ALWAYS
         );
 
-        
-
         VBox allocation = card();
 
         allocation.setPrefWidth(480);
@@ -418,8 +408,6 @@ public class BudgetC extends Application {
                 budgetRow("•••", "Other", "10%")
         );
 
-        
-
         allocation.getChildren().addAll(
                 allocationHeader,
                 new Separator(),
@@ -453,7 +441,7 @@ public class BudgetC extends Application {
                         );
 
                     } catch (Exception e) {
-                
+
                     }
                 }
         );
@@ -498,12 +486,60 @@ public class BudgetC extends Application {
                         false
                 );
 
+        // BACK → Previous Page
+       // BACK → LOCATION
+
+back.setOnAction(e -> {
+
+    LocationC locationPage = new LocationC();
+
+    LandingPage.landingPageStage.setScene(
+            locationPage.getLocationScene(
+                    backAction,
+                    nextAction
+            )
+    );
+
+});
         Button next =
                 footerButton(
                         "Next",
                         82,
                         true
                 );
+
+        // NEXT → AI Planning
+        next.setOnAction(e -> {
+
+            AiPlanningC aiPlanningPage =
+                    new AiPlanningC();
+
+            LandingPage.landingPageStage.setScene(
+                    aiPlanningPage.getAiPlanningScene(
+
+                            // BACK → BUDGET
+                            () -> {
+
+                                BudgetC budgetPage =
+                                        new BudgetC();
+
+                                LandingPage.landingPageStage.setScene(
+                                        budgetPage.getBudgetScene(
+                                                null,
+                                                null
+                                        )
+                                );
+
+                            },
+
+                            // NEXT → पुढचा page
+                            () -> {
+
+                            }
+                    )
+            );
+
+        });
 
         HBox buttons =
                 new HBox(
@@ -547,14 +583,13 @@ public class BudgetC extends Application {
                 "-fx-border-width:1 0 0 0;"
         );
 
-        
-         VBox center =
-        new VBox(
-                topBar,
-                title,
-                content,
-                footer
-        );
+        VBox center =
+                new VBox(
+                        topBar,
+                        title,
+                        content,
+                        footer
+                );
 
         center.setStyle(
                 "-fx-background-color:" +
@@ -567,32 +602,23 @@ public class BudgetC extends Application {
                 Priority.ALWAYS
         );
 
-       
-        BorderPane root = new BorderPane();
+        BorderPane root =
+                new BorderPane();
 
-root.setStyle(
-        "-fx-background-color:" + NAVY + ";"
-);
+        root.setStyle(
+                "-fx-background-color:" +
+                NAVY +
+                ";"
+        );
 
-root.setLeft(sidebar);
-root.setCenter(center);
-        
+        root.setLeft(sidebar);
+        root.setCenter(center);
+
         Scene scene =
                 new Scene(root);
 
-        stage.setTitle(
-                "EventXpert - Budget"
-        );
-
-        stage.setScene(scene);
-
-        // Full available screen
-        stage.setMaximized(true);
-
-        stage.show();
+        return scene;
     }
-
-   
 
     private Label label(
             String text,
@@ -619,7 +645,6 @@ root.setCenter(center);
         return l;
     }
 
-    
     private VBox card() {
 
         VBox v =
@@ -638,8 +663,6 @@ root.setCenter(center);
 
         return v;
     }
-
-    
 
     private HBox navItem(
             String icon,
@@ -718,8 +741,6 @@ root.setCenter(center);
         return t;
     }
 
-   
-
     private VBox budgetRow(
             String icon,
             String name,
@@ -786,7 +807,6 @@ root.setCenter(center);
                 percentLabel
         );
 
-        
         ProgressBar line =
                 new ProgressBar(
                         Double.parseDouble(
@@ -811,7 +831,6 @@ root.setCenter(center);
         );
     }
 
-    
     private Button footerButton(
             String text,
             double width,
@@ -840,9 +859,5 @@ root.setCenter(center);
         );
 
         return b;
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }

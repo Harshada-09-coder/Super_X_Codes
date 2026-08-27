@@ -57,75 +57,154 @@ public class ActiveCustomerDashboardC {
 
         VBox menu = new VBox(5);
 
-        menu.setPadding(new Insets(8, 12, 8, 12));
+menu.setPadding(new Insets(8, 12, 8, 12));
 
-        menu.getChildren().addAll(
+HBox createEventMenu = menuItem(
+        "⊕",
+        "Create Event",
+        false
+);
 
-                menuItem(
-                        "▦",
-                        "Dashboard",
-                        true
-                ),
+createEventMenu.setOnMouseClicked(e -> {
 
-                menuItem(
-                        "⊕",
-                        "Create Event",
-                        false
-                ),
+    CreateEventC createEventPage =
+            new CreateEventC();
 
-                menuItem(
-                        "▣",
-                        "My Events",
-                        false
-                ),
+    LandingPage.landingPageStage.setScene(
+            createEventPage.getCreateEventScene(
 
-                menuItem(
-                        "□",
-                        "Calendar",
-                        false
-                ),
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
 
-                menuItem(
-                        "♧",
-                        "Notifications",
-                        false
-                )
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
 
-               
-        );
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+                    }
+            )
+    );
+});
 
-        Region sidebarSpace = new Region();
+HBox notificationMenu = menuItem(
+        "♧",
+        "Notifications",
+        false
+);
+
+notificationMenu.setOnMouseClicked(e -> {
+
+    Notification notificationPage =
+            new Notification();
+
+    LandingPage.landingPageStage.setScene(
+            notificationPage.getNotificationScene()
+    );
+});
+
+menu.getChildren().addAll(
+
+        menuItem(
+                "▦",
+                "Dashboard",
+                true
+        ),
+
+        createEventMenu,
+
+        notificationMenu
+);
+
+
+Region sidebarSpace = new Region();
 
         VBox.setVgrow(
                 sidebarSpace,
                 Priority.ALWAYS
         );
 
-        VBox bottomMenu = new VBox(5);
+VBox bottomMenu = new VBox(5);
 
-        bottomMenu.setPadding(
-                new Insets(8, 12, 18, 12)
-        );
+bottomMenu.setPadding(
+        new Insets(8, 12, 18, 12)
+);
 
-        bottomMenu.getChildren().addAll(
+// PROFILE
+HBox profileMenu = menuItem(
+        "◉",
+        "Profile",
+        false
+);
 
-                menuItem(
-                        "◉",
-                        "Profile",
-                        false
-                ),
+profileMenu.setOnMouseClicked(e -> {
 
-                menuItem(
-                        "⚙",
-                        "Settings",
-                        false
-                ),
-                menuItem(
-                        "?",
-                        "Support",
-                        false
-                )
-        );
+    ProfilePageC profilePage =
+            new ProfilePageC();
+
+    LandingPage.landingPageStage.setScene(
+            profilePage.getProfileScene(
+
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
+
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+
+                    }
+            )
+    );
+});
+
+// SETTINGS
+HBox settingsMenu = menuItem(
+        "⚙️",
+        "Settings",
+        false
+);
+
+settingsMenu.setOnMouseClicked(e -> {
+
+    SettingC settingPage = new SettingC();
+
+    LandingPage.landingPageStage.setScene(
+            settingPage.getSettingScene(
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
+
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+                    }
+            )
+    );
+});
+
+// SUPPORT
+HBox supportMenu = menuItem(
+        "?",
+        "Support",
+        false
+);
+
+bottomMenu.getChildren().addAll(
+        profileMenu,
+        settingsMenu,
+        supportMenu
+);
 
         sidebar.getChildren().addAll(
                 logoBox,
@@ -244,20 +323,45 @@ public class ActiveCustomerDashboardC {
                 Priority.ALWAYS
         );
 
-        Button createEvent = new Button("+  Create New Event");
+   
+         Button createEvent = new Button("+  Create New Event");
 
-        createEvent.setPrefSize(175,36);
+createEvent.setPrefSize(175, 36);
 
-        createEvent.setStyle(
-                "-fx-background-color:" + NAVY + ";" +
-                "-fx-text-fill:white;" +
-                "-fx-background-radius:7;" +
-                "-fx-font-family:Arial;" +
-                "-fx-font-size:11px;" +
-                "-fx-font-weight:bold;"
-        );
+createEvent.setStyle(
+        "-fx-background-color:" + NAVY + ";" +
+        "-fx-text-fill:white;" +
+        "-fx-background-radius:7;" +
+        "-fx-font-family:Arial;" +
+        "-fx-font-size:11px;" +
+        "-fx-font-weight:bold;"
+);
 
-        welcome.getChildren().addAll(
+createEvent.setOnAction(e -> {
+
+    CreateEventC createEventPage =
+            new CreateEventC();
+
+    LandingPage.landingPageStage.setScene(
+            createEventPage.getCreateEventScene(
+
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
+
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+
+                    }
+            )
+    );
+
+});       welcome.getChildren().addAll(
                 welcomeText,
                 welcomeSpace,
                 createEvent
@@ -518,6 +622,37 @@ public class ActiveCustomerDashboardC {
         Button startPlanning = new Button(
                 "Start Planning  →"
         );
+
+        startPlanning.setOnAction(e -> {
+
+    AiPlanningC aiPlanningPage =
+            new AiPlanningC();
+
+    LandingPage.landingPageStage.setScene(
+            aiPlanningPage.getAiPlanningScene(
+
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
+
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+
+                    },
+
+                    // NEXT → पुढचा navigation नंतर
+                    () -> {
+
+                    }
+            )
+    );
+
+});
 
         startPlanning.setPrefHeight(
                 32
@@ -791,7 +926,7 @@ VBox.setVgrow(
         );
 
         Label sun = styledLabel(
-                "☀",
+                "☀️",
                 42,
                 FontWeight.NORMAL,
                 "#FFFFFF"

@@ -1,6 +1,6 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -11,7 +11,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class RequirementsC extends Application {
+public class RequirementsC  {
 
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
@@ -21,9 +21,10 @@ public class RequirementsC extends Application {
     private static final String TEXT = "#101828";
     private static final String GREY = "#667085";
 
-    @Override
-    public void start(Stage stage) {
-
+   public Scene getRequirementsScene(
+        Runnable backAction,
+        Runnable nextAction
+) {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
@@ -398,17 +399,50 @@ public class RequirementsC extends Application {
                 "Your requirements have been saved."
         ));
 
-        back.setOnAction(e -> showMessage(
-                "Back",
-                "Returning to Event Details."
-        ));
+back.setOnAction(e -> {
+    if (backAction != null) {
+        backAction.run();
+    }
+});
 
-        next.setOnAction(e -> showMessage(
-                "Next Step",
-                "Moving to Location."
-        ));
+next.setOnAction(e -> {
 
-        footer.getChildren().addAll(
+    LocationC locationPage = new LocationC();
+
+    LandingPage.landingPageStage.setScene(
+            locationPage.getLocationScene(
+
+                    // LOCATION BACK → REQUIREMENTS
+                    () -> {
+
+                        RequirementsC requirementsPage =
+                                new RequirementsC();
+
+                        LandingPage.landingPageStage.setScene(
+                                requirementsPage.getRequirementsScene(
+
+                                        // REQUIREMENTS BACK → ORIGINAL CREATE EVENT BACK
+                                        backAction,
+
+                                        // REQUIREMENTS NEXT
+                                        nextAction
+                                )
+                        );
+                    },
+
+                    // LOCATION NEXT
+                    () -> {
+
+                    }
+            )
+    );
+
+});
+    
+        
+
+
+      footer.getChildren().addAll(
                 copyright,
                 footerSpace,
                 save,
@@ -457,16 +491,7 @@ public class RequirementsC extends Application {
                 850
         );
 
-        stage.setTitle(
-                "EventXpert - Requirements"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMinWidth(1100);
-        stage.setMinHeight(700);
-
-        stage.show();
+        return scene;
     }
 
     
@@ -675,10 +700,5 @@ public class RequirementsC extends Application {
     }
 
     
-    public static void main(
-            String[] args
-    ) {
 
-        launch(args);
-    }
 }

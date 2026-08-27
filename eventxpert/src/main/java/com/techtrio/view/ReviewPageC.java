@@ -1,5 +1,5 @@
 package com.techtrio.view;
-import javafx.application.Application;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,7 +10,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class ReviewPageC extends Application {
+public class ReviewPageC  {
 
 
     private final String BLUE = "#002A60";
@@ -60,9 +60,7 @@ public class ReviewPageC extends Application {
     }
 
     
-    @Override
-    public void start(Stage stage) {
-
+   public Scene getReviewScene() {
         
 
         BorderPane root = new BorderPane();
@@ -113,16 +111,7 @@ public class ReviewPageC extends Application {
                 750
         );
 
-        stage.setTitle(
-                "EventXpert - Review"
-        );
-
-        stage.setScene(scene);
-
-        // FULL SCREEN SIZE
-        stage.setMaximized(true);
-
-        stage.show();
+        return scene;
     }
 
     
@@ -1061,16 +1050,20 @@ public class ReviewPageC extends Application {
                 "-fx-background-radius:7;"
         );
 
-       
         back.setOnAction(e -> {
 
-            System.out.println(
-                    "Back button clicked"
-            );
+    AiPlanningC aiPlanningPage = new AiPlanningC();
 
-        });
+    LandingPage.landingPageStage.setScene(
+            aiPlanningPage.getAiPlanningScene(
+                    null,
+                    null
+            )
+    );
+});
 
-        save.setOnAction(e -> {
+       
+          save.setOnAction(e -> {
 
             Alert alert =
                     new Alert(
@@ -1094,26 +1087,13 @@ public class ReviewPageC extends Application {
 
         create.setOnAction(e -> {
 
-            Alert alert =
-                    new Alert(
-                            Alert.AlertType.INFORMATION
-                    );
+    EventDetailsC eventDetailsPage =
+            new EventDetailsC();
 
-            alert.setTitle(
-                    "EventXpert"
-            );
-
-            alert.setHeaderText(
-                    "Event Created"
-            );
-
-            alert.setContentText(
-                    "Your event has been created successfully."
-            );
-
-            alert.showAndWait();
-        });
-
+    LandingPage.landingPageStage.setScene(
+            eventDetailsPage.getEventDetailsScene()
+    );
+});
         
 
         footer.getChildren().addAll(
@@ -1126,11 +1106,6 @@ public class ReviewPageC extends Application {
     }
 
     
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
-    }
+    
 }
 
