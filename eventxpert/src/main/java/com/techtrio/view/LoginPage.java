@@ -450,4 +450,3 @@ public class LoginPage {
                 LandingPage.landingPageStage.setScene(loginPageScene);
         }
     }
-
