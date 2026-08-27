@@ -71,15 +71,15 @@ public class InactiveVendorDash {
 
         side.getChildren().addAll(
                 logo, gap(16), add,
-                sideBtn("▦   Dashboard", true),
-                sideBtn("▣   Service Requests", false),
-                sideBtn("▣   My Bookings", false),
-                sideBtn("▤   Services & Packages", false),
-                sideBtn("▦   Calendar", false),
-                sideBtn("▣   Earnings & Payments", false),
-                sideBtn("♧   Notifications", false),
-                sideBtn("♙   Settings", false),
-                sideBtn("□   Support", false)
+                sideBtn("▦   Dashboard", true, () -> backToInactVendorDashboard()),
+                sideBtn("▣   Service Requests", false, this::openServiceRequests),
+                sideBtn("▣   My Bookings", false, this::openMyBookings),
+                sideBtn("▤   Services & Packages", false, this::openServicesPackages),
+                sideBtn("▦   Calendar", false, this::openCalenderV),
+                sideBtn("▣   Earnings & Payments", false, this::openEarningsPaymentsV),
+                sideBtn("♧   Notifications", false, this::openNotificationsV),
+                sideBtn("♙   Settings", false, this::openSettingsV),
+                sideBtn("□   Support", false, this::openSupportV)
         );
 
         Region grow = new Region();
@@ -311,9 +311,73 @@ public class InactiveVendorDash {
             showToast(LandingPage.landingPageStage, "User session not found.");
             return;
         }
-        ProfileV profilePage = new ProfileV(uid);
+        ProfileV profilePage = new ProfileV(uid, idToken);
         profilePage.setInactiveVendorDash(this);
         LandingPage.landingPageStage.setScene(profilePage.getprofileVScene());
+    }
+
+    private void openServiceRequests() {
+        ServiceRequestsV serviceRequestsV = new ServiceRequestsV();
+        Scene serviceScene = serviceRequestsV.getserviceRequestVScene();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(serviceScene);
+        }
+    }
+
+    private void openMyBookings() {
+        MyBookingsV myBookingsV = new MyBookingsV();
+        Scene bookingScene = myBookingsV.getmyBookingScene();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(bookingScene);
+        }
+    }
+
+    private void openServicesPackages() {
+        ServicesPackagesV servicesPackagesV = new ServicesPackagesV();
+        Scene packagesScene = servicesPackagesV.getservicesPackagesVScene(null, null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(packagesScene);
+        }
+    }
+
+    private void openCalenderV() {
+        CalendarV calendarV = new CalendarV();
+        Scene calenderScene = calendarV.getcalendarVScene(null, null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(calenderScene);
+        }
+    }
+
+    private void openEarningsPaymentsV() {
+        EarningsPaymentsV earningsPaymentsV = new EarningsPaymentsV();
+        Scene earningScene = earningsPaymentsV.getearningsPaymentsScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(earningScene);
+        }
+    }
+
+    private void openNotificationsV() {
+        NotificationsV notificationsV = new NotificationsV();
+        Scene notificationScene = notificationsV.getnotificationsScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(notificationScene);
+        }
+    }
+
+    private void openSettingsV() {
+        SettingsV settingsV = new SettingsV();
+        Scene settingsVScene = settingsV.getsettingsVScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(settingsVScene);
+        }
+    }
+
+    private void openSupportV() {
+        SupportV supportV = new SupportV();
+        Scene supportVScene = supportV.getsupportVScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(supportVScene);
+        }
     }
 
     // ================= HELPERS =================
@@ -344,6 +408,10 @@ public class InactiveVendorDash {
     }
 
     private Button sideBtn(String text, boolean active) {
+        return sideBtn(text, active, null);
+    }
+
+    private Button sideBtn(String text, boolean active, Runnable action) {
         Button b = new Button(text);
         b.setMaxWidth(Double.MAX_VALUE);
         b.setPrefHeight(45);
@@ -355,6 +423,9 @@ public class InactiveVendorDash {
                 "-fx-font-size:15px;" +
                 "-fx-background-radius:7px;"
         );
+        if (action != null) {
+            b.setOnAction(e -> action.run());
+        }
         return b;
     }
 

@@ -1,5 +1,7 @@
 package com.techtrio.services;
 
+import java.util.Map;
+
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
@@ -84,6 +86,37 @@ public class VendorProfileService {
             System.err.println("Error getting vendor profile for UID " + vendorId + ": " + e.getMessage());
             e.printStackTrace();
             return null;
+        }
+    }
+
+    // =========================
+    // UPDATE PROFILE (PARTIAL MERGE)
+    // =========================
+    public boolean updateVendorProfileFields(String vendorId, Map<String, Object> updates) {
+        if (vendorId == null || vendorId.isBlank() || updates == null || updates.isEmpty()) {
+            System.err.println("Cannot update profile: vendorId or updates map is null/empty.");
+            return false;
+        }
+
+        try {
+            Firestore db = getDb();
+            if (db == null) {
+                System.err.println("Firestore instance unavailable.");
+                return false;
+            }
+
+            ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME)
+                    .document(vendorId.trim())
+                    .update(updates);
+
+            future.get();
+            System.out.println("Vendor profile updated successfully in Firestore for UID: " + vendorId);
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error updating vendor profile in Firestore for UID " + vendorId + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 }

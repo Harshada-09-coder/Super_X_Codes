@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
 
 import org.json.JSONObject;
 
@@ -159,5 +160,10 @@ public class VendorController {
     public VendorProfile getVendorProfile(String uid, String idToken) {
         if (uid == null || uid.isBlank()) return null;
         return vendorProfileService.getVendorProfile(uid);
+    }
+
+    public boolean updateVendorProfileFields(String uid, Map<String, Object> updates) {
+        if (uid == null || uid.isBlank()) return false;
+        return vendorProfileService.updateVendorProfileFields(uid, updates);
     }
 }
