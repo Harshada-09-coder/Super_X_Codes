@@ -1,6 +1,8 @@
 package com.techtrio.view;
 
 
+import com.techtrio.session.UserSession;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -429,7 +431,11 @@ sidebar.getChildren().addAll(
  
                 reviewButton.setOnAction(e -> {
 
-    ReviewPageC reviewPage = new ReviewPageC();
+    ReviewPageC reviewPage =
+        new ReviewPageC(
+                UserSession.getUid(),
+                UserSession.getIdToken()
+        );
 
     Scene reviewScene = reviewPage.getReviewScene();
 

@@ -22,6 +22,7 @@ public class FirebaseConfig {
             return;
         }
 
+        
         try {
             InputStream serviceAccount = null;
             File keyFile = new File("serviceAccountKey.json");

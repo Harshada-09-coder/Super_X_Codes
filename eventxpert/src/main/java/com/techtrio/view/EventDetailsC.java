@@ -1,5 +1,6 @@
 package com.techtrio.view;
 
+import com.techtrio.session.UserSession;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -8,34 +9,65 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.stage.Stage;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 
-public class EventDetailsC  {
+public class EventDetailsC {
 
     private final String BLUE = "#031D49";
     private final String ACTIVE = "#073E82";
     private final String TEXT = "#102653";
 
-   public Scene getEventDetailsScene() {
+    // =========================================================
+    // USER SESSION DATA
+    // =========================================================
 
-        
+    private final String uid;
+    private final String idToken;
+
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
+    public EventDetailsC() {
+
+        this.uid = UserSession.getUid();
+        this.idToken = UserSession.getIdToken();
+    }
+
+    // =========================================================
+    // EVENT DETAILS SCENE
+    // =========================================================
+
+    public Scene getEventDetailsScene() {
+
         HBox root = new HBox();
-        root.setStyle("-fx-background-color:#F5F8FC;");
 
-        
+        root.setStyle(
+                "-fx-background-color:#F5F8FC;"
+        );
+
+        // =====================================================
+        // SIDEBAR
+        // =====================================================
+
         VBox sidebar = new VBox(5);
 
         sidebar.setPrefWidth(245);
         sidebar.setMinWidth(245);
         sidebar.setMaxWidth(245);
 
-        sidebar.setPadding(new Insets(24, 12, 15, 12));
+        sidebar.setPadding(
+                new Insets(24, 12, 15, 12)
+        );
 
         sidebar.setStyle(
                 "-fx-background-color:" + BLUE + ";"
         );
 
-        Label logo = new Label("EventXpert");
+        Label logo =
+                new Label("EventXpert");
 
         logo.setStyle(
                 "-fx-text-fill:white;" +
@@ -43,7 +75,8 @@ public class EventDetailsC  {
                 "-fx-font-weight:bold;"
         );
 
-        Label console = new Label("Corporate Console");
+        Label console =
+                new Label("Corporate Console");
 
         console.setStyle(
                 "-fx-text-fill:#B9CCE8;" +
@@ -51,7 +84,10 @@ public class EventDetailsC  {
         );
 
         Button createEvent =
-                sideButton("+   Create Event", false);
+                sideButton(
+                        "+   Create Event",
+                        false
+                );
 
         createEvent.setStyle(
                 "-fx-background-color:white;" +
@@ -66,40 +102,61 @@ public class EventDetailsC  {
         );
 
         Button dashboard =
-                sideButton("▦   Dashboard", false);
+                sideButton(
+                        "▦   Dashboard",
+                        false
+                );
 
         Button requests =
-                sideButton("▣   Event Requests", false);
+                sideButton(
+                        "▣   Event Requests",
+                        false
+                );
 
         Button events =
-                sideButton("▣   Events", true);
+                sideButton(
+                        "▣   Events",
+                        true
+                );
 
         Button calendar =
-                sideButton("▦   Calendar", false);
+                sideButton(
+                        "▦   Calendar",
+                        false
+                );
 
         Button customers =
-                sideButton("♙   Customers", false);
+                sideButton(
+                        "♙   Customers",
+                        false
+                );
 
         Button organizers =
-                sideButton("♙   Organizers", false);
+                sideButton(
+                        "♙   Organizers",
+                        false
+                );
 
-        // IMPORTANT:
-        // sidebar vendor variable = vendorsMenu
         Button vendorsMenu =
-                sideButton("▤   Vendors", false);
+                sideButton(
+                        "▤   Vendors",
+                        false
+                );
 
-        VBox menu = new VBox(
-                5,
-                dashboard,
-                requests,
-                events,
-                calendar,
-                customers,
-                organizers,
-                vendorsMenu
-        );
+        VBox menu =
+                new VBox(
+                        5,
+                        dashboard,
+                        requests,
+                        events,
+                        calendar,
+                        customers,
+                        organizers,
+                        vendorsMenu
+                );
 
-        Region sidebarSpace = new Region();
+        Region sidebarSpace =
+                new Region();
 
         VBox.setVgrow(
                 sidebarSpace,
@@ -107,15 +164,22 @@ public class EventDetailsC  {
         );
 
         Button settings =
-                sideButton("⚙   Settings", false);
+                sideButton(
+                        "⚙   Settings",
+                        false
+                );
 
         Button help =
-                sideButton("?   Help & Support", false);
+                sideButton(
+                        "?   Help & Support",
+                        false
+                );
 
-        Label user = new Label(
-                "  AC    Arjun Corporate\n" +
-                "          Corporate Admin"
-        );
+        Label user =
+                new Label(
+                        "  AC    Arjun Corporate\n" +
+                        "          Corporate Admin"
+                );
 
         user.setMaxWidth(
                 Double.MAX_VALUE
@@ -142,8 +206,12 @@ public class EventDetailsC  {
                 user
         );
 
-        
-        BorderPane right = new BorderPane();
+        // =====================================================
+        // RIGHT SIDE
+        // =====================================================
+
+        BorderPane right =
+                new BorderPane();
 
         HBox.setHgrow(
                 right,
@@ -154,8 +222,12 @@ public class EventDetailsC  {
                 "-fx-background-color:#F5F8FC;"
         );
 
-        
-        TextField search = new TextField();
+        // =====================================================
+        // TOP BAR
+        // =====================================================
+
+        TextField search =
+                new TextField();
 
         search.setPromptText(
                 "Search events, venues, vendors..."
@@ -184,22 +256,24 @@ public class EventDetailsC  {
         Button profile =
                 topButton("AC");
 
-        Region topSpace = new Region();
+        Region topSpace =
+                new Region();
 
         HBox.setHgrow(
                 topSpace,
                 Priority.ALWAYS
         );
 
-        HBox topBar = new HBox(
-                12,
-                search,
-                topSpace,
-                notification,
-                gear,
-                helpTop,
-                profile
-        );
+        HBox topBar =
+                new HBox(
+                        12,
+                        search,
+                        topSpace,
+                        notification,
+                        gear,
+                        helpTop,
+                        profile
+                );
 
         topBar.setAlignment(
                 Pos.CENTER_RIGHT
@@ -217,35 +291,44 @@ public class EventDetailsC  {
 
         right.setTop(topBar);
 
-        
-        VBox main = new VBox(10);
+        // =====================================================
+        // MAIN CONTENT
+        // =====================================================
+
+        VBox main =
+                new VBox(10);
 
         main.setPadding(
                 new Insets(14, 22, 12, 22)
         );
 
-        ScrollPane scrollPane = new ScrollPane();
+        ScrollPane scrollPane =
+                new ScrollPane();
 
-scrollPane.setFitToWidth(true);
-scrollPane.setFitToHeight(false);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(false);
 
-scrollPane.setHbarPolicy(
-        ScrollPane.ScrollBarPolicy.NEVER
-);
-
-scrollPane.setVbarPolicy(
-        ScrollPane.ScrollBarPolicy.AS_NEEDED
-);
-
-scrollPane.setStyle(
-        "-fx-background-color:#F5F8FC;" +
-        "-fx-background:#F5F8FC;"
-);
-
-        
-        Label breadcrumb = new Label(
-                "Events   ›   Corporate Annual Conference 2026"
+        scrollPane.setHbarPolicy(
+                ScrollPane.ScrollBarPolicy.NEVER
         );
+
+        scrollPane.setVbarPolicy(
+                ScrollPane.ScrollBarPolicy.AS_NEEDED
+        );
+
+        scrollPane.setStyle(
+                "-fx-background-color:#F5F8FC;" +
+                "-fx-background:#F5F8FC;"
+        );
+
+        // =====================================================
+        // HEADING
+        // =====================================================
+
+        Label breadcrumb =
+                new Label(
+                        "Events   ›   Corporate Annual Conference 2026"
+                );
 
         breadcrumb.setStyle(
                 "-fx-text-fill:#6D7D95;" +
@@ -261,40 +344,47 @@ scrollPane.setStyle(
                 "-fx-font-weight:bold;"
         );
 
-        Label subtitle = new Label(
-                "View and manage all details of your corporate event in one place."
-        );
+        Label subtitle =
+                new Label(
+                        "View and manage all details of your corporate event in one place."
+                );
 
         subtitle.setStyle(
                 "-fx-text-fill:#687890;" +
                 "-fx-font-size:11px;"
         );
 
-        VBox heading = new VBox(
-                2,
-                breadcrumb,
-                title,
-                subtitle
-        );
+        VBox heading =
+                new VBox(
+                        2,
+                        breadcrumb,
+                        title,
+                        subtitle
+                );
 
-        Region headingSpace = new Region();
+        Region headingSpace =
+                new Region();
 
         HBox.setHgrow(
                 headingSpace,
                 Priority.ALWAYS
         );
 
-      
-
-        HBox headingRow = new HBox(
-                10,
-                heading,
-                headingSpace
-        );
+        HBox headingRow =
+                new HBox(
+                        10,
+                        heading,
+                        headingSpace
+                );
 
         headingRow.setAlignment(
                 Pos.CENTER_LEFT
         );
+
+        // =====================================================
+        // SUMMARY CARD
+        // =====================================================
+
         VBox summaryCard =
                 whiteCard();
 
@@ -366,7 +456,6 @@ scrollPane.setStyle(
                         "#E7EEFF"
                 );
 
-       
         VBox vendorsCard =
                 statCard(
                         "▤",
@@ -391,15 +480,16 @@ scrollPane.setStyle(
                         "#F1E5FF"
                 );
 
-        HBox summaryRow = new HBox(
-                14,
-                eventImage,
-                eventInfo,
-                guestsCard,
-                vendorsCard,
-                organizersCard,
-                budgetTotalCard
-        );
+        HBox summaryRow =
+                new HBox(
+                        14,
+                        eventImage,
+                        eventInfo,
+                        guestsCard,
+                        vendorsCard,
+                        organizersCard,
+                        budgetTotalCard
+                );
 
         HBox.setHgrow(
                 eventInfo,
@@ -410,8 +500,12 @@ scrollPane.setStyle(
                 summaryRow
         );
 
-        
-        HBox tabs = new HBox();
+        // =====================================================
+        // TABS
+        // =====================================================
+
+        HBox tabs =
+                new HBox();
 
         String[] tabNames = {
                 "Overview",
@@ -424,7 +518,9 @@ scrollPane.setStyle(
         for (int i = 0; i < tabNames.length; i++) {
 
             Button tab =
-                    new Button(tabNames[i]);
+                    new Button(
+                            tabNames[i]
+                    );
 
             tab.setPrefWidth(125);
 
@@ -461,7 +557,10 @@ scrollPane.setStyle(
                 "-fx-background-radius:6;"
         );
 
-        
+        // =====================================================
+        // OVERVIEW CARD
+        // =====================================================
+
         VBox overviewCard =
                 whiteCard();
 
@@ -523,7 +622,10 @@ scrollPane.setStyle(
                 "10 Apr 2026, 11:20 AM"
         );
 
-        
+        // =====================================================
+        // TIMELINE CARD
+        // =====================================================
+
         VBox timelineCard =
                 whiteCard();
 
@@ -573,14 +675,12 @@ scrollPane.setStyle(
                 "#0BB36B"
         );
 
-
-
-        
-        HBox row1 = new HBox(
-                10,
-                overviewCard,
-                timelineCard
-        );
+        HBox row1 =
+                new HBox(
+                        10,
+                        overviewCard,
+                        timelineCard
+                );
 
         HBox.setHgrow(
                 overviewCard,
@@ -591,6 +691,10 @@ scrollPane.setStyle(
                 timelineCard,
                 Priority.ALWAYS
         );
+
+        // =====================================================
+        // LOCATION CARD
+        // =====================================================
 
         VBox locationCard =
                 whiteCard();
@@ -644,16 +748,22 @@ scrollPane.setStyle(
                 viewMap
         );
 
-        
+        // =====================================================
+        // MAP CARD
+        // =====================================================
+
         VBox mapCard =
                 imageBox(
-                       "/assets/images/map logo.png",
+                        "/assets/images/map logo.png",
                         250,
-                    190,
+                        190,
                         "Google Maps"
                 );
 
-        
+        // =====================================================
+        // BUDGET CARD
+        // =====================================================
+
         VBox budgetCard =
                 whiteCard();
 
@@ -712,7 +822,10 @@ scrollPane.setStyle(
                 "#567DCB"
         );
 
-        
+        // =====================================================
+        // AI CARD
+        // =====================================================
+
         VBox aiCard =
                 whiteCard();
 
@@ -793,14 +906,18 @@ scrollPane.setStyle(
                 aiDetails
         );
 
-        
-        HBox row2 = new HBox(
-                10,
-                locationCard,
-                mapCard,
-                budgetCard,
-                aiCard
-        );
+        // =====================================================
+        // SECOND ROW
+        // =====================================================
+
+        HBox row2 =
+                new HBox(
+                        10,
+                        locationCard,
+                        mapCard,
+                        budgetCard,
+                        aiCard
+                );
 
         HBox.setHgrow(
                 locationCard,
@@ -822,7 +939,10 @@ scrollPane.setStyle(
                 Priority.ALWAYS
         );
 
-        
+        // =====================================================
+        // ADD MAIN CONTENT
+        // =====================================================
+
         main.getChildren().addAll(
                 headingRow,
                 summaryCard,
@@ -833,25 +953,36 @@ scrollPane.setStyle(
 
         scrollPane.setContent(main);
 
-right.setCenter(scrollPane);
+        right.setCenter(scrollPane);
 
-        
+        // =====================================================
+        // FOOTER BUTTONS
+        // =====================================================
+
         Button back =
                 outlineButton("Back");
 
         Button next =
                 blueButton("Next");
 
-                next.setOnAction(e -> {
+        // =====================================================
+        // NEXT BUTTON
+        // =====================================================
 
-    Notification notificationPage =
-            new Notification();
+        next.setOnAction(e -> {
 
-    LandingPage.landingPageStage.setScene(
-            notificationPage.getNotificationScene()
-    );
+            Notification notificationPage =
+                    new Notification();
 
-});
+            LandingPage.landingPageStage.setScene(
+                    notificationPage.getNotificationScene()
+            );
+
+        });
+
+        // =====================================================
+        // FOOTER
+        // =====================================================
 
         Region footerSpace =
                 new Region();
@@ -861,12 +992,13 @@ right.setCenter(scrollPane);
                 Priority.ALWAYS
         );
 
-        HBox footer = new HBox(
-                10,
-                footerSpace,
-                back,
-                next
-        );
+        HBox footer =
+                new HBox(
+                        10,
+                        footerSpace,
+                        back,
+                        next
+                );
 
         footer.setAlignment(
                 Pos.CENTER_RIGHT
@@ -884,6 +1016,9 @@ right.setCenter(scrollPane);
 
         right.setBottom(footer);
 
+        // =====================================================
+        // SEARCH
+        // =====================================================
 
         search.setOnAction(e -> {
 
@@ -913,7 +1048,9 @@ right.setCenter(scrollPane);
             }
         });
 
-
+        // =====================================================
+        // MAP BUTTON
+        // =====================================================
 
         viewMap.setOnAction(e ->
                 System.out.println(
@@ -921,31 +1058,68 @@ right.setCenter(scrollPane);
                 )
         );
 
-      back.setOnAction(e -> {
+        // =====================================================
+        // BACK → REVIEW PAGE
+        // =====================================================
 
-    ReviewPageC reviewPage =
-            new ReviewPageC();
+        back.setOnAction(e -> {
 
-    LandingPage.landingPageStage.setScene(
-            reviewPage.getReviewScene()
-    );
-});
+            ReviewPageC reviewPage =
+                    new ReviewPageC(
+                            uid,
+                            idToken
+                    );
 
-       
+            LandingPage.landingPageStage.setScene(
+                    reviewPage.getReviewScene()
+            );
 
-        
+        });
+
+        // =====================================================
+        // CREATE EVENT BUTTON
+        // =====================================================
+
+        createEvent.setOnAction(e -> {
+
+            CreateEventC createEventPage =
+                    new CreateEventC(
+                            uid,
+                            idToken
+                    );
+
+            LandingPage.landingPageStage.setScene(
+                    createEventPage.getCreateEventScene()
+            );
+
+        });
+
+        // =====================================================
+        // ROOT
+        // =====================================================
+
         root.getChildren().addAll(
                 sidebar,
                 right
         );
 
-        Scene scene =
-                new Scene(root);
+        // =====================================================
+        // SCENE
+        // =====================================================
 
-      return scene;
+        Scene scene =
+                new Scene(
+                        root,
+                        1365,
+                        850
+                );
+
+        return scene;
     }
 
-    
+    // =========================================================
+    // SIDEBAR BUTTON
+    // =========================================================
 
     private Button sideButton(
             String text,
@@ -974,12 +1148,16 @@ right.setCenter(scrollPane);
 
         b.setStyle(
                 "-fx-background-color:" +
-                (active ? ACTIVE : "transparent") +
+                (active
+                        ? ACTIVE
+                        : "transparent") +
                 ";" +
                 "-fx-text-fill:white;" +
                 "-fx-font-size:12px;" +
                 "-fx-font-weight:" +
-                (active ? "bold" : "normal") +
+                (active
+                        ? "bold"
+                        : "normal") +
                 ";" +
                 "-fx-background-radius:6;"
         );
@@ -987,7 +1165,9 @@ right.setCenter(scrollPane);
         return b;
     }
 
-    
+    // =========================================================
+    // TOP BUTTON
+    // =========================================================
 
     private Button topButton(
             String text
@@ -1006,7 +1186,9 @@ right.setCenter(scrollPane);
         return b;
     }
 
-    
+    // =========================================================
+    // WHITE CARD
+    // =========================================================
 
     private VBox whiteCard() {
 
@@ -1027,7 +1209,9 @@ right.setCenter(scrollPane);
         return box;
     }
 
-    
+    // =========================================================
+    // CARD TITLE
+    // =========================================================
 
     private Label cardTitle(
             String text
@@ -1045,7 +1229,9 @@ right.setCenter(scrollPane);
         return label;
     }
 
-    
+    // =========================================================
+    // ADD ROW
+    // =========================================================
 
     private void addRow(
             VBox box,
@@ -1098,7 +1284,9 @@ right.setCenter(scrollPane);
         box.getChildren().add(row);
     }
 
-   
+    // =========================================================
+    // TIMELINE ITEM
+    // =========================================================
 
     private void timelineItem(
             VBox box,
@@ -1114,7 +1302,9 @@ right.setCenter(scrollPane);
                 new Label("●");
 
         dot.setStyle(
-                "-fx-text-fill:" + color + ";" +
+                "-fx-text-fill:" +
+                color +
+                ";" +
                 "-fx-font-size:11px;"
         );
 
@@ -1151,7 +1341,10 @@ right.setCenter(scrollPane);
         box.getChildren().add(row);
     }
 
-    
+    // =========================================================
+    // STAT CARD
+    // =========================================================
+
     private VBox statCard(
             String icon,
             String number,
@@ -1188,7 +1381,9 @@ right.setCenter(scrollPane);
                 new Label(number);
 
         numberLabel.setStyle(
-                "-fx-text-fill:" + TEXT + ";" +
+                "-fx-text-fill:" +
+                TEXT +
+                ";" +
                 "-fx-font-size:16px;" +
                 "-fx-font-weight:bold;"
         );
@@ -1210,7 +1405,10 @@ right.setCenter(scrollPane);
         return box;
     }
 
-    
+    // =========================================================
+    // BUDGET ITEM
+    // =========================================================
+
     private void budgetItem(
             VBox box,
             String name,
@@ -1260,7 +1458,9 @@ right.setCenter(scrollPane);
         box.getChildren().add(row);
     }
 
-   
+    // =========================================================
+    // CHECK ITEM
+    // =========================================================
 
     private Label checkItem(
             String text
@@ -1279,7 +1479,9 @@ right.setCenter(scrollPane);
         return label;
     }
 
-    
+    // =========================================================
+    // INFO TEXT
+    // =========================================================
 
     private Label infoText(
             String text
@@ -1296,8 +1498,9 @@ right.setCenter(scrollPane);
         return label;
     }
 
-    
-    
+    // =========================================================
+    // PILL
+    // =========================================================
 
     private Label pill(
             String text,
@@ -1324,7 +1527,9 @@ right.setCenter(scrollPane);
         return label;
     }
 
-   
+    // =========================================================
+    // IMAGE BOX
+    // =========================================================
 
     private VBox imageBox(
             String path,
@@ -1345,23 +1550,36 @@ right.setCenter(scrollPane);
 
         try {
 
-            Image image =
-                    new Image(
-                            getClass()
-                                    .getResourceAsStream(
-                                            path
-                                    )
-                    );
+            if (getClass().getResourceAsStream(path) != null) {
 
-            ImageView view =
-                    new ImageView(image);
+                Image image =
+                        new Image(
+                                getClass()
+                                        .getResourceAsStream(path)
+                        );
 
-            view.setFitWidth(width);
-            view.setFitHeight(height);
+                ImageView view =
+                        new ImageView(image);
 
-            view.setPreserveRatio(false);
+                view.setFitWidth(width);
+                view.setFitHeight(height);
 
-            box.getChildren().add(view);
+                view.setPreserveRatio(false);
+
+                box.getChildren().add(view);
+
+            } else {
+
+                Label label =
+                        new Label(fallback);
+
+                label.setStyle(
+                        "-fx-text-fill:#71809A;" +
+                        "-fx-font-size:11px;"
+                );
+
+                box.getChildren().add(label);
+            }
 
         } catch (Exception e) {
 
@@ -1386,7 +1604,10 @@ right.setCenter(scrollPane);
         return box;
     }
 
-    
+    // =========================================================
+    // OUTLINE BUTTON
+    // =========================================================
+
     private Button outlineButton(
             String text
     ) {
@@ -1395,7 +1616,12 @@ right.setCenter(scrollPane);
                 new Button(text);
 
         b.setPadding(
-                new Insets(7, 14, 7, 14)
+                new Insets(
+                        7,
+                        14,
+                        7,
+                        14
+                )
         );
 
         b.setStyle(
@@ -1410,7 +1636,9 @@ right.setCenter(scrollPane);
         return b;
     }
 
-    
+    // =========================================================
+    // BLUE BUTTON
+    // =========================================================
 
     private Button blueButton(
             String text
@@ -1420,7 +1648,12 @@ right.setCenter(scrollPane);
                 new Button(text);
 
         b.setPadding(
-                new Insets(8, 16, 8, 16)
+                new Insets(
+                        8,
+                        16,
+                        8,
+                        16
+                )
         );
 
         b.setStyle(
@@ -1433,7 +1666,4 @@ right.setCenter(scrollPane);
 
         return b;
     }
-
-    
-   
 }
