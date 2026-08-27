@@ -140,7 +140,6 @@ public class CustomerA {
         filters.setStyle("-fx-background-color:white;-fx-border-color:" + SECONDARY +
                 ";-fx-border-radius:8;-fx-background-radius:8;");
 
-        // TABLE HEADER
         Label all = lbl("All Customers", 20, true);
         all.setTextFill(Color.web(PRIMARY));
 
@@ -162,7 +161,6 @@ public class CustomerA {
         tableHead.setSpacing(10);
         tableHead.setPadding(new Insets(15));
 
-        // TABLE
         createTable();
         loadData();
 
@@ -296,7 +294,6 @@ public class CustomerA {
     }
 
     public static class CustomerData {
-
         private final String name, email, phone, events, lastEvent, registered, status;
 
         CustomerData(String n, String e, String p, String ev, String le, String r, String s) {
