@@ -2,6 +2,8 @@ package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
 import com.techtrio.controller.NavigationManager;
+import com.techtrio.controller.CustomerController;
+import com.techtrio.controller.CustomerState;
 import com.techtrio.controller.SignInResult;
 import com.techtrio.controller.VendorController;
 import com.techtrio.controller.VendorState;
@@ -327,21 +329,38 @@ public class LoginPage {
 
     System.out.println("Opening Admin Dashboard");
 
-    AdminDashboardA adminDashboard = new AdminDashboardA();
+   AdminDashboardA adminDashboard = new AdminDashboardA();
 
-    LandingPage.landingPageStage.setScene(
-        adminDashboard.getadminDashboardScene()
-    );
-      } else if (role.equalsIgnoreCase("customer")) {
-        System.out.println("Opening Customer Dashboard");
-        ActiveCustomerDashboardC customerDashboardC = new ActiveCustomerDashboardC();
+LandingPage.landingPageStage.setScene(
+    adminDashboard.getadminDashboardScene()
+);
 
-        Runnable callBackAction1 = new Runnable() {
-                public void run(){
-                        backToLoginPage();
-                }
-        };
-       LandingPage.landingPageStage.setScene( customerDashboardC.getactiveCustomerScene(callBackAction1));
+} else if (role.equalsIgnoreCase("customer")) {
+    System.out.println("Opening Customer Dashboard");
+
+    CustomerController customerController = new CustomerController();
+    CustomerState customerState = customerController.getCustomerState(uid, idToken);
+
+    Runnable callBackAction1 = new Runnable() {
+        public void run() {
+            backToLoginPage();
+        }
+    };
+
+    if (customerState == null || !customerState.hasCreatedEvent()) {
+        System.out.println("========== CUSTOMER REGISTRATION / NEW SESSION ==========");
+        System.out.println("Customer UID: " + uid);
+        System.out.println("Customer authenticated: true");
+        System.out.println("Opening Inactive Customer Dashboard");
+        System.out.println("=======================================================");
+
+        NewCustomerDashboard newCustomerDashboard = new NewCustomerDashboard(uid, idToken);
+        LandingPage.landingPageStage.setScene(newCustomerDashboard.getnewCustomerScene(callBackAction1));
+    } else {
+        System.out.println("Opening EXISTING Customer Dashboard");
+        ActiveCustomerDashboardC activeCustomerDashboard = new ActiveCustomerDashboardC(uid, idToken);
+        LandingPage.landingPageStage.setScene(activeCustomerDashboard.getactiveCustomerScene(callBackAction1));
+    }
 
      } else if (role.equalsIgnoreCase("organizer")) {
          System.out.println( "Opening Organizer Dashboard");
@@ -453,4 +472,4 @@ public class LoginPage {
         public void backToLoginPage(){
                 LandingPage.landingPageStage.setScene(loginPageScene);
         }
-    }
+}

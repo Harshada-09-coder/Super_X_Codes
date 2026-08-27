@@ -1,28 +1,55 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
-import javafx.geometry.*;
+import com.techtrio.session.UserSession;
+
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.text.*;
-import javafx.stage.Stage;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 
-public class AiPlanningC extends Application {
+public class AiPlanningC {
 
-    private final String NAVY = "#002A60";
-    private final String BLUE = "#0057B8";
-    private final String BG = "#F5F8FA";
-    private final String BORDER = "#D5DEE7";
-    private final String TEXT = "#102A43";
-    private final String GREY = "#667085";
-    private final String LIGHT = "#C2F0F4";
+    private Scene scene;
 
-    @Override
-    public void start(Stage stage) {
+    private String uid;
+    private String idToken;
 
+    private static final String NAVY = "#002A60";
+    private static final String BLUE = "#0057B8";
+    private static final String BG = "#F5F8FA";
+    private static final String BORDER = "#D5DEE7";
+    private static final String TEXT = "#102A43";
+    private static final String GREY = "#667085";
 
+    public AiPlanningC(String uid, String idToken) {
+        this.uid = (uid != null && !uid.isBlank())
+                ? uid
+                : UserSession.getUid();
+
+        this.idToken = (idToken != null && !idToken.isBlank())
+                ? idToken
+                : UserSession.getIdToken();
+    }
+
+    public Scene getAiPlanningScene() {
+
+        // =========================
+        // SIDEBAR
+        // =========================
 
         VBox sidebar = new VBox(7);
 
@@ -90,7 +117,9 @@ public class AiPlanningC extends Application {
                 sideSpace
         );
 
-       
+        // =========================
+        // TOP BAR
+        // =========================
 
         HBox topBar = new HBox(24);
 
@@ -111,12 +140,23 @@ public class AiPlanningC extends Application {
         );
 
         topBar.getChildren().addAll(
-                label("♧", 19, false, Color.web(NAVY)),
-                label("?", 16, true, Color.web(NAVY)),
-                label("●", 21, false, Color.web(NAVY))
+                label(
+                        "♧",
+                        19,
+                        false,
+                        Color.web(NAVY)
+                ),
+                label(
+                        "?",
+                        16,
+                        true,
+                        Color.web(NAVY)
+                )
         );
 
-       
+        // =========================
+        // HEADING
+        // =========================
 
         VBox heading = new VBox(7);
 
@@ -125,7 +165,7 @@ public class AiPlanningC extends Application {
         );
 
         heading.setPadding(
-                new Insets(38, 20, 20, 20)
+                new Insets(20)
         );
 
         Label aiIcon = label(
@@ -135,8 +175,14 @@ public class AiPlanningC extends Application {
                 Color.web(NAVY)
         );
 
-        aiIcon.setPrefSize(42, 42);
-        aiIcon.setAlignment(Pos.CENTER);
+        aiIcon.setPrefSize(
+                42,
+                42
+        );
+
+        aiIcon.setAlignment(
+                Pos.CENTER
+        );
 
         aiIcon.setStyle(
                 "-fx-background-color:#C5E9FF;" +
@@ -168,10 +214,14 @@ public class AiPlanningC extends Application {
                 subtitle
         );
 
-       
+        // =========================
+        // PLANNER CARD
+        // =========================
+
         VBox plannerCard = new VBox(14);
 
         plannerCard.setMaxWidth(680);
+
         plannerCard.setPadding(
                 new Insets(20)
         );
@@ -183,7 +233,6 @@ public class AiPlanningC extends Application {
                 "-fx-background-radius:9;"
         );
 
-       
         HBox plannerHeader = new HBox();
 
         plannerHeader.setAlignment(
@@ -193,7 +242,7 @@ public class AiPlanningC extends Application {
         VBox plannerText = new VBox(
                 3,
                 label(
-                        "Enable AI Event ",
+                        "Enable AI Event Planning",
                         15,
                         true,
                         Color.web("#222222")
@@ -213,12 +262,12 @@ public class AiPlanningC extends Application {
                 Priority.ALWAYS
         );
 
-        
-
         ToggleButton aiToggle =
                 new ToggleButton("✓");
 
-        aiToggle.setSelected(true);
+        aiToggle.setSelected(
+                ReviewPageC.EventData.aiEnabled
+        );
 
         aiToggle.setPrefSize(
                 45,
@@ -237,23 +286,26 @@ public class AiPlanningC extends Application {
                 )
         );
 
-        aiToggle.setStyle(
-                "-fx-background-color:" + NAVY + ";" +
-                "-fx-background-radius:20;"
+        updateToggleStyle(
+                aiToggle,
+                aiToggle.isSelected()
         );
 
         aiToggle.selectedProperty().addListener(
                 (obs, oldValue, newValue) -> {
 
+                    ReviewPageC.EventData.aiEnabled =
+                            newValue;
+
                     aiToggle.setText(
-                            newValue ? "✓" : "○"
+                            newValue
+                                    ? "✓"
+                                    : "○"
                     );
 
-                    aiToggle.setStyle(
-                            "-fx-background-color:" +
-                            (newValue ? NAVY : "#9AA5B1") +
-                            ";" +
-                            "-fx-background-radius:20;"
+                    updateToggleStyle(
+                            aiToggle,
+                            newValue
                     );
                 }
         );
@@ -264,11 +316,15 @@ public class AiPlanningC extends Application {
                 aiToggle
         );
 
-        Separator separator = new Separator();
+        Separator separator =
+                new Separator();
 
-        
+        // =========================
+        // FEATURES
+        // =========================
 
-        GridPane features = new GridPane();
+        GridPane features =
+                new GridPane();
 
         features.setHgap(35);
         features.setVgap(20);
@@ -280,7 +336,8 @@ public class AiPlanningC extends Application {
                         "Auto-generated tasks tailored to your specific event\n" +
                         "type and scope."
                 ),
-                0, 0
+                0,
+                0
         );
 
         features.add(
@@ -290,7 +347,8 @@ public class AiPlanningC extends Application {
                         "Optimized scheduling that automatically adjusts to\n" +
                         "constraint changes."
                 ),
-                1, 0
+                1,
+                0
         );
 
         features.add(
@@ -300,7 +358,8 @@ public class AiPlanningC extends Application {
                         "Intelligent recommendations for vendors, layouts, and\n" +
                         "logistics."
                 ),
-                0, 1
+                0,
+                1
         );
 
         features.add(
@@ -310,7 +369,8 @@ public class AiPlanningC extends Application {
                         "Highlights critical path items and potential planning\n" +
                         "bottlenecks instantly."
                 ),
-                1, 1
+                1,
+                1
         );
 
         ColumnConstraints c1 =
@@ -324,7 +384,8 @@ public class AiPlanningC extends Application {
         c2.setPercentWidth(50);
 
         features.getColumnConstraints().addAll(
-                c1, c2
+                c1,
+                c2
         );
 
         plannerCard.getChildren().addAll(
@@ -333,37 +394,53 @@ public class AiPlanningC extends Application {
                 features
         );
 
-        
+        // =========================
+        // ACTION BUTTONS
+        // =========================
+
         Button enableAI =
-        new Button("◉  Enable AI Planning");
+                new Button(
+                        "◉  Enable AI Planning"
+                );
 
-enableAI.setPrefSize(170, 42);
+        enableAI.setPrefSize(
+                170,
+                42
+        );
 
+        enableAI.setStyle(
+                "-fx-background-color:white;" +
+                "-fx-border-color:#9EB1C1;" +
+                "-fx-border-radius:7;" +
+                "-fx-background-radius:7;" +
+                "-fx-text-fill:" + NAVY + ";" +
+                "-fx-font-weight:bold;"
+        );
 
-enableAI.setStyle(
-        "-fx-background-color:white;" +
-        "-fx-border-color:#9EB1C1;" +
-        "-fx-border-radius:7;" +
-        "-fx-background-radius:7;" +
-        "-fx-text-fill:" + NAVY + ";" +
-        "-fx-font-weight:bold;"
-);
+        enableAI.setOnAction(e -> {
 
+            ReviewPageC.EventData.aiEnabled = true;
 
-enableAI.setOnAction(e -> {
+            AIPage aiPage =
+                    new AIPage();
 
-    enableAI.setStyle(
-            "-fx-background-color:" + NAVY + ";" +
-            "-fx-background-radius:7;" +
-            "-fx-text-fill:white;" +
-            "-fx-font-weight:bold;"
-    );
+            LandingPage.landingPageStage.setScene(
+                    aiPage.getAIPageScene(
+                            () -> {
 
-    enableAI.setText("✓  AI Planning Enabled");
-});
+                                LandingPage.landingPageStage.setScene(
+                                        getAiPlanningScene()
+                                );
+
+                            }
+                    )
+            );
+        });
 
         Button skip =
-                new Button("Skip for Now");
+                new Button(
+                        "Skip for Now"
+                );
 
         skip.setPrefSize(
                 125,
@@ -377,6 +454,22 @@ enableAI.setOnAction(e -> {
                 "-fx-background-radius:7;" +
                 "-fx-text-fill:" + NAVY + ";"
         );
+
+        skip.setOnAction(e -> {
+
+            ReviewPageC.EventData.aiEnabled =
+                    false;
+
+            ReviewPageC reviewPage =
+                    new ReviewPageC(
+                            uid,
+                            idToken
+                    );
+
+            LandingPage.landingPageStage.setScene(
+                    reviewPage.getReviewScene()
+            );
+        });
 
         HBox actions =
                 new HBox(
@@ -392,6 +485,10 @@ enableAI.setOnAction(e -> {
         actions.setPadding(
                 new Insets(5, 0, 15, 0)
         );
+
+        // =========================
+        // MAIN CONTENT
+        // =========================
 
         VBox mainContent =
                 new VBox(
@@ -409,6 +506,9 @@ enableAI.setOnAction(e -> {
                 Priority.ALWAYS
         );
 
+        // =========================
+        // FOOTER
+        // =========================
 
         Button back =
                 footerButton(
@@ -417,25 +517,23 @@ enableAI.setOnAction(e -> {
                         false
                 );
 
-        Button save =
-                footerButton(
-                        "Save Draft",
-                        110,
-                        false
-                );
+        back.setOnAction(e -> {
 
-        Button next =
-                footerButton(
-                        "Next",
-                        90,
-                        true
-                );
+            BudgetC budgetPage =
+                    new BudgetC(
+                            uid,
+                            idToken
+                    );
+
+            LandingPage.landingPageStage.setScene(
+                    budgetPage.getBudgetScene()
+            );
+        });
 
         HBox leftButtons =
                 new HBox(
                         10,
-                        back,
-                        save
+                        back
                 );
 
         leftButtons.setAlignment(
@@ -453,8 +551,7 @@ enableAI.setOnAction(e -> {
         HBox footer =
                 new HBox(
                         leftButtons,
-                        footerSpace,
-                        next
+                        footerSpace
                 );
 
         footer.setAlignment(
@@ -462,7 +559,12 @@ enableAI.setOnAction(e -> {
         );
 
         footer.setPadding(
-                new Insets(10, 30, 12, 30)
+                new Insets(
+                        10,
+                        30,
+                        12,
+                        30
+                )
         );
 
         footer.setPrefHeight(68);
@@ -473,7 +575,9 @@ enableAI.setOnAction(e -> {
                 "-fx-border-width:1 0 0 0;"
         );
 
-        
+        // =========================
+        // CENTER
+        // =========================
 
         VBox center =
                 new VBox(
@@ -491,12 +595,12 @@ enableAI.setOnAction(e -> {
                 Priority.ALWAYS
         );
 
-        
+        // =========================
+        // ROOT
+        // =========================
 
         BorderPane root =
                 new BorderPane();
-
-       
 
         root.setStyle(
                 "-fx-background-color:" + NAVY + ";"
@@ -505,23 +609,37 @@ enableAI.setOnAction(e -> {
         root.setLeft(sidebar);
         root.setCenter(center);
 
+        scene =
+                new Scene(
+                        root,
+                        1365,
+                        850
+                );
 
-
-        Scene scene =
-                new Scene(root);
-
-        stage.setTitle(
-                "EventXpert - AI Planning"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMaximized(true);
-
-        stage.show();
+        return scene;
     }
 
-    
+    // =========================
+    // TOGGLE STYLE
+    // =========================
+
+    private void updateToggleStyle(
+            ToggleButton button,
+            boolean selected
+    ) {
+
+        button.setStyle(
+                "-fx-background-color:" +
+                (selected ? NAVY : "#9AA5B1") +
+                ";" +
+                "-fx-background-radius:20;" +
+                "-fx-text-fill:white;"
+        );
+    }
+
+    // =========================
+    // LABEL
+    // =========================
 
     private Label label(
             String text,
@@ -548,7 +666,9 @@ enableAI.setOnAction(e -> {
         return l;
     }
 
-    
+    // =========================
+    // NAV ITEM
+    // =========================
 
     private HBox navItem(
             String icon,
@@ -590,22 +710,36 @@ enableAI.setOnAction(e -> {
         item.setPrefHeight(38);
 
         item.setPadding(
-                new Insets(7, 10, 7, 12)
+                new Insets(
+                        7,
+                        10,
+                        7,
+                        12
+                )
         );
 
-        item.setStyle(
-                active
-                        ? "-fx-background-color:#07396E;" +
-                          "-fx-border-color:" + LIGHT + ";" +
-                          "-fx-border-width:0 0 0 3;" +
-                          "-fx-background-radius:7;"
-                        : "-fx-background-color:transparent;"
-        );
+        if (active) {
+
+            item.setStyle(
+                    "-fx-background-color:#07396E;" +
+                    "-fx-border-color:#C2F0F4;" +
+                    "-fx-border-width:0 0 0 3;" +
+                    "-fx-background-radius:7;"
+            );
+
+        } else {
+
+            item.setStyle(
+                    "-fx-background-color:transparent;"
+            );
+        }
 
         return item;
     }
 
-    
+    // =========================
+    // FEATURE
+    // =========================
 
     private VBox feature(
             String icon,
@@ -616,24 +750,10 @@ enableAI.setOnAction(e -> {
         Label iconLabel =
                 label(
                         icon,
-                        16,
+                        20,
                         true,
-                        Color.web(NAVY)
+                        Color.web(BLUE)
                 );
-
-        iconLabel.setPrefSize(
-                28,
-                28
-        );
-
-        iconLabel.setAlignment(
-                Pos.CENTER
-        );
-
-        iconLabel.setStyle(
-                "-fx-background-color:#C9E9FF;" +
-                "-fx-background-radius:50;"
-        );
 
         Label titleLabel =
                 label(
@@ -646,35 +766,29 @@ enableAI.setOnAction(e -> {
         Label descriptionLabel =
                 label(
                         description,
-                        9,
+                        10,
                         false,
                         Color.web(GREY)
                 );
 
-        descriptionLabel.setWrapText(true);
-
-        VBox text =
+        VBox box =
                 new VBox(
-                        3,
+                        5,
+                        iconLabel,
                         titleLabel,
                         descriptionLabel
                 );
 
-        HBox row =
-                new HBox(
-                        10,
-                        iconLabel,
-                        text
-                );
-
-        row.setAlignment(
-                Pos.TOP_LEFT
+        box.setPadding(
+                new Insets(5)
         );
 
-        return new VBox(row);
+        return box;
     }
 
-    
+    // =========================
+    // FOOTER BUTTON
+    // =========================
 
     private Button footerButton(
             String text,
@@ -692,21 +806,24 @@ enableAI.setOnAction(e -> {
 
         b.setStyle(
                 primary
-                        ? "-fx-background-color:" + NAVY + ";" +
+                        ? "-fx-background-color:" +
+                          NAVY +
+                          ";" +
                           "-fx-background-radius:7;" +
                           "-fx-text-fill:white;" +
-                          "-fx-font-weight:bold;"
+                          "-fx-font-weight:bold;" +
+                          "-fx-cursor:hand;"
+
                         : "-fx-background-color:white;" +
                           "-fx-border-color:#9EB1C1;" +
                           "-fx-border-radius:7;" +
                           "-fx-background-radius:7;" +
-                          "-fx-text-fill:" + NAVY + ";"
+                          "-fx-text-fill:" +
+                          NAVY +
+                          ";" +
+                          "-fx-cursor:hand;"
         );
 
         return b;
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }

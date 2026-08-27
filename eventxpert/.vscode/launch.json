@@ -41,7 +41,7 @@
             "request": "launch",
             "mainClass": "com.techtrio.Main",
             "projectName": "eventxpert",
-            "vmArgs": "--module-path \"D://Java26//javafx-sdk-21.0.12//lib\" --add-modules javafx.controls,javafx.fxml"
+            "vmArgs":  "--module-path \"D://Java26//javafx-sdk-21.0.12//lib\" --add-modules javafx.controls,javafx.fxml"
         }
     ]
 }
