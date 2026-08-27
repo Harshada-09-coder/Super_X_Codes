@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.session.UserSession;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,20 +11,32 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class NewCustomerDashboard extends Application {
+public class NewCustomerDashboard {
+
+    private Scene newCustomerScene;
+    private String uid;
+    private String idToken;
 
     private final String NAVY = "#082E6B";
     private final String BLUE = "#174A88";
     private final String LIGHT = "#F5F8FC";
     private final String TEXT = "#082E6B";
     private final String GRAY = "#526071";
+    private Scene dashboardScene;
 
-    @Override
-    public void start(Stage stage) {
+    public NewCustomerDashboard() {
+        this(UserSession.getUid(), UserSession.getIdToken());
+    }
 
-        
+    public NewCustomerDashboard(String uid, String idToken) {
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+        UserSession.setSession(this.uid, this.idToken, null, "Customer");
+    }
+
+    public Scene getnewCustomerScene(Runnable callBackAction1) {
+
         VBox sidebar = new VBox(18);
         sidebar.setPrefWidth(285);
         sidebar.setPadding(new Insets(28, 0, 20, 0));
@@ -32,7 +45,7 @@ public class NewCustomerDashboard extends Application {
         Circle profileCircle = new Circle(33);
         profileCircle.setFill(Color.web("#E7E7E7"));
 
-        Label initial = new Label("S");
+        Label initial = new Label("C");
         initial.setFont(Font.font("Arial", FontWeight.BOLD, 25));
         initial.setTextFill(Color.web(NAVY));
 
@@ -54,23 +67,122 @@ public class NewCustomerDashboard extends Application {
 
         sidebar.getChildren().addAll(
                 navItem("▦", "Dashboard", true),
-                navItem("⊕", "Create Event", false),
+                navItem("⊕", "Create Event", false, this::openCreateEvent),
                 navItem("□", "My Events", false),
                 navItem("□", "Calendar", false),
                 navItem("♧", "Notifications", false)
-                
         );
+HBox createEventNav = navItem("⊕", "Create Event", false);
+
+createEventNav.setOnMouseClicked(e -> {
+
+    NoEventC noEventPage = new NoEventC();
+
+    LandingPage.landingPageStage.setScene(
+            noEventPage.getNoEventScene(
+
+                    // BACK → NEW CUSTOMER DASHBOARD
+                    () -> {
+
+                        NewCustomerDashboard dashboardPage =
+                                new NewCustomerDashboard();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getnewCustomerScene(null)
+                        );
+
+                    }
+            )
+    );
+});
+
+HBox notificationsNav = navItem("♧", "Notifications", false); 
+
+    
+   notificationsNav.setOnMouseClicked(e -> {
+
+    Notification notificationPage =
+            new Notification();
+
+    LandingPage.landingPageStage.setScene(
+            notificationPage.getNotificationScene()
+    );
+}); 
+
+  
+
+
+sidebar.getChildren().addAll(
+        navItem("▦", "Dashboard", true),
+        createEventNav,
+        notificationsNav
+);
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
 
-        sidebar.getChildren().addAll(
-                sideSpace,
-                navItem("♙", "Profile", false),
-                navItem("⚙", "Settings", false),
-                navItem("?", "Support", false)
-        );
 
+        HBox profileNav = navItem(
+        "♙",
+        "Profile",
+        false
+);
+
+profileNav.setOnMouseClicked(e -> {
+
+    ProfilePageC profilePage =
+            new ProfilePageC();
+
+    LandingPage.landingPageStage.setScene(
+            profilePage.getProfileScene(
+
+                    // BACK → NEW CUSTOMER DASHBOARD
+                    () -> {
+
+                        NewCustomerDashboard dashboardPage =
+                                new NewCustomerDashboard();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getnewCustomerScene(
+                                        null
+                                )
+                        );
+
+                    }
+            )
+    );
+});
+         HBox settingsNav = navItem(
+        "⚙",
+        "Settings",
+        false
+);
+
+settingsNav.setOnMouseClicked(e -> {
+
+    SettingC settingPage = new SettingC();
+
+    LandingPage.landingPageStage.setScene(
+            settingPage.getSettingScene(
+                    // BACK → NEW CUSTOMER DASHBOARD
+                    () -> {
+                        NewCustomerDashboard dashboardPage =
+                                new NewCustomerDashboard();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getnewCustomerScene(null)
+                        );
+                    }
+            )
+    );
+});
+
+sidebar.getChildren().addAll(
+        sideSpace,
+        profileNav,
+        settingsNav,
+        navItem("?", "Support", false)
+);
 
         HBox topBar = new HBox(18);
         topBar.setAlignment(Pos.CENTER_RIGHT);
@@ -110,38 +222,37 @@ public class NewCustomerDashboard extends Application {
                 "-fx-font-weight:bold;" +
                 "-fx-font-size:15;" +
                 "-fx-background-radius:8;" +
-                "-fx-padding:0 22;"
+                "-fx-padding:0 22;" +
+                "-fx-cursor:hand;"
         );
+        createTop.setOnAction(e -> openCreateEvent());
+
 
         Circle topProfile = new Circle(20);
         topProfile.setFill(Color.web("#D7EAF8"));
 
-        Label topInitial = new Label("S");
+        Label topInitial = new Label("C");
         topInitial.setFont(Font.font("Arial", FontWeight.BOLD, 15));
         topInitial.setTextFill(Color.web(NAVY));
 
         StackPane topUser = new StackPane(topProfile, topInitial);
 
-        topBar.getChildren().addAll(topSpace, search, notification, createTop, topUser);
+        topBar.getChildren().addAll(topSpace, search, notification,  topUser);
 
-        
         VBox content = new VBox(18);
         content.setPadding(new Insets(22, 32, 35, 32));
         content.setStyle("-fx-background-color:" + LIGHT + ";");
 
-        Label welcome = new Label("Welcome to EventXpert, Sarah!");
+        Label welcome = new Label("Welcome to EventXpert!");
         welcome.setFont(Font.font("Arial", FontWeight.BOLD, 30));
         welcome.setTextFill(Color.web(TEXT));
 
-        Label subtitle = new Label(
-                "Let's plan your first event and make it memorable."
-        );
+        Label subtitle = new Label("Let's plan your first event and make it memorable.");
         subtitle.setFont(Font.font("Arial", 16));
         subtitle.setTextFill(Color.web(GRAY));
 
         VBox heading = new VBox(2, welcome, subtitle);
 
-        
         VBox firstEvent = new VBox(13);
         firstEvent.setPadding(new Insets(22));
         firstEvent.setStyle(cardStyle());
@@ -158,9 +269,25 @@ public class NewCustomerDashboard extends Application {
         firstDescription.setFont(Font.font("Arial", 14));
         firstDescription.setTextFill(Color.web(GRAY));
 
-        Button firstButton = new Button("+   Create Your First Event");
+        Button firstButton = new Button("+ Create Your First Event");
         firstButton.setPrefHeight(42);
         firstButton.setStyle(buttonStyle());
+        firstButton.setOnAction(e -> openCreateEvent());
+
+        firstEvent.getChildren().addAll(firstTitle, firstDescription, firstButton);
+      firstButton.setOnAction(e -> {
+
+    NoEventC noEventPage = new NoEventC();
+
+    LandingPage.landingPageStage.setScene(
+        noEventPage.getNoEventScene(
+            () -> LandingPage.landingPageStage.setScene(
+                getnewCustomerScene(null)
+            )
+        )
+    );
+
+});
 
         firstEvent.getChildren().addAll(
                 firstTitle,
@@ -168,14 +295,10 @@ public class NewCustomerDashboard extends Application {
                 firstButton
         );
 
-        
         VBox aiCard = new VBox(12);
         aiCard.setPadding(new Insets(20));
         aiCard.setPrefWidth(305);
-        aiCard.setStyle(
-                "-fx-background-color:#174A88;" +
-                "-fx-background-radius:12;"
-        );
+        aiCard.setStyle("-fx-background-color:#174A88;-fx-background-radius:12;");
 
         Label aiIcon = new Label("✦");
         aiIcon.setFont(Font.font("Arial", FontWeight.BOLD, 24));
@@ -201,17 +324,17 @@ public class NewCustomerDashboard extends Application {
                 "-fx-text-fill:#082E6B;" +
                 "-fx-font-weight:bold;" +
                 "-fx-font-size:14;" +
-                "-fx-background-radius:7;"
+                "-fx-background-radius:7;" +
+                "-fx-cursor:hand;"
         );
+        aiButton.setOnAction(e -> openCreateEvent());
 
         aiCard.getChildren().addAll(aiIcon, aiTitle, aiText, aiButton);
 
         HBox topCards = new HBox(22, firstEvent, aiCard);
         HBox.setHgrow(firstEvent, Priority.ALWAYS);
 
-        
         HBox stats = new HBox(15);
-
         stats.getChildren().addAll(
                 statCard("Upcoming Events", "0"),
                 statCard("Active Events", "0"),
@@ -219,51 +342,39 @@ public class NewCustomerDashboard extends Application {
                 statCard("Pending Requests", "0")
         );
 
-
         Label exploreTitle = new Label("Explore Event Ideas");
         exploreTitle.setFont(Font.font("Arial", FontWeight.BOLD, 23));
         exploreTitle.setTextFill(Color.web(TEXT));
 
-        Label exploreSubtitle = new Label(
-                "Choose an event category to get started with your planning."
-        );
+        Label exploreSubtitle = new Label("Choose an event category to get started with your planning.");
         exploreSubtitle.setFont(Font.font("Arial", 14));
         exploreSubtitle.setTextFill(Color.web(GRAY));
 
         VBox exploreHeading = new VBox(2, exploreTitle, exploreSubtitle);
 
-
         HBox row1 = new HBox(15);
         row1.getChildren().addAll(
                 eventCard("▣", "Birthday Celebration",
                         "Plan a memorable birthday with venue, catering, entertainment and more.",
-                        "Plan Birthday  →"),
+                        "Plan Birthday  →", this::openCreateEvent),
 
                 eventCard("▣", "Corporate Event",
                         "Organize a professional seminar, conference, meeting or corporate gathering.",
-                        "Plan Corporate Event  →")
+                        "Plan Corporate Event  →", this::openCreateEvent)
         );
 
         HBox row2 = new HBox(15);
         row2.getChildren().addAll(
                 eventCard("◇", "Educational Event",
                         "Plan seminars, workshops, conferences, training sessions and educational programs.",
-                        "Plan Educational Event  →"),
+                        "Plan Educational Event  →", this::openCreateEvent),
 
                 eventCard("♧", "Family Event",
                         "Create memorable family gatherings, reunions, celebrations and special occasions.",
-                        "Plan Family Event  →")
+                        "Plan Family Event  →", this::openCreateEvent)
         );
 
-        content.getChildren().addAll(
-                heading,
-                topCards,
-                stats,
-                exploreHeading,
-                row1,
-                row2
-        );
-
+        content.getChildren().addAll(heading, topCards, stats, exploreHeading, row1, row2);
 
         BorderPane mainArea = new BorderPane();
         mainArea.setTop(topBar);
@@ -273,24 +384,29 @@ public class NewCustomerDashboard extends Application {
         HBox.setHgrow(mainArea, Priority.ALWAYS);
 
         Scene scene = new Scene(root, 1500, 900);
-
-        stage.setTitle("EventXpert - Customer Dashboard");
-        stage.setScene(scene);
-        stage.show();
+        newCustomerScene = scene;
+        return newCustomerScene;
     }
 
-    
-    private HBox navItem(String icon, String text, boolean active) {
+    private void openCreateEvent() {
+        CreateEventC createEventView = new CreateEventC(uid, idToken);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(createEventView.getCreateEventScene());
+        }
+    }
 
+    private HBox navItem(String icon, String text, boolean active) {
+        return navItem(icon, text, active, null);
+    }
+
+    private HBox navItem(String icon, String text, boolean active, Runnable action) {
         Label iconLabel = new Label(icon);
         iconLabel.setFont(Font.font("Arial", 17));
         iconLabel.setTextFill(Color.WHITE);
 
         Label textLabel = new Label(text);
         textLabel.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-        textLabel.setTextFill(
-                active ? Color.WHITE : Color.web("#B8D0EE")
-        );
+        textLabel.setTextFill(active ? Color.WHITE : Color.web("#B8D0EE"));
 
         HBox item = new HBox(15, iconLabel, textLabel);
         item.setAlignment(Pos.CENTER_LEFT);
@@ -300,13 +416,14 @@ public class NewCustomerDashboard extends Application {
         if (active) {
             item.setStyle("-fx-background-color:#174A88;");
         }
-
+        if (action != null) {
+            item.setStyle(item.getStyle() + "-fx-cursor:hand;");
+            item.setOnMouseClicked(e -> action.run());
+        }
         return item;
     }
 
-    
     private VBox statCard(String title, String value) {
-
         VBox card = new VBox(8);
         card.setPadding(new Insets(16));
         card.setPrefHeight(100);
@@ -321,33 +438,25 @@ public class NewCustomerDashboard extends Application {
         valueLabel.setTextFill(Color.web(TEXT));
 
         card.getChildren().addAll(titleLabel, valueLabel);
-
         HBox.setHgrow(card, Priority.ALWAYS);
-
         return card;
     }
 
-    
-    private VBox eventCard(
-            String icon,
-            String title,
-            String description,
-            String action) {
-
+    private VBox eventCard(String icon, String title, String description, String action, Runnable onClick) {
         VBox card = new VBox(10);
         card.setPadding(new Insets(18));
         card.setMinHeight(145);
-        card.setStyle(cardStyle());
+        card.setStyle(cardStyle() + "-fx-cursor:hand;");
+        if (onClick != null) {
+            card.setOnMouseClicked(e -> onClick.run());
+        }
 
         Label iconLabel = new Label(icon);
         iconLabel.setPrefSize(45, 35);
         iconLabel.setAlignment(Pos.CENTER);
         iconLabel.setFont(Font.font("Arial", 17));
         iconLabel.setTextFill(Color.web(NAVY));
-        iconLabel.setStyle(
-                "-fx-background-color:#C7E7FA;" +
-                "-fx-background-radius:20;"
-        );
+        iconLabel.setStyle("-fx-background-color:#C7E7FA;-fx-background-radius:20;");
 
         Label titleLabel = new Label(title);
         titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 19));
@@ -365,39 +474,16 @@ public class NewCustomerDashboard extends Application {
         actionLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         actionLabel.setTextFill(Color.web(NAVY));
 
-        card.getChildren().addAll(
-                titleRow,
-                descriptionLabel,
-                actionLabel
-        );
-
+        card.getChildren().addAll(titleRow, descriptionLabel, actionLabel);
         HBox.setHgrow(card, Priority.ALWAYS);
-
         return card;
     }
 
-
     private String cardStyle() {
-        return
-                "-fx-background-color:white;" +
-                "-fx-background-radius:10;" +
-                "-fx-border-color:#DCE3EC;" +
-                "-fx-border-radius:10;" +
-                "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.08),5,0,0,2);";
+        return "-fx-background-color:white;-fx-background-radius:10;-fx-border-color:#DCE3EC;-fx-border-radius:10;-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.08),5,0,0,2);";
     }
 
-    
     private String buttonStyle() {
-        return
-                "-fx-background-color:#082E6B;" +
-                "-fx-text-fill:white;" +
-                "-fx-font-weight:bold;" +
-                "-fx-font-size:14;" +
-                "-fx-background-radius:7;" +
-                "-fx-padding:0 22;";
-    }
-
-    public static void main(String[] args) {
-        launch(args);
+        return "-fx-background-color:#082E6B;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:14;-fx-background-radius:7;-fx-padding:0 22;-fx-cursor:hand;";
     }
 }

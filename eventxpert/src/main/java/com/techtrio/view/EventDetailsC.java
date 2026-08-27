@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.session.UserSession;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -8,35 +9,65 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.stage.Stage;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 
-public class EventDetailsC extends Application {
+public class EventDetailsC {
 
     private final String BLUE = "#031D49";
     private final String ACTIVE = "#073E82";
     private final String TEXT = "#102653";
 
-    @Override
-    public void start(Stage stage) {
+    // =========================================================
+    // USER SESSION DATA
+    // =========================================================
 
-        
+    private final String uid;
+    private final String idToken;
+
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
+    public EventDetailsC() {
+
+        this.uid = UserSession.getUid();
+        this.idToken = UserSession.getIdToken();
+    }
+
+    // =========================================================
+    // EVENT DETAILS SCENE
+    // =========================================================
+
+    public Scene getEventDetailsScene() {
+
         HBox root = new HBox();
-        root.setStyle("-fx-background-color:#F5F8FC;");
 
-        
+        root.setStyle(
+                "-fx-background-color:#F5F8FC;"
+        );
+
+        // =====================================================
+        // SIDEBAR
+        // =====================================================
+
         VBox sidebar = new VBox(5);
 
         sidebar.setPrefWidth(245);
         sidebar.setMinWidth(245);
         sidebar.setMaxWidth(245);
 
-        sidebar.setPadding(new Insets(24, 12, 15, 12));
+        sidebar.setPadding(
+                new Insets(24, 12, 15, 12)
+        );
 
         sidebar.setStyle(
                 "-fx-background-color:" + BLUE + ";"
         );
 
-        Label logo = new Label("EventXpert");
+        Label logo =
+                new Label("EventXpert");
 
         logo.setStyle(
                 "-fx-text-fill:white;" +
@@ -44,7 +75,8 @@ public class EventDetailsC extends Application {
                 "-fx-font-weight:bold;"
         );
 
-        Label console = new Label("Corporate Console");
+        Label console =
+                new Label("Corporate Console");
 
         console.setStyle(
                 "-fx-text-fill:#B9CCE8;" +
@@ -52,7 +84,10 @@ public class EventDetailsC extends Application {
         );
 
         Button createEvent =
-                sideButton("+   Create Event", false);
+                sideButton(
+                        "+   Create Event",
+                        false
+                );
 
         createEvent.setStyle(
                 "-fx-background-color:white;" +
@@ -67,40 +102,61 @@ public class EventDetailsC extends Application {
         );
 
         Button dashboard =
-                sideButton("▦   Dashboard", false);
+                sideButton(
+                        "▦   Dashboard",
+                        false
+                );
 
         Button requests =
-                sideButton("▣   Event Requests", false);
+                sideButton(
+                        "▣   Event Requests",
+                        false
+                );
 
         Button events =
-                sideButton("▣   Events", true);
+                sideButton(
+                        "▣   Events",
+                        true
+                );
 
         Button calendar =
-                sideButton("▦   Calendar", false);
+                sideButton(
+                        "▦   Calendar",
+                        false
+                );
 
         Button customers =
-                sideButton("♙   Customers", false);
+                sideButton(
+                        "♙   Customers",
+                        false
+                );
 
         Button organizers =
-                sideButton("♙   Organizers", false);
+                sideButton(
+                        "♙   Organizers",
+                        false
+                );
 
-        // IMPORTANT:
-        // sidebar vendor variable = vendorsMenu
         Button vendorsMenu =
-                sideButton("▤   Vendors", false);
+                sideButton(
+                        "▤   Vendors",
+                        false
+                );
 
-        VBox menu = new VBox(
-                5,
-                dashboard,
-                requests,
-                events,
-                calendar,
-                customers,
-                organizers,
-                vendorsMenu
-        );
+        VBox menu =
+                new VBox(
+                        5,
+                        dashboard,
+                        requests,
+                        events,
+                        calendar,
+                        customers,
+                        organizers,
+                        vendorsMenu
+                );
 
-        Region sidebarSpace = new Region();
+        Region sidebarSpace =
+                new Region();
 
         VBox.setVgrow(
                 sidebarSpace,
@@ -108,15 +164,22 @@ public class EventDetailsC extends Application {
         );
 
         Button settings =
-                sideButton("⚙   Settings", false);
+                sideButton(
+                        "⚙   Settings",
+                        false
+                );
 
         Button help =
-                sideButton("?   Help & Support", false);
+                sideButton(
+                        "?   Help & Support",
+                        false
+                );
 
-        Label user = new Label(
-                "  AC    Arjun Corporate\n" +
-                "          Corporate Admin"
-        );
+        Label user =
+                new Label(
+                        "  AC    Arjun Corporate\n" +
+                        "          Corporate Admin"
+                );
 
         user.setMaxWidth(
                 Double.MAX_VALUE
@@ -143,8 +206,12 @@ public class EventDetailsC extends Application {
                 user
         );
 
-        
-        BorderPane right = new BorderPane();
+        // =====================================================
+        // RIGHT SIDE
+        // =====================================================
+
+        BorderPane right =
+                new BorderPane();
 
         HBox.setHgrow(
                 right,
@@ -155,8 +222,12 @@ public class EventDetailsC extends Application {
                 "-fx-background-color:#F5F8FC;"
         );
 
-        
-        TextField search = new TextField();
+        // =====================================================
+        // TOP BAR
+        // =====================================================
+
+        TextField search =
+                new TextField();
 
         search.setPromptText(
                 "Search events, venues, vendors..."
@@ -185,22 +256,24 @@ public class EventDetailsC extends Application {
         Button profile =
                 topButton("AC");
 
-        Region topSpace = new Region();
+        Region topSpace =
+                new Region();
 
         HBox.setHgrow(
                 topSpace,
                 Priority.ALWAYS
         );
 
-        HBox topBar = new HBox(
-                12,
-                search,
-                topSpace,
-                notification,
-                gear,
-                helpTop,
-                profile
-        );
+        HBox topBar =
+                new HBox(
+                        12,
+                        search,
+                        topSpace,
+                        notification,
+                        gear,
+                        helpTop,
+                        profile
+                );
 
         topBar.setAlignment(
                 Pos.CENTER_RIGHT
@@ -218,17 +291,44 @@ public class EventDetailsC extends Application {
 
         right.setTop(topBar);
 
-        
-        VBox main = new VBox(10);
+        // =====================================================
+        // MAIN CONTENT
+        // =====================================================
+
+        VBox main =
+                new VBox(10);
 
         main.setPadding(
                 new Insets(14, 22, 12, 22)
         );
 
-        
-        Label breadcrumb = new Label(
-                "Events   ›   Corporate Annual Conference 2026"
+        ScrollPane scrollPane =
+                new ScrollPane();
+
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(false);
+
+        scrollPane.setHbarPolicy(
+                ScrollPane.ScrollBarPolicy.NEVER
         );
+
+        scrollPane.setVbarPolicy(
+                ScrollPane.ScrollBarPolicy.AS_NEEDED
+        );
+
+        scrollPane.setStyle(
+                "-fx-background-color:#F5F8FC;" +
+                "-fx-background:#F5F8FC;"
+        );
+
+        // =====================================================
+        // HEADING
+        // =====================================================
+
+        Label breadcrumb =
+                new Label(
+                        "Events   ›   Corporate Annual Conference 2026"
+                );
 
         breadcrumb.setStyle(
                 "-fx-text-fill:#6D7D95;" +
@@ -244,46 +344,47 @@ public class EventDetailsC extends Application {
                 "-fx-font-weight:bold;"
         );
 
-        Label subtitle = new Label(
-                "View and manage all details of your corporate event in one place."
-        );
+        Label subtitle =
+                new Label(
+                        "View and manage all details of your corporate event in one place."
+                );
 
         subtitle.setStyle(
                 "-fx-text-fill:#687890;" +
                 "-fx-font-size:11px;"
         );
 
-        VBox heading = new VBox(
-                2,
-                breadcrumb,
-                title,
-                subtitle
-        );
+        VBox heading =
+                new VBox(
+                        2,
+                        breadcrumb,
+                        title,
+                        subtitle
+                );
 
-        Region headingSpace = new Region();
+        Region headingSpace =
+                new Region();
 
         HBox.setHgrow(
                 headingSpace,
                 Priority.ALWAYS
         );
 
-        Button backEvents =
-                outlineButton("←  Back to Events");
-
-        Button editEvent =
-                blueButton("✎  Edit Event");
-
-        HBox headingRow = new HBox(
-                10,
-                heading,
-                headingSpace,
-                backEvents,
-                editEvent
-        );
+        HBox headingRow =
+                new HBox(
+                        10,
+                        heading,
+                        headingSpace
+                );
 
         headingRow.setAlignment(
                 Pos.CENTER_LEFT
         );
+
+        // =====================================================
+        // SUMMARY CARD
+        // =====================================================
+
         VBox summaryCard =
                 whiteCard();
 
@@ -355,7 +456,6 @@ public class EventDetailsC extends Application {
                         "#E7EEFF"
                 );
 
-       
         VBox vendorsCard =
                 statCard(
                         "▤",
@@ -380,15 +480,16 @@ public class EventDetailsC extends Application {
                         "#F1E5FF"
                 );
 
-        HBox summaryRow = new HBox(
-                14,
-                eventImage,
-                eventInfo,
-                guestsCard,
-                vendorsCard,
-                organizersCard,
-                budgetTotalCard
-        );
+        HBox summaryRow =
+                new HBox(
+                        14,
+                        eventImage,
+                        eventInfo,
+                        guestsCard,
+                        vendorsCard,
+                        organizersCard,
+                        budgetTotalCard
+                );
 
         HBox.setHgrow(
                 eventInfo,
@@ -399,8 +500,12 @@ public class EventDetailsC extends Application {
                 summaryRow
         );
 
-        
-        HBox tabs = new HBox();
+        // =====================================================
+        // TABS
+        // =====================================================
+
+        HBox tabs =
+                new HBox();
 
         String[] tabNames = {
                 "Overview",
@@ -413,7 +518,9 @@ public class EventDetailsC extends Application {
         for (int i = 0; i < tabNames.length; i++) {
 
             Button tab =
-                    new Button(tabNames[i]);
+                    new Button(
+                            tabNames[i]
+                    );
 
             tab.setPrefWidth(125);
 
@@ -450,7 +557,10 @@ public class EventDetailsC extends Application {
                 "-fx-background-radius:6;"
         );
 
-        
+        // =====================================================
+        // OVERVIEW CARD
+        // =====================================================
+
         VBox overviewCard =
                 whiteCard();
 
@@ -512,7 +622,10 @@ public class EventDetailsC extends Application {
                 "10 Apr 2026, 11:20 AM"
         );
 
-        
+        // =====================================================
+        // TIMELINE CARD
+        // =====================================================
+
         VBox timelineCard =
                 whiteCard();
 
@@ -562,58 +675,12 @@ public class EventDetailsC extends Application {
                 "#0BB36B"
         );
 
-
-        VBox actionsCard =
-                whiteCard();
-
-        actionsCard.getChildren().add(
-                cardTitle("Quick Actions")
-        );
-
-        Button edit =
-                blueButton("✎  Edit Event");
-
-        Button budgetReport =
-                outlineButton(
-                        "◷  View Budget Report"
+        HBox row1 =
+                new HBox(
+                        10,
+                        overviewCard,
+                        timelineCard
                 );
-
-        Button share =
-                outlineButton(
-                        "♧  Share Event"
-                );
-
-        Button cancel =
-                new Button(
-                        "▣  Cancel Event"
-                );
-
-        cancel.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        cancel.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-text-fill:#E53935;" +
-                "-fx-border-color:#FF4A4A;" +
-                "-fx-border-radius:5;" +
-                "-fx-background-radius:5;"
-        );
-
-        actionsCard.getChildren().addAll(
-                edit,
-                budgetReport,
-                share,
-                cancel
-        );
-
-        
-        HBox row1 = new HBox(
-                10,
-                overviewCard,
-                timelineCard,
-                actionsCard
-        );
 
         HBox.setHgrow(
                 overviewCard,
@@ -625,12 +692,10 @@ public class EventDetailsC extends Application {
                 Priority.ALWAYS
         );
 
-        HBox.setHgrow(
-                actionsCard,
-                Priority.ALWAYS
-        );
+        // =====================================================
+        // LOCATION CARD
+        // =====================================================
 
-        
         VBox locationCard =
                 whiteCard();
 
@@ -683,16 +748,22 @@ public class EventDetailsC extends Application {
                 viewMap
         );
 
-        
+        // =====================================================
+        // MAP CARD
+        // =====================================================
+
         VBox mapCard =
                 imageBox(
-                       "/assets/images/map logo.png",
+                        "/assets/images/map logo.png",
                         250,
-                    190,
+                        190,
                         "Google Maps"
                 );
 
-        
+        // =====================================================
+        // BUDGET CARD
+        // =====================================================
+
         VBox budgetCard =
                 whiteCard();
 
@@ -751,7 +822,10 @@ public class EventDetailsC extends Application {
                 "#567DCB"
         );
 
-        
+        // =====================================================
+        // AI CARD
+        // =====================================================
+
         VBox aiCard =
                 whiteCard();
 
@@ -832,14 +906,18 @@ public class EventDetailsC extends Application {
                 aiDetails
         );
 
-        
-        HBox row2 = new HBox(
-                10,
-                locationCard,
-                mapCard,
-                budgetCard,
-                aiCard
-        );
+        // =====================================================
+        // SECOND ROW
+        // =====================================================
+
+        HBox row2 =
+                new HBox(
+                        10,
+                        locationCard,
+                        mapCard,
+                        budgetCard,
+                        aiCard
+                );
 
         HBox.setHgrow(
                 locationCard,
@@ -861,7 +939,10 @@ public class EventDetailsC extends Application {
                 Priority.ALWAYS
         );
 
-        
+        // =====================================================
+        // ADD MAIN CONTENT
+        // =====================================================
+
         main.getChildren().addAll(
                 headingRow,
                 summaryCard,
@@ -870,14 +951,38 @@ public class EventDetailsC extends Application {
                 row2
         );
 
-        right.setCenter(main);
+        scrollPane.setContent(main);
 
-        
+        right.setCenter(scrollPane);
+
+        // =====================================================
+        // FOOTER BUTTONS
+        // =====================================================
+
         Button back =
                 outlineButton("Back");
 
         Button next =
                 blueButton("Next");
+
+        // =====================================================
+        // NEXT BUTTON
+        // =====================================================
+
+        next.setOnAction(e -> {
+
+            Notification notificationPage =
+                    new Notification();
+
+            LandingPage.landingPageStage.setScene(
+                    notificationPage.getNotificationScene()
+            );
+
+        });
+
+        // =====================================================
+        // FOOTER
+        // =====================================================
 
         Region footerSpace =
                 new Region();
@@ -887,12 +992,13 @@ public class EventDetailsC extends Application {
                 Priority.ALWAYS
         );
 
-        HBox footer = new HBox(
-                10,
-                footerSpace,
-                back,
-                next
-        );
+        HBox footer =
+                new HBox(
+                        10,
+                        footerSpace,
+                        back,
+                        next
+                );
 
         footer.setAlignment(
                 Pos.CENTER_RIGHT
@@ -910,6 +1016,9 @@ public class EventDetailsC extends Application {
 
         right.setBottom(footer);
 
+        // =====================================================
+        // SEARCH
+        // =====================================================
 
         search.setOnAction(e -> {
 
@@ -939,17 +1048,9 @@ public class EventDetailsC extends Application {
             }
         });
 
-        backEvents.setOnAction(e ->
-                System.out.println(
-                        "Back to Events"
-                )
-        );
-
-        editEvent.setOnAction(e ->
-                System.out.println(
-                        "Edit Event"
-                )
-        );
+        // =====================================================
+        // MAP BUTTON
+        // =====================================================
 
         viewMap.setOnAction(e ->
                 System.out.println(
@@ -957,39 +1058,68 @@ public class EventDetailsC extends Application {
                 )
         );
 
-        back.setOnAction(e ->
-                System.out.println(
-                        "Back"
-                )
-        );
+        // =====================================================
+        // BACK → REVIEW PAGE
+        // =====================================================
 
-        next.setOnAction(e ->
-                System.out.println(
-                        "Next"
-                )
-        );
+        back.setOnAction(e -> {
 
-        
+            ReviewPageC reviewPage =
+                    new ReviewPageC(
+                            uid,
+                            idToken
+                    );
+
+            LandingPage.landingPageStage.setScene(
+                    reviewPage.getReviewScene()
+            );
+
+        });
+
+        // =====================================================
+        // CREATE EVENT BUTTON
+        // =====================================================
+
+        createEvent.setOnAction(e -> {
+
+            CreateEventC createEventPage =
+                    new CreateEventC(
+                            uid,
+                            idToken
+                    );
+
+            LandingPage.landingPageStage.setScene(
+                    createEventPage.getCreateEventScene()
+            );
+
+        });
+
+        // =====================================================
+        // ROOT
+        // =====================================================
+
         root.getChildren().addAll(
                 sidebar,
                 right
         );
 
+        // =====================================================
+        // SCENE
+        // =====================================================
+
         Scene scene =
-                new Scene(root);
+                new Scene(
+                        root,
+                        1365,
+                        850
+                );
 
-        stage.setTitle(
-                "EventXpert - Event Details"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMaximized(true);
-
-        stage.show();
+        return scene;
     }
 
-    
+    // =========================================================
+    // SIDEBAR BUTTON
+    // =========================================================
 
     private Button sideButton(
             String text,
@@ -1018,12 +1148,16 @@ public class EventDetailsC extends Application {
 
         b.setStyle(
                 "-fx-background-color:" +
-                (active ? ACTIVE : "transparent") +
+                (active
+                        ? ACTIVE
+                        : "transparent") +
                 ";" +
                 "-fx-text-fill:white;" +
                 "-fx-font-size:12px;" +
                 "-fx-font-weight:" +
-                (active ? "bold" : "normal") +
+                (active
+                        ? "bold"
+                        : "normal") +
                 ";" +
                 "-fx-background-radius:6;"
         );
@@ -1031,7 +1165,9 @@ public class EventDetailsC extends Application {
         return b;
     }
 
-    
+    // =========================================================
+    // TOP BUTTON
+    // =========================================================
 
     private Button topButton(
             String text
@@ -1050,7 +1186,9 @@ public class EventDetailsC extends Application {
         return b;
     }
 
-    
+    // =========================================================
+    // WHITE CARD
+    // =========================================================
 
     private VBox whiteCard() {
 
@@ -1071,7 +1209,9 @@ public class EventDetailsC extends Application {
         return box;
     }
 
-    
+    // =========================================================
+    // CARD TITLE
+    // =========================================================
 
     private Label cardTitle(
             String text
@@ -1089,7 +1229,9 @@ public class EventDetailsC extends Application {
         return label;
     }
 
-    
+    // =========================================================
+    // ADD ROW
+    // =========================================================
 
     private void addRow(
             VBox box,
@@ -1142,7 +1284,9 @@ public class EventDetailsC extends Application {
         box.getChildren().add(row);
     }
 
-   
+    // =========================================================
+    // TIMELINE ITEM
+    // =========================================================
 
     private void timelineItem(
             VBox box,
@@ -1158,7 +1302,9 @@ public class EventDetailsC extends Application {
                 new Label("●");
 
         dot.setStyle(
-                "-fx-text-fill:" + color + ";" +
+                "-fx-text-fill:" +
+                color +
+                ";" +
                 "-fx-font-size:11px;"
         );
 
@@ -1195,7 +1341,10 @@ public class EventDetailsC extends Application {
         box.getChildren().add(row);
     }
 
-    
+    // =========================================================
+    // STAT CARD
+    // =========================================================
+
     private VBox statCard(
             String icon,
             String number,
@@ -1232,7 +1381,9 @@ public class EventDetailsC extends Application {
                 new Label(number);
 
         numberLabel.setStyle(
-                "-fx-text-fill:" + TEXT + ";" +
+                "-fx-text-fill:" +
+                TEXT +
+                ";" +
                 "-fx-font-size:16px;" +
                 "-fx-font-weight:bold;"
         );
@@ -1254,7 +1405,10 @@ public class EventDetailsC extends Application {
         return box;
     }
 
-    
+    // =========================================================
+    // BUDGET ITEM
+    // =========================================================
+
     private void budgetItem(
             VBox box,
             String name,
@@ -1304,7 +1458,9 @@ public class EventDetailsC extends Application {
         box.getChildren().add(row);
     }
 
-   
+    // =========================================================
+    // CHECK ITEM
+    // =========================================================
 
     private Label checkItem(
             String text
@@ -1323,7 +1479,9 @@ public class EventDetailsC extends Application {
         return label;
     }
 
-    
+    // =========================================================
+    // INFO TEXT
+    // =========================================================
 
     private Label infoText(
             String text
@@ -1340,8 +1498,9 @@ public class EventDetailsC extends Application {
         return label;
     }
 
-    
-    
+    // =========================================================
+    // PILL
+    // =========================================================
 
     private Label pill(
             String text,
@@ -1368,7 +1527,9 @@ public class EventDetailsC extends Application {
         return label;
     }
 
-   
+    // =========================================================
+    // IMAGE BOX
+    // =========================================================
 
     private VBox imageBox(
             String path,
@@ -1389,23 +1550,36 @@ public class EventDetailsC extends Application {
 
         try {
 
-            Image image =
-                    new Image(
-                            getClass()
-                                    .getResourceAsStream(
-                                            path
-                                    )
-                    );
+            if (getClass().getResourceAsStream(path) != null) {
 
-            ImageView view =
-                    new ImageView(image);
+                Image image =
+                        new Image(
+                                getClass()
+                                        .getResourceAsStream(path)
+                        );
 
-            view.setFitWidth(width);
-            view.setFitHeight(height);
+                ImageView view =
+                        new ImageView(image);
 
-            view.setPreserveRatio(false);
+                view.setFitWidth(width);
+                view.setFitHeight(height);
 
-            box.getChildren().add(view);
+                view.setPreserveRatio(false);
+
+                box.getChildren().add(view);
+
+            } else {
+
+                Label label =
+                        new Label(fallback);
+
+                label.setStyle(
+                        "-fx-text-fill:#71809A;" +
+                        "-fx-font-size:11px;"
+                );
+
+                box.getChildren().add(label);
+            }
 
         } catch (Exception e) {
 
@@ -1430,7 +1604,10 @@ public class EventDetailsC extends Application {
         return box;
     }
 
-    
+    // =========================================================
+    // OUTLINE BUTTON
+    // =========================================================
+
     private Button outlineButton(
             String text
     ) {
@@ -1439,7 +1616,12 @@ public class EventDetailsC extends Application {
                 new Button(text);
 
         b.setPadding(
-                new Insets(7, 14, 7, 14)
+                new Insets(
+                        7,
+                        14,
+                        7,
+                        14
+                )
         );
 
         b.setStyle(
@@ -1454,7 +1636,9 @@ public class EventDetailsC extends Application {
         return b;
     }
 
-    
+    // =========================================================
+    // BLUE BUTTON
+    // =========================================================
 
     private Button blueButton(
             String text
@@ -1464,7 +1648,12 @@ public class EventDetailsC extends Application {
                 new Button(text);
 
         b.setPadding(
-                new Insets(8, 16, 8, 16)
+                new Insets(
+                        8,
+                        16,
+                        8,
+                        16
+                )
         );
 
         b.setStyle(
@@ -1476,13 +1665,5 @@ public class EventDetailsC extends Application {
         );
 
         return b;
-    }
-
-    
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
     }
 }

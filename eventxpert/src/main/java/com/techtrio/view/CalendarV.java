@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,7 +12,9 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 
-public class CalendarV extends Application {
+public class CalendarV {
+    private Scene calendarVScene;
+    private VendorDashboardV vendorDashboard;
 
     // Color Palette Constants
     private static final String SIDEBAR_NAVY = "#062A60";
@@ -48,8 +49,11 @@ public class CalendarV extends Application {
     private Label selectedServiceLabel;
     private Label selectedAmountLabel;
 
-    @Override
-    public void start(Stage primaryStage) {
+    public void setVendorDashboard(VendorDashboardV vendorDashboard) {
+        this.vendorDashboard = vendorDashboard;
+    }
+
+    public Scene getcalendarVScene(Stage primaryStage, Runnable callBackAction) {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
@@ -89,10 +93,8 @@ public class CalendarV extends Application {
 
         // Scene Setup
         Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert - Vendor Availability Calendar");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        calendarVScene = scene;
+        return calendarVScene;
     }
 
     // ==========================================
@@ -128,24 +130,26 @@ public class CalendarV extends Application {
         sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
 
         // Menu Sections
-        sidebar.getChildren().add(createSidebarCategory("OVERVIEW"));
-        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> showToast(stage, "Opening Dashboard...")));
-
-        sidebar.getChildren().add(createSidebarCategory("SERVICE MANAGEMENT"));
+        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> {
+            showToast(stage, "Opening Dashboard...");
+            if (vendorDashboard != null) {
+                vendorDashboard.backToVendorDashboard();
+            } else {
+                VendorDashboardV dashboard = new VendorDashboardV();
+                Scene dashboardScene = dashboard.getvendorDashboardScene();
+                if (LandingPage.landingPageStage != null) {
+                    LandingPage.landingPageStage.setScene(dashboardScene);
+                }
+            }
+        }));
         sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false, e -> showToast(stage, "Opening Service Requests...")));
         sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, e -> showToast(stage, "Opening My Bookings...")));
         sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, e -> showToast(stage, "Opening Services...")));
         sidebar.getChildren().add(createSidebarItem("📅 Calendar", true, e -> {})); // Active Menu
-
-        sidebar.getChildren().add(createSidebarCategory("FINANCE"));
         sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, e -> showToast(stage, "Opening Finance...")));
-
-        sidebar.getChildren().add(createSidebarCategory("COMMUNICATION"));
         sidebar.getChildren().add(createSidebarItemWithBadge("🔔 Notifications", "3"));
-
-        sidebar.getChildren().add(createSidebarCategory("ACCOUNT"));
-        sidebar.getChildren().add(createSidebarItem("👤 Profile & Settings", false, e -> showToast(stage, "Opening Profile...")));
-        sidebar.getChildren().add(createSidebarItem("❓ Help & Support", false, e -> showToast(stage, "Opening Support...")));
+        sidebar.getChildren().add(createSidebarItem("👤 Settings", false, e -> showToast(stage, "Opening Profile...")));
+        sidebar.getChildren().add(createSidebarItem("❓ Support", false, e -> showToast(stage, "Opening Support...")));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -172,12 +176,6 @@ public class CalendarV extends Application {
 
         sidebar.getChildren().addAll(spacer, profilePill);
         return sidebar;
-    }
-
-    private Label createSidebarCategory(String title) {
-        Label cat = new Label(title);
-        cat.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #64748B; -fx-padding: 14 8 4 8;");
-        return cat;
     }
 
     private Button createSidebarItem(String title, boolean isActive, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {

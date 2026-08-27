@@ -1,20 +1,37 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import java.util.List;
+
+import com.techtrio.controller.CustomerController;
+import com.techtrio.model.Event;
+import com.techtrio.session.UserSession;
+
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class ActiveCustomerDashboardC extends Application {
+public class ActiveCustomerDashboardC {
+
+    private Scene activeCustomerScene;
+
+    private String uid;
+    private String idToken;
 
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
@@ -23,19 +40,68 @@ public class ActiveCustomerDashboardC extends Application {
     private static final String BORDER = "#D7DEE8";
     private static final String LIGHT_BLUE = "#BFE5FF";
 
-    @Override
-    public void start(Stage stage) {
+    private VBox eventListContainer;
 
-        
-        BorderPane root = new BorderPane();
+    private Label totalEventsValLabel;
+    private Label upcomingEventsValLabel;
+    private Label pendingEventsValLabel;
+
+    // =========================================================
+    // CONSTRUCTORS
+    // =========================================================
+
+    public ActiveCustomerDashboardC() {
+
+        this(
+                UserSession.getUid(),
+                UserSession.getIdToken()
+        );
+    }
+
+    public ActiveCustomerDashboardC(
+            String uid,
+            String idToken
+    ) {
+
+        this.uid =
+                (uid != null && !uid.isBlank())
+                        ? uid
+                        : UserSession.getUid();
+
+        this.idToken =
+                (idToken != null && !idToken.isBlank())
+                        ? idToken
+                        : UserSession.getIdToken();
+
+        UserSession.setSession(
+                this.uid,
+                this.idToken,
+                null,
+                "Customer"
+        );
+    }
+
+    // =========================================================
+    // MAIN DASHBOARD
+    // =========================================================
+
+    public Scene getactiveCustomerScene(
+            Runnable callBackAction1
+    ) {
+
+        BorderPane root =
+                new BorderPane();
 
         root.setStyle(
                 "-fx-background-color:" + BG + ";"
         );
 
-       
+        // =====================================================
+        // SIDEBAR
+        // =====================================================
 
-        VBox sidebar = new VBox();
+        VBox sidebar =
+                new VBox();
 
         sidebar.setPrefWidth(250);
         sidebar.setMinWidth(250);
@@ -45,12 +111,20 @@ public class ActiveCustomerDashboardC extends Application {
                 "-fx-background-color:" + NAVY + ";"
         );
 
-        
+        // -----------------------------------------------------
+        // LOGO
+        // -----------------------------------------------------
 
-        VBox logoBox = new VBox(2);
+        VBox logoBox =
+                new VBox(2);
 
         logoBox.setPadding(
-                new Insets(24, 20, 20, 20)
+                new Insets(
+                        24,
+                        20,
+                        20,
+                        20
+                )
         );
 
         logoBox.getChildren().addAll(
@@ -70,82 +144,171 @@ public class ActiveCustomerDashboardC extends Application {
                 )
         );
 
-        
+        // -----------------------------------------------------
+        // MAIN MENU
+        // -----------------------------------------------------
 
-        VBox menu = new VBox(5);
+        VBox menu =
+                new VBox(5);
 
         menu.setPadding(
-                new Insets(8, 12, 8, 12)
+                new Insets(
+                        8,
+                        12,
+                        8,
+                        12
+                )
         );
 
-        menu.getChildren().addAll(
-
+        HBox dashboardMenu =
                 menuItem(
                         "▦",
                         "Dashboard",
                         true
-                ),
+                );
 
+        HBox createEventMenu =
                 menuItem(
                         "⊕",
                         "Create Event",
                         false
-                ),
+                );
 
+        createEventMenu.setOnMouseClicked(
+                e -> openCreateEvent()
+        );
+
+        HBox myEventsMenu =
                 menuItem(
                         "▣",
                         "My Events",
                         false
-                ),
+                );
 
+        HBox calendarMenu =
                 menuItem(
                         "□",
                         "Calendar",
                         false
-                ),
+                );
 
+        HBox notificationMenu =
                 menuItem(
                         "♧",
                         "Notifications",
                         false
-                )
+                );
 
-               
+        notificationMenu.setOnMouseClicked(e -> {
+
+            Notification notificationPage =
+                    new Notification();
+
+            if (LandingPage.landingPageStage != null) {
+
+                LandingPage.landingPageStage.setScene(
+                        notificationPage.getNotificationScene()
+                );
+            }
+        });
+
+        menu.getChildren().addAll(
+                dashboardMenu,
+                createEventMenu,
+                myEventsMenu,
+                calendarMenu,
+                notificationMenu
         );
 
-        Region sidebarSpace = new Region();
+        // -----------------------------------------------------
+        // SIDEBAR SPACE
+        // -----------------------------------------------------
+
+        Region sidebarSpace =
+                new Region();
 
         VBox.setVgrow(
                 sidebarSpace,
                 Priority.ALWAYS
         );
 
-        
+        // -----------------------------------------------------
+        // BOTTOM MENU
+        // -----------------------------------------------------
 
-        VBox bottomMenu = new VBox(5);
+        VBox bottomMenu =
+                new VBox(5);
 
         bottomMenu.setPadding(
-                new Insets(8, 12, 18, 12)
+                new Insets(
+                        8,
+                        12,
+                        18,
+                        12
+                )
         );
 
-        bottomMenu.getChildren().addAll(
+        // PROFILE
 
+        HBox profileMenu =
                 menuItem(
                         "◉",
                         "Profile",
                         false
-                ),
+                );
 
+        profileMenu.setOnMouseClicked(e -> {
+
+            ProfilePageC profilePage =
+                    new ProfilePageC();
+
+            if (LandingPage.landingPageStage != null) {
+
+                LandingPage.landingPageStage.setScene(
+                        profilePage.getProfileScene(
+                                this::returnToDashboard
+                        )
+                );
+            }
+        });
+
+        // SETTINGS
+
+        HBox settingsMenu =
                 menuItem(
                         "⚙",
                         "Settings",
                         false
-                ),
+                );
+
+        settingsMenu.setOnMouseClicked(e -> {
+
+            SettingC settingPage =
+                    new SettingC();
+
+            if (LandingPage.landingPageStage != null) {
+
+                LandingPage.landingPageStage.setScene(
+                        settingPage.getSettingScene(
+                                this::returnToDashboard
+                        )
+                );
+            }
+        });
+
+        // SUPPORT
+
+        HBox supportMenu =
                 menuItem(
                         "?",
                         "Support",
                         false
-                )
+                );
+
+        bottomMenu.getChildren().addAll(
+                profileMenu,
+                settingsMenu,
+                supportMenu
         );
 
         sidebar.getChildren().addAll(
@@ -155,13 +318,19 @@ public class ActiveCustomerDashboardC extends Application {
                 bottomMenu
         );
 
-        
+        // =====================================================
+        // RIGHT AREA
+        // =====================================================
 
-        BorderPane rightArea = new BorderPane();
+        BorderPane rightArea =
+                new BorderPane();
 
-        
+        // =====================================================
+        // TOP BAR
+        // =====================================================
 
-        HBox topBar = new HBox(12);
+        HBox topBar =
+                new HBox(12);
 
         topBar.setPrefHeight(64);
         topBar.setMinHeight(64);
@@ -171,7 +340,12 @@ public class ActiveCustomerDashboardC extends Application {
         );
 
         topBar.setPadding(
-                new Insets(10, 20, 10, 20)
+                new Insets(
+                        10,
+                        20,
+                        10,
+                        20
+                )
         );
 
         topBar.setStyle(
@@ -180,16 +354,14 @@ public class ActiveCustomerDashboardC extends Application {
                 "-fx-border-width:0 0 1 0;"
         );
 
-        
-
-        TextField search = new TextField();
+        TextField search =
+                new TextField();
 
         search.setPromptText(
-                "Search"
+                "Search events..."
         );
 
         search.setPrefWidth(330);
-        search.setMinWidth(270);
         search.setPrefHeight(36);
 
         search.setStyle(
@@ -198,74 +370,85 @@ public class ActiveCustomerDashboardC extends Application {
                 "-fx-border-radius:18;" +
                 "-fx-background-radius:18;" +
                 "-fx-padding:0 15;" +
-                "-fx-font-family:Arial;" +
                 "-fx-font-size:12px;"
         );
 
-        Region topSpace = new Region();
+        Region topSpace =
+                new Region();
 
         HBox.setHgrow(
                 topSpace,
                 Priority.ALWAYS
         );
 
-        Label notification = styledLabel(
-                "♧",
-                19,
-                FontWeight.NORMAL,
-                NAVY
-        );
+        Label notification =
+                styledLabel(
+                        "♧",
+                        19,
+                        FontWeight.NORMAL,
+                        NAVY
+                );
 
-        
+        Circle avatarCircle =
+                new Circle(
+                        18,
+                        Color.web("#C9E8FA")
+                );
 
-        Circle avatarCircle = new Circle(
-                18,
-                Color.web("#C9E8FA")
-        );
+        Label avatarLetter =
+                styledLabel(
+                        "C",
+                        12,
+                        FontWeight.BOLD,
+                        NAVY
+                );
 
-        Label avatarLetter = styledLabel(
-                "S",
-                12,
-                FontWeight.BOLD,
-                NAVY
-        );
-
-        StackPane avatar = new StackPane(
-                avatarCircle,
-                avatarLetter
-        );
-
-        
+        StackPane avatar =
+                new StackPane(
+                        avatarCircle,
+                        avatarLetter
+                );
 
         topBar.getChildren().addAll(
                 search,
                 topSpace,
                 notification,
                 avatar
-                
         );
 
-        
+        // =====================================================
+        // MAIN CONTENT
+        // =====================================================
 
-        VBox main = new VBox(12);
+        VBox main =
+                new VBox(12);
 
         main.setPadding(
-                new Insets(15, 20, 15, 20)
+                new Insets(
+                        15,
+                        20,
+                        15,
+                        20
+                )
         );
 
         main.setStyle(
                 "-fx-background-color:" + BG + ";"
         );
 
-        
+        // =====================================================
+        // WELCOME
+        // =====================================================
 
-        HBox welcome = new HBox();
+        HBox welcome =
+                new HBox();
 
         welcome.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        VBox welcomeText = new VBox(3);
+        VBox welcomeText =
+                new VBox(3);
 
         welcomeText.getChildren().addAll(
 
@@ -277,23 +460,25 @@ public class ActiveCustomerDashboardC extends Application {
                 ),
 
                 styledLabel(
-                        "Here's a look at your previous events.",
+                        "Here's a look at your events.",
                         11,
                         FontWeight.NORMAL,
                         "#596273"
                 )
         );
 
-        Region welcomeSpace = new Region();
+        Region welcomeSpace =
+                new Region();
 
         HBox.setHgrow(
                 welcomeSpace,
                 Priority.ALWAYS
         );
 
-        Button createEvent = new Button(
-                "+  Create New Event"
-        );
+        Button createEvent =
+                new Button(
+                        "+  Create New Event"
+                );
 
         createEvent.setPrefSize(
                 175,
@@ -306,7 +491,12 @@ public class ActiveCustomerDashboardC extends Application {
                 "-fx-background-radius:7;" +
                 "-fx-font-family:Arial;" +
                 "-fx-font-size:11px;" +
-                "-fx-font-weight:bold;"
+                "-fx-font-weight:bold;" +
+                "-fx-cursor:hand;"
+        );
+
+        createEvent.setOnAction(
+                e -> openCreateEvent()
         );
 
         welcome.getChildren().addAll(
@@ -315,43 +505,63 @@ public class ActiveCustomerDashboardC extends Application {
                 createEvent
         );
 
-       
-        HBox stats = new HBox(12);
+        // =====================================================
+        // STAT CARDS
+        // =====================================================
+
+        HBox stats =
+                new HBox(12);
 
         stats.setPrefHeight(70);
+
+        totalEventsValLabel =
+                new Label("0");
+
+        upcomingEventsValLabel =
+                new Label("0");
+
+        pendingEventsValLabel =
+                new Label("0");
 
         stats.getChildren().addAll(
 
                 statCard(
-                        "✓",
-                        "Completed Events",
-                        "3"
-                ),
-
-                statCard(
                         "▣",
                         "Total Events Created",
-                        "3"
+                        totalEventsValLabel
                 ),
 
                 statCard(
                         "→",
-                        "Upcoming Events",
-                        "0"
+                        "Upcoming / Active",
+                        upcomingEventsValLabel
+                ),
+
+                statCard(
+                        "⏳",
+                        "Pending Approval",
+                        pendingEventsValLabel
                 )
         );
 
-        
-        HBox lower = new HBox(14);
+        // =====================================================
+        // LOWER AREA
+        // =====================================================
+
+        HBox lower =
+                new HBox(14);
 
         VBox.setVgrow(
                 lower,
                 Priority.ALWAYS
         );
 
-        
+        // =====================================================
+        // EVENTS CARD
+        // =====================================================
 
-        VBox previous = new VBox(12);
+        VBox previous =
+                new VBox(12);
 
         previous.setPadding(
                 new Insets(16)
@@ -369,81 +579,52 @@ public class ActiveCustomerDashboardC extends Application {
                 Priority.ALWAYS
         );
 
-        HBox previousHeader = new HBox();
+        HBox previousHeader =
+                new HBox();
 
         previousHeader.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        VBox previousTitle = new VBox(4);
+        VBox previousTitle =
+                new VBox(4);
 
         previousTitle.getChildren().addAll(
 
                 styledLabel(
-                        "Previous Events",
+                        "Your Events",
                         23,
                         FontWeight.BOLD,
                         TEXT
                 ),
 
                 styledLabel(
-                        "Your completed events and past event history.",
+                        "Your event history and status loaded from Firestore.",
                         14,
                         FontWeight.NORMAL,
                         "#667085"
                 )
         );
 
-        Region previousSpace = new Region();
-
-        HBox.setHgrow(
-                previousSpace,
-                Priority.ALWAYS
+        previousHeader.getChildren().add(
+                previousTitle
         );
 
-        Button allButton = smallButton(
-                "All",
-                "#F3F6FA"
-        );
+        eventListContainer =
+                new VBox(12);
 
-        Button completedButton = smallButton(
-                "Completed",
-                "#EAF6FF"
-        );
-
-        previousHeader.getChildren().addAll(
-                previousTitle,
-                previousSpace,
-                allButton,
-                completedButton
-        );
-
-        VBox eventList = new VBox(12);
-
-        eventList.getChildren().addAll(
-
-                eventCard(
-                        "Birthday Celebration",
-                        "15 July 2026",
-                        "Sunshine Banquet Hall"
-                ),
-
-                eventCard(
-                        "Corporate Seminar",
-                        "28 June 2026",
-                        "Grand Conference Hall"
-                ),
-
-                eventCard(
-                        "Family Gathering",
-                        "10 June 2026",
-                        "Green Valley Resort"
+        eventListContainer.getChildren().add(
+                styledLabel(
+                        "Loading your events...",
+                        14,
+                        FontWeight.NORMAL,
+                        "#667085"
                 )
         );
 
         previous.getChildren().addAll(
                 previousHeader,
-                eventList
+                eventListContainer
         );
 
         HBox.setHgrow(
@@ -451,35 +632,34 @@ public class ActiveCustomerDashboardC extends Application {
                 Priority.ALWAYS
         );
 
-       
-        VBox rightColumn = new VBox(12);
-
-        rightColumn.setPrefWidth(330);
-        rightColumn.setMinWidth(310);
-        rightColumn.setMaxWidth(340);
-
-        rightColumn.setFillWidth(true);
-
-        VBox aiPlanning = aiPlanningCard();
-
-        VBox calendar = calendarCard();
-
-        VBox weather = weatherCard();
-
-        rightColumn.getChildren().addAll(
-                aiPlanning,
-                calendar,
-                weather
+        lower.getChildren().add(
+                previous
         );
 
-        
+        // =====================================================
+        // SIDE CARDS
+        // =====================================================
 
-        lower.getChildren().addAll(
-                previous,
-                rightColumn
+        VBox sideCards =
+                new VBox(14);
+
+        sideCards.setPrefWidth(330);
+        sideCards.setMinWidth(330);
+        sideCards.setMaxWidth(330);
+
+        sideCards.getChildren().addAll(
+                aiPlanningCard(),
+                calendarCard(),
+                weatherCard()
         );
 
-       
+        lower.getChildren().add(
+                sideCards
+        );
+
+        // =====================================================
+        // MAIN
+        // =====================================================
 
         main.getChildren().addAll(
                 welcome,
@@ -487,7 +667,10 @@ public class ActiveCustomerDashboardC extends Application {
                 lower
         );
 
-        
+        VBox.setVgrow(
+                lower,
+                Priority.ALWAYS
+        );
 
         rightArea.setTop(
                 topBar
@@ -505,36 +688,81 @@ public class ActiveCustomerDashboardC extends Application {
                 rightArea
         );
 
-        
+        // =====================================================
+        // LOAD EVENTS
+        // =====================================================
 
-        Scene scene = new Scene(
-                root,
-                1365,
-                800
-        );
+        loadCustomerEventsAsync();
 
-        stage.setTitle(
-                "EventXpert - Active Customer Dashboard"
-        );
+        // =====================================================
+        // SCENE
+        // =====================================================
 
-        stage.setScene(
-                scene
-        );
+        Scene scene =
+                new Scene(
+                        root,
+                        1550,
+                        785
+                );
 
-        stage.setMinWidth(1100);
-        stage.setMinHeight(700);
+        activeCustomerScene =
+                scene;
 
-        stage.setMaximized(true);
-
-        stage.show();
+        return activeCustomerScene;
     }
 
-   
-    
+    // =========================================================
+    // RETURN TO DASHBOARD
+    // =========================================================
+
+    private void returnToDashboard() {
+
+        ActiveCustomerDashboardC dashboardPage =
+                new ActiveCustomerDashboardC(
+                        uid,
+                        idToken
+                );
+
+        if (LandingPage.landingPageStage != null) {
+
+            LandingPage.landingPageStage.setScene(
+                    dashboardPage.getactiveCustomerScene(
+                            null
+                    )
+            );
+        }
+    }
+
+    // =========================================================
+    // CREATE EVENT
+    // =========================================================
+
+private void openCreateEvent() {
+
+    CreateEventC createView =
+            new CreateEventC(
+                    uid,
+                    idToken
+            );
+
+    if (LandingPage.landingPageStage != null) {
+
+        LandingPage.landingPageStage.setScene(
+                createView.getCreateEventScene(
+                        this::returnToDashboard
+                )
+        );
+    }
+}
+
+    // =========================================================
+    // AI PLANNING CARD
+    // =========================================================
 
     private VBox aiPlanningCard() {
 
-        VBox card = new VBox(10);
+        VBox card =
+                new VBox(10);
 
         card.setPrefHeight(185);
         card.setMinHeight(185);
@@ -553,13 +781,15 @@ public class ActiveCustomerDashboardC extends Application {
                 "-fx-background-radius:12;"
         );
 
-        HBox header = new HBox();
+        HBox header =
+                new HBox();
 
         header.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        VBox titleBox = new VBox(3);
+        VBox titleBox =
+                new VBox(3);
 
         titleBox.getChildren().addAll(
 
@@ -578,19 +808,21 @@ public class ActiveCustomerDashboardC extends Application {
                 )
         );
 
-        Region space = new Region();
+        Region space =
+                new Region();
 
         HBox.setHgrow(
                 space,
                 Priority.ALWAYS
         );
 
-        Label aiIcon = styledLabel(
-                "✦",
-                27,
-                FontWeight.BOLD,
-                "#FFFFFF"
-        );
+        Label aiIcon =
+                styledLabel(
+                        "✦",
+                        27,
+                        FontWeight.BOLD,
+                        "#FFFFFF"
+                );
 
         header.getChildren().addAll(
                 titleBox,
@@ -598,20 +830,22 @@ public class ActiveCustomerDashboardC extends Application {
                 aiIcon
         );
 
-        Label description = styledLabel(
-                "Let AI help you plan your perfect event.",
-                14,
-                FontWeight.NORMAL,
-                "#E3F2FF"
-        );
+        Label description =
+                styledLabel(
+                        "Let AI help you plan your perfect event.",
+                        14,
+                        FontWeight.NORMAL,
+                        "#E3F2FF"
+                );
 
         description.setWrapText(
                 true
         );
 
-        Button startPlanning = new Button(
-                "Start Planning  →"
-        );
+        Button startPlanning =
+                new Button(
+                        "Start Planning  →"
+                );
 
         startPlanning.setPrefHeight(
                 32
@@ -627,30 +861,52 @@ public class ActiveCustomerDashboardC extends Application {
                 "-fx-background-radius:7;" +
                 "-fx-font-family:Arial;" +
                 "-fx-font-size:10px;" +
-                "-fx-font-weight:bold;"
+                "-fx-font-weight:bold;" +
+                "-fx-cursor:hand;"
         );
 
-        Region buttonSpace = new Region();
+        startPlanning.setOnAction(e -> {
 
-VBox.setVgrow(
-        buttonSpace,
-        Priority.ALWAYS
-);
+            AiPlanningC aiPlanningPage =
+                    new AiPlanningC(
+                            uid,
+                            idToken
+                    );
+
+            if (LandingPage.landingPageStage != null) {
+
+                LandingPage.landingPageStage.setScene(
+                        aiPlanningPage.getAiPlanningScene()
+                );
+            }
+        });
+
+        Region buttonSpace =
+                new Region();
+
+        VBox.setVgrow(
+                buttonSpace,
+                Priority.ALWAYS
+        );
 
         card.getChildren().addAll(
-        header,
-        description,
-        buttonSpace,
-        startPlanning
-);
+                header,
+                description,
+                buttonSpace,
+                startPlanning
+        );
+
         return card;
     }
 
-   
+    // =========================================================
+    // CALENDAR CARD
+    // =========================================================
 
     private VBox calendarCard() {
 
-        VBox card = new VBox(8);
+        VBox card =
+                new VBox(8);
 
         card.setPrefHeight(205);
         card.setMinHeight(205);
@@ -671,13 +927,19 @@ VBox.setVgrow(
                 "-fx-background-radius:12;"
         );
 
-        HBox header = new HBox();
+        // -----------------------------------------------------
+        // HEADER
+        // -----------------------------------------------------
+
+        HBox header =
+                new HBox();
 
         header.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        Region space = new Region();
+        Region space =
+                new Region();
 
         HBox.setHgrow(
                 space,
@@ -703,7 +965,12 @@ VBox.setVgrow(
                 )
         );
 
-        GridPane grid = new GridPane();
+        // -----------------------------------------------------
+        // GRID
+        // -----------------------------------------------------
+
+        GridPane grid =
+                new GridPane();
 
         grid.setHgap(5);
         grid.setVgap(4);
@@ -712,18 +979,34 @@ VBox.setVgrow(
                 Pos.CENTER
         );
 
-        String[] days = {"S","M","T","W","T","F","S" };
+        // IMPORTANT:
+        // Exactly 7 elements
+        String[] days = {
+                "S",
+                "M",
+                "T",
+                "W",
+                "T",
+                "F",
+                "S"
+        };
 
-        for (int i = 0; i < 7; i++) {
+        // -----------------------------------------------------
+        // DAY HEADINGS
+        // -----------------------------------------------------
 
-            Label day = styledLabel(
-                    days[i],
-                    9,
-                    FontWeight.BOLD,
-                    "#667085"
-            );
+        for (int i = 0; i < days.length; i++) {
+
+            Label day =
+                    styledLabel(
+                            days[i],
+                            9,
+                            FontWeight.BOLD,
+                            "#667085"
+                    );
 
             day.setPrefWidth(34);
+            day.setPrefHeight(18);
 
             day.setAlignment(
                     Pos.CENTER
@@ -736,80 +1019,86 @@ VBox.setVgrow(
             );
         }
 
-        int number = 1;
+        // -----------------------------------------------------
+        // JULY 2026
+        //
+        // July 1, 2026 = Wednesday
+        //
+        // S  M  T  W  T  F  S
+        //          1  2  3  4
+        // 5  6  7  8  9 10 11
+        //12 13 14 15 16 17 18
+        //19 20 21 22 23 24 25
+        //26 27 28 29 30 31
+        // -----------------------------------------------------
 
-        for (int row = 1; row <= 5; row++) {
+        int[][] dates = {
 
-            for (int col = 0; col < 7; col++) {
+                {0, 0, 0, 1, 2, 3, 4},
 
-                if (
-                        row == 1 &&
-                        col < 3
-                ) {
+                {5, 6, 7, 8, 9, 10, 11},
+
+                {12, 13, 14, 15, 16, 17, 18},
+
+                {19, 20, 21, 22, 23, 24, 25},
+
+                {26, 27, 28, 29, 30, 31, 0}
+        };
+
+        // -----------------------------------------------------
+        // ADD DATES
+        // -----------------------------------------------------
+
+        for (int row = 0; row < dates.length; row++) {
+
+            for (int col = 0; col < dates[row].length; col++) {
+
+                int value =
+                        dates[row][col];
+
+                if (value == 0) {
                     continue;
                 }
 
-                if (number > 31) {
-                    break;
-                }
+                Label date =
+                        styledLabel(
+                                String.valueOf(value),
+                                9,
+                                FontWeight.NORMAL,
+                                TEXT
+                        );
 
-                Label numberLabel = styledLabel(
-                        String.valueOf(number),
-                        9,
-                        FontWeight.NORMAL,
-                        TEXT
+                date.setPrefWidth(34);
+                date.setPrefHeight(22);
+
+                date.setAlignment(
+                        Pos.CENTER
                 );
-
-                StackPane cell = new StackPane(
-                        numberLabel
-                );
-
-                cell.setPrefSize(
-                        34,
-                        23
-                );
-
-                if (
-                        number == 10 ||
-                        number == 15 ||
-                        number == 28
-                ) {
-
-                    cell.setStyle(
-                            "-fx-background-color:#BFE5FF;" +
-                            "-fx-background-radius:5;"
-                    );
-                }
 
                 grid.add(
-                        cell,
+                        date,
                         col,
-                        row
+                        row + 1
                 );
-
-                number++;
             }
         }
 
-        Label note = styledLabel(
-                "●  Highlighted dates are event dates",
-                12,
-                FontWeight.NORMAL,
-                "#667085"
-        );
-
         card.getChildren().addAll(
                 header,
-                grid,
-                note
+                grid
         );
 
         return card;
     }
 
-        private VBox weatherCard() {
+    // =========================================================
+    // WEATHER CARD
+    // =========================================================
 
-        VBox card = new VBox(9);
+    private VBox weatherCard() {
+
+        VBox card =
+                new VBox(9);
 
         card.setPrefHeight(185);
         card.setMinHeight(185);
@@ -829,15 +1118,19 @@ VBox.setVgrow(
                 "-fx-background-radius:12;"
         );
 
+        // -----------------------------------------------------
+        // HEADER
+        // -----------------------------------------------------
 
-
-        HBox header = new HBox();
+        HBox header =
+                new HBox();
 
         header.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        VBox title = new VBox(2);
+        VBox title =
+                new VBox(2);
 
         title.getChildren().addAll(
 
@@ -856,19 +1149,21 @@ VBox.setVgrow(
                 )
         );
 
-        Region space = new Region();
+        Region space =
+                new Region();
 
         HBox.setHgrow(
                 space,
                 Priority.ALWAYS
         );
 
-        Label today = styledLabel(
-                "TODAY",
-                11,
-                FontWeight.BOLD,
-                "#D9ECFF"
-        );
+        Label today =
+                styledLabel(
+                        "TODAY",
+                        11,
+                        FontWeight.BOLD,
+                        "#D9ECFF"
+                );
 
         header.getChildren().addAll(
                 title,
@@ -876,22 +1171,27 @@ VBox.setVgrow(
                 today
         );
 
-        
+        // -----------------------------------------------------
+        // WEATHER
+        // -----------------------------------------------------
 
-        HBox weather = new HBox(14);
+        HBox weather =
+                new HBox(14);
 
         weather.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        Label sun = styledLabel(
-                "☀",
-                42,
-                FontWeight.NORMAL,
-                "#FFFFFF"
-        );
+        Label sun =
+                styledLabel(
+                        "☀",
+                        42,
+                        FontWeight.NORMAL,
+                        "#FFFFFF"
+                );
 
-        VBox temperature = new VBox(2);
+        VBox temperature =
+                new VBox(2);
 
         temperature.getChildren().addAll(
 
@@ -915,9 +1215,12 @@ VBox.setVgrow(
                 temperature
         );
 
-        
+        // -----------------------------------------------------
+        // DETAILS
+        // -----------------------------------------------------
 
-        HBox details = new HBox(20);
+        HBox details =
+                new HBox(20);
 
         details.getChildren().addAll(
 
@@ -937,16 +1240,24 @@ VBox.setVgrow(
                 )
         );
 
-        
+        // -----------------------------------------------------
+        // MESSAGE
+        // -----------------------------------------------------
 
-        HBox message = new HBox(7);
+        HBox message =
+                new HBox(7);
 
         message.setAlignment(
                 Pos.CENTER_LEFT
         );
 
         message.setPadding(
-                new Insets(7, 9, 7, 9)
+                new Insets(
+                        7,
+                        9,
+                        7,
+                        9
+                )
         );
 
         message.setStyle(
@@ -981,14 +1292,17 @@ VBox.setVgrow(
         return card;
     }
 
-    
+    // =========================================================
+    // WEATHER DETAIL
+    // =========================================================
 
     private VBox weatherDetail(
             String title,
             String value
     ) {
 
-        VBox box = new VBox(2);
+        VBox box =
+                new VBox(2);
 
         box.getChildren().addAll(
 
@@ -1010,13 +1324,246 @@ VBox.setVgrow(
         return box;
     }
 
+    // =========================================================
+    // LOAD CUSTOMER EVENTS
+    // =========================================================
+
+    private void loadCustomerEventsAsync() {
+
+        if (uid == null || uid.isBlank()) {
+
+            if (eventListContainer != null) {
+
+                eventListContainer.getChildren().clear();
+
+                eventListContainer.getChildren().add(
+                        styledLabel(
+                                "No user session found.",
+                                14,
+                                FontWeight.NORMAL,
+                                "#667085"
+                        )
+                );
+            }
+
+            return;
+        }
+
+        Task<List<Event>> task =
+                new Task<>() {
+
+                    @Override
+                    protected List<Event> call() {
+
+                        CustomerController controller =
+                                new CustomerController();
+
+                        return controller.getEventsByCustomerId(
+                                uid
+                        );
+                    }
+                };
+
+        task.setOnSucceeded(e -> {
+
+            List<Event> events =
+                    task.getValue();
+
+            Platform.runLater(() -> {
+
+                if (eventListContainer == null) {
+                    return;
+                }
+
+                eventListContainer
+                        .getChildren()
+                        .clear();
+
+                if (events == null || events.isEmpty()) {
+
+                    eventListContainer.getChildren().add(
+                            styledLabel(
+                                    "No events found. Click '+ Create New Event' to plan one!",
+                                    14,
+                                    FontWeight.NORMAL,
+                                    "#667085"
+                            )
+                    );
+
+                    totalEventsValLabel.setText("0");
+                    upcomingEventsValLabel.setText("0");
+                    pendingEventsValLabel.setText("0");
+
+                    return;
+                }
+
+                totalEventsValLabel.setText(
+                        String.valueOf(
+                                events.size()
+                        )
+                );
+
+                int pendingCount = 0;
+                int upcomingCount = 0;
+
+                for (Event ev : events) {
+
+                    if (
+                            "PENDING".equalsIgnoreCase(
+                                    ev.getStatus()
+                            )
+                    ) {
+
+                        pendingCount++;
+
+                    } else {
+
+                        upcomingCount++;
+                    }
+
+                    // -------------------------------------------------
+                    // LOCATION
+                    // -------------------------------------------------
+
+                    String loc =
+                            ev.getCity();
+
+                    if (
+                            ev.getVenueType() != null
+                                    &&
+                            !ev.getVenueType().isBlank()
+                    ) {
+
+                        loc =
+                                ev.getVenueType()
+                                        +
+                                (
+                                        loc != null
+                                                &&
+                                        !loc.isBlank()
+                                                ? ", " + loc
+                                                : ""
+                                );
+                    }
+
+                    if (
+                            loc == null
+                                    ||
+                            loc.isBlank()
+                    ) {
+
+                        loc =
+                                "Venue Pending";
+                    }
+
+                    // -------------------------------------------------
+                    // EVENT NAME
+                    // -------------------------------------------------
+
+                    String eventName =
+                            ev.getEventName();
+
+                    if (
+                            eventName == null
+                                    ||
+                            eventName.isBlank()
+                    ) {
+
+                        eventName =
+                                "Unnamed Event";
+                    }
+
+                    // -------------------------------------------------
+                    // DATE
+                    // -------------------------------------------------
+
+                    String eventDate =
+                            (
+                                    ev.getEventDate() != null
+                                            &&
+                                    !ev.getEventDate().isBlank()
+                            )
+                                    ? ev.getEventDate()
+                                    : "TBD";
+
+                    // -------------------------------------------------
+                    // EVENT CARD
+                    // -------------------------------------------------
+
+                    eventListContainer.getChildren().add(
+
+                            eventCard(
+                                    eventName,
+                                    eventDate,
+                                    loc,
+                                    ev.getStatus()
+                            )
+                    );
+                }
+
+                upcomingEventsValLabel.setText(
+                        String.valueOf(
+                                upcomingCount
+                        )
+                );
+
+                pendingEventsValLabel.setText(
+                        String.valueOf(
+                                pendingCount
+                        )
+                );
+            });
+        });
+
+        // ---------------------------------------------------------
+        // FAILED
+        // ---------------------------------------------------------
+
+        task.setOnFailed(e -> {
+
+            Platform.runLater(() -> {
+
+                if (eventListContainer == null) {
+                    return;
+                }
+
+                eventListContainer
+                        .getChildren()
+                        .clear();
+
+                eventListContainer.getChildren().add(
+
+                        styledLabel(
+                                "Unable to load events.",
+                                14,
+                                FontWeight.NORMAL,
+                                "#B42318"
+                        )
+                );
+            });
+        });
+
+        Thread thread =
+                new Thread(task);
+
+        thread.setDaemon(true);
+
+        thread.start();
+    }
+
+    // =========================================================
+    // EVENT CARD
+    // =========================================================
+
     private HBox eventCard(
             String name,
             String date,
-            String location
+            String location,
+            String status
     ) {
 
-        HBox card = new HBox(14);
+        HBox card =
+                new HBox(14);
 
         card.setAlignment(
                 Pos.CENTER_LEFT
@@ -1041,22 +1588,33 @@ VBox.setVgrow(
                 "-fx-background-radius:9;"
         );
 
-        Circle circle = new Circle(
-                27,
-                Color.web("#E1F3FF")
-        );
+        // -----------------------------------------------------
+        // ICON
+        // -----------------------------------------------------
 
-        StackPane icon = new StackPane(
-                circle,
-                styledLabel(
-                        "✦",
-                        18,
-                        FontWeight.BOLD,
-                        "#1D5274"
-                )
-        );
+        Circle circle =
+                new Circle(
+                        27,
+                        Color.web("#E1F3FF")
+                );
 
-        VBox details = new VBox(5);
+        StackPane icon =
+                new StackPane(
+                        circle,
+                        styledLabel(
+                                "✦",
+                                18,
+                                FontWeight.BOLD,
+                                "#1D5274"
+                        )
+                );
+
+        // -----------------------------------------------------
+        // DETAILS
+        // -----------------------------------------------------
+
+        VBox details =
+                new VBox(5);
 
         details.getChildren().addAll(
 
@@ -1068,52 +1626,92 @@ VBox.setVgrow(
                 ),
 
                 styledLabel(
-                        "▣  " + date,
+                        "Date: " + date,
                         12,
                         FontWeight.NORMAL,
                         "#596273"
                 ),
 
                 styledLabel(
-                        "⌖  " + location,
+                        "Location: " + location,
                         12,
                         FontWeight.NORMAL,
                         "#596273"
                 )
         );
 
-        Region space = new Region();
+        // -----------------------------------------------------
+        // SPACE
+        // -----------------------------------------------------
+
+        Region space =
+                new Region();
 
         HBox.setHgrow(
                 space,
                 Priority.ALWAYS
         );
 
-        Label completed = styledLabel(
-                "● Completed",
-                14,
-                FontWeight.BOLD,
-                "#536174"
-        );
+        // -----------------------------------------------------
+        // STATUS
+        // -----------------------------------------------------
+
+        String finalStatus =
+                (
+                        status != null
+                                &&
+                        !status.isBlank()
+                )
+                        ? status
+                        : "PENDING";
+
+        String badgeColor;
+
+        if (
+                "PENDING".equalsIgnoreCase(
+                        finalStatus
+                )
+        ) {
+
+            badgeColor =
+                    "#D97706";
+
+        } else {
+
+            badgeColor =
+                    "#16A34A";
+        }
+
+        Label statusLbl =
+                styledLabel(
+                        "● " + finalStatus,
+                        14,
+                        FontWeight.BOLD,
+                        badgeColor
+                );
 
         card.getChildren().addAll(
                 icon,
                 details,
                 space,
-                completed
+                statusLbl
         );
 
         return card;
     }
 
-    
+    // =========================================================
+    // STAT CARD
+    // =========================================================
+
     private VBox statCard(
             String icon,
             String title,
-            String value
+            Label valueLabel
     ) {
 
-        VBox card = new VBox();
+        VBox card =
+                new VBox();
 
         card.setPrefHeight(
                 70
@@ -1130,44 +1728,55 @@ VBox.setVgrow(
                 "-fx-background-radius:9;"
         );
 
-        HBox row = new HBox(9);
+        HBox row =
+                new HBox(9);
 
         row.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        Circle circle = new Circle(
-                17,
-                Color.web("#E0F2FF")
-        );
+        Circle circle =
+                new Circle(
+                        17,
+                        Color.web("#E0F2FF")
+                );
 
-        StackPane iconBox = new StackPane(
-                circle,
-                styledLabel(
-                        icon,
-                        13,
+        StackPane iconBox =
+                new StackPane(
+                        circle,
+                        styledLabel(
+                                icon,
+                                13,
+                                FontWeight.BOLD,
+                                NAVY
+                        )
+                );
+
+        valueLabel.setFont(
+                Font.font(
+                        "Arial",
                         FontWeight.BOLD,
-                        NAVY
+                        20
                 )
         );
 
-        VBox text = new VBox(1);
+        valueLabel.setTextFill(
+                Color.web(NAVY)
+        );
+
+        VBox text =
+                new VBox(1);
 
         text.getChildren().addAll(
 
                 styledLabel(
                         title,
-                        20,
+                        12,
                         FontWeight.NORMAL,
                         "#667085"
                 ),
 
-                styledLabel(
-                        value,
-                        20,
-                        FontWeight.BOLD,
-                        NAVY
-                )
+                valueLabel
         );
 
         row.getChildren().addAll(
@@ -1187,7 +1796,9 @@ VBox.setVgrow(
         return card;
     }
 
-    
+    // =========================================================
+    // MENU ITEM
+    // =========================================================
 
     private HBox menuItem(
             String icon,
@@ -1195,7 +1806,23 @@ VBox.setVgrow(
             boolean active
     ) {
 
-        HBox item = new HBox(11);
+        return menuItem(
+                icon,
+                text,
+                active,
+                null
+        );
+    }
+
+    private HBox menuItem(
+            String icon,
+            String text,
+            boolean active,
+            Runnable action
+    ) {
+
+        HBox item =
+                new HBox(11);
 
         item.setAlignment(
                 Pos.CENTER_LEFT
@@ -1206,15 +1833,39 @@ VBox.setVgrow(
         );
 
         item.setPadding(
-                new Insets(0, 11, 0, 13)
+                new Insets(
+                        0,
+                        11,
+                        0,
+                        13
+                )
         );
 
         if (active) {
 
             item.setStyle(
                     "-fx-background-color:" +
-                    LIGHT_BLUE + ";" +
+                    LIGHT_BLUE +
+                    ";" +
                     "-fx-background-radius:7;"
+            );
+
+        } else {
+
+            item.setStyle(
+                    "-fx-background-color:transparent;"
+            );
+        }
+
+        if (action != null) {
+
+            item.setStyle(
+                    item.getStyle() +
+                    "-fx-cursor:hand;"
+            );
+
+            item.setOnMouseClicked(
+                    e -> action.run()
             );
         }
 
@@ -1244,32 +1895,10 @@ VBox.setVgrow(
         return item;
     }
 
-    
-    private Button smallButton(
-            String text,
-            String background
-    ) {
+    // =========================================================
+    // STYLED LABEL
+    // =========================================================
 
-        Button button = new Button(
-                text
-        );
-
-        button.setPrefHeight(
-                27
-        );
-
-        button.setStyle(
-                "-fx-background-color:" +
-                background + ";" +
-                "-fx-border-color:#D5DDE7;" +
-                "-fx-border-radius:5;" +
-                "-fx-background-radius:5;" +
-                "-fx-font-family:Arial;" +
-                "-fx-font-size:9px;"
-        );
-
-        return button;
-    }
     private Label styledLabel(
             String text,
             double size,
@@ -1277,9 +1906,8 @@ VBox.setVgrow(
             String color
     ) {
 
-        Label label = new Label(
-                text
-        );
+        Label label =
+                new Label(text);
 
         label.setFont(
                 Font.font(
@@ -1294,13 +1922,5 @@ VBox.setVgrow(
         );
 
         return label;
-    }
-
-    
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
     }
 }

@@ -170,7 +170,18 @@ HBox btnGroup = new HBox(16);
 
         Button getStartedBtn = new Button("Get Started  →");
         getStartedBtn.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: bold; -fx-background-color: " + NAVY + "; -fx-text-fill: " + WHITE + "; -fx-background-radius: 10; -fx-padding: 11 26; -fx-cursor: hand;");
-        getStartedBtn.setOnAction(e -> System.out.println("Get Started clicked"));
+        getStartedBtn.setOnAction(e -> {
+                System.out.println("Get Started clicked");
+                LoginPage backToLoginPage = new LoginPage();
+                Runnable callBackAction1 = new Runnable() {
+                        public void run(){
+                                backToLandingPage();
+                        }
+                };
+
+                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
+      
+        });
 
         Button watchDemoBtn = new Button("Watch Demo  ◉");
         watchDemoBtn.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: bold; -fx-background-color: " + WHITE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 10 24; -fx-cursor: hand;");
@@ -194,10 +205,11 @@ homeSection1.getChildren().addAll(
 
 Image homeImg = new Image("assets\\images\\FrontImg.jpeg");
 ImageView homeImgView = new ImageView(homeImg);
-homeImgView.setFitHeight(300);
-homeImgView.setFitWidth(500);
+homeImgView.setFitHeight(450);
+homeImgView.setFitWidth(750);
 homeImgView.setStyle("-fx-padding: 20px , 20px");
-homeImgView.setTranslateX(250);
+homeImgView.setTranslateX(200);
+homeImgView.setTranslateY(-80);
 
 VBox homeSection2 = new VBox(10);
         homeSection2.setAlignment(Pos.TOP_RIGHT);
@@ -535,6 +547,7 @@ private HBox createFooterBar() {
                 createFeatureItem("Weather Alerts", "Real-time weather updates for better planning.", "M19.35,10.04C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.04C2.34,8.36 0,10.91 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.04Z"),
                 createFeatureItem("QR Check-in", "Seamless guest check-in with QR codes.", "M3,11H11V3H3M5,5H9V9H5M13,3V11H21V3M15,5H19V9H15M3,21H11V13H3M5,15H9V19H5M18,13H21V15H18M13,13H15V15H13M13,17H15V19H13M15,15H18V17H15M18,18H21V21H18M15,19H18V21H15Z")
         );
+        cardContainer.setTranslateY(-230);
 
         outer.getChildren().add(cardContainer);
         return outer;

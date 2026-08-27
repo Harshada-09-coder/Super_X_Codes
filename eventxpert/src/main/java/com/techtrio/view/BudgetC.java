@@ -1,15 +1,30 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
-import javafx.geometry.*;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.*;
-import javafx.stage.Stage;
+import com.techtrio.session.UserSession;
 
-public class BudgetC extends Application {
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.Separator;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+
+public class BudgetC {
+
+    private Scene scene;
+    private String uid;
+    private String idToken;
 
     private final String NAVY = "#002A60";
     private final String BLUE = "#0057B8";
@@ -21,10 +36,37 @@ public class BudgetC extends Application {
 
     private Label totalAmount;
 
-    @Override
-    public void start(Stage stage) {
+    // Constructor with user information
+    public BudgetC(String uid, String idToken) {
+        this.uid = (uid != null && !uid.isBlank())
+                ? uid
+                : UserSession.getUid();
 
-        
+        this.idToken = (idToken != null && !idToken.isBlank())
+                ? idToken
+                : UserSession.getIdToken();
+    }
+
+    // No-argument constructor
+    public BudgetC() {
+        this.uid = UserSession.getUid();
+        this.idToken = UserSession.getIdToken();
+    }
+
+    // Default scene
+    public Scene getBudgetScene() {
+        return getBudgetScene(null, null);
+    }
+
+    // Budget scene
+    public Scene getBudgetScene(
+            Runnable backAction,
+            Runnable nextAction
+    ) {
+
+        // =========================================================
+        // SIDEBAR
+        // =========================================================
 
         VBox sidebar = new VBox(7);
 
@@ -36,10 +78,10 @@ public class BudgetC extends Application {
                 new Insets(24, 8, 20, 8)
         );
 
-        // FULL BLUE SIDEBAR
         sidebar.setStyle(
-        "-fx-background-color:" + NAVY + ";"
-);
+                "-fx-background-color:" + NAVY + ";"
+        );
+
         Label logo = label(
                 "EventXpert",
                 21,
@@ -92,7 +134,9 @@ public class BudgetC extends Application {
                 sidebarSpace
         );
 
-        
+        // =========================================================
+        // TOP BAR
+        // =========================================================
 
         HBox topBar = new HBox(24);
 
@@ -124,16 +168,12 @@ public class BudgetC extends Application {
                         16,
                         true,
                         Color.web(NAVY)
-                ),
-                label(
-                        "●",
-                        21,
-                        false,
-                        Color.web(NAVY)
                 )
         );
 
-
+        // =========================================================
+        // TITLE
+        // =========================================================
 
         VBox title = new VBox(
                 4,
@@ -155,7 +195,9 @@ public class BudgetC extends Application {
                 new Insets(22, 32, 18, 32)
         );
 
-
+        // =========================================================
+        // ESTIMATED BUDGET CARD
+        // =========================================================
 
         VBox estimated = card();
 
@@ -168,8 +210,11 @@ public class BudgetC extends Application {
                 )
         );
 
-        TextField amount =
-                new TextField("₹ 500,000");
+        TextField amount = new TextField(
+                ReviewPageC.EventData.budget != null
+                        ? ReviewPageC.EventData.budget
+                        : "₹ 500,000"
+        );
 
         amount.setPrefHeight(48);
 
@@ -200,6 +245,10 @@ public class BudgetC extends Application {
                 )
         );
 
+        // =========================================================
+        // SMART BUDGET OPTIMIZER
+        // =========================================================
+
         VBox smart = card();
 
         HBox smartHeader = new HBox();
@@ -222,7 +271,6 @@ public class BudgetC extends Application {
                 Priority.ALWAYS
         );
 
-        
         ToggleButton toggle =
                 new ToggleButton("ON");
 
@@ -279,8 +327,7 @@ public class BudgetC extends Application {
                 Color.web(GREY)
         );
 
-        VBox recommendation =
-                new VBox(8);
+        VBox recommendation = new VBox(8);
 
         recommendation.setPadding(
                 new Insets(12)
@@ -316,6 +363,10 @@ public class BudgetC extends Application {
                 recommendation
         );
 
+        // =========================================================
+        // LEFT SIDE
+        // =========================================================
+
         VBox left = new VBox(
                 16,
                 estimated,
@@ -336,55 +387,52 @@ public class BudgetC extends Application {
                 Priority.ALWAYS
         );
 
-        
+        // =========================================================
+        // ALLOCATION CARD
+        // =========================================================
 
         VBox allocation = card();
 
         allocation.setPrefWidth(480);
         allocation.setMinWidth(450);
 
-        HBox allocationHeader =
-                new HBox();
+        HBox allocationHeader = new HBox();
 
         allocationHeader.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        VBox allocationText =
-                new VBox(
-                        3,
-                        label(
-                                "Budget Allocation",
-                                16,
-                                true,
-                                Color.web("#111111")
-                        ),
-                        label(
-                                "Visual breakdown of your expenses",
-                                10,
-                                false,
-                                Color.web(GREY)
-                        )
-                );
+        VBox allocationText = new VBox(
+                3,
+                label(
+                        "Budget Allocation",
+                        16,
+                        true,
+                        Color.web("#111111")
+                ),
+                label(
+                        "Visual breakdown of your expenses",
+                        10,
+                        false,
+                        Color.web(GREY)
+                )
+        );
 
-        Region allocationSpace =
-                new Region();
+        Region allocationSpace = new Region();
 
         HBox.setHgrow(
                 allocationSpace,
                 Priority.ALWAYS
         );
 
-        totalAmount =
-                label(
-                        "₹500,000",
-                        21,
-                        true,
-                        Color.web(NAVY)
-                );
+        totalAmount = label(
+                "₹500,000",
+                21,
+                true,
+                Color.web(NAVY)
+        );
 
-        VBox total =
-                new VBox(1);
+        VBox total = new VBox(1);
 
         total.setAlignment(
                 Pos.CENTER_RIGHT
@@ -406,8 +454,7 @@ public class BudgetC extends Application {
                 total
         );
 
-        VBox rows =
-                new VBox(12);
+        VBox rows = new VBox(12);
 
         rows.getChildren().addAll(
                 budgetRow("▣", "Venue", "30%"),
@@ -418,48 +465,51 @@ public class BudgetC extends Application {
                 budgetRow("•••", "Other", "10%")
         );
 
-        
-
         allocation.getChildren().addAll(
                 allocationHeader,
                 new Separator(),
                 rows
         );
 
+        // =========================================================
+        // BUDGET AMOUNT LISTENER
+        // =========================================================
+
         amount.textProperty().addListener(
                 (obs, oldValue, newValue) -> {
 
-                    String clean =
-                            newValue.replaceAll(
-                                    "[^0-9.]",
-                                    ""
-                            );
-
-                    if (clean.isEmpty()) {
-                        totalAmount.setText("₹0");
-                        return;
-                    }
-
                     try {
 
-                        double value =
-                                Double.parseDouble(clean);
+                        String clean =
+                                newValue.replaceAll(
+                                        "[^0-9.]",
+                                        ""
+                                );
 
-                        totalAmount.setText(
-                                String.format(
-                                        "₹%,.0f",
-                                        value
-                                )
-                        );
+                        if (!clean.isEmpty()) {
+
+                            double value =
+                                    Double.parseDouble(clean);
+
+                            totalAmount.setText(
+                                    String.format(
+                                            "₹%,.0f",
+                                            value
+                                    )
+                            );
+                        }
 
                     } catch (Exception e) {
-                
+                        // Ignore invalid input while typing
                     }
                 }
         );
 
-        HBox content =
-                new HBox(22);
+        // =========================================================
+        // CONTENT
+        // =========================================================
+
+        HBox content = new HBox(22);
 
         content.setAlignment(
                 Pos.TOP_LEFT
@@ -484,52 +534,100 @@ public class BudgetC extends Application {
                 Priority.ALWAYS
         );
 
-        Button save =
-                footerButton(
-                        "Save Draft",
-                        105,
-                        false
-                );
+        // =========================================================
+        // FOOTER BUTTONS
+        // =========================================================
 
-        Button back =
-                footerButton(
-                        "Back",
-                        80,
-                        false
-                );
+        Button save = footerButton(
+                "Save Draft",
+                105,
+                false
+        );
 
-        Button next =
-                footerButton(
-                        "Next",
-                        82,
-                        true
-                );
+        save.setOnAction(e -> {
+            ReviewPageC.EventData.budget =
+                    amount.getText().trim();
+        });
 
-        HBox buttons =
-                new HBox(
-                        10,
-                        save,
-                        back,
-                        next
+        Button back = footerButton(
+                "Back",
+                80,
+                false
+        );
+
+        Button next = footerButton(
+                "Next",
+                82,
+                true
+        );
+
+        // =========================================================
+        // BACK BUTTON
+        // =========================================================
+
+        back.setOnAction(e -> {
+
+            if (backAction != null) {
+
+                backAction.run();
+
+            } else {
+
+                LocationC locationPage =
+                        new LocationC(uid, idToken);
+
+                LandingPage.landingPageStage.setScene(
+                        locationPage.getLocationScene()
                 );
+            }
+        });
+
+        // =========================================================
+        // NEXT BUTTON
+        // =========================================================
+
+        next.setOnAction(e -> {
+
+            ReviewPageC.EventData.budget =
+                    amount.getText().trim();
+
+            if (nextAction != null) {
+
+                nextAction.run();
+
+            } else {
+
+                AiPlanningC aiPlanningPage =
+                        new AiPlanningC(uid, idToken);
+
+                LandingPage.landingPageStage.setScene(
+                        aiPlanningPage.getAiPlanningScene()
+                );
+            }
+        });
+
+        HBox buttons = new HBox(
+                10,
+                save,
+                back,
+                next
+        );
 
         buttons.setAlignment(
                 Pos.CENTER_RIGHT
         );
 
-        Region footerSpace =
-                new Region();
+        Region footerSpace = new Region();
 
         HBox.setHgrow(
                 footerSpace,
                 Priority.ALWAYS
         );
 
-        HBox footer =
-                new HBox(
-                        footerSpace,
-                        buttons
-                );
+        HBox footer = new HBox(
+                footerSpace,
+                buttons
+        );
 
         footer.setAlignment(
                 Pos.CENTER_RIGHT
@@ -547,9 +645,11 @@ public class BudgetC extends Application {
                 "-fx-border-width:1 0 0 0;"
         );
 
-        
-         VBox center =
-        new VBox(
+        // =========================================================
+        // CENTER
+        // =========================================================
+
+        VBox center = new VBox(
                 topBar,
                 title,
                 content,
@@ -557,9 +657,7 @@ public class BudgetC extends Application {
         );
 
         center.setStyle(
-                "-fx-background-color:" +
-                BG +
-                ";"
+                "-fx-background-color:" + BG + ";"
         );
 
         VBox.setVgrow(
@@ -567,32 +665,31 @@ public class BudgetC extends Application {
                 Priority.ALWAYS
         );
 
-       
+        // =========================================================
+        // ROOT
+        // =========================================================
+
         BorderPane root = new BorderPane();
 
-root.setStyle(
-        "-fx-background-color:" + NAVY + ";"
-);
-
-root.setLeft(sidebar);
-root.setCenter(center);
-        
-        Scene scene =
-                new Scene(root);
-
-        stage.setTitle(
-                "EventXpert - Budget"
+        root.setStyle(
+                "-fx-background-color:" + NAVY + ";"
         );
 
-        stage.setScene(scene);
+        root.setLeft(sidebar);
+        root.setCenter(center);
 
-        // Full available screen
-        stage.setMaximized(true);
+        scene = new Scene(
+                root,
+                1365,
+                850
+        );
 
-        stage.show();
+        return scene;
     }
 
-   
+    // =============================================================
+    // LABEL
+    // =============================================================
 
     private Label label(
             String text,
@@ -601,8 +698,7 @@ root.setCenter(center);
             Color color
     ) {
 
-        Label l =
-                new Label(text);
+        Label l = new Label(text);
 
         l.setFont(
                 Font.font(
@@ -619,11 +715,13 @@ root.setCenter(center);
         return l;
     }
 
-    
+    // =============================================================
+    // CARD
+    // =============================================================
+
     private VBox card() {
 
-        VBox v =
-                new VBox(12);
+        VBox v = new VBox(12);
 
         v.setPadding(
                 new Insets(18)
@@ -639,7 +737,9 @@ root.setCenter(center);
         return v;
     }
 
-    
+    // =============================================================
+    // NAV ITEM
+    // =============================================================
 
     private HBox navItem(
             String icon,
@@ -647,32 +747,29 @@ root.setCenter(center);
             boolean active
     ) {
 
-        Label i =
-                label(
-                        icon,
-                        16,
-                        false,
-                        active
-                                ? Color.WHITE
-                                : Color.web("#D0DFEC")
-                );
+        Label i = label(
+                icon,
+                16,
+                false,
+                active
+                        ? Color.WHITE
+                        : Color.web("#D0DFEC")
+        );
 
-        Label t =
-                label(
-                        text,
-                        12,
-                        true,
-                        active
-                                ? Color.WHITE
-                                : Color.web("#D0DFEC")
-                );
+        Label t = label(
+                text,
+                12,
+                true,
+                active
+                        ? Color.WHITE
+                        : Color.web("#D0DFEC")
+        );
 
-        HBox h =
-                new HBox(
-                        12,
-                        i,
-                        t
-                );
+        HBox h = new HBox(
+                12,
+                i,
+                t
+        );
 
         h.setAlignment(
                 Pos.CENTER_LEFT
@@ -684,142 +781,36 @@ root.setCenter(center);
                 new Insets(7, 10, 7, 12)
         );
 
-        h.setStyle(
-                active
-                        ? "-fx-background-color:#07396E;" +
-                          "-fx-border-color:" + LIGHT + ";" +
-                          "-fx-border-width:0 0 0 3;" +
-                          "-fx-background-radius:7;"
-                        : "-fx-background-color:transparent;"
-        );
+        if (active) {
+
+            h.setStyle(
+                    "-fx-background-color:#07396E;" +
+                    "-fx-border-color:" + LIGHT + ";" +
+                    "-fx-border-width:0 0 0 3;" +
+                    "-fx-background-radius:7;"
+            );
+
+        } else {
+
+            h.setStyle(
+                    "-fx-background-color:transparent;"
+            );
+        }
 
         return h;
     }
 
-    private Label tag(String text) {
+    // =============================================================
+    // FOOTER BUTTON
+    // =============================================================
 
-        Label t =
-                label(
-                        text,
-                        9,
-                        true,
-                        Color.web(NAVY)
-                );
-
-        t.setPadding(
-                new Insets(5, 8, 5, 8)
-        );
-
-        t.setStyle(
-                "-fx-background-color:" + LIGHT + ";" +
-                "-fx-background-radius:12;"
-        );
-
-        return t;
-    }
-
-   
-
-    private VBox budgetRow(
-            String icon,
-            String name,
-            String percent
-    ) {
-
-        HBox top =
-                new HBox(10);
-
-        top.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        Label iconLabel =
-                label(
-                        icon,
-                        15,
-                        false,
-                        Color.web(NAVY)
-                );
-
-        iconLabel.setPrefSize(
-                32,
-                32
-        );
-
-        iconLabel.setAlignment(
-                Pos.CENTER
-        );
-
-        iconLabel.setStyle(
-                "-fx-background-color:#E5F0FF;" +
-                "-fx-background-radius:7;"
-        );
-
-        Label nameLabel =
-                label(
-                        name,
-                        11,
-                        true,
-                        Color.web(TEXT)
-                );
-
-        Region space =
-                new Region();
-
-        HBox.setHgrow(
-                space,
-                Priority.ALWAYS
-        );
-
-        Label percentLabel =
-                label(
-                        percent,
-                        10,
-                        true,
-                        Color.web(NAVY)
-                );
-
-        top.getChildren().addAll(
-                iconLabel,
-                nameLabel,
-                space,
-                percentLabel
-        );
-
-        
-        ProgressBar line =
-                new ProgressBar(
-                        Double.parseDouble(
-                                percent.replace("%", "")
-                        ) / 100
-                );
-
-        line.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        line.setPrefHeight(7);
-
-        line.setStyle(
-                "-fx-accent:#111111;"
-        );
-
-        return new VBox(
-                5,
-                top,
-                line
-        );
-    }
-
-    
     private Button footerButton(
             String text,
             double width,
             boolean primary
     ) {
 
-        Button b =
-                new Button(text);
+        Button b = new Button(text);
 
         b.setPrefSize(
                 width,
@@ -842,7 +833,116 @@ root.setCenter(center);
         return b;
     }
 
-    public static void main(String[] args) {
-        launch(args);
+    // =============================================================
+    // TAG
+    // =============================================================
+
+    private Label tag(String text) {
+
+        Label t = label(
+                text,
+                9,
+                true,
+                Color.web(NAVY)
+        );
+
+        t.setPadding(
+                new Insets(5, 8, 5, 8)
+        );
+
+        t.setStyle(
+                "-fx-background-color:" + LIGHT + ";" +
+                "-fx-background-radius:12;"
+        );
+
+        return t;
+    }
+
+    // =============================================================
+    // BUDGET ROW
+    // =============================================================
+
+    private VBox budgetRow(
+            String icon,
+            String name,
+            String percent
+    ) {
+
+        HBox top = new HBox(10);
+
+        top.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        Label iconLabel = label(
+                icon,
+                15,
+                false,
+                Color.web(NAVY)
+        );
+
+        iconLabel.setPrefSize(
+                32,
+                32
+        );
+
+        iconLabel.setAlignment(
+                Pos.CENTER
+        );
+
+        iconLabel.setStyle(
+                "-fx-background-color:#E5F0FF;" +
+                "-fx-background-radius:7;"
+        );
+
+        Label nameLabel = label(
+                name,
+                11,
+                true,
+                Color.web(TEXT)
+        );
+
+        Region space = new Region();
+
+        HBox.setHgrow(
+                space,
+                Priority.ALWAYS
+        );
+
+        Label percentLabel = label(
+                percent,
+                10,
+                true,
+                Color.web(NAVY)
+        );
+
+        top.getChildren().addAll(
+                iconLabel,
+                nameLabel,
+                space,
+                percentLabel
+        );
+
+        ProgressBar line = new ProgressBar(
+                Double.parseDouble(
+                        percent.replace("%", "")
+                ) / 100
+        );
+
+        line.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        line.setPrefHeight(7);
+
+        line.setStyle(
+                "-fx-accent:#111111;"
+        );
+
+        return new VBox(
+                5,
+                top,
+                line
+        );
     }
 }
