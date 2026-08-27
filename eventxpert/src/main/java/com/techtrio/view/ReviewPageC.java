@@ -1,69 +1,95 @@
 package com.techtrio.view;
-import javafx.application.Application;
+
+import com.techtrio.controller.CustomerController;
+import com.techtrio.model.Event;
+import com.techtrio.session.UserSession;
+
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class ReviewPageC extends Application {
+public class ReviewPageC {
 
+    private Scene scene;
 
-    private final String BLUE = "#002A60";
-    private final String BG = "#F7F9FC";
-    private final String BORDER = "#D7E0E8";
-    private final String TEXT = "#111111";
-    private final String GREY = "#667085";
+    private String uid;
+    private String idToken;
 
-    
+    private static final String BLUE = "#002A60";
+    private static final String BG = "#F7F9FC";
+    private static final String BORDER = "#D7E0E8";
+    private static final String TEXT = "#111111";
+    private static final String GREY = "#667085";
+
+    // =========================================================
+    // EVENT DATA
+    // =========================================================
 
     public static class EventData {
 
+        public static String category = "Formal";
+        public static String eventName = "";
+        public static String eventType = "";
+        public static int guests = 0;
+        public static String eventDate = "";
+        public static String time = "";
+        public static String requirements = "";
+        public static String notes = "";
+        public static String city = "";
+        public static String area = "";
+        public static String venue = "";
+        public static String budget = "₹500,000";
+        public static boolean aiEnabled = true;
 
-        public static String eventName =
-                "Annual Tech Symposium 2024";
-
-        public static String eventDate =
-                "Oct 15 - Oct 17, 2024";
-
-        public static String eventType =
-                "Corporate Conference";
-
-        
-        public static String requirements =
-                "Venue, Catering, Decoration, Photography";
-
-        public static String notes =
-                "Special seating arrangement required.";
-
-        
-        public static String city =
-                "Mumbai";
-
-        public static String area =
-                "Andheri";
-
-        public static String venue =
-                "Convention Center";
-
-        
-        public static String budget =
-                "₹500,000";
-
-
-        public static boolean aiEnabled =
-                true;
+        public static void reset() {
+            category = "Formal";
+            eventName = "";
+            eventType = "";
+            guests = 0;
+            eventDate = "";
+            time = "";
+            requirements = "";
+            notes = "";
+            city = "";
+            area = "";
+            venue = "";
+            budget = "₹500,000";
+            aiEnabled = true;
+        }
     }
 
-    
-    @Override
-    public void start(Stage stage) {
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
 
-        
+    public ReviewPageC(String uid, String idToken) {
+
+        this.uid = (uid != null && !uid.isBlank())
+                ? uid
+                : UserSession.getUid();
+
+        this.idToken = (idToken != null && !idToken.isBlank())
+                ? idToken
+                : UserSession.getIdToken();
+    }
+
+    // =========================================================
+    // REVIEW SCENE
+    // =========================================================
+
+    public Scene getReviewScene() {
 
         BorderPane root = new BorderPane();
 
@@ -71,25 +97,20 @@ public class ReviewPageC extends Application {
                 "-fx-background-color:" + BG + ";"
         );
 
-        
         VBox sidebar = createSidebar();
 
         root.setLeft(sidebar);
 
-        
         VBox rightSide = new VBox();
 
         rightSide.setStyle(
                 "-fx-background-color:" + BG + ";"
         );
 
-
         HBox topBar = createTopBar();
 
-        
         VBox page = createPage();
 
-        
         HBox footer = createFooter();
 
         rightSide.getChildren().addAll(
@@ -105,27 +126,19 @@ public class ReviewPageC extends Application {
 
         root.setCenter(rightSide);
 
-        
-
-        Scene scene = new Scene(
+        scene = new Scene(
                 root,
                 1250,
                 750
         );
 
-        stage.setTitle(
-                "EventXpert - Review"
-        );
-
-        stage.setScene(scene);
-
-        // FULL SCREEN SIZE
-        stage.setMaximized(true);
-
-        stage.show();
+        return scene;
     }
 
-    
+    // =========================================================
+    // SIDEBAR
+    // =========================================================
+
     private VBox createSidebar() {
 
         VBox sidebar = new VBox();
@@ -135,20 +148,13 @@ public class ReviewPageC extends Application {
         sidebar.setMaxWidth(230);
 
         sidebar.setPadding(
-                new Insets(
-                        35,
-                        18,
-                        25,
-                        18
-                )
+                new Insets(35, 18, 25, 18)
         );
 
-        
         sidebar.setStyle(
                 "-fx-background-color:#002A60;"
         );
 
-        
         Label logo = new Label(
                 "EventXpert"
         );
@@ -164,8 +170,6 @@ public class ReviewPageC extends Application {
         logo.setTextFill(
                 Color.WHITE
         );
-
-        
 
         Label createEvent = new Label(
                 "Create Event"
@@ -205,58 +209,19 @@ public class ReviewPageC extends Application {
         );
 
         heading.setPadding(
-                new Insets(
-                        8,
-                        0,
-                        20,
-                        0
-                )
+                new Insets(8, 0, 20, 0)
         );
-
-        
 
         VBox navigation = new VBox(8);
 
         navigation.getChildren().addAll(
-
-                navItem(
-                        "ⓘ",
-                        "Event Details",
-                        false
-                ),
-
-                navItem(
-                        "▤",
-                        "Requirements",
-                        false
-                ),
-
-                navItem(
-                        "⌖",
-                        "Location",
-                        false
-                ),
-
-                navItem(
-                        "▣",
-                        "Budget",
-                        false
-                ),
-
-                navItem(
-                        "✦",
-                        "AI Planning",
-                        false
-                ),
-
-                navItem(
-                        "✓",
-                        "Review",
-                        true
-                )
+                navItem("ⓘ", "Event Details", false),
+                navItem("▤", "Requirements", false),
+                navItem("⌖", "Location", false),
+                navItem("▣", "Budget", false),
+                navItem("✦", "AI Planning", false),
+                navItem("✓", "Review", true)
         );
-
-        
 
         Region spacer = new Region();
 
@@ -264,8 +229,6 @@ public class ReviewPageC extends Application {
                 spacer,
                 Priority.ALWAYS
         );
-
-        
 
         sidebar.getChildren().addAll(
                 logo,
@@ -277,24 +240,23 @@ public class ReviewPageC extends Application {
         return sidebar;
     }
 
-    
+    // =========================================================
+    // NAV ITEM
+    // =========================================================
+
     private HBox navItem(
             String icon,
             String text,
             boolean active
     ) {
 
-        Label iconLabel = new Label(
-                icon
-        );
+        Label iconLabel = new Label(icon);
 
         iconLabel.setFont(
                 Font.font(17)
         );
 
-        Label textLabel = new Label(
-                text
-        );
+        Label textLabel = new Label(text);
 
         textLabel.setFont(
                 Font.font(
@@ -359,6 +321,10 @@ public class ReviewPageC extends Application {
         return item;
     }
 
+    // =========================================================
+    // TOP BAR
+    // =========================================================
+
     private HBox createTopBar() {
 
         HBox bar = new HBox();
@@ -386,21 +352,17 @@ public class ReviewPageC extends Application {
                 "-fx-border-width:0 0 1 0;"
         );
 
-        Label notification = new Label(
-                "♧"
-        );
-
-        Label help = new Label(
-                "?"
-        );
-
-        Label profile = new Label(
-                "●"
-        );
+        Label notification = new Label("♧");
 
         notification.setFont(
                 Font.font(20)
         );
+
+        notification.setTextFill(
+                Color.web(BLUE)
+        );
+
+        Label help = new Label("?");
 
         help.setFont(
                 Font.font(
@@ -410,36 +372,25 @@ public class ReviewPageC extends Application {
                 )
         );
 
-        profile.setFont(
-                Font.font(20)
-        );
-
-        notification.setTextFill(
-                Color.web(BLUE)
-        );
-
         help.setTextFill(
-                Color.web(BLUE)
-        );
-
-        profile.setTextFill(
                 Color.web(BLUE)
         );
 
         bar.getChildren().addAll(
                 notification,
-                help,
-                profile
+                help
         );
 
         return bar;
     }
 
-    
+    // =========================================================
+    // PAGE
+    // =========================================================
 
     private VBox createPage() {
 
-        VBox page = new VBox();
+        VBox page = new VBox(18);
 
         page.setPadding(
                 new Insets(
@@ -450,13 +401,9 @@ public class ReviewPageC extends Application {
                 )
         );
 
-        page.setSpacing(18);
-
         page.setStyle(
                 "-fx-background-color:" + BG + ";"
         );
-
-        
 
         Label title = new Label(
                 "Review Your Event"
@@ -495,66 +442,43 @@ public class ReviewPageC extends Application {
                 subtitle
         );
 
-        
-
-        HBox row1 = new HBox(18);
-
-        VBox eventCard =
-                eventDetailsCard();
-
-        VBox locationCard =
-                locationCard();
+        HBox row1 = new HBox(
+                18,
+                eventDetailsCard(),
+                locationCard()
+        );
 
         HBox.setHgrow(
-                eventCard,
+                row1.getChildren().get(0),
                 Priority.ALWAYS
         );
 
         HBox.setHgrow(
-                locationCard,
+                row1.getChildren().get(1),
                 Priority.ALWAYS
         );
 
-        row1.getChildren().addAll(
-                eventCard,
-                locationCard
+        HBox row2 = new HBox(
+                18,
+                requirementsCard(),
+                budgetCard(),
+                aiCard()
         );
 
-        
-
-        HBox row2 = new HBox(18);
-
-        VBox requirementCard =
-                requirementsCard();
-
-        VBox budgetCard =
-                budgetCard();
-
-        VBox aiCard =
-                aiCard();
-
         HBox.setHgrow(
-                requirementCard,
+                row2.getChildren().get(0),
                 Priority.ALWAYS
         );
 
         HBox.setHgrow(
-                budgetCard,
+                row2.getChildren().get(1),
                 Priority.ALWAYS
         );
 
         HBox.setHgrow(
-                aiCard,
+                row2.getChildren().get(2),
                 Priority.ALWAYS
         );
-
-        row2.getChildren().addAll(
-                requirementCard,
-                budgetCard,
-                aiCard
-        );
-
-       
 
         page.getChildren().addAll(
                 titleBox,
@@ -565,7 +489,10 @@ public class ReviewPageC extends Application {
         return page;
     }
 
-   
+    // =========================================================
+    // EVENT DETAILS CARD
+    // =========================================================
+
     private VBox eventDetailsCard() {
 
         VBox card = createCard();
@@ -580,25 +507,39 @@ public class ReviewPageC extends Application {
         addDetail(
                 card,
                 "Name",
-                EventData.eventName
-        );
-
-        addDetail(
-                card,
-                "Date",
-                EventData.eventDate
+                EventData.eventName.isBlank()
+                        ? "Not specified"
+                        : EventData.eventName
         );
 
         addDetail(
                 card,
                 "Type",
-                EventData.eventType
+                EventData.eventType.isBlank()
+                        ? "General"
+                        : EventData.eventType
+        );
+
+        addDetail(
+                card,
+                "Category",
+                EventData.category
+        );
+
+        addDetail(
+                card,
+                "Date",
+                EventData.eventDate.isBlank()
+                        ? "TBD"
+                        : EventData.eventDate
         );
 
         return card;
     }
 
-    
+    // =========================================================
+    // LOCATION CARD
+    // =========================================================
 
     private VBox locationCard() {
 
@@ -614,25 +555,34 @@ public class ReviewPageC extends Application {
         addDetail(
                 card,
                 "City",
-                EventData.city
+                EventData.city.isBlank()
+                        ? "Not specified"
+                        : EventData.city
         );
 
         addDetail(
                 card,
                 "Area",
-                EventData.area
+                EventData.area.isBlank()
+                        ? "Not specified"
+                        : EventData.area
         );
 
         addDetail(
                 card,
                 "Venue",
-                EventData.venue
+                EventData.venue.isBlank()
+                        ? "Banquet Hall"
+                        : EventData.venue
         );
 
         return card;
     }
 
-   
+    // =========================================================
+    // REQUIREMENTS CARD
+    // =========================================================
+
     private VBox requirementsCard() {
 
         VBox card = createCard();
@@ -644,90 +594,29 @@ public class ReviewPageC extends Application {
                 )
         );
 
-        Label servicesTitle =
-                new Label("Services");
-
-        servicesTitle.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        12
-                )
+        addDetail(
+                card,
+                "Services",
+                EventData.requirements.isBlank()
+                        ? "General Event Services"
+                        : EventData.requirements
         );
 
-        servicesTitle.setTextFill(
-                Color.web(GREY)
-        );
+        if (!EventData.notes.isBlank()) {
 
-        Label services =
-                new Label(
-                        EventData.requirements
-                );
-
-        services.setWrapText(true);
-
-        services.setFont(
-                Font.font(
-                        "Arial",
-                        13
-                )
-        );
-
-        services.setTextFill(
-                Color.web(TEXT)
-        );
-
-        card.getChildren().addAll(
-                servicesTitle,
-                services
-        );
-
-        if (EventData.notes != null &&
-                !EventData.notes.trim().isEmpty()) {
-
-            Label noteTitle =
-                    new Label(
-                            "Additional Notes"
-                    );
-
-            noteTitle.setFont(
-                    Font.font(
-                            "Arial",
-                            FontWeight.BOLD,
-                            12
-                    )
-            );
-
-            noteTitle.setTextFill(
-                    Color.web(GREY)
-            );
-
-            Label note =
-                    new Label(
-                            EventData.notes
-                    );
-
-            note.setWrapText(true);
-
-            note.setFont(
-                    Font.font(
-                            "Arial",
-                            12
-                    )
-            );
-
-            note.setTextFill(
-                    Color.web(TEXT)
-            );
-
-            card.getChildren().addAll(
-                    noteTitle,
-                    note
+            addDetail(
+                    card,
+                    "Notes",
+                    EventData.notes
             );
         }
 
         return card;
     }
+
+    // =========================================================
+    // BUDGET CARD
+    // =========================================================
 
     private VBox budgetCard() {
 
@@ -746,18 +635,12 @@ public class ReviewPageC extends Application {
                 EventData.budget
         );
 
-        addDetail(
-                card,
-                "Smart Budget Optimizer",
-                EventData.aiEnabled
-                        ? "Enabled"
-                        : "Disabled"
-        );
-
         return card;
     }
 
-    
+    // =========================================================
+    // AI CARD
+    // =========================================================
 
     private VBox aiCard() {
 
@@ -770,49 +653,20 @@ public class ReviewPageC extends Application {
                 )
         );
 
-        if (EventData.aiEnabled) {
-
-            addAIItem(
-                    card,
-                    "Smart Planning Enabled"
-            );
-
-            addAIItem(
-                    card,
-                    "Dynamic Timeline"
-            );
-
-            addAIItem(
-                    card,
-                    "Proactive Suggestions"
-            );
-
-        } else {
-
-            Label disabled =
-                    new Label(
-                            "Skipped for Now"
-                    );
-
-            disabled.setFont(
-                    Font.font(
-                            "Arial",
-                            13
-                    )
-            );
-
-            disabled.setTextFill(
-                    Color.web(GREY)
-            );
-
-            card.getChildren().add(
-                    disabled
-            );
-        }
+        addDetail(
+                card,
+                "Status",
+                EventData.aiEnabled
+                        ? "Enabled"
+                        : "Disabled"
+        );
 
         return card;
     }
 
+    // =========================================================
+    // CREATE CARD
+    // =========================================================
 
     private VBox createCard() {
 
@@ -832,15 +686,16 @@ public class ReviewPageC extends Application {
         return card;
     }
 
-    
+    // =========================================================
+    // CARD TITLE
+    // =========================================================
 
     private HBox cardTitle(
             String icon,
             String title
     ) {
 
-        Label iconLabel =
-                new Label(icon);
+        Label iconLabel = new Label(icon);
 
         iconLabel.setFont(
                 Font.font(18)
@@ -850,8 +705,7 @@ public class ReviewPageC extends Application {
                 Color.web(BLUE)
         );
 
-        Label titleLabel =
-                new Label(title);
+        Label titleLabel = new Label(title);
 
         titleLabel.setFont(
                 Font.font(
@@ -865,12 +719,11 @@ public class ReviewPageC extends Application {
                 Color.web(TEXT)
         );
 
-        HBox box =
-                new HBox(
-                        8,
-                        iconLabel,
-                        titleLabel
-                );
+        HBox box = new HBox(
+                8,
+                iconLabel,
+                titleLabel
+        );
 
         box.setAlignment(
                 Pos.CENTER_LEFT
@@ -879,15 +732,19 @@ public class ReviewPageC extends Application {
         return box;
     }
 
-    
+    // =========================================================
+    // ADD DETAIL
+    // =========================================================
+
     private void addDetail(
             VBox card,
             String labelText,
             String valueText
     ) {
 
-        Label label =
-                new Label(labelText);
+        Label label = new Label(
+                labelText
+        );
 
         label.setFont(
                 Font.font(
@@ -900,8 +757,9 @@ public class ReviewPageC extends Application {
                 Color.web(GREY)
         );
 
-        Label value =
-                new Label(valueText);
+        Label value = new Label(
+                valueText
+        );
 
         value.setFont(
                 Font.font(
@@ -917,73 +775,34 @@ public class ReviewPageC extends Application {
 
         value.setWrapText(true);
 
-        Region space =
-                new Region();
+        Region space = new Region();
 
         HBox.setHgrow(
                 space,
                 Priority.ALWAYS
         );
 
-        HBox row =
-                new HBox(
-                        10,
-                        label,
-                        space,
-                        value
-                );
+        HBox row = new HBox(
+                10,
+                label,
+                space,
+                value
+        );
 
         row.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        Separator separator =
-                new Separator();
-
-        separator.setStyle(
-                "-fx-background-color:#D0D5DB;"
-        );
-
-        card.getChildren().addAll(
-                row,
-                separator
-        );
+        card.getChildren().add(row);
     }
 
-    
-
-    private void addAIItem(
-            VBox card,
-            String text
-    ) {
-
-        Label item =
-                new Label(
-                        "✓  " + text
-                );
-
-        item.setFont(
-                Font.font(
-                        "Arial",
-                        12
-                )
-        );
-
-        item.setTextFill(
-                Color.web(TEXT)
-        );
-
-        card.getChildren().add(
-                item
-        );
-    }
-
-    
+    // =========================================================
+    // FOOTER
+    // =========================================================
 
     private HBox createFooter() {
 
-        HBox footer =
-                new HBox(12);
+        HBox footer = new HBox(12);
 
         footer.setAlignment(
                 Pos.CENTER_RIGHT
@@ -1004,10 +823,9 @@ public class ReviewPageC extends Application {
                 "-fx-border-width:1 0 0 0;"
         );
 
-        
-
-        Button back =
-                new Button("Back");
+        Button back = new Button(
+                "Back"
+        );
 
         back.setPrefSize(
                 95,
@@ -1019,37 +837,16 @@ public class ReviewPageC extends Application {
                 "-fx-border-color:#9EABB8;" +
                 "-fx-border-radius:7;" +
                 "-fx-background-radius:7;" +
-                "-fx-text-fill:#002A60;"
+                "-fx-text-fill:#002A60;" +
+                "-fx-cursor:hand;"
         );
 
-        
-        Button save =
-                new Button(
-                        "Save Draft"
-                );
-
-        save.setPrefSize(
-                110,
-                44
+        Button create = new Button(
+                "Create Event"
         );
-
-        save.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:#9EABB8;" +
-                "-fx-border-radius:7;" +
-                "-fx-background-radius:7;" +
-                "-fx-text-fill:#002A60;"
-        );
-
-        
-
-        Button create =
-                new Button(
-                        "Create Event"
-                );
 
         create.setPrefSize(
-                125,
+                140,
                 44
         );
 
@@ -1058,79 +855,373 @@ public class ReviewPageC extends Application {
                 "-fx-text-fill:white;" +
                 "-fx-font-weight:bold;" +
                 "-fx-border-radius:7;" +
-                "-fx-background-radius:7;"
+                "-fx-background-radius:7;" +
+                "-fx-cursor:hand;"
         );
 
-       
+        // =====================================================
+        // BACK → AI PLANNING
+        // =====================================================
+
         back.setOnAction(e -> {
 
-            System.out.println(
-                    "Back button clicked"
-            );
-
-        });
-
-        save.setOnAction(e -> {
-
-            Alert alert =
-                    new Alert(
-                            Alert.AlertType.INFORMATION
+            AiPlanningC aiView =
+                    new AiPlanningC(
+                            uid,
+                            idToken
                     );
 
-            alert.setTitle(
-                    "EventXpert"
+            LandingPage.landingPageStage.setScene(
+                    aiView.getAiPlanningScene()
             );
-
-            alert.setHeaderText(
-                    "Draft Saved"
-            );
-
-            alert.setContentText(
-                    "Your event has been saved as draft."
-            );
-
-            alert.showAndWait();
         });
+
+        // =====================================================
+        // CREATE EVENT
+        // =====================================================
 
         create.setOnAction(e -> {
 
-            Alert alert =
-                    new Alert(
-                            Alert.AlertType.INFORMATION
+            String customerUid = uid;
+
+            if (customerUid == null ||
+                    customerUid.isBlank()) {
+
+                customerUid =
+                        UserSession.getUid();
+            }
+
+            String customerToken = idToken;
+
+            if (customerToken == null ||
+                    customerToken.isBlank()) {
+
+                customerToken =
+                        UserSession.getIdToken();
+            }
+
+            System.out.println(
+                    "========== EVENT AUTH DEBUG =========="
+            );
+
+            System.out.println(
+                    "Session Authenticated: " +
+                    UserSession.isAuthenticated()
+            );
+
+            System.out.println(
+                    "Current Customer UID: " +
+                    customerUid
+            );
+
+            System.out.println(
+                    "Current Customer Email: " +
+                    UserSession.getUserEmail()
+            );
+
+            System.out.println(
+                    "======================================"
+            );
+
+            // -------------------------------------------------
+            // VALIDATE USER
+            // -------------------------------------------------
+
+            if (customerUid == null ||
+                    customerUid.isBlank()) {
+
+                Alert alert =
+                        new Alert(
+                                Alert.AlertType.ERROR,
+                                "User session not found. Please log in again."
+                        );
+
+                alert.showAndWait();
+
+                return;
+            }
+
+            // -------------------------------------------------
+            // VALIDATE EVENT NAME
+            // -------------------------------------------------
+
+            if (EventData.eventName == null ||
+                    EventData.eventName.isBlank()) {
+
+                Alert alert =
+                        new Alert(
+                                Alert.AlertType.WARNING,
+                                "Event Name is missing. Please go back and enter an Event Name."
+                        );
+
+                alert.showAndWait();
+
+                return;
+            }
+
+            create.setDisable(true);
+
+            create.setText(
+                    "Creating..."
+            );
+
+            final String finalUid =
+                    customerUid;
+
+            final String finalToken =
+                    customerToken;
+
+            // -------------------------------------------------
+            // CREATE EVENT OBJECT
+            // -------------------------------------------------
+
+            Event event = new Event();
+
+            event.setEventId(
+                    "EVT_" +
+                    System.currentTimeMillis()
+            );
+
+            event.setCustomerId(
+                    finalUid
+            );
+
+            event.setEventName(
+                    EventData.eventName
+            );
+
+            event.setEventType(
+                    EventData.eventType
+            );
+
+            event.setCategory(
+                    EventData.category
+            );
+
+            event.setGuests(
+                    EventData.guests
+            );
+
+            event.setEventDate(
+                    EventData.eventDate
+            );
+
+            event.setTime(
+                    EventData.time
+            );
+
+            event.setRequirements(
+                    EventData.requirements
+            );
+
+            event.setNotes(
+                    EventData.notes
+            );
+
+            event.setCity(
+                    EventData.city
+            );
+
+            event.setLocality(
+                    EventData.area
+            );
+
+            event.setVenueType(
+                    EventData.venue
+            );
+
+            event.setBudget(
+                    EventData.budget
+            );
+
+            event.setAiEnabled(
+                    EventData.aiEnabled
+            );
+
+            event.setStatus(
+                    "PENDING"
+            );
+
+            // -------------------------------------------------
+            // FIRESTORE TASK
+            // -------------------------------------------------
+
+            Task<Boolean> saveTask =
+                    new Task<>() {
+
+                        @Override
+                        protected Boolean call() {
+
+                            CustomerController controller =
+                                    new CustomerController();
+
+                            boolean saved =
+                                    controller.createEvent(
+                                            event
+                                    );
+
+                            if (saved) {
+
+                                controller.markCustomerAsExisting(
+                                        finalUid
+                                );
+                            }
+
+                            return saved;
+                        }
+                    };
+
+            // -------------------------------------------------
+            // SUCCESS
+            // -------------------------------------------------
+
+            saveTask.setOnSucceeded(
+                    evt -> {
+
+                        boolean success =
+                                saveTask.getValue();
+
+                        create.setDisable(
+                                false
+                        );
+
+                        create.setText(
+                                "Create Event"
+                        );
+
+                        if (success) {
+
+                            System.out.println(
+                                    "========== EVENT CREATION =========="
+                            );
+
+                            System.out.println(
+                                    "Current authenticated customer: " +
+                                    finalUid
+                            );
+
+                            System.out.println(
+                                    "Customer email: " +
+                                    UserSession.getUserEmail()
+                            );
+
+                            System.out.println(
+                                    "Creating Event..."
+                            );
+
+                            System.out.println(
+                                    "Event customerId: " +
+                                    finalUid
+                            );
+
+                            System.out.println(
+                                    "Event created successfully"
+                            );
+
+                            System.out.println(
+                                    "Customer status updated: EXISTING"
+                            );
+
+                            System.out.println(
+                                    "Opening Existing Customer Dashboard"
+                            );
+
+                            System.out.println(
+                                    "====================================="
+                            );
+
+                            EventData.reset();
+
+                            Alert alert =
+                                    new Alert(
+                                            Alert.AlertType.INFORMATION,
+                                            "Event Created Successfully! Your request is now PENDING approval."
+                                    );
+
+                            alert.setHeaderText(
+                                    "Success"
+                            );
+
+                            alert.showAndWait();
+
+                            ActiveCustomerDashboardC activeDash =
+                                    new ActiveCustomerDashboardC(
+                                            finalUid,
+                                            finalToken
+                                    );
+
+                            LandingPage.landingPageStage.setScene(
+                                    activeDash.getactiveCustomerScene(
+                                            null
+                                    )
+                            );
+
+                        } else {
+
+                            Alert alert =
+                                    new Alert(
+                                            Alert.AlertType.ERROR,
+                                            "Failed to save event to Firestore. Please try again."
+                                    );
+
+                            alert.showAndWait();
+                        }
+                    }
+            );
+
+            // -------------------------------------------------
+            // FAILED
+            // -------------------------------------------------
+
+            saveTask.setOnFailed(
+                    evt -> {
+
+                        Throwable ex =
+                                saveTask.getException();
+
+                        if (ex != null) {
+                            ex.printStackTrace();
+                        }
+
+                        create.setDisable(
+                                false
+                        );
+
+                        create.setText(
+                                "Create Event"
+                        );
+
+                        Alert alert =
+                                new Alert(
+                                        Alert.AlertType.ERROR,
+                                        "An error occurred while creating the event. Please check your connection."
+                                );
+
+                        alert.showAndWait();
+                    }
+            );
+
+            // -------------------------------------------------
+            // START THREAD
+            // -------------------------------------------------
+
+            Thread thread =
+                    new Thread(
+                            saveTask
                     );
 
-            alert.setTitle(
-                    "EventXpert"
+            thread.setDaemon(
+                    true
             );
 
-            alert.setHeaderText(
-                    "Event Created"
-            );
-
-            alert.setContentText(
-                    "Your event has been created successfully."
-            );
-
-            alert.showAndWait();
+            thread.start();
         });
-
-        
 
         footer.getChildren().addAll(
                 back,
-                save,
                 create
         );
 
         return footer;
     }
-
-    
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
-    }
 }
-

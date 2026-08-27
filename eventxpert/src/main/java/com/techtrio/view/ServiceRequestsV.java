@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -11,12 +10,15 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ServiceRequestsV extends Application {
+public class ServiceRequestsV {
+    private Scene serviceRequestVScene;
+    private VendorDashboardV vendorDashboard;
 
     // Color Palette Constants
     private static final String SIDEBAR_NAVY = "#062A60";
@@ -76,26 +78,35 @@ public class ServiceRequestsV extends Application {
     private VBox cardsContainer;
     private String activeTabFilter = "All";
 
-    @Override
-    public void start(Stage primaryStage) {
+    public void setVendorDashboard(VendorDashboardV vendorDashboard) {
+        this.vendorDashboard = vendorDashboard;
+    }
+
+    public Scene getserviceRequestVScene() {
+        System.out.println(">>> ServiceRequestsV.getserviceRequestVScene() START");
+
         initSampleRequests();
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // 1. Sidebar (Left - Fixed 250px Full Height)
-        VBox sidebar = createSidebar(primaryStage);
+        serviceRequestVScene = new Scene(root, 1550, 785);
+
+        System.out.println(">>> Scene created");
+
+        VBox sidebar = createSidebar(serviceRequestVScene);
         root.setLeft(sidebar);
 
-        // 2. Main Application Container
+        System.out.println(">>> Sidebar created");
+
         BorderPane mainArea = new BorderPane();
         mainArea.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // Top Bar
-        HBox topBar = createTopBar(primaryStage);
+        HBox topBar = createTopBar(serviceRequestVScene);
         mainArea.setTop(topBar);
 
-        // Scrollable Center Content
+        System.out.println(">>> TopBar created");
+
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -104,30 +115,36 @@ public class ServiceRequestsV extends Application {
         mainContent.setPadding(new Insets(24));
         mainContent.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // Build Sections
-        mainContent.getChildren().addAll(
-                createPageHeader(primaryStage),
-                createSummaryCardsRow(),
-                createFilterSection(primaryStage),
-                createTabsRow(primaryStage),
-                createMainSplitSection(primaryStage),
-                createPaginationRow()
-        );
+        System.out.println(">>> Creating page header");
+        mainContent.getChildren().add(createPageHeader(serviceRequestVScene));
+
+        System.out.println(">>> Creating summary cards");
+        mainContent.getChildren().add(createSummaryCardsRow());
+
+        System.out.println(">>> Creating filters");
+        mainContent.getChildren().add(createFilterSection(serviceRequestVScene));
+
+        System.out.println(">>> Creating tabs");
+        mainContent.getChildren().add(createTabsRow(serviceRequestVScene));
+
+        System.out.println(">>> Creating main split section");
+        mainContent.getChildren().add(createMainSplitSection(serviceRequestVScene));
+
+        System.out.println(">>> Creating pagination");
+        mainContent.getChildren().add(createPaginationRow());
 
         scrollPane.setContent(mainContent);
         mainArea.setCenter(scrollPane);
 
         root.setCenter(mainArea);
 
-        // Scene Setup
-        Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert - Service Requests");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        System.out.println(">>> ServiceRequestsV Scene COMPLETE");
+
+        return serviceRequestVScene;
     }
 
     private void initSampleRequests() {
+        if (!requestList.isEmpty()) return;
         requestList.add(new RequestData("1", "TechVision Events", "+91 98765 43210", "TechVision Annual Summit", "Corporate Conference", "18 May 2026", "09:00 AM - 06:00 PM", "Grand Convention Center, Pune", "250", "Audio & Visual", "₹85,000", "Important", "10 minutes ago", "New"));
         requestList.add(new RequestData("2", "Corporate Connect", "+91 91234 56789", "Leadership Summit 2026", "Corporate Event", "24 May 2026", "10:00 AM - 05:00 PM", "Business Bay Convention Hall", "180", "Sound System", "₹55,000", "Normal", "1 hour ago", "New"));
         requestList.add(new RequestData("3", "Startup India Network", "+91 99887 66554", "Startup Connect 2026", "Networking Event", "02 Jun 2026", "09:30 AM - 06:00 PM", "Pune International Center", "300", "Rental Equipment", "₹70,000", "Important", "3 hours ago", "Pending"));
@@ -137,7 +154,7 @@ public class ServiceRequestsV extends Application {
     // ==========================================
     // 1. SIDEBAR (FULL HEIGHT)
     // ==========================================
-    private VBox createSidebar(Stage stage) {
+    private VBox createSidebar(Scene scene) {
         VBox sidebar = new VBox();
         sidebar.setPrefWidth(250);
         sidebar.setStyle("-fx-background-color: " + SIDEBAR_NAVY + ";");
@@ -149,7 +166,7 @@ public class ServiceRequestsV extends Application {
         logoBox.setAlignment(Pos.CENTER_LEFT);
         Label logoIcon = new Label("E");
         logoIcon.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 4 10; -fx-background-radius: 6px;");
-        
+
         VBox brandBox = new VBox(0);
         Label brandTitle = new Label("EventXpert");
         brandTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
@@ -162,29 +179,31 @@ public class ServiceRequestsV extends Application {
         Button addServiceBtn = new Button("+ Add Service");
         addServiceBtn.setMaxWidth(Double.MAX_VALUE);
         addServiceBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 10; -fx-background-radius: 8px; -fx-cursor: hand;");
-        addServiceBtn.setOnAction(e -> showToast(stage, "Add Service Clicked"));
+        addServiceBtn.setOnAction(e -> showToast(scene, "Add Service Clicked"));
 
         sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
 
         // Menu Sections
-        sidebar.getChildren().add(createSidebarCategory("OVERVIEW"));
-        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> showToast(stage, "Opening Dashboard...")));
+        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> {
+            if (vendorDashboard != null) {
+                vendorDashboard.backToVendorDashboard();
+            } else {
+                VendorDashboardV dashboard = new VendorDashboardV();
+                Scene dashboardScene = dashboard.getvendorDashboardScene();
+                if (LandingPage.landingPageStage != null) {
+                    LandingPage.landingPageStage.setScene(dashboardScene);
+                }
+            }
+        }));
 
-        sidebar.getChildren().add(createSidebarCategory("SERVICE MANAGEMENT"));
-        sidebar.getChildren().add(createSidebarItem("📋 Service Requests", true, e -> {})); // Active Menu
-        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, e -> showToast(stage, "Opening My Bookings...")));
-        sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, e -> showToast(stage, "Opening Services...")));
-        sidebar.getChildren().add(createSidebarItem("📅 Availability Calendar", false, e -> showToast(stage, "Opening Calendar...")));
-
-        sidebar.getChildren().add(createSidebarCategory("FINANCE"));
-        sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, e -> showToast(stage, "Opening Earnings...")));
-
-        sidebar.getChildren().add(createSidebarCategory("COMMUNICATION"));
+        sidebar.getChildren().add(createSidebarItem("📋 Service Requests", true, e -> {})); 
+        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, e -> showToast(scene, "Opening My Bookings...")));
+        sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, e -> showToast(scene, "Opening Services...")));
+        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, e -> showToast(scene, "Opening Calendar...")));
+        sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, e -> showToast(scene, "Opening Earnings...")));
         sidebar.getChildren().add(createSidebarItemWithBadge("🔔 Notifications", "4"));
-
-        sidebar.getChildren().add(createSidebarCategory("ACCOUNT"));
-        sidebar.getChildren().add(createSidebarItem("👤 Profile & Settings", false, e -> showToast(stage, "Opening Settings...")));
-        sidebar.getChildren().add(createSidebarItem("❓ Help & Support", false, e -> showToast(stage, "Opening Support...")));
+        sidebar.getChildren().add(createSidebarItem("👤 Settings", false, e -> showToast(scene, "Opening Settings...")));
+        sidebar.getChildren().add(createSidebarItem("❓Support", false, e -> showToast(scene, "Opening Support...")));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -211,12 +230,6 @@ public class ServiceRequestsV extends Application {
 
         sidebar.getChildren().addAll(spacer, profilePill);
         return sidebar;
-    }
-
-    private Label createSidebarCategory(String title) {
-        Label cat = new Label(title);
-        cat.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #64748B; -fx-padding: 14 8 4 8;");
-        return cat;
     }
 
     private Button createSidebarItem(String title, boolean isActive, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
@@ -252,7 +265,7 @@ public class ServiceRequestsV extends Application {
     // ==========================================
     // 2. TOP BAR
     // ==========================================
-    private HBox createTopBar(Stage stage) {
+    private HBox createTopBar(Scene scene) {
         HBox topBar = new HBox();
         topBar.setAlignment(Pos.CENTER_LEFT);
         topBar.setPadding(new Insets(12, 24, 12, 24));
@@ -283,7 +296,7 @@ public class ServiceRequestsV extends Application {
     // ==========================================
     // 3. PAGE HEADER
     // ==========================================
-    private VBox createPageHeader(Stage stage) {
+    private VBox createPageHeader(Scene scene) {
         VBox header = new VBox(6);
 
         HBox titleRow = new HBox(12);
@@ -297,12 +310,12 @@ public class ServiceRequestsV extends Application {
 
         Button refreshBtn = createSecondaryButton("↻ Refresh");
         refreshBtn.setOnAction(e -> {
-            renderRequestCards(stage);
-            showToast(stage, "Requests list refreshed.");
+            renderRequestCards(scene);
+            showToast(scene, "Requests list refreshed.");
         });
 
         Button calendarBtn = createPrimaryButton("📅 View Calendar");
-        calendarBtn.setOnAction(e -> showToast(stage, "Opening Availability Calendar..."));
+        calendarBtn.setOnAction(e -> showToast(scene, "Opening Availability Calendar..."));
 
         titleRow.getChildren().addAll(title, spacer, refreshBtn, calendarBtn);
 
@@ -357,7 +370,7 @@ public class ServiceRequestsV extends Application {
     // ==========================================
     // 5. FILTER SECTION
     // ==========================================
-    private VBox createFilterSection(Stage stage) {
+    private VBox createFilterSection(Scene scene) {
         VBox card = createCardContainer();
 
         GridPane grid = new GridPane();
@@ -393,8 +406,8 @@ public class ServiceRequestsV extends Application {
 
         Button applyBtn = createPrimaryButton("Apply Filters");
         applyBtn.setOnAction(e -> {
-            showToast(stage, "Filters applied.");
-            renderRequestCards(stage);
+            showToast(scene, "Filters applied.");
+            renderRequestCards(scene);
         });
 
         Button clearBtn = createSecondaryButton("Clear");
@@ -403,7 +416,7 @@ public class ServiceRequestsV extends Application {
             statusCB.setValue("All Status");
             serviceCB.setValue("All Services");
             eventTypeCB.setValue("All Event Types");
-            renderRequestCards(stage);
+            renderRequestCards(scene);
         });
 
         grid.add(searchInput, 0, 0);
@@ -425,10 +438,15 @@ public class ServiceRequestsV extends Application {
     // ==========================================
     // 6. REQUEST TABS ROW
     // ==========================================
-    private HBox createTabsRow(Stage stage) {
+    private HBox createTabsRow(Scene scene) {
         HBox row = new HBox(12);
         row.setAlignment(Pos.CENTER_LEFT);
+        buildTabs(row, scene);
+        return row;
+    }
 
+    private void buildTabs(HBox row, Scene scene) {
+        row.getChildren().clear();
         String[] tabs = {"All 24", "New 8", "Pending 5", "Accepted 9", "Rejected 2", "Expired 0"};
 
         for (String tab : tabs) {
@@ -443,43 +461,42 @@ public class ServiceRequestsV extends Application {
 
             tabBtn.setOnAction(e -> {
                 activeTabFilter = tabName;
-                createTabsRow(stage);
-                renderRequestCards(stage);
+                buildTabs(row, scene);
+                renderRequestCards(scene);
             });
 
             row.getChildren().add(tabBtn);
         }
-
-        return row;
     }
 
     // ==========================================
     // 7. MAIN SPLIT SECTION (REQUEST FEED & INSIGHTS)
     // ==========================================
-    private HBox createMainSplitSection(Stage stage) {
+    private HBox createMainSplitSection(Scene scene) {
         HBox row = new HBox(20);
 
         // Left Column: Request Cards Feed
         cardsContainer = new VBox(16);
         HBox.setHgrow(cardsContainer, Priority.ALWAYS);
 
-        renderRequestCards(stage);
+        renderRequestCards(scene);
 
         // Right Column: Insights & Alerts Panel
         VBox rightPanel = new VBox(16);
         rightPanel.setPrefWidth(380);
 
         rightPanel.getChildren().addAll(
-                createQuickInsightsCard(stage),
+                createQuickInsightsCard(scene),
                 createStatusOverviewCard(),
-                createImportantAlertsCard(stage)
+                createImportantAlertsCard(scene)
         );
 
         row.getChildren().addAll(cardsContainer, rightPanel);
         return row;
     }
 
-    private void renderRequestCards(Stage stage) {
+    private void renderRequestCards(Scene scene) {
+        if (cardsContainer == null) return;
         cardsContainer.getChildren().clear();
 
         List<RequestData> filtered = requestList.stream().filter(r -> {
@@ -497,11 +514,11 @@ public class ServiceRequestsV extends Application {
         }
 
         for (RequestData req : filtered) {
-            cardsContainer.getChildren().add(createRequestCard(stage, req));
+            cardsContainer.getChildren().add(createRequestCard(scene, req));
         }
     }
 
-    private VBox createRequestCard(Stage stage, RequestData req) {
+    private VBox createRequestCard(Scene scene, RequestData req) {
         VBox card = createCardContainer();
 
         HBox topRow = new HBox(16);
@@ -560,27 +577,36 @@ public class ServiceRequestsV extends Application {
         btnRow.setAlignment(Pos.CENTER_RIGHT);
 
         Button detailsBtn = createSecondaryButton("View Details");
-        detailsBtn.setOnAction(e -> showToast(stage, "Opening Service Request Details for " + req.eventName));
+        detailsBtn.setOnAction(e -> {
+            showToast(scene, "Opening Service Request Details for " + req.eventName);
+            ServiceRequestDetailsV serviceRequestDetailsV = new ServiceRequestDetailsV();
+            Runnable callBackAction = new Runnable() {
+                public void run(){
+                  backToServiceRequestsV();
+                }
+            };
+            LandingPage.landingPageStage.setScene(serviceRequestDetailsV.getserviceRequestDetailsScene(null, callBackAction));
+        });
 
         if (req.status.equals("New")) {
             Button acceptBtn = createPrimaryButton("Accept");
             acceptBtn.setStyle("-fx-background-color: " + GREEN_TEXT + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-padding: 6 14; -fx-cursor: hand;");
-            acceptBtn.setOnAction(e -> openAcceptConfirmationModal(stage, req));
+            acceptBtn.setOnAction(e -> openAcceptConfirmationModal(scene, req));
 
             Button rejectBtn = createSecondaryButton("Reject");
             rejectBtn.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-border-color: " + BORDER_COLOR + ";");
-            rejectBtn.setOnAction(e -> openRejectModal(stage, req));
+            rejectBtn.setOnAction(e -> openRejectModal(scene, req));
 
             btnRow.getChildren().addAll(detailsBtn, acceptBtn, rejectBtn);
         } else if (req.status.equals("Conflict")) {
             Button conflictBtn = createSecondaryButton("View Conflict");
             conflictBtn.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-border-color: " + RED_TEXT + ";");
-            conflictBtn.setOnAction(e -> showToast(stage, "Checking calendar conflicts for " + req.date));
+            conflictBtn.setOnAction(e -> showToast(scene, "Checking calendar conflicts for " + req.date));
 
             btnRow.getChildren().addAll(conflictBtn, detailsBtn);
         } else {
             Button reviewBtn = createPrimaryButton("Continue Review");
-            reviewBtn.setOnAction(e -> showToast(stage, "Continuing review for " + req.eventName));
+            reviewBtn.setOnAction(e -> showToast(scene, "Continuing review for " + req.eventName));
             btnRow.getChildren().addAll(reviewBtn, detailsBtn);
         }
 
@@ -591,7 +617,7 @@ public class ServiceRequestsV extends Application {
     // ==========================================
     // RIGHT PANEL CARDS
     // ==========================================
-    private VBox createQuickInsightsCard(Stage stage) {
+    private VBox createQuickInsightsCard(Scene scene) {
         VBox card = createCardContainer();
 
         Label title = new Label("Quick Insights");
@@ -605,7 +631,7 @@ public class ServiceRequestsV extends Application {
         );
 
         Button analysisBtn = createSecondaryButton("View Analysis →");
-        analysisBtn.setOnAction(e -> showToast(stage, "Opening Vendor Analytics..."));
+        analysisBtn.setOnAction(e -> showToast(scene, "Opening Vendor Analytics..."));
 
         card.getChildren().addAll(title, new Separator(), list, analysisBtn);
         return card;
@@ -647,7 +673,7 @@ public class ServiceRequestsV extends Application {
         return r;
     }
 
-    private VBox createImportantAlertsCard(Stage stage) {
+    private VBox createImportantAlertsCard(Scene scene) {
         VBox card = createCardContainer();
 
         Label title = new Label("Important Alerts");
@@ -655,20 +681,20 @@ public class ServiceRequestsV extends Application {
 
         VBox alerts = new VBox(8);
         alerts.getChildren().addAll(
-                createAlertRow(stage, "⚠️ 3 requests require your response.", "Review now →"),
-                createAlertRow(stage, "⚠️ 15 June has a booking conflict.", "Check calendar →"),
-                createAlertRow(stage, "✓ ₹42,000 payment pending.", "View payments →")
+                createAlertRow(scene, "⚠️ 3 requests require your response.", "Review now →"),
+                createAlertRow(scene, "⚠️ 15 June has a booking conflict.", "Check calendar →"),
+                createAlertRow(scene, "✓ ₹42,000 payment pending.", "View payments →")
         );
 
         card.getChildren().addAll(title, new Separator(), alerts);
         return card;
     }
 
-    private VBox createAlertRow(Stage stage, String msg, String linkText) {
+    private VBox createAlertRow(Scene scene, String msg, String linkText) {
         VBox box = new VBox(2);
         Label m = new Label(msg); m.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
         Label l = new Label(linkText); l.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-cursor: hand;");
-        l.setOnMouseClicked(e -> showToast(stage, "Action: " + linkText));
+        l.setOnMouseClicked(e -> showToast(scene, "Action: " + linkText));
         box.getChildren().addAll(m, l);
         return box;
     }
@@ -701,10 +727,12 @@ public class ServiceRequestsV extends Application {
     // ==========================================
     // MODALS & DIALOGS
     // ==========================================
-    private void openAcceptConfirmationModal(Stage parentStage, RequestData req) {
+    private void openAcceptConfirmationModal(Scene scene, RequestData req) {
         Stage modal = new Stage();
         modal.initModality(Modality.APPLICATION_MODAL);
-        modal.initOwner(parentStage);
+        if (scene != null && scene.getWindow() != null) {
+            modal.initOwner(scene.getWindow());
+        }
         modal.setTitle("Accept Service Request");
 
         VBox layout = new VBox(12);
@@ -723,8 +751,8 @@ public class ServiceRequestsV extends Application {
         confirmBtn.setStyle("-fx-background-color: " + GREEN_TEXT + "; -fx-text-fill: white; -fx-font-weight: bold;");
         confirmBtn.setOnAction(e -> {
             req.status = "Accepted";
-            renderRequestCards(parentStage);
-            showToast(parentStage, "✓ Request accepted successfully!");
+            renderRequestCards(scene);
+            showToast(scene, "✓ Request accepted successfully!");
             modal.close();
         });
 
@@ -734,15 +762,17 @@ public class ServiceRequestsV extends Application {
         btns.getChildren().addAll(confirmBtn, cancelBtn);
         layout.getChildren().addAll(title, msg, new Separator(), btns);
 
-        Scene scene = new Scene(layout, 380, 180);
-        modal.setScene(scene);
+        Scene scene11 = new Scene(layout, 380, 180);
+        modal.setScene(scene11);
         modal.show();
     }
 
-    private void openRejectModal(Stage parentStage, RequestData req) {
+    private void openRejectModal(Scene scene, RequestData req) {
         Stage modal = new Stage();
         modal.initModality(Modality.APPLICATION_MODAL);
-        modal.initOwner(parentStage);
+        if (scene != null && scene.getWindow() != null) {
+            modal.initOwner(scene.getWindow());
+        }
         modal.setTitle("Reject Service Request");
 
         VBox layout = new VBox(10);
@@ -764,15 +794,15 @@ public class ServiceRequestsV extends Application {
         submitBtn.setStyle("-fx-background-color: " + RED_TEXT + "; -fx-text-fill: white; -fx-font-weight: bold;");
         submitBtn.setOnAction(e -> {
             req.status = "Rejected";
-            renderRequestCards(parentStage);
-            showToast(parentStage, "Request rejected.");
+            renderRequestCards(scene);
+            showToast(scene, "Request rejected.");
             modal.close();
         });
 
         layout.getChildren().addAll(title, new Label("Reason for Rejection:"), reasonCB, new Label("Additional Note:"), msgInput, submitBtn);
 
-        Scene scene = new Scene(layout, 360, 320);
-        modal.setScene(scene);
+        Scene scene1 = new Scene(layout, 360, 320);
+        modal.setScene(scene1);
         modal.show();
     }
 
@@ -798,12 +828,29 @@ public class ServiceRequestsV extends Application {
         return btn;
     }
 
-    private void showToast(Stage stage, String message) {
+    private void showToast(Scene scene, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("EventXpert Notification");
         alert.setHeaderText(null);
         alert.setContentText(message);
-        alert.initOwner(stage);
+        if (scene != null && scene.getWindow() != null) {
+            alert.initOwner(scene.getWindow());
+        }
         alert.show();
+    }
+
+    private void showToast(Window window, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("EventXpert Notification");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        if (window != null) {
+            alert.initOwner(window);
+        }
+        alert.show();
+    }
+    public void backToServiceRequestsV(){
+
+        LandingPage.landingPageStage.setScene(serviceRequestVScene);
     }
 }

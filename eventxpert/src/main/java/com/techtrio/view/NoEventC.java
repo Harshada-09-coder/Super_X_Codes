@@ -1,7 +1,7 @@
 package com.techtrio.view;
 
+import com.techtrio.session.UserSession;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -12,18 +12,24 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class NoEventC extends Application {
+public class NoEventC {
 
-    private final String BLUE = "#002A60";
-    private final String BG = "#F6F8FB";
+    private static final String BLUE = "#002A60";
+    private static final String BG = "#F6F8FB";
 
     private Label noEventsLabel;
     private Label descriptionLabel;
 
-    @Override
-    public void start(Stage stage) {
+    private Runnable backAction;
+
+    // =========================================================
+    // NO EVENT SCENE
+    // =========================================================
+
+    public Scene getNoEventScene(Runnable backAction) {
+
+        this.backAction = backAction;
 
         BorderPane root = new BorderPane();
 
@@ -31,7 +37,9 @@ public class NoEventC extends Application {
                 "-fx-background-color:" + BG + ";"
         );
 
-       
+        // =====================================================
+        // SIDEBAR
+        // =====================================================
 
         VBox sidebar = new VBox();
 
@@ -47,7 +55,7 @@ public class NoEventC extends Application {
                 "-fx-background-color:" + BLUE + ";"
         );
 
-        // Logo
+        // LOGO
         Label logo = new Label("EventXpert");
 
         logo.setFont(
@@ -74,11 +82,12 @@ public class NoEventC extends Application {
         VBox logoBox =
                 new VBox(2, logo, premium);
 
-        // New Project
+        // NEW PROJECT
         Button newProject =
                 new Button("+   New Project");
 
         newProject.setPrefHeight(48);
+
         newProject.setMaxWidth(
                 Double.MAX_VALUE
         );
@@ -96,7 +105,23 @@ public class NoEventC extends Application {
                 new Insets(35, 0, 30, 0)
         );
 
-        // Navigation
+        /*
+         * New Project -> Create Event
+         */
+        newProject.setOnAction(e -> {
+
+            CreateEventC createEvent =
+                    new CreateEventC(
+                            UserSession.getUid(),
+                            UserSession.getIdToken()
+                    );
+
+            LandingPage.landingPageStage.setScene(
+                    createEvent.getCreateEventScene()
+            );
+        });
+
+        // NAVIGATION
         VBox navigation =
                 new VBox(8);
 
@@ -135,7 +160,6 @@ public class NoEventC extends Application {
                 Priority.ALWAYS
         );
 
-        
         VBox bottomNav =
                 new VBox(8);
 
@@ -143,6 +167,7 @@ public class NoEventC extends Application {
                 new Region();
 
         line.setPrefHeight(1);
+
         line.setMaxWidth(
                 Double.MAX_VALUE
         );
@@ -177,7 +202,9 @@ public class NoEventC extends Application {
                 bottomNav
         );
 
-        
+        // =====================================================
+        // RIGHT SIDE
+        // =====================================================
 
         VBox right =
                 new VBox();
@@ -189,7 +216,7 @@ public class NoEventC extends Application {
                 createMainContent();
 
         HBox footer =
-                createFooter(stage);
+                createFooter();
 
         VBox.setVgrow(
                 content,
@@ -205,27 +232,21 @@ public class NoEventC extends Application {
         root.setLeft(sidebar);
         root.setCenter(right);
 
-        
+        // =====================================================
+        // SCENE
+        // =====================================================
 
-        Scene scene =
-                new Scene(
-                        root,
-                        1280,
-                        760
-                );
-
-        stage.setTitle(
-                "EventXpert - My Events"
+        return new Scene(
+                root,
+                1280,
+                760
         );
-
-        stage.setScene(scene);
-
-        stage.setMaximized(true);
-
-        stage.show();
     }
 
-    
+    // =========================================================
+    // NAV ITEM
+    // =========================================================
+
     private HBox navItem(
             String icon,
             String text,
@@ -306,8 +327,9 @@ public class NoEventC extends Application {
         return item;
     }
 
-
-    
+    // =========================================================
+    // TOP BAR
+    // =========================================================
 
     private HBox createTopBar() {
 
@@ -335,7 +357,6 @@ public class NoEventC extends Application {
                 "-fx-border-width:0 0 1 0;"
         );
 
-        
         TextField searchField =
                 new TextField();
 
@@ -361,7 +382,6 @@ public class NoEventC extends Application {
                 "-fx-padding:0 12 0 12;"
         );
 
-        
         searchField.textProperty().addListener(
                 (obs, oldValue, newValue) -> {
 
@@ -436,7 +456,6 @@ public class NoEventC extends Application {
         );
 
         top.getChildren().addAll(
-
                 searchField,
                 space,
                 notification,
@@ -447,7 +466,9 @@ public class NoEventC extends Application {
         return top;
     }
 
-   
+    // =========================================================
+    // MAIN CONTENT
+    // =========================================================
 
     private StackPane createMainContent() {
 
@@ -458,7 +479,6 @@ public class NoEventC extends Application {
                 "-fx-background-color:" + BG + ";"
         );
 
-       
         Label watermark =
                 new Label("EVENTXPERT");
 
@@ -481,8 +501,6 @@ public class NoEventC extends Application {
                 Pos.CENTER
         );
 
-        
-
         VBox page =
                 new VBox();
 
@@ -497,7 +515,6 @@ public class NoEventC extends Application {
 
         page.setSpacing(10);
 
-    
         Label title =
                 new Label("My Events");
 
@@ -536,7 +553,9 @@ public class NoEventC extends Application {
                         subtitle
                 );
 
-        
+        // =====================================================
+        // CARD
+        // =====================================================
 
         VBox card =
                 new VBox();
@@ -565,7 +584,6 @@ public class NoEventC extends Application {
                 "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.08),18,0,0,5);"
         );
 
-    
         StackPane calendarCircle =
                 new StackPane();
 
@@ -603,7 +621,6 @@ public class NoEventC extends Application {
                 calendar
         );
 
-        
         noEventsLabel =
                 new Label("No events yet");
 
@@ -619,7 +636,6 @@ public class NoEventC extends Application {
                 Color.web("#111111")
         );
 
-        
         descriptionLabel =
                 new Label(
                         "Start planning your first event with EventXpert.\n" +
@@ -646,7 +662,10 @@ public class NoEventC extends Application {
                 Color.web("#344054")
         );
 
-        // Create button
+        // =====================================================
+        // CREATE EVENT BUTTON
+        // =====================================================
+
         Button createButton =
                 new Button(
                         "+   Create Your First Event"
@@ -688,8 +707,28 @@ public class NoEventC extends Application {
                 )
         );
 
-        card.getChildren().addAll(
+        // =====================================================
+        // NO EVENT -> CREATE EVENT
+        // =====================================================
 
+        createButton.setOnAction(e -> {
+
+            CreateEventC createEvent =
+                    new CreateEventC(
+                            UserSession.getUid(),
+                            UserSession.getIdToken()
+                    );
+
+            LandingPage.landingPageStage.setScene(
+                    createEvent.getCreateEventScene()
+            );
+        });
+
+        // =====================================================
+        // CARD CONTENT
+        // =====================================================
+
+        card.getChildren().addAll(
                 calendarCircle,
                 noEventsLabel,
                 descriptionLabel,
@@ -723,10 +762,11 @@ public class NoEventC extends Application {
         return main;
     }
 
-    
-    private HBox createFooter(
-            Stage stage
-    ) {
+    // =========================================================
+    // FOOTER
+    // =========================================================
+
+    private HBox createFooter() {
 
         HBox footer =
                 new HBox();
@@ -752,7 +792,6 @@ public class NoEventC extends Application {
                 "-fx-border-width:1 0 0 0;"
         );
 
-        
         Button backButton =
                 new Button("Back");
 
@@ -776,11 +815,24 @@ public class NoEventC extends Application {
                 "-fx-background-radius:7;"
         );
 
-        backButton.setOnAction(
-                e -> stage.close()
-        );
+        // =====================================================
+        // BACK ACTION
+        // =====================================================
 
-        
+        backButton.setOnAction(e -> {
+
+            if (backAction != null) {
+
+                backAction.run();
+
+            } else {
+
+                /*
+                 * If no custom back action was supplied,
+                 * simply do nothing.
+                 */
+            }
+        });
 
         Region space =
                 new Region();
@@ -790,75 +842,11 @@ public class NoEventC extends Application {
                 Priority.ALWAYS
         );
 
-       
-        Button nextButton =
-                new Button("Next");
-
-        nextButton.setPrefSize(
-                100,
-                42
-        );
-
-        nextButton.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        14
-                )
-        );
-
-        nextButton.setTextFill(
-                Color.WHITE
-        );
-
-        nextButton.setStyle(
-                "-fx-background-color:#002A60;" +
-                "-fx-background-radius:7;"
-        );
-
-        nextButton.setOnMouseEntered(
-                e -> nextButton.setStyle(
-                        "-fx-background-color:#073B78;" +
-                        "-fx-background-radius:7;"
-                )
-        );
-
-        nextButton.setOnMouseExited(
-                e -> nextButton.setStyle(
-                        "-fx-background-color:#002A60;" +
-                        "-fx-background-radius:7;"
-                )
-        );
-
-        nextButton.setOnAction(
-                e -> {
-
-                    System.out.println(
-                            "Next button clicked"
-                    );
-
-                    
-                }
-        );
-
         footer.getChildren().addAll(
                 backButton,
-                space,
-                nextButton
+                space
         );
 
         return footer;
-        
-    }
-
-    
-
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
     }
 }
-
-
