@@ -2,6 +2,8 @@ package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
 import com.techtrio.controller.SignUpResult;
+import com.techtrio.controller.VendorController;
+import com.techtrio.model.VendorProfile;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -36,6 +38,7 @@ public class VendorRegistration {
     // --- FORM FIELDS ---
     private TextField txtFullName;
     private TextField txtEmailAddress;
+    private TextField txtBusinessName;
     private TextField txtPhone;
     private ComboBox<String> cbCategory;
     private PasswordField txtPassword;
@@ -51,6 +54,7 @@ public class VendorRegistration {
     // --- VALIDATION LABELS ---
     private Label lblFullNameError;
     private Label lblEmailError;
+    private Label lblBusinessError;
     private Label lblPhoneError;
     private Label lblCategoryError;
     private Label lblPasswordError;
@@ -66,9 +70,6 @@ public class VendorRegistration {
         return vendorRegistrationScene;
     }
 
-    /**
-     * Root container builder - Embeddable in existing JavaFX navigation layouts.
-     */
        public Parent createRootPane() {
         HBox root = new HBox();
         root.setStyle("-fx-background-color: " + COLOR_WHITE + ";");
@@ -94,30 +95,8 @@ public class VendorRegistration {
         panel.setPadding(new Insets(32, 28, 32, 28));
         panel.setAlignment(Pos.TOP_LEFT);
         panel.setStyle(
-            "-fx-background-color: linear-gradient(to bottom right, " + COLOR_NAVY + ", " + COLOR_BLUE + ");"
+            "-fx-background-color: linear-gradient(to bottom right, " + COLOR_NAVY + ", " + COLOR_NAVY + ");"
         );
-
-        // Top Navigation
-        Hyperlink backLink = new Hyperlink("←  Back to Login");
-        backLink.setStyle(
-            "-fx-text-fill: " + COLOR_WHITE + ";" +
-            "-fx-font-size: 13px;" +
-            "-fx-underline: false;" +
-            "-fx-opacity: 0.9;" +
-            "-fx-border-color: transparent;"
-        );
-        backLink.setOnAction(e -> {
-            System.out.println("Back To Login Page");
-            LoginPage backToLoginPage = new LoginPage();
-            Runnable callBackAction = new Runnable() {
-                        public void run(){
-                                backToVendorRegistration();
-                        }
-                };
-
-                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction));
-      
-        });
 
         // Illustration Area Container
         VBox illustrationBox = createIllustrationContainer();
@@ -150,7 +129,6 @@ public class VendorRegistration {
         VBox.setVgrow(bottomSpacer, Priority.ALWAYS);
 
         panel.getChildren().addAll(
-            backLink,
             topSpacer,
             illustrationBox,
             textContainer,
@@ -215,8 +193,10 @@ public class VendorRegistration {
         // --- ROW 1: Full Name | Business Name ---
         lblFullNameError = createErrorLabel();
         lblEmailError = createErrorLabel();
+        lblBusinessError = createErrorLabel();
         txtFullName = createTextField("Enter full name");
-        txtEmailAddress = createTextField("Enter business name");
+        txtEmailAddress = createTextField("Enter Email Address");
+        txtBusinessName = createTextField("Enter Business name");
         HBox row1 = createTwoColumnRow(createFieldGroup("Full Name", txtFullName, lblFullNameError),
             createFieldGroup("Email Address", txtEmailAddress, lblEmailError)
         );
@@ -256,6 +236,11 @@ public class VendorRegistration {
             createFieldGroup("Password", passPane, lblPasswordError),
             createFieldGroup("Confirm Password", confirmPassPane, lblConfirmPasswordError)
         );
+
+        lblBusinessError = createErrorLabel();
+        txtBusinessName = createTextField("Enter Business Name");
+        VBox row6 = createFieldGroup("Business Name", txtBusinessName, lblBusinessError);
+
 
         // --- ROW 4: Address (Full Width) ---
         lblAddressError = createErrorLabel();
@@ -301,7 +286,7 @@ public class VendorRegistration {
         btnRegister.setMaxWidth(Double.MAX_VALUE);
         btnRegister.setPrefHeight(44);
         btnRegister.setStyle(
-            "-fx-background-color: " + COLOR_BLUE + ";" +
+            "-fx-background-color: " + COLOR_NAVY + ";" +
             "-fx-text-fill: " + COLOR_WHITE + ";" +
             "-fx-font-size: 14px;" +
             "-fx-font-weight: bold;" +
@@ -326,25 +311,106 @@ public class VendorRegistration {
             "-fx-background-radius: 6px;" +
             "-fx-cursor: hand;"
         ));
+
         btnRegister.setOnAction(e -> {
 
-            handleRegistration();
-            SignUpResult result = controller.signUp(
+    // 1. Validate form
+    if (!handleRegistration()) {
+        return;
+    }
+
+    // 2. Create Firebase Auth account
+    SignUpResult result = controller.signUp(
             txtFullName.getText().trim(),
             txtEmailAddress.getText().trim(),
             txtPhone.getText().trim(),
             txtPassword.getText(),
             "vendor"
-         );
+    );
 
-    if (result != null) {
+    // 3. Check registration result
+    if (result == null) {
 
-        System.out.println("Registration successful");
-    } else {
-        System.out.println("Registration Failed");
+        Alert alert = new Alert(
+                Alert.AlertType.ERROR
+        );
+
+        alert.setTitle("Vendor Registration");
+        alert.setHeaderText(null);
+        alert.setContentText(
+                "Registration failed. Please try again."
+        );
+
+        alert.showAndWait();
+
+        return;
     }
-        });
+
+    System.out.println("Registration successful!");
+
+    // 4. Get UID and ID Token
+    String uid = result.getUid();
+    String idToken = result.getIdToken();
+
+    System.out.println("Vendor UID: " + uid);
+    System.out.println("ID Token received");
+
+    // 5. Create Vendor Profile
+     VendorProfile profile = new VendorProfile(
+            uid,
+            txtFullName.getText().trim(),
+            txtEmailAddress.getText().trim(),
+            txtBusinessName.getText().trim(),
+            txtPhone.getText().trim(),
+            cbCategory.getValue(),
+            txtAddress.getText().trim(),
+            txtExperience.getText().trim(),
+            txtGstNumber.getText().trim(),
+            "Available"
+    );
+
+    // 6. Save profile to Firestore
+    VendorController vendorController = new VendorController();
+    boolean saved = vendorController.createVendorProfile(profile, idToken);
+
+    if (!saved) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Vendor Registration");
+        alert.setHeaderText(null);
+        alert.setContentText("Account created, but vendor profile could not be saved.");
+        alert.showAndWait();
+        return;
+    }
+
+    System.out.println("Vendor profile saved successfully!");
+    // 7. Check Firestore result
+    if (!saved) {
+
+        Alert alert = new Alert(
+                Alert.AlertType.ERROR
+        );
+
+        alert.setTitle("Vendor Registration");
+        alert.setHeaderText(null);
+        alert.setContentText(
+                "Account created, but vendor profile could not be saved."
+        );
+
+        alert.showAndWait();
+
+        return;
+    }
+
+    System.out.println(
+            "Vendor profile saved successfully!"
+    );
+
+    // 8. Open Inactive Vendor Dashboard
+      InactiveVendorDash vendorDash = new InactiveVendorDash(uid, idToken);
+    LandingPage.landingPageStage.setScene(vendorDash.getinactiveVendorScene());
+});
         
+
         // Footer Login Link
         HBox footerBox = new HBox();
         footerBox.setAlignment(Pos.CENTER);
@@ -379,6 +445,7 @@ public class VendorRegistration {
             row1,
             row2,
             row3,
+            row6,
             row4,
             row5,
             infoBox,
@@ -526,7 +593,7 @@ public class VendorRegistration {
     // ==========================================
     // VALIDATION & LOGIC HANDLING
     // ==========================================
-    private void handleRegistration() {
+    private boolean handleRegistration() {
         clearErrors();
         boolean isValid = true;
 
@@ -538,7 +605,7 @@ public class VendorRegistration {
 
         // Business Name Validation
         if (txtEmailAddress.getText().trim().isEmpty()) {
-            showFieldError(txtEmailAddress, lblEmailError, "Business name is required");
+            showFieldError(txtEmailAddress, lblEmailError, "Email Address is required");
             isValid = false;
         }
 
@@ -632,6 +699,7 @@ public class VendorRegistration {
                 COLOR_ERROR, "#FEE2E2"
             );
         }
+        return isValid;
     }
 
     private void showFieldError(Control field, Label errorLabel, String message) {

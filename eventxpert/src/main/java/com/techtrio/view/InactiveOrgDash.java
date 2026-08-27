@@ -5,13 +5,9 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.*;
-import javafx.stage.Stage;
 
-
-import javafx.application.Application;
-
-public class InactiveOrgDash extends Application{
-
+public class InactiveOrgDash {
+    private Scene inactiveOrganizerScene;
 
     private static final String NAVY = "#061F49";
     private static final String BLUE = "#082F70";
@@ -21,8 +17,7 @@ public class InactiveOrgDash extends Application{
     private static final String MUTED = "#737985";
 
 
-    @Override
-    public void start(Stage stage) throws Exception {
+    Scene getinactiveOrganizerScene(){
 
 
         BorderPane root = new BorderPane();
@@ -280,13 +275,9 @@ public class InactiveOrgDash extends Application{
 
         // ================= STAGE =================
         Scene scene = new Scene(root,1550,750);
-
-        stage.setTitle("EventXpert - Inactive Organizer Dashboard");
-        stage.setScene(scene);
-        stage.setWidth(1550);
-        stage.setHeight(750);
-        stage.setMaximized(true);
-        stage.show();
+        inactiveOrganizerScene = scene;
+        return inactiveOrganizerScene;
+        
     }
 
     // ================= HELPERS =================

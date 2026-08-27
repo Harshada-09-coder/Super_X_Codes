@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -18,7 +17,9 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EarningsPaymentsV extends Application {
+public class EarningsPaymentsV{
+    private Scene earningsPaymentsScene;
+    private VendorDashboardV vendorDashboard;
 
     // Color Palette Constants
     private static final String SIDEBAR_NAVY = "#062A60";
@@ -61,8 +62,11 @@ public class EarningsPaymentsV extends Application {
     private final List<TransactionData> transactions = new ArrayList<>();
     private VBox tableRowsContainer;
 
-    @Override
-    public void start(Stage primaryStage) {
+    public void setVendorDashboard(VendorDashboardV vendorDashboard) {
+        this.vendorDashboard = vendorDashboard;
+    }
+
+    public Scene getearningsPaymentsScene(Stage primaryStage) {
         initSampleTransactions();
 
         BorderPane root = new BorderPane();
@@ -104,10 +108,8 @@ public class EarningsPaymentsV extends Application {
 
         // Scene Setup
         Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert - Earnings & Payments");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        earningsPaymentsScene = scene;
+        return earningsPaymentsScene;
     }
 
     private void initSampleTransactions() {
@@ -150,24 +152,26 @@ public class EarningsPaymentsV extends Application {
         sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
 
         // Menu Sections
-        sidebar.getChildren().add(createSidebarCategory("OVERVIEW"));
-        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> showToast(stage, "Opening Dashboard...")));
-
-        sidebar.getChildren().add(createSidebarCategory("SERVICE MANAGEMENT"));
+        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> {
+        showToast(stage, "Opening Dashboard...");
+        if (vendorDashboard != null) {
+                vendorDashboard.backToVendorDashboard();
+            } else {
+                VendorDashboardV dashboard = new VendorDashboardV();
+                Scene dashboardScene = dashboard.getvendorDashboardScene();
+                if (LandingPage.landingPageStage != null) {
+                    LandingPage.landingPageStage.setScene(dashboardScene);
+                }
+            }
+        }));
         sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false, e -> showToast(stage, "Opening Service Requests...")));
         sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, e -> showToast(stage, "Opening My Bookings...")));
         sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, e -> showToast(stage, "Opening Services...")));
-        sidebar.getChildren().add(createSidebarItem("📅 Availability Calendar", false, e -> showToast(stage, "Opening Calendar...")));
-
-        sidebar.getChildren().add(createSidebarCategory("FINANCE"));
+        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, e -> showToast(stage, "Opening Calendar...")));
         sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", true, e -> {})); // Active Menu
-
-        sidebar.getChildren().add(createSidebarCategory("COMMUNICATION"));
         sidebar.getChildren().add(createSidebarItemWithBadge("🔔 Notifications", "4"));
-
-        sidebar.getChildren().add(createSidebarCategory("ACCOUNT"));
-        sidebar.getChildren().add(createSidebarItem("👤 Profile & Settings", false, e -> showToast(stage, "Opening Profile...")));
-        sidebar.getChildren().add(createSidebarItem("❓ Help & Support", false, e -> showToast(stage, "Opening Support...")));
+        sidebar.getChildren().add(createSidebarItem("👤 Settings", false, e -> showToast(stage, "Opening Profile...")));
+        sidebar.getChildren().add(createSidebarItem("❓ Support", false, e -> showToast(stage, "Opening Support...")));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -194,12 +198,6 @@ public class EarningsPaymentsV extends Application {
 
         sidebar.getChildren().addAll(spacer, profilePill);
         return sidebar;
-    }
-
-    private Label createSidebarCategory(String title) {
-        Label cat = new Label(title);
-        cat.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #64748B; -fx-padding: 14 8 4 8;");
-        return cat;
     }
 
     private Button createSidebarItem(String title, boolean isActive, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {

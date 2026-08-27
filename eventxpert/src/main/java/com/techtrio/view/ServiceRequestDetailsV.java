@@ -12,8 +12,10 @@ import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-public class ServiceRequestDetailsV extends Application {
 
+public class ServiceRequestDetailsV {
+    private Scene serviceRequestDetailsScene;
+    private Runnable callBackAction;
     // Color Palette Constants
     private static final String SIDEBAR_NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
@@ -37,8 +39,8 @@ public class ServiceRequestDetailsV extends Application {
     private Button topAcceptBtn;
     private Button rightAcceptBtn;
 
-    @Override
-    public void start(Stage primaryStage) {
+    public Scene getserviceRequestDetailsScene(Stage primaryStage, Runnable callBackAction) {
+        this.callBackAction = callBackAction;
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
@@ -79,10 +81,8 @@ public class ServiceRequestDetailsV extends Application {
 
         // Scene Setup
         Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert - Service Request Details");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        serviceRequestDetailsScene = scene;
+        return serviceRequestDetailsScene;
     }
 
     // ==========================================
@@ -118,24 +118,15 @@ public class ServiceRequestDetailsV extends Application {
         sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
 
         // Menu Sections
-        sidebar.getChildren().add(createSidebarCategory("OVERVIEW"));
         sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> showToast(stage, "Opening Dashboard...")));
-
-        sidebar.getChildren().add(createSidebarCategory("SERVICE MANAGEMENT"));
         sidebar.getChildren().add(createSidebarItem("📋 Service Requests", true, e -> {})); // Active
         sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, e -> showToast(stage, "Opening My Bookings...")));
         sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, e -> showToast(stage, "Opening Services...")));
-        sidebar.getChildren().add(createSidebarItem("📅 Availability Calendar", false, e -> showToast(stage, "Opening Calendar...")));
-
-        sidebar.getChildren().add(createSidebarCategory("FINANCE"));
+        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, e -> showToast(stage, "Opening Calendar...")));
         sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, e -> showToast(stage, "Opening Finance...")));
-
-        sidebar.getChildren().add(createSidebarCategory("COMMUNICATION"));
         sidebar.getChildren().add(createSidebarItemWithBadge("🔔 Notifications", "4"));
-
-        sidebar.getChildren().add(createSidebarCategory("ACCOUNT"));
-        sidebar.getChildren().add(createSidebarItem("👤 Profile & Settings", false, e -> showToast(stage, "Opening Profile...")));
-        sidebar.getChildren().add(createSidebarItem("❓ Help & Support", false, e -> showToast(stage, "Opening Support...")));
+        sidebar.getChildren().add(createSidebarItem("👤 Settings", false, e -> showToast(stage, "Opening Profile...")));
+        sidebar.getChildren().add(createSidebarItem("❓ Support", false, e -> showToast(stage, "Opening Support...")));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -162,12 +153,6 @@ public class ServiceRequestDetailsV extends Application {
 
         sidebar.getChildren().addAll(spacer, profilePill);
         return sidebar;
-    }
-
-    private Label createSidebarCategory(String title) {
-        Label cat = new Label(title);
-        cat.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #64748B; -fx-padding: 14 8 4 8;");
-        return cat;
     }
 
     private Button createSidebarItem(String title, boolean isActive, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
@@ -349,9 +334,7 @@ public class ServiceRequestDetailsV extends Application {
                 createRequestedServiceCard(),
                 createEventRequirementsCard(),
                 createBudgetAndPaymentCard(),
-                createAttachmentsCard(stage),
-                createTimelineCard(),
-                createVendorResponseCard(stage)
+                createTimelineCard()
         );
 
         // Right Column (Sticky Summary & Organizer Card)
@@ -471,42 +454,6 @@ public class ServiceRequestDetailsV extends Application {
         return card;
     }
 
-    private VBox createAttachmentsCard(Stage stage) {
-        VBox card = createCardContainer();
-
-        Label title = new Label("Event Attachments");
-        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-
-        VBox fileList = new VBox(8);
-        fileList.getChildren().addAll(
-                createFileRow(stage, "📄 Event Brief.pdf", "1.2 MB"),
-                createFileRow(stage, "📄 Venue Layout Plan.pdf", "2.4 MB"),
-                createFileRow(stage, "📄 Technical Requirements.pdf", "850 KB")
-        );
-
-        card.getChildren().addAll(title, new Separator(), fileList);
-        return card;
-    }
-
-    private HBox createFileRow(Stage stage, String filename, String size) {
-        HBox r = new HBox(12);
-        r.setAlignment(Pos.CENTER_LEFT);
-        r.setPadding(new Insets(8));
-        r.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 6px;");
-
-        Label fn = new Label(filename); fn.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
-        Label sz = new Label("(" + size + ")"); sz.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
-
-        Button viewBtn = createSecondaryButton("View");
-        viewBtn.setStyle("-fx-font-size: 10px; -fx-padding: 3 8;");
-        viewBtn.setOnAction(e -> showToast(stage, "Opening " + filename));
-
-        r.getChildren().addAll(fn, sz, sp, viewBtn);
-        return r;
-    }
-
     private VBox createTimelineCard() {
         VBox card = createCardContainer();
 
@@ -540,31 +487,7 @@ public class ServiceRequestDetailsV extends Application {
         return r;
     }
 
-    private VBox createVendorResponseCard(Stage stage) {
-        VBox card = createCardContainer();
-
-        Label title = new Label("Your Response");
-        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-
-        Label desc = new Label("Decide how you want to respond to this request from TechVision Events:");
-        desc.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        HBox btnRow = new HBox(12);
-        Button acceptBtn = createPrimaryButton("Accept Request");
-        acceptBtn.setOnAction(e -> openAcceptConfirmationModal(stage));
-
-        Button rejectBtn = createSecondaryButton("Reject Request");
-        rejectBtn.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-border-color: " + RED_TEXT + "; -fx-border-radius: 6px; -fx-padding: 8 16;");
-        rejectBtn.setOnAction(e -> openRejectModal(stage));
-
-        Button infoBtn = createSecondaryButton("Request More Info");
-        infoBtn.setOnAction(e -> openRequestInfoModal(stage));
-
-        btnRow.getChildren().addAll(acceptBtn, rejectBtn, infoBtn);
-
-        card.getChildren().addAll(title, desc, new Separator(), btnRow);
-        return card;
-    }
+ 
 
     // ==========================================
     // RIGHT COLUMN CARDS
@@ -641,7 +564,10 @@ public class ServiceRequestDetailsV extends Application {
         bar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 12px; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 6, 0, 0, 2);");
 
         Button backBtn = createSecondaryButton("← Back to Requests");
-        backBtn.setOnAction(e -> showToast(stage, "Navigating back..."));
+        backBtn.setOnAction(e -> {
+            showToast(stage, "Navigating back...");
+            callBackAction.run();
+        });
 
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
 

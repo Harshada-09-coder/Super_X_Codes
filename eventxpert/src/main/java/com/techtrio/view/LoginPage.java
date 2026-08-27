@@ -2,6 +2,8 @@ package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
 import com.techtrio.controller.SignInResult;
+import com.techtrio.controller.VendorController;
+import com.techtrio.controller.VendorState;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -339,9 +341,38 @@ public class LoginPage {
 
      } else if (role.equalsIgnoreCase("organizer")) {
          System.out.println( "Opening Organizer Dashboard");
-     } else if (role.equalsIgnoreCase("vendor")) {
-        System.out.println( "Opening Vendor Dashboard");
+         OrganizerDashboardO organizerDashboardO = new OrganizerDashboardO();
+
+         LandingPage.landingPageStage.setScene(organizerDashboardO.getorganizerDashboardScene(callBackAction));
+
+} else if (role.equalsIgnoreCase("vendor")) {
+
+    System.out.println("Opening Vendor Dashboard");
+
+    VendorController vendorController = new VendorController();
+    VendorState vendorState = vendorController.getVendorState(uid, idToken);
+
+    if (vendorState == null) {
+        vendorState = new VendorState(false, false, "NEW", "NONE");
     }
+
+    System.out.println("========== VENDOR STATE ==========");
+    System.out.println("Profile Completed: " + vendorState.isProfileCompleted());
+    System.out.println("Has Provided Service: " + vendorState.hasProvidedService());
+    System.out.println("Onboarding Status: " + vendorState.getOnboardingStatus());
+    System.out.println("Current Process: " + vendorState.getCurrentProcess());
+    System.out.println("==================================");
+
+    if (!vendorState.hasProvidedService()) {
+        System.out.println("Opening NEW Vendor Dashboard");
+        InactiveVendorDash newVendorDashboard = new InactiveVendorDash(uid, idToken);
+        LandingPage.landingPageStage.setScene(newVendorDashboard.getinactiveVendorScene());
+    } else {
+        System.out.println("Opening ACTIVE Vendor Dashboard");
+        VendorDashboardV vendorDashboardV = new VendorDashboardV(uid, idToken);
+        LandingPage.landingPageStage.setScene(vendorDashboardV.getvendorDashboardScene());
+    }
+}
 }});
         Separator separator = new Separator();
 

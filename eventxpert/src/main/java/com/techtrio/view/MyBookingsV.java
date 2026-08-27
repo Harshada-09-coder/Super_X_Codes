@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -15,7 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MyBookingsV extends Application {
+public class MyBookingsV {
+    private Scene myBookingScene;
+    private VendorDashboardV vendorDashboard;
 
     // Color Palette Constants
     private static final String SIDEBAR_NAVY = "#062A60";
@@ -70,8 +71,16 @@ public class MyBookingsV extends Application {
     private VBox tableRowsContainer;
     private String activeTabFilter = "All Bookings";
 
-    @Override
-    public void start(Stage primaryStage) {
+    public void setVendorDashboard(VendorDashboardV vendorDashboard) {
+        this.vendorDashboard = vendorDashboard;
+    }
+
+
+    public Scene getmyBookingScene() {
+        return getmyBookingScene(null);
+    }
+
+    public Scene getmyBookingScene(Stage primaryStage) {
         initSampleBookings();
 
         BorderPane root = new BorderPane();
@@ -115,10 +124,8 @@ public class MyBookingsV extends Application {
 
         // Scene Setup
         Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert - My Bookings");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        myBookingScene = scene;
+        return myBookingScene;
     }
 
     private void initSampleBookings() {
@@ -164,24 +171,25 @@ public class MyBookingsV extends Application {
         sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
 
         // Menu Sections
-        sidebar.getChildren().add(createSidebarCategory("OVERVIEW"));
-        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> showToast(stage, "Opening Dashboard...")));
-
-        sidebar.getChildren().add(createSidebarCategory("SERVICE MANAGEMENT"));
+        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> {showToast(stage, "Opening Dashboard...");
+         if (vendorDashboard != null) {
+                vendorDashboard.backToVendorDashboard();
+            } else {
+                VendorDashboardV dashboard = new VendorDashboardV();
+                Scene dashboardScene = dashboard.getvendorDashboardScene();
+                if (LandingPage.landingPageStage != null) {
+                    LandingPage.landingPageStage.setScene(dashboardScene);
+                }
+            }
+    }));
         sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false, e -> showToast(stage, "Opening Service Requests...")));
         sidebar.getChildren().add(createSidebarItem("📱 My Bookings", true, e -> {})); // Active Menu
         sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, e -> showToast(stage, "Opening Services...")));
-        sidebar.getChildren().add(createSidebarItem("📅 Availability Calendar", false, e -> showToast(stage, "Opening Calendar...")));
-
-        sidebar.getChildren().add(createSidebarCategory("FINANCE"));
+        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, e -> showToast(stage, "Opening Calendar...")));
         sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, e -> showToast(stage, "Opening Earnings...")));
-
-        sidebar.getChildren().add(createSidebarCategory("COMMUNICATION"));
         sidebar.getChildren().add(createSidebarItemWithBadge("🔔 Notifications", "4"));
-
-        sidebar.getChildren().add(createSidebarCategory("ACCOUNT"));
-        sidebar.getChildren().add(createSidebarItem("👤 Profile & Settings", false, e -> showToast(stage, "Opening Settings...")));
-        sidebar.getChildren().add(createSidebarItem("❓ Help & Support", false, e -> showToast(stage, "Opening Support...")));
+        sidebar.getChildren().add(createSidebarItem("👤 Settings", false, e -> showToast(stage, "Opening Settings...")));
+        sidebar.getChildren().add(createSidebarItem("❓ Support", false, e -> showToast(stage, "Opening Support...")));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -208,12 +216,6 @@ public class MyBookingsV extends Application {
 
         sidebar.getChildren().addAll(spacer, profilePill);
         return sidebar;
-    }
-
-    private Label createSidebarCategory(String title) {
-        Label cat = new Label(title);
-        cat.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #64748B; -fx-padding: 14 8 4 8;");
-        return cat;
     }
 
     private Button createSidebarItem(String title, boolean isActive, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
@@ -548,7 +550,17 @@ public class MyBookingsV extends Application {
             // Action
             Button viewBtn = createSecondaryButton("View Details");
             viewBtn.setStyle("-fx-font-size: 10px; -fx-padding: 4 8;");
-            viewBtn.setOnAction(e -> showToast(stage, "Opening Booking Details for " + b.eventName));
+            viewBtn.setOnAction(e -> {
+                showToast(stage, "Opening Booking Details for " + b.eventName);
+                BookingDetailsV bookingDetailsV = new BookingDetailsV();
+
+                Runnable callBackAction = new Runnable() {
+                    public void run(){
+                       backToMyBookingPage();
+                    }
+                };
+                LandingPage.landingPageStage.setScene(bookingDetailsV.getbookingDetailsScene(null , callBackAction));
+            });
 
             row.add(eventBox, 0, 0);
             row.add(dtLbl, 1, 0);
@@ -787,7 +799,12 @@ public class MyBookingsV extends Application {
         alert.setTitle("EventXpert Notification");
         alert.setHeaderText(null);
         alert.setContentText(message);
-        alert.initOwner(stage);
+        if (stage != null) {
+            alert.initOwner(stage);
+        }
         alert.show();
+    }
+    public void backToMyBookingPage(){
+        LandingPage.landingPageStage.setScene(myBookingScene);
     }
 }
