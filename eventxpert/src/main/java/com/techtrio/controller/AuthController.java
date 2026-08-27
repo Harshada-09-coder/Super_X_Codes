@@ -68,7 +68,7 @@ public class AuthController {
                     );
 
             if (firestoreSaved) {
-                return new SignUpResult(idToken, idToken);
+                return new SignUpResult(uid, idToken);
             }
         }
 
@@ -114,6 +114,32 @@ public class AuthController {
                 new JSONObject()
                         .put("stringValue", role)
         );
+        if (role.equalsIgnoreCase("vendor")) {
+
+    fields.put(
+            "profileCompleted",
+            new JSONObject()
+                    .put("booleanValue", false)
+    );
+
+    fields.put(
+            "hasProvidedService",
+            new JSONObject()
+                    .put("booleanValue", false)
+    );
+
+    fields.put(
+            "onboardingStatus",
+            new JSONObject()
+                    .put("stringValue", "NEW")
+    );
+
+    fields.put(
+            "currentProcess",
+            new JSONObject()
+                    .put("stringValue", "NONE")
+    );
+}
 
         JSONObject document =
                 new JSONObject()
@@ -142,8 +168,7 @@ if (role.equalsIgnoreCase("customer")) {
                         + uid
         );
 
-        HttpClient client =
-                HttpClient.newHttpClient();
+        HttpClient client = HttpClient.newHttpClient();
 
         HttpRequest request =
                 HttpRequest.newBuilder()
@@ -290,26 +315,45 @@ if (role.equalsIgnoreCase("customer")) {
                             + response.statusCode()
             );
 
-            if (response.statusCode() == 200) {
+           if (response.statusCode() == 200) {
 
-                JSONObject document =
-                        new JSONObject(response.body());
+    JSONObject document =
+            new JSONObject(response.body());
 
-                JSONObject fields =
-                        document.getJSONObject("fields");
+    System.out.println(
+            "User found in collection: " + collection
+    );
 
-                String role =
-                        fields
-                                .getJSONObject("role")
-                                .getString("stringValue");
+    String role;
 
-                System.out.println(
-                        "ROLE FROM FIRESTORE: "
-                                + role
-                );
+    switch (collection) {
 
-                return role;
-            }
+        case "Admin":
+            role = "Admin";
+            break;
+
+        case "Customers":
+            role = "Customer";
+            break;
+
+        case "Organizers":
+            role = "Organizer";
+            break;
+
+        case "Vendors":
+            role = "Vendor";
+            break;
+
+        default:
+            role = null;
+    }
+
+    System.out.println(
+            "ROLE FROM COLLECTION: " + role
+    );
+
+    return role;
+}
         }
 
     } catch (Exception e) {

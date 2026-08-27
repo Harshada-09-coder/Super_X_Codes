@@ -321,14 +321,14 @@ public class OrganizerRegistration{
     if (result != null) {
 
         System.out.println("Registration successful");
-         OrganizerDashboardO organizerDashboardO = new OrganizerDashboardO();
+         InactiveOrgDash organizerDashboardO = new InactiveOrgDash();
          Runnable callBackAction = new Runnable() {
           public void run(){
             backToOrganizerRegistration();
           }
         };
 
-        LandingPage.landingPageStage.setScene(organizerDashboardO.getorganizerDashboardScene(callBackAction));
+        LandingPage.landingPageStage.setScene(organizerDashboardO.getinactiveOrganizerScene());
      
     } else {
         System.out.println("Registration Failed");
@@ -344,7 +344,17 @@ public class OrganizerRegistration{
 
         Hyperlink loginLink = new Hyperlink("Login");
         loginLink.getStyleClass().add("inline-link");
-        loginLink.setOnAction(e -> handleNavigateLogin());
+        loginLink.setOnAction(e -> {handleNavigateLogin();
+            LoginPage backToLoginPage = new LoginPage();
+            Runnable callBackAction1 = new Runnable() {
+                        public void run(){
+                                backToOrganizerRegistration();
+                        }
+                };
+
+                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
+      
+        });
 
         footerBox.getChildren().addAll(lblAlready, loginLink);
 
