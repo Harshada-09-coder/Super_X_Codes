@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,9 +8,12 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class CreateEventC extends Application {
+
+
+public class CreateEventC  {
+
+        
 
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
@@ -20,8 +22,10 @@ public class CreateEventC extends Application {
     private static final String TEXT = "#101828";
     private static final String GREY = "#667085";
 
-    @Override
-    public void start(Stage stage) {
+    public Scene getCreateEventScene(
+        Runnable backAction
+        
+) {
 
        
 
@@ -383,35 +387,10 @@ public class CreateEventC extends Application {
                 "-fx-cursor:hand;"
         );
 
-        back.setOnAction(e -> stage.close());
-
-        
-
-        Button saveDraft =
-                new Button("Save Draft");
-
-        saveDraft.setPrefHeight(38);
-
-        saveDraft.setStyle(
-                "-fx-background-color:transparent;" +
-                "-fx-text-fill:" + BLUE + ";" +
-                "-fx-font-weight:bold;" +
-                "-fx-cursor:hand;"
-        );
-
-        saveDraft.setOnAction(e -> {
-
-            Alert alert =
-                    new Alert(Alert.AlertType.INFORMATION);
-
-            alert.setTitle("EventXpert");
-            alert.setHeaderText("Draft Saved");
-            alert.setContentText(
-                    "Your event has been saved as a draft."
-            );
-
-            alert.showAndWait();
-        });
+back.setOnAction(e -> {
+    System.out.println("Back to Dashboard");
+    backAction.run();
+});     
 
         
 
@@ -427,26 +406,37 @@ public class CreateEventC extends Application {
                 "-fx-font-weight:bold;" +
                 "-fx-cursor:hand;"
         );
+next.setOnAction(e -> {
 
-        next.setOnAction(e -> {
+    RequirementsC requirementsPage =
+            new RequirementsC();
 
-            Alert alert =
-                    new Alert(Alert.AlertType.INFORMATION);
+    LandingPage.landingPageStage.setScene(
+            requirementsPage.getRequirementsScene(
 
-            alert.setTitle("EventXpert");
-            alert.setHeaderText("Next Step");
-            alert.setContentText(
-                    "Moving to Requirements..."
-            );
+                    () -> {
 
-            alert.showAndWait();
-        });
+                        CreateEventC createEventPage =
+                                new CreateEventC();
+
+                        LandingPage.landingPageStage.setScene(
+                                createEventPage.getCreateEventScene(
+                                        backAction
+                                )
+                        );
+
+                    },
+
+                    null
+            )
+    );
+
+});        
 
         footer.getChildren().addAll(
                 copyright,
                 footerSpace,
                 back,
-                saveDraft,
                 next
         );
 
@@ -497,16 +487,7 @@ public class CreateEventC extends Application {
                         850
                 );
 
-        stage.setTitle(
-                "EventXpert - Create Event"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMinWidth(1100);
-        stage.setMinHeight(700);
-
-        stage.show();
+        return scene;
     }
 
     
@@ -783,10 +764,5 @@ public class CreateEventC extends Application {
 
     
 
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
-    }
+   
 }

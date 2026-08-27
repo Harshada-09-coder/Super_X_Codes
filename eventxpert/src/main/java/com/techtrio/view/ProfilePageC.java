@@ -1,7 +1,5 @@
 package com.techtrio.view;
 
-
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,9 +8,8 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class ProfilePageC extends Application {
+public class ProfilePageC {
 
     private final String BLUE = "#002653";
     private final String LIGHT_BLUE = "#0B3B78";
@@ -22,16 +19,13 @@ public class ProfilePageC extends Application {
     private TextField emailField;
     private TextField mobileField;
 
-    @Override
-    public void start(Stage stage) {
+    public Scene getProfileScene(Runnable callBackAction1) {
 
         BorderPane root = new BorderPane();
 
         root.setStyle(
                 "-fx-background-color:" + BG + ";"
         );
-
-        
 
         VBox sidebar = new VBox();
 
@@ -46,8 +40,6 @@ public class ProfilePageC extends Application {
         sidebar.setStyle(
                 "-fx-background-color:" + BLUE + ";"
         );
-
-        
 
         Label logo =
                 new Label("EventXpert");
@@ -83,42 +75,6 @@ public class ProfilePageC extends Application {
                         logo,
                         admin
                 );
-
-        
-
-        Button createEvent =
-                new Button("+   Create Event");
-
-        createEvent.setPrefHeight(48);
-        createEvent.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        createEvent.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        16
-                )
-        );
-
-        createEvent.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-text-fill:#16233A;" +
-                "-fx-background-radius:9;"
-        );
-
-        VBox.setMargin(
-                createEvent,
-                new Insets(
-                        35,
-                        0,
-                        28,
-                        0
-                )
-        );
-
-    
 
         VBox navigation =
                 new VBox(6);
@@ -180,8 +136,6 @@ public class ProfilePageC extends Application {
                 )
         );
 
-        
-
         Region sidebarSpacer =
                 new Region();
 
@@ -189,8 +143,6 @@ public class ProfilePageC extends Application {
                 sidebarSpacer,
                 Priority.ALWAYS
         );
-
-        
 
         VBox bottom =
                 new VBox(6);
@@ -212,13 +164,11 @@ public class ProfilePageC extends Application {
 
         sidebar.getChildren().addAll(
                 logoBox,
-                createEvent,
                 navigation,
                 sidebarSpacer,
                 bottom
         );
 
-        
         VBox rightSide =
                 new VBox();
 
@@ -226,7 +176,7 @@ public class ProfilePageC extends Application {
                 createTopBar();
 
         VBox mainContent =
-                createProfileContent();
+                createProfileContent(callBackAction1);
 
         VBox.setVgrow(
                 mainContent,
@@ -241,7 +191,6 @@ public class ProfilePageC extends Application {
         root.setLeft(sidebar);
         root.setCenter(rightSide);
 
-        
         Scene scene =
                 new Scene(
                         root,
@@ -249,18 +198,9 @@ public class ProfilePageC extends Application {
                         850
                 );
 
-        stage.setTitle(
-                "EventXpert - Customer Profile"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMaximized(true);
-
-        stage.show();
+        return scene;
     }
 
-    
     private HBox navigationItem(
             String icon,
             String text,
@@ -349,7 +289,6 @@ public class ProfilePageC extends Application {
         return item;
     }
 
-    
     private HBox createTopBar() {
 
         HBox top =
@@ -376,7 +315,6 @@ public class ProfilePageC extends Application {
                 "-fx-border-width:0 0 1 0;"
         );
 
-        
         TextField search =
                 new TextField();
 
@@ -423,7 +361,6 @@ public class ProfilePageC extends Application {
                 Pos.CENTER_LEFT
         );
 
-        
         Region spacer =
                 new Region();
 
@@ -491,7 +428,6 @@ public class ProfilePageC extends Application {
         );
 
         top.getChildren().addAll(
-
                 searchBox,
                 spacer,
                 notification,
@@ -533,12 +469,50 @@ public class ProfilePageC extends Application {
         return top;
     }
 
-    
-
-    private VBox createProfileContent() {
+    private VBox createProfileContent(
+            Runnable callBackAction1
+    ) {
 
         VBox content =
                 new VBox();
+
+        Button backButton =
+                new Button("←  Back");
+
+        backButton.setFont(
+                Font.font(
+                        "Arial",
+                        FontWeight.BOLD,
+                        15
+                )
+        );
+
+        backButton.setStyle(
+                "-fx-background-color:transparent;" +
+                "-fx-text-fill:#071D41;" +
+                "-fx-border-color:#CBD4DF;" +
+                "-fx-border-radius:7;" +
+                "-fx-background-radius:7;" +
+                "-fx-padding:8 16;"
+        );
+
+        /*
+         * BACK BUTTON
+         *
+         * Profile page kontya dashboard madhun open keli
+         * aahe tyach dashboard cha callback ithe execute hoil.
+         *
+         * NewCustomerDashboard -> Back -> NewCustomerDashboard
+         *
+         * ActiveCustomerDashboardC -> Back -> ActiveCustomerDashboardC
+         */
+        backButton.setOnAction(e -> {
+
+            if (callBackAction1 != null) {
+                callBackAction1.run();
+            }
+
+        });
 
         content.setPadding(
                 new Insets(
@@ -554,8 +528,6 @@ public class ProfilePageC extends Application {
         content.setStyle(
                 "-fx-background-color:" + BG + ";"
         );
-
-    
 
         Label title =
                 new Label("My Profile");
@@ -595,8 +567,6 @@ public class ProfilePageC extends Application {
                         subtitle
                 );
 
-        
-
         HBox mainArea =
                 new HBox(28);
 
@@ -615,7 +585,7 @@ public class ProfilePageC extends Application {
                 accountCard
         );
 
-        
+        // RIGHT COLUMN
         VBox rightColumn =
                 new VBox(25);
 
@@ -646,13 +616,12 @@ public class ProfilePageC extends Application {
 
         content.getChildren().addAll(
                 heading,
-                mainArea
+                mainArea,
+                backButton
         );
 
         return content;
     }
-
-    
 
     private VBox createProfileCard() {
 
@@ -679,7 +648,6 @@ public class ProfilePageC extends Application {
                 "-fx-background-radius:12;"
         );
 
-        
         StackPane photo =
                 new StackPane();
 
@@ -851,7 +819,6 @@ public class ProfilePageC extends Application {
         return card;
     }
 
-    
     private VBox createAccountCard() {
 
         VBox card =
@@ -922,8 +889,6 @@ public class ProfilePageC extends Application {
         return card;
     }
 
-   
-
     private HBox accountRow(
             String left,
             String right
@@ -979,8 +944,6 @@ public class ProfilePageC extends Application {
 
         return row;
     }
-
-    
 
     private VBox createPersonalInformation() {
 
@@ -1062,7 +1025,6 @@ public class ProfilePageC extends Application {
                 edit
         );
 
-        // Fields
         GridPane fields =
                 new GridPane();
 
@@ -1088,7 +1050,6 @@ public class ProfilePageC extends Application {
         fields.getColumnConstraints()
                 .addAll(c1, c2);
 
-        
         Label nameLabel =
                 fieldLabel("Full Name");
 
@@ -1101,7 +1062,6 @@ public class ProfilePageC extends Application {
                 nameField
         );
 
-    
         Label emailLabel =
                 fieldLabel("Email Address");
 
@@ -1114,7 +1074,6 @@ public class ProfilePageC extends Application {
                 emailField
         );
 
-        // Mobile
         Label mobileLabel =
                 fieldLabel("Mobile Number");
 
@@ -1171,13 +1130,10 @@ public class ProfilePageC extends Application {
                 fields
         );
 
-        // Start read-only
         setFieldsEditable(false);
 
         return card;
     }
-
-    
 
     private Label fieldLabel(
             String text
@@ -1200,8 +1156,6 @@ public class ProfilePageC extends Application {
         return label;
     }
 
-    
-
     private void styleField(
             TextField field
     ) {
@@ -1223,7 +1177,6 @@ public class ProfilePageC extends Application {
         );
     }
 
-    
     private void toggleEditing() {
 
         boolean editable =
@@ -1286,8 +1239,6 @@ public class ProfilePageC extends Application {
             styleField(mobileField);
         }
     }
-
-    
 
     private VBox createSecurityCard() {
 
@@ -1442,8 +1393,6 @@ public class ProfilePageC extends Application {
         return card;
     }
 
-    
-
     private void showChangePassword() {
 
         Dialog<String> dialog =
@@ -1509,8 +1458,6 @@ public class ProfilePageC extends Application {
         dialog.showAndWait();
     }
 
-    
-
     private Button createLogoutButton() {
 
         Button logout =
@@ -1539,41 +1486,34 @@ public class ProfilePageC extends Application {
                 "-fx-background-radius:8;"
         );
 
-        logout.setOnAction(
-                e -> {
+        logout.setOnAction(e -> {
 
-                    Alert alert =
-                            new Alert(
-                                    Alert.AlertType.CONFIRMATION
-                            );
+            Alert alert = new Alert(
+                    Alert.AlertType.CONFIRMATION
+            );
 
-                    alert.setTitle(
-                            "Logout"
+            alert.setTitle("Logout");
+            alert.setHeaderText("Logout");
+            alert.setContentText(
+                    "Are you sure you want to logout?"
+            );
+
+            alert.showAndWait().ifPresent(response -> {
+
+                if (response == ButtonType.OK) {
+
+                    LoginPage loginPage =
+                            new LoginPage();
+
+                    LandingPage.landingPageStage.setScene(
+                            loginPage.getloginPageScene(null)
                     );
-
-                    alert.setHeaderText(
-                            "Are you sure you want to logout?"
-                    );
-
-                    alert.setContentText(
-                            "You will be returned to the login page."
-                    );
-
-                    alert.showAndWait();
                 }
-        );
+            });
+        });
 
         return logout;
     }
 
     
-
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
-    }
 }
-
-

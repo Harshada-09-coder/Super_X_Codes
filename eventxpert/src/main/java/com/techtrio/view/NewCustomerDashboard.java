@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,18 +9,18 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class NewCustomerDashboard extends Application {
+public class NewCustomerDashboard {
+        private Scene newCustomerScene;
 
     private final String NAVY = "#082E6B";
     private final String BLUE = "#174A88";
     private final String LIGHT = "#F5F8FC";
     private final String TEXT = "#082E6B";
     private final String GRAY = "#526071";
+    private Scene dashboardScene;
 
-    @Override
-    public void start(Stage stage) {
+   Scene getnewCustomerScene(Runnable callBackAction1) {
 
         
         VBox sidebar = new VBox(18);
@@ -52,24 +51,117 @@ public class NewCustomerDashboard extends Application {
 
         sidebar.getChildren().add(brand);
 
-        sidebar.getChildren().addAll(
-                navItem("▦", "Dashboard", true),
-                navItem("⊕", "Create Event", false),
-                navItem("□", "My Events", false),
-                navItem("□", "Calendar", false),
-                navItem("♧", "Notifications", false)
-                
-        );
+HBox createEventNav = navItem("⊕", "Create Event", false);
+
+createEventNav.setOnMouseClicked(e -> {
+
+    NoEventC noEventPage = new NoEventC();
+
+    LandingPage.landingPageStage.setScene(
+            noEventPage.getNoEventScene(
+
+                    // BACK → NEW CUSTOMER DASHBOARD
+                    () -> {
+
+                        NewCustomerDashboard dashboardPage =
+                                new NewCustomerDashboard();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getnewCustomerScene(null)
+                        );
+
+                    }
+            )
+    );
+});
+
+HBox notificationsNav = navItem("♧", "Notifications", false); 
+
+    
+   notificationsNav.setOnMouseClicked(e -> {
+
+    Notification notificationPage =
+            new Notification();
+
+    LandingPage.landingPageStage.setScene(
+            notificationPage.getNotificationScene()
+    );
+}); 
+
+  
+
+
+sidebar.getChildren().addAll(
+        navItem("▦", "Dashboard", true),
+        createEventNav,
+        notificationsNav
+);
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
 
-        sidebar.getChildren().addAll(
-                sideSpace,
-                navItem("♙", "Profile", false),
-                navItem("⚙", "Settings", false),
-                navItem("?", "Support", false)
-        );
+
+        HBox profileNav = navItem(
+        "♙",
+        "Profile",
+        false
+);
+
+profileNav.setOnMouseClicked(e -> {
+
+    ProfilePageC profilePage =
+            new ProfilePageC();
+
+    LandingPage.landingPageStage.setScene(
+            profilePage.getProfileScene(
+
+                    // BACK → NEW CUSTOMER DASHBOARD
+                    () -> {
+
+                        NewCustomerDashboard dashboardPage =
+                                new NewCustomerDashboard();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getnewCustomerScene(
+                                        null
+                                )
+                        );
+
+                    }
+            )
+    );
+});
+         HBox settingsNav = navItem(
+        "⚙",
+        "Settings",
+        false
+);
+
+settingsNav.setOnMouseClicked(e -> {
+
+    SettingC settingPage = new SettingC();
+
+    LandingPage.landingPageStage.setScene(
+            settingPage.getSettingScene(
+                    // BACK → NEW CUSTOMER DASHBOARD
+                    () -> {
+                        NewCustomerDashboard dashboardPage =
+                                new NewCustomerDashboard();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getnewCustomerScene(null)
+                        );
+                    }
+            )
+    );
+});
+
+sidebar.getChildren().addAll(
+        sideSpace,
+        profileNav,
+        settingsNav,
+        navItem("?", "Support", false)
+);
 
 
         HBox topBar = new HBox(18);
@@ -102,16 +194,7 @@ public class NewCustomerDashboard extends Application {
         notification.setFont(Font.font("Arial", 22));
         notification.setTextFill(Color.web(GRAY));
 
-        Button createTop = new Button("Create Event");
-        createTop.setPrefHeight(42);
-        createTop.setStyle(
-                "-fx-background-color:" + NAVY + ";" +
-                "-fx-text-fill:white;" +
-                "-fx-font-weight:bold;" +
-                "-fx-font-size:15;" +
-                "-fx-background-radius:8;" +
-                "-fx-padding:0 22;"
-        );
+
 
         Circle topProfile = new Circle(20);
         topProfile.setFill(Color.web("#D7EAF8"));
@@ -122,7 +205,7 @@ public class NewCustomerDashboard extends Application {
 
         StackPane topUser = new StackPane(topProfile, topInitial);
 
-        topBar.getChildren().addAll(topSpace, search, notification, createTop, topUser);
+        topBar.getChildren().addAll(topSpace, search, notification,  topUser);
 
         
         VBox content = new VBox(18);
@@ -161,6 +244,20 @@ public class NewCustomerDashboard extends Application {
         Button firstButton = new Button("+   Create Your First Event");
         firstButton.setPrefHeight(42);
         firstButton.setStyle(buttonStyle());
+
+      firstButton.setOnAction(e -> {
+
+    NoEventC noEventPage = new NoEventC();
+
+    LandingPage.landingPageStage.setScene(
+        noEventPage.getNoEventScene(
+            () -> LandingPage.landingPageStage.setScene(
+                getnewCustomerScene(null)
+            )
+        )
+    );
+
+});
 
         firstEvent.getChildren().addAll(
                 firstTitle,
@@ -273,10 +370,8 @@ public class NewCustomerDashboard extends Application {
         HBox.setHgrow(mainArea, Priority.ALWAYS);
 
         Scene scene = new Scene(root, 1500, 900);
-
-        stage.setTitle("EventXpert - Customer Dashboard");
-        stage.setScene(scene);
-        stage.show();
+        newCustomerScene = scene;
+        return newCustomerScene;
     }
 
     
@@ -395,9 +490,5 @@ public class NewCustomerDashboard extends Application {
                 "-fx-font-size:14;" +
                 "-fx-background-radius:7;" +
                 "-fx-padding:0 22;";
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }
