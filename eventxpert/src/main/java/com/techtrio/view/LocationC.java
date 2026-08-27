@@ -28,6 +28,12 @@ public class LocationC {
         this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
         this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
     }
+    public Scene getLocationScene(
+        Runnable backAction,
+        Runnable nextAction
+) {
+
+    
 
     public Scene getLocationScene() {
         BorderPane root = new BorderPane();
@@ -118,6 +124,197 @@ public class LocationC {
         );
 
         content.getChildren().addAll(stepText, heading, description, locationCard);
+        Separator separator = new Separator();
+
+        
+        Button currentLocation =
+                new Button("◎   Use my current location");
+
+        currentLocation.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        currentLocation.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        currentLocation.setPrefHeight(34);
+
+        currentLocation.setStyle(
+                "-fx-background-color:transparent;" +
+                "-fx-text-fill:" + BLUE + ";" +
+                "-fx-font-size:11px;" +
+                "-fx-font-weight:bold;" +
+                "-fx-alignment:center-left;" +
+                "-fx-cursor:hand;"
+        );
+
+        currentLocation.setOnAction(e -> {
+
+            Alert alert =
+                    new Alert(
+                            Alert.AlertType.INFORMATION
+                    );
+
+            alert.setTitle("Location");
+            alert.setHeaderText(
+                    "Current Location"
+            );
+
+            alert.setContentText(
+                    "Current location will be connected using API / Google Maps."
+            );
+
+            alert.showAndWait();
+        });
+
+        locationCard.getChildren().addAll(
+                separator,
+                currentLocation
+        );
+
+        
+
+        HBox helpBox = new HBox(12);
+
+        helpBox.setPrefHeight(62);
+
+        helpBox.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        helpBox.setPadding(
+                new Insets(10, 14, 10, 14)
+        );
+
+        helpBox.setStyle(
+                "-fx-background-color:#F8FAFC;" +
+                "-fx-border-color:" + BORDER + ";" +
+                "-fx-border-radius:7;" +
+                "-fx-background-radius:7;"
+        );
+
+        Label helpIcon = label(
+                "⌕",
+                21,
+                FontWeight.BOLD,
+                BLUE
+        );
+
+        StackPane iconCircle =
+                new StackPane(helpIcon);
+
+        iconCircle.setPrefSize(34, 34);
+
+        iconCircle.setStyle(
+                "-fx-background-color:" + LIGHT_BLUE + ";" +
+                "-fx-background-radius:50;"
+        );
+
+        Label helpTitle = label(
+                "Need help finding a venue?",
+                13,
+                FontWeight.BOLD,
+                TEXT
+        );
+
+        Label helpSub = label(
+                "Connect with our Venue Finder.",
+                10,
+                FontWeight.NORMAL,
+                GREY
+        );
+
+        VBox helpText =
+                new VBox(1, helpTitle, helpSub);
+
+        Region helpSpace =
+                new Region();
+
+        HBox.setHgrow(
+                helpSpace,
+                Priority.ALWAYS
+        );
+
+        Label arrow = label(
+                "→",
+                22,
+                FontWeight.NORMAL,
+                GREY
+        );
+
+        helpBox.getChildren().addAll(
+                iconCircle,
+                helpText,
+                helpSpace,
+                arrow
+        );
+
+       
+        Image mapImage = new Image("assets\\images\\map img.jpg");
+
+        ImageView mapView = new ImageView(mapImage);
+
+        mapView.setFitWidth(440);
+        mapView.setFitHeight(335);
+
+        mapView.setPreserveRatio(false);
+        mapView.setSmooth(true);
+
+        StackPane mapPanel = new StackPane(
+                mapView
+        );
+
+        mapPanel.setPrefSize(
+                520,
+                360
+        );
+
+        mapPanel.setMinSize(
+                520,
+                360
+        );
+
+        mapPanel.setStyle(
+                "-fx-background-color:#DCE2E8;" +
+                "-fx-background-radius:6;" +
+                "-fx-border-color:" + BORDER + ";" +
+                "-fx-border-radius:6;"
+        );
+
+        
+        VBox leftColumn = new VBox(18);
+
+        leftColumn.setPrefWidth(360);
+        leftColumn.setMaxWidth(Double.MAX_VALUE);
+
+        leftColumn.setPrefWidth(370);
+
+        leftColumn.getChildren().addAll(
+                locationCard,
+                helpBox
+        );
+
+        HBox mainRow =
+                new HBox(45);
+
+        mainRow.setAlignment(
+                Pos.TOP_LEFT
+        );
+
+        mainRow.getChildren().addAll(
+                leftColumn,
+                mapPanel
+        );
+
+        content.getChildren().addAll(
+                stepText,
+                heading,
+                description,
+                mainRow
+        );
+
+        
 
         HBox footer = new HBox(15);
         footer.setPrefHeight(60);
@@ -141,6 +338,51 @@ public class LocationC {
         back.setOnAction(e -> {
             RequirementsC reqView = new RequirementsC(uid, idToken);
             LandingPage.landingPageStage.setScene(reqView.getRequirementsScene());
+        back.setStyle(
+                "-fx-background-color:white;" +
+                "-fx-text-fill:" + BLUE + ";" +
+                "-fx-border-color:" + BLUE + ";" +
+                "-fx-border-radius:7;" +
+                "-fx-background-radius:7;" +
+                "-fx-font-size:11px;" +
+                "-fx-font-weight:bold;"
+        );
+
+        next.setStyle(
+                "-fx-background-color:" + BLUE + ";" +
+                "-fx-text-fill:white;" +
+                "-fx-background-radius:7;" +
+                "-fx-font-size:11px;" +
+                "-fx-font-weight:bold;"
+        );
+
+        save.setOnAction(e ->
+                showMessage(
+                        "Draft Saved",
+                        "Your location details have been saved."
+                )
+        );
+
+        back.setOnAction(e -> {
+
+            if (backAction != null) {
+                backAction.run();
+            }
+
+        });
+
+        // LOCATION → BUDGET
+        next.setOnAction(e -> {
+
+            BudgetC budgetPage = new BudgetC();
+
+            LandingPage.landingPageStage.setScene(
+                    budgetPage.getBudgetScene(
+                            backAction,
+                            nextAction
+                    )
+            );
+
         });
 
         next.setOnAction(e -> {
@@ -166,6 +408,16 @@ public class LocationC {
 
         root.setCenter(fullPage);
         scene = new Scene(root, 1365, 850);
+
+      
+
+        Scene scene =
+                new Scene(
+                        root,
+                        1365,
+                        850
+                );
+
         return scene;
     }
 
@@ -202,4 +454,26 @@ public class LocationC {
         l.setTextFill(Color.web(color));
         return l;
     }
+
+    
+
+    private void showMessage(
+            String title,
+            String message
+    ) {
+
+        Alert alert =
+                new Alert(
+                        Alert.AlertType.INFORMATION
+                );
+
+        alert.setTitle("EventXpert");
+        alert.setHeaderText(title);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    
+
+     
 }

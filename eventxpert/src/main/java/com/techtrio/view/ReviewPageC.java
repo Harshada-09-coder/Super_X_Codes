@@ -15,6 +15,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 public class ReviewPageC {
+public class ReviewPageC  {
 
     private Scene scene;
     private String uid;
@@ -62,6 +63,9 @@ public class ReviewPageC {
         this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
         this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
     }
+    
+   public Scene getReviewScene() {
+        
 
     public Scene getReviewScene() {
         BorderPane root = new BorderPane();
@@ -82,6 +86,15 @@ public class ReviewPageC {
 
         root.setCenter(rightSide);
         scene = new Scene(root, 1250, 750);
+
+        
+
+        Scene scene = new Scene(
+                root,
+                1250,
+                750
+        );
+
         return scene;
     }
 
@@ -383,3 +396,61 @@ public class ReviewPageC {
         return footer;
     }
 }
+
+    AiPlanningC aiPlanningPage = new AiPlanningC();
+
+    LandingPage.landingPageStage.setScene(
+            aiPlanningPage.getAiPlanningScene(
+                    null,
+                    null
+            )
+    );
+});
+
+       
+          save.setOnAction(e -> {
+
+            Alert alert =
+                    new Alert(
+                            Alert.AlertType.INFORMATION
+                    );
+
+            alert.setTitle(
+                    "EventXpert"
+            );
+
+            alert.setHeaderText(
+                    "Draft Saved"
+            );
+
+            alert.setContentText(
+                    "Your event has been saved as draft."
+            );
+
+            alert.showAndWait();
+        });
+
+        create.setOnAction(e -> {
+
+    EventDetailsC eventDetailsPage =
+            new EventDetailsC();
+
+    LandingPage.landingPageStage.setScene(
+            eventDetailsPage.getEventDetailsScene()
+    );
+});
+        
+
+        footer.getChildren().addAll(
+                back,
+                save,
+                create
+        );
+
+        return footer;
+    }
+
+    
+    
+}
+

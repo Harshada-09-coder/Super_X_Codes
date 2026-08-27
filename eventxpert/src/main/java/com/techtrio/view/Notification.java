@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -15,7 +14,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class Notification extends Application {
+public class Notification  {
 
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
@@ -24,8 +23,7 @@ public class Notification extends Application {
     private static final String BORDER = "#D7DEE8";
     private static final String LIGHT_BLUE = "#BFE5FF";
 
-    @Override
-    public void start(Stage stage) {
+    public Scene getNotificationScene() {
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
@@ -126,10 +124,22 @@ public class Notification extends Application {
 
         Button backButton = new Button("←  Back");
 
+        backButton.setOnAction(e -> {
+
+    EventDetailsC eventDetailsPage =
+            new EventDetailsC();
+
+    LandingPage.landingPageStage.setScene(
+            eventDetailsPage.getEventDetailsScene()
+    );
+
+});
+
         backButton.setPrefSize(
                 105,
                 36
         );
+
 
         backButton.setStyle(
                 "-fx-background-color:white;" +
@@ -141,7 +151,9 @@ public class Notification extends Application {
                 "-fx-font-size:12px;" +
                 "-fx-font-weight:bold;"
         );
+       
 
+   
         TextField search = new TextField();
 
         search.setPromptText("Search");
@@ -329,18 +341,7 @@ public class Notification extends Application {
                 800
         );
 
-        stage.setTitle(
-                "EventXpert - Notifications"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMinWidth(1100);
-        stage.setMinHeight(700);
-
-        stage.setMaximized(true);
-
-        stage.show();
+     return scene;
     }
 
     
@@ -884,10 +885,8 @@ public class Notification extends Application {
         return label;
     }
 
+
     
 
-    public static void main(String[] args) {
-
-        launch(args);
-    }
+    
 }

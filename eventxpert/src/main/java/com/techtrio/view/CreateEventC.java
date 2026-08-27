@@ -17,6 +17,11 @@ public class CreateEventC {
     private String uid;
     private String idToken;
 
+
+public class CreateEventC  {
+
+        
+
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
     private static final String BG = "#F5F8FC";
@@ -29,6 +34,12 @@ public class CreateEventC {
         this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
         UserSession.setSession(this.uid, this.idToken, null, "Customer");
     }
+    public Scene getCreateEventScene(
+        Runnable backAction
+        
+) {
+
+       
 
     public Scene getCreateEventScene() {
         BorderPane root = new BorderPane();
@@ -165,6 +176,21 @@ public class CreateEventC {
             LandingPage.landingPageStage.setScene(dash.getnewCustomerScene(null));
         });
 
+        back.setStyle(
+                "-fx-background-color:white;" +
+                "-fx-text-fill:" + BLUE + ";" +
+                "-fx-border-color:" + BLUE + ";" +
+                "-fx-border-radius:7;" +
+                "-fx-background-radius:7;" +
+                "-fx-font-weight:bold;" +
+                "-fx-cursor:hand;"
+        );
+
+back.setOnAction(e -> {
+    System.out.println("Back to Dashboard");
+    backAction.run();
+});     
+
         Button next = new Button("Next");
         next.setPrefSize(82, 38);
         next.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-weight:bold;-fx-cursor:hand;");
@@ -192,6 +218,47 @@ public class CreateEventC {
 
         footer.getChildren().addAll(copyright, footerSpace, back, next);
 
+        next.setStyle(
+                "-fx-background-color:" + BLUE + ";" +
+                "-fx-text-fill:white;" +
+                "-fx-background-radius:7;" +
+                "-fx-font-weight:bold;" +
+                "-fx-cursor:hand;"
+        );
+next.setOnAction(e -> {
+
+    RequirementsC requirementsPage =
+            new RequirementsC();
+
+    LandingPage.landingPageStage.setScene(
+            requirementsPage.getRequirementsScene(
+
+                    () -> {
+
+                        CreateEventC createEventPage =
+                                new CreateEventC();
+
+                        LandingPage.landingPageStage.setScene(
+                                createEventPage.getCreateEventScene(
+                                        backAction
+                                )
+                        );
+
+                    },
+
+                    null
+            )
+    );
+
+});        
+
+        footer.getChildren().addAll(
+                copyright,
+                footerSpace,
+                back,
+                next
+        );
+
         VBox rightSide = new VBox();
         rightSide.setFillWidth(true);
         rightSide.getChildren().addAll(topBar, content, footer);
@@ -204,6 +271,16 @@ public class CreateEventC {
 
         root.setCenter(fullPage);
         scene = new Scene(root, 1365, 850);
+
+       
+
+        Scene scene =
+                new Scene(
+                        root,
+                        1365,
+                        850
+                );
+
         return scene;
     }
 
@@ -279,4 +356,8 @@ public class CreateEventC {
         label.setTextFill(Color.web(color));
         return label;
     }
+
+    
+
+   
 }

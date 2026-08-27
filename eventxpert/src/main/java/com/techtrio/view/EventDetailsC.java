@@ -1,6 +1,6 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,14 +10,13 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-public class EventDetailsC extends Application {
+public class EventDetailsC  {
 
     private final String BLUE = "#031D49";
     private final String ACTIVE = "#073E82";
     private final String TEXT = "#102653";
 
-    @Override
-    public void start(Stage stage) {
+   public Scene getEventDetailsScene() {
 
         
         HBox root = new HBox();
@@ -225,6 +224,24 @@ public class EventDetailsC extends Application {
                 new Insets(14, 22, 12, 22)
         );
 
+        ScrollPane scrollPane = new ScrollPane();
+
+scrollPane.setFitToWidth(true);
+scrollPane.setFitToHeight(false);
+
+scrollPane.setHbarPolicy(
+        ScrollPane.ScrollBarPolicy.NEVER
+);
+
+scrollPane.setVbarPolicy(
+        ScrollPane.ScrollBarPolicy.AS_NEEDED
+);
+
+scrollPane.setStyle(
+        "-fx-background-color:#F5F8FC;" +
+        "-fx-background:#F5F8FC;"
+);
+
         
         Label breadcrumb = new Label(
                 "Events   ›   Corporate Annual Conference 2026"
@@ -267,18 +284,12 @@ public class EventDetailsC extends Application {
                 Priority.ALWAYS
         );
 
-        Button backEvents =
-                outlineButton("←  Back to Events");
-
-        Button editEvent =
-                blueButton("✎  Edit Event");
+      
 
         HBox headingRow = new HBox(
                 10,
                 heading,
-                headingSpace,
-                backEvents,
-                editEvent
+                headingSpace
         );
 
         headingRow.setAlignment(
@@ -563,56 +574,12 @@ public class EventDetailsC extends Application {
         );
 
 
-        VBox actionsCard =
-                whiteCard();
-
-        actionsCard.getChildren().add(
-                cardTitle("Quick Actions")
-        );
-
-        Button edit =
-                blueButton("✎  Edit Event");
-
-        Button budgetReport =
-                outlineButton(
-                        "◷  View Budget Report"
-                );
-
-        Button share =
-                outlineButton(
-                        "♧  Share Event"
-                );
-
-        Button cancel =
-                new Button(
-                        "▣  Cancel Event"
-                );
-
-        cancel.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        cancel.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-text-fill:#E53935;" +
-                "-fx-border-color:#FF4A4A;" +
-                "-fx-border-radius:5;" +
-                "-fx-background-radius:5;"
-        );
-
-        actionsCard.getChildren().addAll(
-                edit,
-                budgetReport,
-                share,
-                cancel
-        );
 
         
         HBox row1 = new HBox(
                 10,
                 overviewCard,
-                timelineCard,
-                actionsCard
+                timelineCard
         );
 
         HBox.setHgrow(
@@ -625,12 +592,6 @@ public class EventDetailsC extends Application {
                 Priority.ALWAYS
         );
 
-        HBox.setHgrow(
-                actionsCard,
-                Priority.ALWAYS
-        );
-
-        
         VBox locationCard =
                 whiteCard();
 
@@ -870,7 +831,9 @@ public class EventDetailsC extends Application {
                 row2
         );
 
-        right.setCenter(main);
+        scrollPane.setContent(main);
+
+right.setCenter(scrollPane);
 
         
         Button back =
@@ -878,6 +841,17 @@ public class EventDetailsC extends Application {
 
         Button next =
                 blueButton("Next");
+
+                next.setOnAction(e -> {
+
+    Notification notificationPage =
+            new Notification();
+
+    LandingPage.landingPageStage.setScene(
+            notificationPage.getNotificationScene()
+    );
+
+});
 
         Region footerSpace =
                 new Region();
@@ -939,17 +913,7 @@ public class EventDetailsC extends Application {
             }
         });
 
-        backEvents.setOnAction(e ->
-                System.out.println(
-                        "Back to Events"
-                )
-        );
 
-        editEvent.setOnAction(e ->
-                System.out.println(
-                        "Edit Event"
-                )
-        );
 
         viewMap.setOnAction(e ->
                 System.out.println(
@@ -957,17 +921,17 @@ public class EventDetailsC extends Application {
                 )
         );
 
-        back.setOnAction(e ->
-                System.out.println(
-                        "Back"
-                )
-        );
+      back.setOnAction(e -> {
 
-        next.setOnAction(e ->
-                System.out.println(
-                        "Next"
-                )
-        );
+    ReviewPageC reviewPage =
+            new ReviewPageC();
+
+    LandingPage.landingPageStage.setScene(
+            reviewPage.getReviewScene()
+    );
+});
+
+       
 
         
         root.getChildren().addAll(
@@ -978,15 +942,7 @@ public class EventDetailsC extends Application {
         Scene scene =
                 new Scene(root);
 
-        stage.setTitle(
-                "EventXpert - Event Details"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMaximized(true);
-
-        stage.show();
+      return scene;
     }
 
     
@@ -1479,10 +1435,5 @@ public class EventDetailsC extends Application {
     }
 
     
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
-    }
+   
 }

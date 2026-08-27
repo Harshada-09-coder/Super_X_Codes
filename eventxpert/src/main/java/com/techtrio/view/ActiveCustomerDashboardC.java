@@ -84,6 +84,155 @@ public class ActiveCustomerDashboardC {
                 menuItem("?", "Support", false)
         );
 
+menu.setPadding(new Insets(8, 12, 8, 12));
+
+HBox createEventMenu = menuItem(
+        "⊕",
+        "Create Event",
+        false
+);
+
+createEventMenu.setOnMouseClicked(e -> {
+
+    CreateEventC createEventPage =
+            new CreateEventC();
+
+    LandingPage.landingPageStage.setScene(
+            createEventPage.getCreateEventScene(
+
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
+
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+                    }
+            )
+    );
+});
+
+HBox notificationMenu = menuItem(
+        "♧",
+        "Notifications",
+        false
+);
+
+notificationMenu.setOnMouseClicked(e -> {
+
+    Notification notificationPage =
+            new Notification();
+
+    LandingPage.landingPageStage.setScene(
+            notificationPage.getNotificationScene()
+    );
+});
+
+menu.getChildren().addAll(
+
+        menuItem(
+                "▦",
+                "Dashboard",
+                true
+        ),
+
+        createEventMenu,
+
+        notificationMenu
+);
+
+
+Region sidebarSpace = new Region();
+
+        VBox.setVgrow(
+                sidebarSpace,
+                Priority.ALWAYS
+        );
+
+VBox bottomMenu = new VBox(5);
+
+bottomMenu.setPadding(
+        new Insets(8, 12, 18, 12)
+);
+
+// PROFILE
+HBox profileMenu = menuItem(
+        "◉",
+        "Profile",
+        false
+);
+
+profileMenu.setOnMouseClicked(e -> {
+
+    ProfilePageC profilePage =
+            new ProfilePageC();
+
+    LandingPage.landingPageStage.setScene(
+            profilePage.getProfileScene(
+
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
+
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+
+                    }
+            )
+    );
+});
+
+// SETTINGS
+HBox settingsMenu = menuItem(
+        "⚙️",
+        "Settings",
+        false
+);
+
+settingsMenu.setOnMouseClicked(e -> {
+
+    SettingC settingPage = new SettingC();
+
+    LandingPage.landingPageStage.setScene(
+            settingPage.getSettingScene(
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
+
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+                    }
+            )
+    );
+});
+
+// SUPPORT
+HBox supportMenu = menuItem(
+        "?",
+        "Support",
+        false
+);
+
+bottomMenu.getChildren().addAll(
+        profileMenu,
+        settingsMenu,
+        supportMenu
+);
+
         sidebar.getChildren().addAll(logoBox, menu, sidebarSpace, bottomMenu);
 
         BorderPane rightArea = new BorderPane();
@@ -133,6 +282,49 @@ public class ActiveCustomerDashboardC {
         createEvent.setOnAction(e -> openCreateEvent());
 
         welcome.getChildren().addAll(welcomeText, welcomeSpace, createEvent);
+   
+         Button createEvent = new Button("+  Create New Event");
+
+createEvent.setPrefSize(175, 36);
+
+createEvent.setStyle(
+        "-fx-background-color:" + NAVY + ";" +
+        "-fx-text-fill:white;" +
+        "-fx-background-radius:7;" +
+        "-fx-font-family:Arial;" +
+        "-fx-font-size:11px;" +
+        "-fx-font-weight:bold;"
+);
+
+createEvent.setOnAction(e -> {
+
+    CreateEventC createEventPage =
+            new CreateEventC();
+
+    LandingPage.landingPageStage.setScene(
+            createEventPage.getCreateEventScene(
+
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
+
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+
+                    }
+            )
+    );
+
+});       welcome.getChildren().addAll(
+                welcomeText,
+                welcomeSpace,
+                createEvent
+        );
 
         HBox stats = new HBox(12);
         stats.setPrefHeight(70);
@@ -192,6 +384,233 @@ public class ActiveCustomerDashboardC {
         CreateEventC createView = new CreateEventC(uid, idToken);
         if (LandingPage.landingPageStage != null) {
             LandingPage.landingPageStage.setScene(createView.getCreateEventScene());
+    private VBox aiPlanningCard() {
+
+        VBox card = new VBox(10);
+
+        card.setPrefHeight(185);
+        card.setMinHeight(185);
+        card.setMaxHeight(185);
+
+        card.setMaxWidth(Double.MAX_VALUE);
+
+        card.setPadding(new Insets(16));
+
+        card.setStyle(
+                "-fx-background-color:#0D3979;" +
+                "-fx-background-radius:12;"
+        );
+
+        HBox header = new HBox();
+
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        VBox titleBox = new VBox(3);
+
+        titleBox.getChildren().addAll(
+
+                styledLabel(
+                        "AI Planning",
+                        20,
+                        FontWeight.BOLD,
+                        "#FFFFFF"
+                ),
+
+                styledLabel(
+                        "Smart event planning",
+                        14,
+                        FontWeight.NORMAL,
+                        "#D9ECFF"
+                )
+        );
+
+        Region space = new Region();
+
+        HBox.setHgrow(
+                space,
+                Priority.ALWAYS
+        );
+
+        Label aiIcon = styledLabel(
+                "✦",
+                27,
+                FontWeight.BOLD,
+                "#FFFFFF"
+        );
+
+        header.getChildren().addAll(
+                titleBox,
+                space,
+                aiIcon
+        );
+
+        Label description = styledLabel(
+                "Let AI help you plan your perfect event.",
+                14,
+                FontWeight.NORMAL,
+                "#E3F2FF"
+        );
+
+        description.setWrapText(
+                true
+        );
+
+        Button startPlanning = new Button(
+                "Start Planning  →"
+        );
+
+        startPlanning.setOnAction(e -> {
+
+    AiPlanningC aiPlanningPage =
+            new AiPlanningC();
+
+    LandingPage.landingPageStage.setScene(
+            aiPlanningPage.getAiPlanningScene(
+
+                    // BACK → ACTIVE CUSTOMER DASHBOARD
+                    () -> {
+
+                        ActiveCustomerDashboardC dashboardPage =
+                                new ActiveCustomerDashboardC();
+
+                        LandingPage.landingPageStage.setScene(
+                                dashboardPage.getactiveCustomerScene(
+                                        null
+                                )
+                        );
+
+                    },
+
+                    // NEXT → पुढचा navigation नंतर
+                    () -> {
+
+                    }
+            )
+    );
+
+});
+
+        startPlanning.setPrefHeight(
+                32
+        );
+
+        startPlanning.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        startPlanning.setStyle(
+                "-fx-background-color:#FFFFFF;" +
+                "-fx-text-fill:#0D3979;" +
+                "-fx-background-radius:7;" +
+                "-fx-font-family:Arial;" +
+                "-fx-font-size:10px;" +
+                "-fx-font-weight:bold;"
+        );
+
+        Region buttonSpace = new Region();
+
+VBox.setVgrow(
+        buttonSpace,
+        Priority.ALWAYS
+);
+
+        card.getChildren().addAll(
+        header,
+        description,
+        buttonSpace,
+        startPlanning
+);
+        return card;
+    }
+
+   
+
+    private VBox calendarCard() {
+
+        VBox card = new VBox(8);
+
+        card.setPrefHeight(205);
+        card.setMinHeight(205);
+        card.setMaxHeight(205);
+
+        card.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        card.setPadding(
+                new Insets(15)
+        );
+
+        card.setStyle(
+                "-fx-background-color:white;" +
+                "-fx-border-color:#D7DEE8;" +
+                "-fx-border-radius:12;" +
+                "-fx-background-radius:12;"
+        );
+
+        HBox header = new HBox();
+
+        header.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        Region space = new Region();
+
+        HBox.setHgrow(
+                space,
+                Priority.ALWAYS
+        );
+
+        header.getChildren().addAll(
+
+                styledLabel(
+                        "Event Calendar",
+                        16,
+                        FontWeight.BOLD,
+                        TEXT
+                ),
+
+                space,
+
+                styledLabel(
+                        "July 2026",
+                        10,
+                        FontWeight.NORMAL,
+                        "#667085"
+                )
+        );
+
+        GridPane grid = new GridPane();
+
+        grid.setHgap(5);
+        grid.setVgap(4);
+
+        grid.setAlignment(
+                Pos.CENTER
+        );
+
+        String[] days = {"S","M","T","W","T","F","S" };
+
+        for (int i = 0; i < 7; i++) {
+
+            Label day = styledLabel(
+                    days[i],
+                    9,
+                    FontWeight.BOLD,
+                    "#667085"
+            );
+
+            day.setPrefWidth(34);
+
+            day.setAlignment(
+                    Pos.CENTER
+            );
+
+            grid.add(
+                    day,
+                    i,
+                    0
+            );
         }
     }
 
@@ -256,6 +675,215 @@ public class ActiveCustomerDashboardC {
     }
 
     private HBox eventCard(String name, String date, String location, String status) {
+        private VBox weatherCard() {
+
+        VBox card = new VBox(9);
+
+        card.setPrefHeight(185);
+        card.setMinHeight(185);
+        card.setMaxHeight(185);
+
+        card.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        card.setPadding(
+                new Insets(15)
+        );
+
+        card.setStyle(
+                "-fx-background-color:linear-gradient(" +
+                "to bottom right,#0D3979,#2670B8);" +
+                "-fx-background-radius:12;"
+        );
+
+
+
+        HBox header = new HBox();
+
+        header.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        VBox title = new VBox(2);
+
+        title.getChildren().addAll(
+
+                styledLabel(
+                        "Weather Forecast",
+                        17,
+                        FontWeight.BOLD,
+                        "#FFFFFF"
+                ),
+
+                styledLabel(
+                        "Pune, Maharashtra",
+                        11,
+                        FontWeight.NORMAL,
+                        "#D9ECFF"
+                )
+        );
+
+        Region space = new Region();
+
+        HBox.setHgrow(
+                space,
+                Priority.ALWAYS
+        );
+
+        Label today = styledLabel(
+                "TODAY",
+                11,
+                FontWeight.BOLD,
+                "#D9ECFF"
+        );
+
+        header.getChildren().addAll(
+                title,
+                space,
+                today
+        );
+
+        
+
+        HBox weather = new HBox(14);
+
+        weather.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        Label sun = styledLabel(
+                "☀️",
+                42,
+                FontWeight.NORMAL,
+                "#FFFFFF"
+        );
+
+        VBox temperature = new VBox(2);
+
+        temperature.getChildren().addAll(
+
+                styledLabel(
+                        "28°C",
+                        29,
+                        FontWeight.BOLD,
+                        "#FFFFFF"
+                ),
+
+                styledLabel(
+                        "Partly Cloudy",
+                        12,
+                        FontWeight.NORMAL,
+                        "#D9ECFF"
+                )
+        );
+
+        weather.getChildren().addAll(
+                sun,
+                temperature
+        );
+
+        
+
+        HBox details = new HBox(20);
+
+        details.getChildren().addAll(
+
+                weatherDetail(
+                        "Humidity",
+                        "64%"
+                ),
+
+                weatherDetail(
+                        "Wind",
+                        "12 km/h"
+                ),
+
+                weatherDetail(
+                        "Visibility",
+                        "8 km"
+                )
+        );
+
+        
+
+        HBox message = new HBox(7);
+
+        message.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        message.setPadding(
+                new Insets(7, 9, 7, 9)
+        );
+
+        message.setStyle(
+                "-fx-background-color:rgba(255,255,255,0.13);" +
+                "-fx-background-radius:7;"
+        );
+
+        message.getChildren().addAll(
+
+                styledLabel(
+                        "✓",
+                        11,
+                        FontWeight.BOLD,
+                        "#FFFFFF"
+                ),
+
+                styledLabel(
+                        "Good weather for outdoor events",
+                        11,
+                        FontWeight.NORMAL,
+                        "#E5F2FF"
+                )
+        );
+
+        card.getChildren().addAll(
+                header,
+                weather,
+                details,
+                message
+        );
+
+        return card;
+    }
+
+    
+
+    private VBox weatherDetail(
+            String title,
+            String value
+    ) {
+
+        VBox box = new VBox(2);
+
+        box.getChildren().addAll(
+
+                styledLabel(
+                        value,
+                        9,
+                        FontWeight.BOLD,
+                        "#FFFFFF"
+                ),
+
+                styledLabel(
+                        title,
+                        8,
+                        FontWeight.NORMAL,
+                        "#C8E3FF"
+                )
+        );
+
+        return box;
+    }
+
+    private HBox eventCard(
+            String name,
+            String date,
+            String location
+    ) {
+
         HBox card = new HBox(14);
         card.setAlignment(Pos.CENTER_LEFT);
         card.setPrefHeight(112);

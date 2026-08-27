@@ -16,6 +16,7 @@ public class RequirementsC {
     private Scene scene;
     private String uid;
     private String idToken;
+public class RequirementsC  {
 
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
@@ -31,6 +32,10 @@ public class RequirementsC {
     }
 
     public Scene getRequirementsScene() {
+   public Scene getRequirementsScene(
+        Runnable backAction,
+        Runnable nextAction
+) {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
@@ -164,6 +169,61 @@ public class RequirementsC {
 
             String result = selectedReqs.toString();
             if (result.endsWith(", ")) result = result.substring(0, result.length() - 2);
+        save.setOnAction(e -> showMessage(
+                "Draft Saved",
+                "Your requirements have been saved."
+        ));
+
+back.setOnAction(e -> {
+    if (backAction != null) {
+        backAction.run();
+    }
+});
+
+next.setOnAction(e -> {
+
+    LocationC locationPage = new LocationC();
+
+    LandingPage.landingPageStage.setScene(
+            locationPage.getLocationScene(
+
+                    // LOCATION BACK → REQUIREMENTS
+                    () -> {
+
+                        RequirementsC requirementsPage =
+                                new RequirementsC();
+
+                        LandingPage.landingPageStage.setScene(
+                                requirementsPage.getRequirementsScene(
+
+                                        // REQUIREMENTS BACK → ORIGINAL CREATE EVENT BACK
+                                        backAction,
+
+                                        // REQUIREMENTS NEXT
+                                        nextAction
+                                )
+                        );
+                    },
+
+                    // LOCATION NEXT
+                    () -> {
+
+                    }
+            )
+    );
+
+});
+    
+        
+
+
+      footer.getChildren().addAll(
+                copyright,
+                footerSpace,
+                save,
+                back,
+                next
+        );
 
             ReviewPageC.EventData.requirements = result;
             ReviewPageC.EventData.notes = notes.getText().trim();
@@ -186,6 +246,13 @@ public class RequirementsC {
 
         root.setCenter(fullPage);
         scene = new Scene(root, 1365, 850);
+
+        Scene scene = new Scene(
+                root,
+                1365,
+                850
+        );
+
         return scene;
     }
 
@@ -241,4 +308,26 @@ public class RequirementsC {
         l.setTextFill(Color.web(color));
         return l;
     }
+}
+
+    
+
+    private void showMessage(
+            String title,
+            String message
+    ) {
+
+        Alert alert =
+                new Alert(
+                        Alert.AlertType.INFORMATION
+                );
+
+        alert.setTitle("EventXpert");
+        alert.setHeaderText(title);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    
+
 }
