@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -10,24 +9,23 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class AdminDashboardA extends Application {
+public class AdminDashboardA {
+    private Scene adminDashboardScene;
 
     private final String PRIMARY = "#002A60";
     private final String SECONDARY = "#8CAFC6";
     private final String LIGHT = "#C2E0F4";
     private final String BACKGROUND = "#F8FAFC";
 
-    @Override
-    public void start(Stage stage) throws Exception {
+     Scene getadminDashboardScene() {
 
         VBox sidebar = new VBox(12);
         sidebar.setPadding(new Insets(25,15,20,15));
         sidebar.setPrefWidth(235);
         sidebar.setStyle("-fx-background-color:" + PRIMARY + ";");
 
-        Label logo = new Label("EventXpert");
+        Label logo = new Label("EventXpert   ");
         logo.setTextFill(Color.WHITE);
         logo.setFont(Font.font("Arial",FontWeight.BOLD,24));
 
@@ -308,10 +306,8 @@ public class AdminDashboardA extends Application {
         root.setCenter(center);
 
         Scene scene = new Scene(root,1550,750);
-
-        stage.setTitle("EventXpert - Admin Dashboard");
-        stage.setScene(scene);
-        stage.show();
+        adminDashboardScene = scene;
+        return adminDashboardScene;
     }
 
     private VBox createCard(String title,String value,String sub) {

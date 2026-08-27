@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,9 +8,11 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
-import javafx.stage.Stage;
 
-public class VendorDashboardV extends Application {
+public class VendorDashboardV {
+    private Scene vendorDashboardScene;
+    private String uid;
+    private String idToken;
 
     // Color Palette Constants
     private static final String SIDEBAR_NAVY = "#062A60";
@@ -28,29 +29,27 @@ public class VendorDashboardV extends Application {
     private static final String WARNING_TEXT = "#D97706";
     private static final String ORANGE_BTN = "#EA580C";
 
-    @Override
-    public void start(Stage primaryStage) {
-        // Root BorderPane
+    public VendorDashboardV() {
+    }
+
+    public VendorDashboardV(String uid, String idToken) {
+        this.uid = uid;
+        this.idToken = idToken;
+    }
+
+    public Scene getvendorDashboardScene() {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // =========================================================================
-        // 1. LEFT SIDEBAR (Full Window Height, Fixed 250px Width)
-        // =========================================================================
         VBox sidebar = createSidebar();
-        root.setLeft(sidebar); // Attached to root LEFT so it spans 100% height
+        root.setLeft(sidebar);
 
-        // =========================================================================
-        // 2. MAIN APPLICATION AREA (Center of Root)
-        // =========================================================================
         BorderPane mainArea = new BorderPane();
         mainArea.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // Top Bar (Starts AFTER the sidebar, inside mainArea TOP)
         HBox topBar = createTopBar();
         mainArea.setTop(topBar);
 
-        // Scrollable Dashboard Content (Inside mainArea CENTER)
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -59,7 +58,6 @@ public class VendorDashboardV extends Application {
         mainContent.setPadding(new Insets(24));
         mainContent.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // Assemble Dashboard Sections
         mainContent.getChildren().addAll(
                 createPageHeader(),
                 createTopHeroCardsRow(),
@@ -71,20 +69,13 @@ public class VendorDashboardV extends Application {
         scrollPane.setContent(mainContent);
         mainArea.setCenter(scrollPane);
 
-        // Attach mainArea to Root Center
         root.setCenter(mainArea);
 
-        // Scene Setup
         Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert - Vendor Portal Dashboard");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        vendorDashboardScene = scene;
+        return vendorDashboardScene;
     }
 
-    // ==========================================
-    // 1. SIDEBAR (STARTS FROM ABSOLUTE TOP-LEFT)
-    // ==========================================
     private VBox createSidebar() {
         VBox sidebar = new VBox();
         sidebar.setPrefWidth(250);
@@ -92,12 +83,11 @@ public class VendorDashboardV extends Application {
         sidebar.setPadding(new Insets(20, 14, 20, 14));
         sidebar.setSpacing(6);
 
-        // Logo / Branding Area at the Very Top
         HBox logoBox = new HBox(10);
         logoBox.setAlignment(Pos.CENTER_LEFT);
         Label logoIcon = new Label("E");
         logoIcon.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 4 10; -fx-background-radius: 6px;");
-        
+
         VBox brandBox = new VBox(0);
         Label brandTitle = new Label("EventXpert");
         brandTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
@@ -106,33 +96,31 @@ public class VendorDashboardV extends Application {
         brandBox.getChildren().addAll(brandTitle, brandSub);
         logoBox.getChildren().addAll(logoIcon, brandBox);
 
-        // Top Action Button
         Button addServiceBtn = new Button("+ Add Service");
         addServiceBtn.setMaxWidth(Double.MAX_VALUE);
         addServiceBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 10; -fx-background-radius: 8px; -fx-cursor: hand;");
-        addServiceBtn.setOnAction(e -> System.out.println("Add Service Clicked"));
 
         sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
 
-        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", true));
-        sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false));
-        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false));
-        sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false));
-        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false));
-        sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false));       
-        HBox notifItem = createSidebarItemWithBadge("🔔 Notifications", "4");
-        sidebar.getChildren().add(notifItem);
-        sidebar.getChildren().add(createSidebarItem("👤 Settings", false));
-        sidebar.getChildren().add(createSidebarItem("❓ Support", false));
+        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", true, () -> {}));
+        sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false, this::openServiceRequests));
+        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, this::openMyBookings));
+        sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, this::openServicesPackages));
+        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, this::openCalenderV));
+        sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, this::openEarningsPaymentsV));
+        sidebar.getChildren().add(createSidebarItem("🔔 Notifications", false, this::openNotificationsV));
+        sidebar.getChildren().add(createSidebarItem("⚙ Settings", false, this::openSettingsV));
+        sidebar.getChildren().add(createSidebarItem("👤 Profile", false, this::openProfileV));
+        sidebar.getChildren().add(createSidebarItem("❓ Support", false, this::openSupportV));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        // Bottom Vendor Profile Pill
         HBox profilePill = new HBox(10);
         profilePill.setAlignment(Pos.CENTER_LEFT);
         profilePill.setPadding(new Insets(10));
-        profilePill.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 8px;");
+        profilePill.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 8px; -fx-cursor: hand;");
+        profilePill.setOnMouseClicked(e -> openProfileV());
 
         Circle avatar = new Circle(16, Color.web(WHITE));
         Text avatarText = new Text("VP");
@@ -140,52 +128,63 @@ public class VendorDashboardV extends Application {
         StackPane avatarPane = new StackPane(avatar, avatarText);
 
         VBox userDetails = new VBox(2);
-        Label userName = new Label("VisionPro ...");
+        Label userName = new Label("Vendor Portal");
         userName.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: white;");
-        Label userSub = new Label("Audio & Visu...  • ● Available");
+        Label userSub = new Label("● Active Session");
         userSub.setStyle("-fx-font-size: 10px; -fx-text-fill: #4ADE80;");
         userDetails.getChildren().addAll(userName, userSub);
 
         profilePill.getChildren().addAll(avatarPane, userDetails);
-
         sidebar.getChildren().addAll(spacer, profilePill);
         return sidebar;
     }
 
-
-    private Button createSidebarItem(String title, boolean isActive) {
+    private Button createSidebarItem(String title, boolean isActive, Runnable action) {
         Button btn = new Button(title);
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setOnAction(e -> {
+            if (action != null) action.run();
+        });
 
         if (isActive) {
-            btn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 8px; -fx-padding: 8 12;");
+            btn.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-text-fill: " + SIDEBAR_NAVY + ";" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-size: 13px;" +
+                "-fx-background-radius: 8px;" +
+                "-fx-padding: 8 12;"
+            );
         } else {
-            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #94A3B8; -fx-font-size: 13px; -fx-padding: 8 12; -fx-cursor: hand;");
-            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.05); -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 8 12; -fx-cursor: hand;"));
-            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #94A3B8; -fx-font-size: 13px; -fx-padding: 8 12;"));
+            btn.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-text-fill: #94A3B8;" +
+                "-fx-font-size: 13px;" +
+                "-fx-padding: 8 12;" +
+                "-fx-cursor: hand;"
+            );
+            btn.setOnMouseEntered(e ->
+                btn.setStyle(
+                    "-fx-background-color: rgba(255,255,255,0.05);" +
+                    "-fx-text-fill: white;" +
+                    "-fx-font-size: 13px;" +
+                    "-fx-padding: 8 12;" +
+                    "-fx-cursor: hand;"
+                )
+            );
+            btn.setOnMouseExited(e ->
+                btn.setStyle(
+                    "-fx-background-color: transparent;" +
+                    "-fx-text-fill: #94A3B8;" +
+                    "-fx-font-size: 13px;" +
+                    "-fx-padding: 8 12;"
+                )
+            );
         }
-        btn.setOnAction(e -> System.out.println(title + " Clicked"));
         return btn;
     }
 
-    private HBox createSidebarItemWithBadge(String title, String badgeCount) {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
-
-        Button btn = createSidebarItem(title, false);
-        HBox.setHgrow(btn, Priority.ALWAYS);
-
-        Label badge = new Label(badgeCount);
-        badge.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 6; -fx-background-radius: 10px;");
-
-        row.getChildren().addAll(btn, badge);
-        return row;
-    }
-
-    // ==========================================
-    // 2. TOP BAR (STARTS AFTER SIDEBAR)
-    // ==========================================
     private HBox createTopBar() {
         HBox topBar = new HBox();
         topBar.setAlignment(Pos.CENTER_LEFT);
@@ -201,34 +200,25 @@ public class VendorDashboardV extends Application {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button helpBtn = new Button("❓");
-        helpBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 14px; -fx-cursor: hand;");
-
-        Button notifBtn = new Button("🔔");
-        notifBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 14px; -fx-cursor: hand;");
-
-        Button settingsBtn = new Button("⚙");
-        settingsBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 14px; -fx-cursor: hand;");
-
+        Button helpBtn = new Button("❓"); helpBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        Button notifBtn = new Button("🔔"); notifBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        Button settingsBtn = new Button("⚙"); settingsBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
         Button viewCalBtn = createSecondaryButton("📅 View Calendar");
-        viewCalBtn.setOnAction(e -> System.out.println("View Calendar Clicked"));
 
         Circle topAvatar = new Circle(14, Color.web(PRIMARY_BLUE));
         Text topAvatarText = new Text("VP");
         topAvatarText.setStyle("-fx-fill: white; -fx-font-size: 10px; -fx-font-weight: bold;");
         StackPane profilePill = new StackPane(topAvatar, topAvatarText);
+        profilePill.setStyle("-fx-cursor: hand;");
+        profilePill.setOnMouseClicked(e -> openProfileV());
 
         topBar.getChildren().addAll(searchField, spacer, helpBtn, notifBtn, settingsBtn, viewCalBtn, profilePill);
         return topBar;
     }
 
-    // ==========================================
-    // 3. PAGE HEADER
-    // ==========================================
     private VBox createPageHeader() {
         VBox header = new VBox(4);
-
-        Label greeting = new Label("Good Morning, VisionPro Events 👋");
+        Label greeting = new Label("Welcome Back 👋");
         greeting.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Label subtitle = new Label("Here's what's happening with your bookings, requests and earnings.");
@@ -238,13 +228,9 @@ public class VendorDashboardV extends Application {
         return header;
     }
 
-    // ==========================================
-    // 4. TOP HERO CARDS ROW
-    // ==========================================
     private HBox createTopHeroCardsRow() {
         HBox row = new HBox(16);
 
-        // Left Card: Next Booking
         VBox nextBookingCard = createCardContainer();
         HBox.setHgrow(nextBookingCard, Priority.ALWAYS);
 
@@ -294,11 +280,8 @@ public class VendorDashboardV extends Application {
         bottomMeta.getChildren().addAll(serviceGuests, sp2, amount);
 
         Button viewBookingBtn = createLinkButton("View Booking →");
-        viewBookingBtn.setOnAction(e -> System.out.println("View Booking Clicked"));
-
         nextBookingCard.getChildren().addAll(topRow1, eventTitle, detailsGrid, new Separator(), bottomMeta, viewBookingBtn);
 
-        // Right Card: Action Required
         VBox actionCard = createCardContainer();
         actionCard.setPrefWidth(420);
         actionCard.setStyle("-fx-background-color: #FFFBEB; -fx-border-color: #FCD34D; -fx-border-radius: 12px; -fx-background-radius: 12px; -fx-padding: 18;");
@@ -306,12 +289,8 @@ public class VendorDashboardV extends Application {
         HBox actionHeader = new HBox(10);
         actionHeader.setAlignment(Pos.CENTER_LEFT);
 
-        Label warnIcon = new Label("⚠️");
-        warnIcon.setStyle("-fx-font-size: 20px;");
-
-        Label actionTitle = new Label("Action Required");
-        actionTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #92400E;");
-
+        Label warnIcon = new Label("⚠️"); warnIcon.setStyle("-fx-font-size: 20px;");
+        Label actionTitle = new Label("Action Required"); actionTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #92400E;");
         actionHeader.getChildren().addAll(warnIcon, actionTitle);
 
         Label actionText = new Label("You have 8 new service requests waiting for your response.");
@@ -321,10 +300,8 @@ public class VendorDashboardV extends Application {
         HBox tagsRow = new HBox(8);
         Label tag1 = new Label("2 High Priority");
         tag1.setStyle("-fx-background-color: white; -fx-text-fill: #92400E; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 6px; -fx-border-color: #FCD34D; -fx-border-radius: 6px;");
-
         Label tag2 = new Label("3 This Week");
         tag2.setStyle("-fx-background-color: white; -fx-text-fill: #92400E; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 6px; -fx-border-color: #FCD34D; -fx-border-radius: 6px;");
-
         tagsRow.getChildren().addAll(tag1, tag2);
 
         Region flexSpace = new Region();
@@ -332,20 +309,15 @@ public class VendorDashboardV extends Application {
 
         Button reviewBtn = new Button("Review Service Requests →");
         reviewBtn.setStyle("-fx-background-color: " + ORANGE_BTN + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 10 18; -fx-background-radius: 8px; -fx-cursor: hand;");
-        reviewBtn.setOnAction(e -> System.out.println("Review Requests Clicked"));
+        reviewBtn.setOnAction(e -> openServiceRequests());
 
         actionCard.getChildren().addAll(actionHeader, actionText, tagsRow, flexSpace, reviewBtn);
-
         row.getChildren().addAll(nextBookingCard, actionCard);
         return row;
     }
 
-    // ==========================================
-    // 5. SUMMARY CARDS ROW
-    // ==========================================
     private HBox createSummaryCardsRow() {
         HBox row = new HBox(14);
-
         row.getChildren().addAll(
                 createStatCard("New Service Requests", "8", "+3 this week", "✉"),
                 createStatCard("Upcoming Bookings", "12", "Next: 18 May", "📱"),
@@ -353,7 +325,6 @@ public class VendorDashboardV extends Application {
                 createStatCard("Total Earnings", "₹2.48L", "+12.5% vs last month", "💼"),
                 createStatCard("Pending Payments", "₹42k", "Across 3 payments", "⏳")
         );
-
         return row;
     }
 
@@ -385,13 +356,9 @@ public class VendorDashboardV extends Application {
         return card;
     }
 
-    // ==========================================
-    // 6. MAIN SPLIT SECTION (TABLE & REQUESTS)
-    // ==========================================
     private HBox createMainSplitSection() {
         HBox row = new HBox(16);
 
-        // Left Table Card
         VBox tableCard = createCardContainer();
         HBox.setHgrow(tableCard, Priority.ALWAYS);
 
@@ -409,20 +376,17 @@ public class VendorDashboardV extends Application {
 
         tableHeader.getChildren().addAll(tTitle, sp, viewAll);
 
-        // Upcoming Bookings Table Grid
         GridPane grid = new GridPane();
         grid.setHgap(16);
         grid.setVgap(12);
         grid.setPadding(new Insets(10, 0, 0, 0));
 
-        // Table Headers
         addTableHeader(grid, "EVENT", 0);
         addTableHeader(grid, "DATE", 1);
         addTableHeader(grid, "SERVICE", 2);
         addTableHeader(grid, "AMOUNT", 3);
         addTableHeader(grid, "STATUS", 4);
 
-        // Table Rows
         addTableRow(grid, 1, "TechVision Annual Summit", "18 May 2026", "Audio & Visual", "₹85,000", "Confirmed");
         addTableRow(grid, 2, "Corporate Leadership Meet", "22 May 2026", "Stage Lighting", "₹45,000", "Confirmed");
         addTableRow(grid, 3, "Startup Connect 2026", "05 Jun 2026", "Sound System", "₹72,000", "Pending Payment");
@@ -430,7 +394,6 @@ public class VendorDashboardV extends Application {
 
         tableCard.getChildren().addAll(tableHeader, grid);
 
-        // Right Recent Service Requests Column
         VBox requestsCard = createCardContainer();
         requestsCard.setPrefWidth(380);
 
@@ -445,9 +408,7 @@ public class VendorDashboardV extends Application {
 
         reqHeader.getChildren().addAll(rTitle, newBadge);
 
-        // Request Item 1
         VBox req1 = createRequestBox("Global Marketing Expo", "₹1.2L", "📱 Audio & Visual Setup", "📅 25 Aug 2026");
-        // Request Item 2
         VBox req2 = createRequestBox("Sharma Wedding", "₹85k", "📍 Stage Lighting", "📅 10 Sep 2026");
 
         requestsCard.getChildren().addAll(reqHeader, req1, req2);
@@ -496,33 +457,22 @@ public class VendorDashboardV extends Application {
         p.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
         top.getChildren().addAll(t, sp, p);
 
-        Label s = new Label(service);
-        s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        Label d = new Label(date);
-        d.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label s = new Label(service); s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label d = new Label(date); d.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         HBox btns = new HBox(8);
         Button acceptBtn = new Button("Accept");
         acceptBtn.setStyle("-fx-background-color: " + SIDEBAR_NAVY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
-        acceptBtn.setOnAction(e -> System.out.println("Accepted " + title));
-
         Button rejectBtn = new Button("Reject");
         rejectBtn.setStyle("-fx-background-color: #E2E8F0; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
-        rejectBtn.setOnAction(e -> System.out.println("Rejected " + title));
 
         btns.getChildren().addAll(acceptBtn, rejectBtn);
-
         box.getChildren().addAll(top, s, d, btns);
         return box;
     }
 
-    // ==========================================
-    // 7. SERVICES & PACKAGES PREVIEW SECTION
-    // ==========================================
     private VBox createServicesPreviewSection() {
         VBox card = createCardContainer();
-
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
 
@@ -533,8 +483,6 @@ public class VendorDashboardV extends Application {
         HBox.setHgrow(sp, Priority.ALWAYS);
 
         Button manageBtn = createLinkButton("Manage All Services →");
-        manageBtn.setOnAction(e -> System.out.println("Manage Services Clicked"));
-
         header.getChildren().addAll(title, sp, manageBtn);
 
         FlowPane servicesGrid = new FlowPane();
@@ -557,9 +505,6 @@ public class VendorDashboardV extends Application {
         return card;
     }
 
-    // ==========================================
-    // HELPER UI UTILITIES
-    // ==========================================
     private VBox createCardContainer() {
         VBox card = new VBox(12);
         card.setPadding(new Insets(16));
@@ -577,5 +522,91 @@ public class VendorDashboardV extends Application {
         Button btn = new Button(text);
         btn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 0; -fx-cursor: hand;");
         return btn;
+    }
+
+    private void openProfileV() {
+        ProfileV profileV = new ProfileV(uid);
+        profileV.setVendorDashboard(this);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(profileV.getprofileVScene());
+        }
+    }
+
+    private void openServiceRequests() {
+        ServiceRequestsV serviceRequestsV = new ServiceRequestsV();
+        serviceRequestsV.setVendorDashboard(this);
+        Scene serviceScene = serviceRequestsV.getserviceRequestVScene();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(serviceScene);
+        }
+    }
+
+    private void openMyBookings() {
+        MyBookingsV myBookingsV = new MyBookingsV();
+        myBookingsV.setVendorDashboard(this);
+        Scene bookingScene = myBookingsV.getmyBookingScene();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(bookingScene);
+        }
+    }
+
+    private void openServicesPackages() {
+        ServicesPackagesV servicesPackagesV = new ServicesPackagesV();
+        servicesPackagesV.setVendorDashboard(this);
+        Scene packagesScene = servicesPackagesV.getservicesPackagesVScene(null, null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(packagesScene);
+        }
+    }
+
+    private void openCalenderV() {
+        CalendarV calendarV = new CalendarV();
+        calendarV.setVendorDashboard(this);
+        Scene calenderScene = calendarV.getcalendarVScene(null, null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(calenderScene);
+        }
+    }
+
+    private void openEarningsPaymentsV() {
+        EarningsPaymentsV earningsPaymentsV = new EarningsPaymentsV();
+        earningsPaymentsV.setVendorDashboard(this);
+        Scene earningScene = earningsPaymentsV.getearningsPaymentsScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(earningScene);
+        }
+    }
+
+    private void openNotificationsV() {
+        NotificationsV notificationsV = new NotificationsV();
+        notificationsV.setVendorDashboard(this);
+        Scene notificationScene = notificationsV.getnotificationsScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(notificationScene);
+        }
+    }
+
+    private void openSettingsV() {
+        SettingsV settingsV = new SettingsV();
+        settingsV.setVendorDashboard(this);
+        Scene settingsVScene = settingsV.getsettingsVScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(settingsVScene);
+        }
+    }
+
+    private void openSupportV() {
+        SupportV supportV = new SupportV();
+        supportV.setVendorDashboard(this);
+        Scene supportVScene = supportV.getsupportVScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(supportVScene);
+        }
+    }
+
+    public void backToVendorDashboard() {
+        if (vendorDashboardScene != null && LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(vendorDashboardScene);
+        }
     }
 }

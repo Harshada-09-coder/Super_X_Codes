@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
+import com.techtrio.controller.SignUpResult;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -69,7 +70,7 @@ public class OrganizerRegistration{
     /**
      * Root Pane Factory - Integrates cleanly with navigation managers.
      */
-    public Parent createRootPane() {
+       public Parent createRootPane() {
         HBox root = new HBox();
         root.getStyleClass().add("root");
 
@@ -167,7 +168,7 @@ public class OrganizerRegistration{
     /**
      * Loads and displays assets/images/Organizer.png cleanly
      */
-    private VBox createOrganizerImageContainer() {
+       private VBox createOrganizerImageContainer() {
         VBox container = new VBox();
         container.getStyleClass().add("image-container");
         container.setPrefSize(290, 230);
@@ -307,19 +308,34 @@ public class OrganizerRegistration{
         btnRegister.getStyleClass().add("btn-primary");
         btnRegister.setMaxWidth(Double.MAX_VALUE);
         btnRegister.setPrefHeight(44);
-        btnRegister.setOnAction(e -> handleRegistration());
         btnRegister.setOnAction(e -> {
+              handleRegistration();
+             SignUpResult result = controller.signUp(
+             txtFullName.getText().trim(),
+             txtEmail.getText().trim(),
+             txtPhone.getText().trim(),
+             txtPassword.getText(),
+             "organizer"
+            );
 
-            boolean flag = controller.signUp(txtEmail.getText(), txtPassword.getText());
-            if (flag) {
-                System.out.println("Sign Up Successfully");
-                output.setText("Sign Up Successfully");
-            }else{
-                System.out.println("Sign Up Failed");
-                output.setText("Sign Up Failed");
-            }
-        });
+    if (result != null) {
 
+        System.out.println("Registration successful");
+         InactiveOrgDash organizerDashboardO = new InactiveOrgDash();
+         Runnable callBackAction = new Runnable() {
+          public void run(){
+            backToOrganizerRegistration();
+          }
+        };
+
+        LandingPage.landingPageStage.setScene(organizerDashboardO.getinactiveOrganizerScene());
+     
+    } else {
+        System.out.println("Registration Failed");
+    }
+
+         });
+       
         // FOOTER LOGIN LINK
         HBox footerBox = new HBox();
         footerBox.setAlignment(Pos.CENTER);
@@ -328,7 +344,17 @@ public class OrganizerRegistration{
 
         Hyperlink loginLink = new Hyperlink("Login");
         loginLink.getStyleClass().add("inline-link");
-        loginLink.setOnAction(e -> handleNavigateLogin());
+        loginLink.setOnAction(e -> {handleNavigateLogin();
+            LoginPage backToLoginPage = new LoginPage();
+            Runnable callBackAction1 = new Runnable() {
+                        public void run(){
+                                backToOrganizerRegistration();
+                        }
+                };
+
+                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
+      
+        });
 
         footerBox.getChildren().addAll(lblAlready, loginLink);
 

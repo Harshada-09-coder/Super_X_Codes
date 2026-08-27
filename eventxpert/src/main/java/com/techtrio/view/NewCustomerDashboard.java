@@ -241,7 +241,7 @@ sidebar.getChildren().addAll(
         firstDescription.setFont(Font.font("Arial", 14));
         firstDescription.setTextFill(Color.web(GRAY));
 
-        Button firstButton = new Button("+   Create Your First Event");
+        Button firstButton = new Button("+ Create Your First Event");
         firstButton.setPrefHeight(42);
         firstButton.setStyle(buttonStyle());
 

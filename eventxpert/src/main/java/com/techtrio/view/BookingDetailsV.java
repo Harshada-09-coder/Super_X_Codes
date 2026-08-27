@@ -12,27 +12,23 @@ import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-public class BookingDetailsV extends Application {
+public class BookingDetailsV{
 
+    private Scene bookingDetailsScene;
     // Color Palette Constants
     private static final String SIDEBAR_NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
-    private static final String BRIGHT_BLUE = "#2563C7";
     private static final String LIGHT_BLUE = "#EAF3FF";
     private static final String BACKGROUND = "#F7FAFE";
     private static final String WHITE = "#FFFFFF";
     private static final String TEXT_MAIN = "#102A43";
     private static final String SECONDARY_TEXT = "#52677D";
     private static final String BORDER_COLOR = "#DCE5F0";
-    private static final String GREEN_BG = "#E6F4EA";
+    private static final String GREEN_BG = "#42d16b";
     private static final String GREEN_TEXT = "#16A34A";
-    private static final String WARNING_BG = "#FEF7E0";
-    private static final String WARNING_TEXT = "#D97706";
-    private static final String RED_BG = "#FEF2F2";
     private static final String RED_TEXT = "#DC2626";
 
-    @Override
-    public void start(Stage primaryStage) {
+    public Scene getbookingDetailsScene(Stage primaryStage, Runnable callBackAction){
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
@@ -59,7 +55,7 @@ public class BookingDetailsV extends Application {
 
         // Build Sections
         mainContent.getChildren().addAll(
-                createHeaderAndBreadcrumb(primaryStage),
+                createHeaderAndBreadcrumb(primaryStage, callBackAction),
                 createBookingHeaderCard(),
                 createTwoColumnMainLayout(primaryStage)
         );
@@ -71,10 +67,8 @@ public class BookingDetailsV extends Application {
 
         // Scene Setup
         Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert - Booking Details");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        bookingDetailsScene = scene;
+        return bookingDetailsScene;
     }
 
     // ==========================================
@@ -110,24 +104,17 @@ public class BookingDetailsV extends Application {
         sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
 
         // Menu Sections
-        sidebar.getChildren().add(createSidebarCategory("OVERVIEW"));
         sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> showToast(stage, "Opening Dashboard...")));
-
-        sidebar.getChildren().add(createSidebarCategory("SERVICE MANAGEMENT"));
         sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false, e -> showToast(stage, "Opening Service Requests...")));
-        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", true, e -> {})); // Active Menu
+        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", true, e -> {
+            
+        })); // Active Menu
         sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, e -> showToast(stage, "Opening Services...")));
-        sidebar.getChildren().add(createSidebarItem("📅 Availability Calendar", false, e -> showToast(stage, "Opening Calendar...")));
-
-        sidebar.getChildren().add(createSidebarCategory("FINANCE"));
+        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, e -> showToast(stage, "Opening Calendar...")));
         sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, e -> showToast(stage, "Opening Finance...")));
-
-        sidebar.getChildren().add(createSidebarCategory("COMMUNICATION"));
         sidebar.getChildren().add(createSidebarItemWithBadge("🔔 Notifications", "4"));
-
-        sidebar.getChildren().add(createSidebarCategory("ACCOUNT"));
-        sidebar.getChildren().add(createSidebarItem("👤 Profile & Settings", false, e -> showToast(stage, "Opening Profile...")));
-        sidebar.getChildren().add(createSidebarItem("❓ Help & Support", false, e -> showToast(stage, "Opening Support...")));
+        sidebar.getChildren().add(createSidebarItem("👤 Settings", false, e -> showToast(stage, "Opening Profile...")));
+        sidebar.getChildren().add(createSidebarItem("❓ Support", false, e -> showToast(stage, "Opening Support...")));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -154,12 +141,6 @@ public class BookingDetailsV extends Application {
 
         sidebar.getChildren().addAll(spacer, profilePill);
         return sidebar;
-    }
-
-    private Label createSidebarCategory(String title) {
-        Label cat = new Label(title);
-        cat.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #64748B; -fx-padding: 14 8 4 8;");
-        return cat;
     }
 
     private Button createSidebarItem(String title, boolean isActive, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
@@ -226,7 +207,7 @@ public class BookingDetailsV extends Application {
     // ==========================================
     // 3. BREADCRUMB & HEADER
     // ==========================================
-    private VBox createHeaderAndBreadcrumb(Stage stage) {
+    private VBox createHeaderAndBreadcrumb(Stage stage, Runnable callBackAction) {
         VBox header = new VBox(6);
 
         Label breadcrumb = new Label("My Bookings  /  Booking Details");
@@ -242,7 +223,10 @@ public class BookingDetailsV extends Application {
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Button backBtn = createSecondaryButton("← Back to My Bookings");
-        backBtn.setOnAction(e -> showToast(stage, "Returning to My Bookings..."));
+        backBtn.setOnAction(e -> {showToast
+            (stage, "Returning to My Bookings...");
+             callBackAction.run();
+        });
 
         titleRow.getChildren().addAll(title, spacer, backBtn);
 
@@ -316,7 +300,6 @@ public class BookingDetailsV extends Application {
                 createRequirementsCard(),
                 createPaymentInformationCard(),
                 createTimelineCard(),
-                createDocumentsCard(stage),
                 createVenueInformationCard(stage)
         );
 
@@ -326,8 +309,7 @@ public class BookingDetailsV extends Application {
 
         rightCol.getChildren().addAll(
                 createSummaryCard(),
-                createOrganizerCard(stage),
-                createQuickActionsCard(stage)
+                createOrganizerCard(stage)
         );
 
         layout.getChildren().addAll(leftCol, rightCol);
@@ -478,45 +460,6 @@ public class BookingDetailsV extends Application {
         return r;
     }
 
-    private VBox createDocumentsCard(Stage stage) {
-        VBox card = createCardContainer();
-
-        Label title = new Label("Booking Documents");
-        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-
-        VBox fileList = new VBox(8);
-        fileList.getChildren().addAll(
-                createFileRow(stage, "📄 Event Brief.pdf", "1.2 MB"),
-                createFileRow(stage, "📄 Technical Requirements.pdf", "850 KB"),
-                createFileRow(stage, "📄 Invoice_BK-2026-00124.pdf", "420 KB")
-        );
-
-        card.getChildren().addAll(title, new Separator(), fileList);
-        return card;
-    }
-
-    private HBox createFileRow(Stage stage, String filename, String size) {
-        HBox r = new HBox(12);
-        r.setAlignment(Pos.CENTER_LEFT);
-        r.setPadding(new Insets(8));
-        r.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 6px;");
-
-        Label fn = new Label(filename); fn.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
-        Label sz = new Label("(" + size + ")"); sz.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
-
-        Button viewBtn = createSecondaryButton("View");
-        viewBtn.setStyle("-fx-font-size: 10px; -fx-padding: 3 8;");
-        viewBtn.setOnAction(e -> System.out.println("View document: " + filename));
-
-        Button dlBtn = createSecondaryButton("Download");
-        dlBtn.setStyle("-fx-font-size: 10px; -fx-padding: 3 8;");
-        dlBtn.setOnAction(e -> System.out.println("Download document: " + filename));
-
-        r.getChildren().addAll(fn, sz, sp, viewBtn, dlBtn);
-        return r;
-    }
 
     private VBox createVenueInformationCard(Stage stage) {
         VBox card = createCardContainer();
@@ -597,40 +540,15 @@ public class BookingDetailsV extends Application {
         contactBtn.setMaxWidth(Double.MAX_VALUE);
         contactBtn.setOnAction(e -> showToast(stage, "Organizer Contact: +91 98765 43210"));
 
-        card.getChildren().addAll(title, orgName, details, new Separator(), contactBtn);
-        return card;
-    }
-
-    private VBox createQuickActionsCard(Stage stage) {
-        VBox card = createCardContainer();
-
-        Label title = new Label("Quick Actions");
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-
-        Button contactBtn = createPrimaryButton("Contact Organizer");
-        contactBtn.setMaxWidth(Double.MAX_VALUE);
-        contactBtn.setOnAction(e -> showToast(stage, "Contacting Organizer..."));
-
-        Button calBtn = createSecondaryButton("View Calendar");
-        calBtn.setMaxWidth(Double.MAX_VALUE);
-        calBtn.setOnAction(e -> System.out.println("View Calendar clicked"));
-
-        Button invoiceBtn = createSecondaryButton("Download Invoice");
-        invoiceBtn.setMaxWidth(Double.MAX_VALUE);
-        invoiceBtn.setOnAction(e -> System.out.println("Download Invoice clicked"));
-
-        Button editBtn = createSecondaryButton("Edit Service");
-        editBtn.setMaxWidth(Double.MAX_VALUE);
-        editBtn.setOnAction(e -> System.out.println("Edit service clicked"));
-
         Button cancelBtn = createSecondaryButton("Cancel Booking");
         cancelBtn.setMaxWidth(Double.MAX_VALUE);
         cancelBtn.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-border-color: " + RED_TEXT + "; -fx-border-radius: 6px;");
         cancelBtn.setOnAction(e -> openCancelModal(stage));
 
-        card.getChildren().addAll(title, contactBtn, calBtn, invoiceBtn, editBtn, new Separator(), cancelBtn);
+        card.getChildren().addAll(title, orgName, details, new Separator(), contactBtn, cancelBtn);
         return card;
     }
+
 
     // ==========================================
     // MODALS & DIALOGS
