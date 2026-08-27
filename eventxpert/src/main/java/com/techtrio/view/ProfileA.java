@@ -1,12 +1,13 @@
 package com.techtrio.view;
 
+
 import com.techtrio.controller.NavigationManager;
 import com.techtrio.controller.SignInResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.techtrio.controller.AdminController;
 import com.techtrio.controller.AuthController;
 import com.techtrio.model.AdminProfile;
-
+import com.techtrio.view.LoginPage;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 
@@ -405,7 +406,7 @@ sidebar.getChildren().addAll(
 
     // Go to Login Page
     LandingPage.landingPageStage.setScene(
-            new LoginPage().getloginPageScene(null)
+          new LoginPage().getloginPageScene(null)
     );
 });
         
