@@ -1,5 +1,7 @@
 package com.techtrio.view;
 
+import com.techtrio.session.UserSession;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,8 +15,8 @@ import javafx.scene.text.FontWeight;
 
 public class NoEventC {
 
-    private final String BLUE = "#002A60";
-    private final String BG = "#F6F8FB";
+    private static final String BLUE = "#002A60";
+    private static final String BG = "#F6F8FB";
 
     private Label noEventsLabel;
     private Label descriptionLabel;
@@ -53,7 +55,7 @@ public class NoEventC {
                 "-fx-background-color:" + BLUE + ";"
         );
 
-        // Logo
+        // LOGO
         Label logo = new Label("EventXpert");
 
         logo.setFont(
@@ -80,7 +82,7 @@ public class NoEventC {
         VBox logoBox =
                 new VBox(2, logo, premium);
 
-        // New Project
+        // NEW PROJECT
         Button newProject =
                 new Button("+   New Project");
 
@@ -103,7 +105,23 @@ public class NoEventC {
                 new Insets(35, 0, 30, 0)
         );
 
-        // Navigation
+        /*
+         * New Project -> Create Event
+         */
+        newProject.setOnAction(e -> {
+
+            CreateEventC createEvent =
+                    new CreateEventC(
+                            UserSession.getUid(),
+                            UserSession.getIdToken()
+                    );
+
+            LandingPage.landingPageStage.setScene(
+                    createEvent.getCreateEventScene()
+            );
+        });
+
+        // NAVIGATION
         VBox navigation =
                 new VBox(8);
 
@@ -218,14 +236,11 @@ public class NoEventC {
         // SCENE
         // =====================================================
 
-        Scene scene =
-                new Scene(
-                        root,
-                        1280,
-                        760
-                );
-
-        return scene;
+        return new Scene(
+                root,
+                1280,
+                760
+        );
     }
 
     // =========================================================
@@ -441,7 +456,6 @@ public class NoEventC {
         );
 
         top.getChildren().addAll(
-
                 searchField,
                 space,
                 notification,
@@ -694,38 +708,27 @@ public class NoEventC {
         );
 
         // =====================================================
-        // NO EVENT → CREATE EVENT
+        // NO EVENT -> CREATE EVENT
         // =====================================================
 
-createButton.setOnAction(e -> {
+        createButton.setOnAction(e -> {
 
-    CreateEventC createEventPage = new CreateEventC();
+            CreateEventC createEvent =
+                    new CreateEventC(
+                            UserSession.getUid(),
+                            UserSession.getIdToken()
+                    );
 
-    LandingPage.landingPageStage.setScene(
-            createEventPage.getCreateEventScene(
-
-                    // BACK → NO EVENT
-                    () -> {
-
-                        LandingPage.landingPageStage.setScene(
-                                new NoEventC().getNoEventScene(
-                                        backAction
-                                )
-                        );
-
-                    }
-
-            )
-    );
-
-});
+            LandingPage.landingPageStage.setScene(
+                    createEvent.getCreateEventScene()
+            );
+        });
 
         // =====================================================
         // CARD CONTENT
         // =====================================================
 
         card.getChildren().addAll(
-
                 calendarCircle,
                 noEventsLabel,
                 descriptionLabel,
@@ -791,10 +794,6 @@ createButton.setOnAction(e -> {
 
         Button backButton =
                 new Button("Back");
-                
-
-                
-                
 
         backButton.setPrefSize(
                 100,
@@ -817,15 +816,22 @@ createButton.setOnAction(e -> {
         );
 
         // =====================================================
-        // BACK → DASHBOARD
+        // BACK ACTION
         // =====================================================
 
         backButton.setOnAction(e -> {
 
             if (backAction != null) {
-                backAction.run();
-            }
 
+                backAction.run();
+
+            } else {
+
+                /*
+                 * If no custom back action was supplied,
+                 * simply do nothing.
+                 */
+            }
         });
 
         Region space =

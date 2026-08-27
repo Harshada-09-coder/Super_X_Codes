@@ -4,55 +4,96 @@ import com.techtrio.session.UserSession;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-
-import javafx.geometry.*;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 
 public class AiPlanningC {
 
     private Scene scene;
+
     private String uid;
     private String idToken;
-public class AiPlanningC  {
 
-    private final String NAVY = "#002A60";
-    private final String BLUE = "#0057B8";
-    private final String BG = "#F5F8FA";
-    private final String BORDER = "#D5DEE7";
-    private final String TEXT = "#102A43";
-    private final String GREY = "#667085";
-    private final String LIGHT = "#C2F0F4";
-public Scene getAiPlanningScene(
-        Runnable backAction,
-        Runnable nextAction
-) {
+    private static final String NAVY = "#002A60";
+    private static final String BLUE = "#0057B8";
+    private static final String BG = "#F5F8FA";
+    private static final String BORDER = "#D5DEE7";
+    private static final String TEXT = "#102A43";
+    private static final String GREY = "#667085";
 
     public AiPlanningC(String uid, String idToken) {
-        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
-        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+        this.uid = (uid != null && !uid.isBlank())
+                ? uid
+                : UserSession.getUid();
+
+        this.idToken = (idToken != null && !idToken.isBlank())
+                ? idToken
+                : UserSession.getIdToken();
     }
 
     public Scene getAiPlanningScene() {
+
+        // =========================
+        // SIDEBAR
+        // =========================
+
         VBox sidebar = new VBox(7);
+
         sidebar.setPrefWidth(205);
         sidebar.setMinWidth(205);
         sidebar.setMaxWidth(205);
-        sidebar.setPadding(new Insets(24, 8, 20, 8));
-        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label logo = label("EventXpert", 21, true, Color.WHITE);
-        VBox eventTitle = new VBox(2,
-                label("Create Event", 16, true, Color.WHITE),
-                label("Step-by-step setup", 10, false, Color.web("#D1DFEB"))
+        sidebar.setPadding(
+                new Insets(24, 8, 20, 8)
         );
-        eventTitle.setPadding(new Insets(7, 12, 15, 12));
+
+        sidebar.setStyle(
+                "-fx-background-color:" + NAVY + ";"
+        );
+
+        Label logo = label(
+                "EventXpert",
+                21,
+                true,
+                Color.WHITE
+        );
+
+        VBox eventTitle = new VBox(
+                2,
+                label(
+                        "Create Event",
+                        16,
+                        true,
+                        Color.WHITE
+                ),
+                label(
+                        "Step-by-step setup",
+                        10,
+                        false,
+                        Color.web("#D1DFEB")
+                )
+        );
+
+        eventTitle.setPadding(
+                new Insets(7, 12, 15, 12)
+        );
 
         VBox navigation = new VBox(2);
+
         navigation.getChildren().addAll(
                 navItem("ⓘ", "Event Details", false),
                 navItem("▤", "Requirements", false),
@@ -63,67 +104,85 @@ public Scene getAiPlanningScene(
         );
 
         Region sideSpace = new Region();
-        VBox.setVgrow(sideSpace, Priority.ALWAYS);
-        sidebar.getChildren().addAll(logo, eventTitle, navigation, sideSpace);
 
-        HBox topBar = new HBox(24);
-        topBar.setAlignment(Pos.CENTER_RIGHT);
-        topBar.setPadding(new Insets(12, 28, 12, 28));
-        topBar.setPrefHeight(58);
-        topBar.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:#DCE5EC;-fx-border-width:0 0 1 0;");
-        topBar.getChildren().addAll(
-                label("♧", 19, false, Color.web(NAVY)),
-                label("?", 16, true, Color.web(NAVY))
+        VBox.setVgrow(
+                sideSpace,
+                Priority.ALWAYS
         );
 
+        sidebar.getChildren().addAll(
+                logo,
+                eventTitle,
+                navigation,
+                sideSpace
+        );
+
+        // =========================
+        // TOP BAR
+        // =========================
+
+        HBox topBar = new HBox(24);
+
+        topBar.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        topBar.setPadding(
+                new Insets(12, 28, 12, 28)
+        );
+
+        topBar.setPrefHeight(58);
+
+        topBar.setStyle(
+                "-fx-background-color:#F8FAFC;" +
+                "-fx-border-color:#DCE5EC;" +
+                "-fx-border-width:0 0 1 0;"
+        );
+
+        topBar.getChildren().addAll(
+                label(
+                        "♧",
+                        19,
+                        false,
+                        Color.web(NAVY)
+                ),
+                label(
+                        "?",
+                        16,
+                        true,
+                        Color.web(NAVY)
+                )
+        );
+
+        // =========================
+        // HEADING
+        // =========================
+
         VBox heading = new VBox(7);
-        heading.setAlignment(Pos.CENTER);
-        heading.setPadding(new Insets(20));
 
-        Label aiIcon = label("✦", 22, true, Color.web(NAVY));
-        aiIcon.setPrefSize(42, 42);
-        aiIcon.setAlignment(Pos.CENTER);
-        aiIcon.setStyle("-fx-background-color:#C5E9FF;-fx-background-radius:50;");
+        heading.setAlignment(
+                Pos.CENTER
+        );
 
-        Label title = label("Plan Smarter with AI", 27, true, Color.web("#111111"));
-        Label subtitle = label("Let our AI assistant optimize your timeline and create smart checklists.", 13, false, Color.web(GREY));
-        heading.getChildren().addAll(aiIcon, title, subtitle);
+        heading.setPadding(
+                new Insets(20)
+        );
 
-        ToggleButton aiToggle = new ToggleButton(ReviewPageC.EventData.aiEnabled ? "✓" : "○");
-        aiToggle.setSelected(ReviewPageC.EventData.aiEnabled);
-        aiToggle.setPrefSize(50, 28);
-        aiToggle.setStyle("-fx-background-color:" + NAVY + ";-fx-background-radius:20;-fx-text-fill:white;");
+        Label aiIcon = label(
+                "✦",
+                22,
+                true,
+                Color.web(NAVY)
+        );
 
-        aiToggle.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            aiToggle.setText(newVal ? "✓" : "○");
-            ReviewPageC.EventData.aiEnabled = newVal;
-        });
+        aiIcon.setPrefSize(
+                42,
+                42
+        );
 
-        HBox toggleBox = new HBox(10, label("Enable AI Planning Assistant:", 14, true, Color.web(TEXT)), aiToggle);
-        toggleBox.setAlignment(Pos.CENTER);
-
-        VBox mainContent = new VBox(15, heading, toggleBox);
-        mainContent.setAlignment(Pos.TOP_CENTER);
-        VBox.setVgrow(mainContent, Priority.ALWAYS);
-
-        Button back = footerButton("← Back", 100, false);
-        Button next = footerButton("Next →", 90, true);
-
-        back.setOnAction(e -> {
-            BudgetC budgetView = new BudgetC(uid, idToken);
-            LandingPage.landingPageStage.setScene(budgetView.getBudgetScene());
-        });
-
-        next.setOnAction(e -> {
-            ReviewPageC.EventData.aiEnabled = aiToggle.isSelected();
-            ReviewPageC reviewView = new ReviewPageC(uid, idToken);
-            LandingPage.landingPageStage.setScene(reviewView.getReviewScene());
-        });
-
-        HBox footer = new HBox(10, back, new Region(), next);
-        HBox.setHgrow(footer.getChildren().get(1), Priority.ALWAYS);
-        footer.setAlignment(Pos.CENTER);
-        footer.setPadding(new Insets(10, 30, 12, 30));
+        aiIcon.setAlignment(
+                Pos.CENTER
+        );
 
         aiIcon.setStyle(
                 "-fx-background-color:#C5E9FF;" +
@@ -155,10 +214,14 @@ public Scene getAiPlanningScene(
                 subtitle
         );
 
-       
+        // =========================
+        // PLANNER CARD
+        // =========================
+
         VBox plannerCard = new VBox(14);
 
         plannerCard.setMaxWidth(680);
+
         plannerCard.setPadding(
                 new Insets(20)
         );
@@ -170,7 +233,6 @@ public Scene getAiPlanningScene(
                 "-fx-background-radius:9;"
         );
 
-       
         HBox plannerHeader = new HBox();
 
         plannerHeader.setAlignment(
@@ -180,7 +242,7 @@ public Scene getAiPlanningScene(
         VBox plannerText = new VBox(
                 3,
                 label(
-                        "Enable AI Event ",
+                        "Enable AI Event Planning",
                         15,
                         true,
                         Color.web("#222222")
@@ -200,12 +262,12 @@ public Scene getAiPlanningScene(
                 Priority.ALWAYS
         );
 
-        
-
         ToggleButton aiToggle =
                 new ToggleButton("✓");
 
-        aiToggle.setSelected(true);
+        aiToggle.setSelected(
+                ReviewPageC.EventData.aiEnabled
+        );
 
         aiToggle.setPrefSize(
                 45,
@@ -224,23 +286,26 @@ public Scene getAiPlanningScene(
                 )
         );
 
-        aiToggle.setStyle(
-                "-fx-background-color:" + NAVY + ";" +
-                "-fx-background-radius:20;"
+        updateToggleStyle(
+                aiToggle,
+                aiToggle.isSelected()
         );
 
         aiToggle.selectedProperty().addListener(
                 (obs, oldValue, newValue) -> {
 
+                    ReviewPageC.EventData.aiEnabled =
+                            newValue;
+
                     aiToggle.setText(
-                            newValue ? "✓" : "○"
+                            newValue
+                                    ? "✓"
+                                    : "○"
                     );
 
-                    aiToggle.setStyle(
-                            "-fx-background-color:" +
-                            (newValue ? NAVY : "#9AA5B1") +
-                            ";" +
-                            "-fx-background-radius:20;"
+                    updateToggleStyle(
+                            aiToggle,
+                            newValue
                     );
                 }
         );
@@ -251,11 +316,15 @@ public Scene getAiPlanningScene(
                 aiToggle
         );
 
-        Separator separator = new Separator();
+        Separator separator =
+                new Separator();
 
-        
+        // =========================
+        // FEATURES
+        // =========================
 
-        GridPane features = new GridPane();
+        GridPane features =
+                new GridPane();
 
         features.setHgap(35);
         features.setVgap(20);
@@ -267,7 +336,8 @@ public Scene getAiPlanningScene(
                         "Auto-generated tasks tailored to your specific event\n" +
                         "type and scope."
                 ),
-                0, 0
+                0,
+                0
         );
 
         features.add(
@@ -277,7 +347,8 @@ public Scene getAiPlanningScene(
                         "Optimized scheduling that automatically adjusts to\n" +
                         "constraint changes."
                 ),
-                1, 0
+                1,
+                0
         );
 
         features.add(
@@ -287,7 +358,8 @@ public Scene getAiPlanningScene(
                         "Intelligent recommendations for vendors, layouts, and\n" +
                         "logistics."
                 ),
-                0, 1
+                0,
+                1
         );
 
         features.add(
@@ -297,7 +369,8 @@ public Scene getAiPlanningScene(
                         "Highlights critical path items and potential planning\n" +
                         "bottlenecks instantly."
                 ),
-                1, 1
+                1,
+                1
         );
 
         ColumnConstraints c1 =
@@ -311,7 +384,8 @@ public Scene getAiPlanningScene(
         c2.setPercentWidth(50);
 
         features.getColumnConstraints().addAll(
-                c1, c2
+                c1,
+                c2
         );
 
         plannerCard.getChildren().addAll(
@@ -320,60 +394,53 @@ public Scene getAiPlanningScene(
                 features
         );
 
-        
+        // =========================
+        // ACTION BUTTONS
+        // =========================
+
         Button enableAI =
-        new Button("◉  Enable AI Planning");
+                new Button(
+                        "◉  Enable AI Planning"
+                );
 
-enableAI.setPrefSize(170, 42);
+        enableAI.setPrefSize(
+                170,
+                42
+        );
 
+        enableAI.setStyle(
+                "-fx-background-color:white;" +
+                "-fx-border-color:#9EB1C1;" +
+                "-fx-border-radius:7;" +
+                "-fx-background-radius:7;" +
+                "-fx-text-fill:" + NAVY + ";" +
+                "-fx-font-weight:bold;"
+        );
 
-enableAI.setStyle(
-        "-fx-background-color:white;" +
-        "-fx-border-color:#9EB1C1;" +
-        "-fx-border-radius:7;" +
-        "-fx-background-radius:7;" +
-        "-fx-text-fill:" + NAVY + ";" +
-        "-fx-font-weight:bold;"
-);
+        enableAI.setOnAction(e -> {
 
+            ReviewPageC.EventData.aiEnabled = true;
 
-enableAI.setOnAction(e -> {
+            AIPage aiPage =
+                    new AIPage();
 
-    AIPage aiPage = new AIPage();
+            LandingPage.landingPageStage.setScene(
+                    aiPage.getAIPageScene(
+                            () -> {
 
-    LandingPage.landingPageStage.setScene(
-            aiPage.getAIPageScene(
+                                LandingPage.landingPageStage.setScene(
+                                        getAiPlanningScene()
+                                );
 
-                    // BACK → AI PLANNING
-                    () -> {
+                            }
+                    )
+            );
+        });
 
-                        AiPlanningC aiPlanningPage =
-                                new AiPlanningC();
-
-                        LandingPage.landingPageStage.setScene(
-                                aiPlanningPage.getAiPlanningScene(
-                                        null,
-                                        null
-                                )
-                        );
-
-                    }
-
-            )
-    );
-
-});        Button skip =
-                new Button("Skip for Now");
-
-                skip.setOnAction(e -> {
-
-    ReviewPageC reviewPage = new ReviewPageC();
-
-    LandingPage.landingPageStage.setScene(
-            reviewPage.getReviewScene()
-    );
-
-});
+        Button skip =
+                new Button(
+                        "Skip for Now"
+                );
 
         skip.setPrefSize(
                 125,
@@ -387,6 +454,22 @@ enableAI.setOnAction(e -> {
                 "-fx-background-radius:7;" +
                 "-fx-text-fill:" + NAVY + ";"
         );
+
+        skip.setOnAction(e -> {
+
+            ReviewPageC.EventData.aiEnabled =
+                    false;
+
+            ReviewPageC reviewPage =
+                    new ReviewPageC(
+                            uid,
+                            idToken
+                    );
+
+            LandingPage.landingPageStage.setScene(
+                    reviewPage.getReviewScene()
+            );
+        });
 
         HBox actions =
                 new HBox(
@@ -402,6 +485,10 @@ enableAI.setOnAction(e -> {
         actions.setPadding(
                 new Insets(5, 0, 15, 0)
         );
+
+        // =========================
+        // MAIN CONTENT
+        // =========================
 
         VBox mainContent =
                 new VBox(
@@ -419,6 +506,9 @@ enableAI.setOnAction(e -> {
                 Priority.ALWAYS
         );
 
+        // =========================
+        // FOOTER
+        // =========================
 
         Button back =
                 footerButton(
@@ -426,24 +516,19 @@ enableAI.setOnAction(e -> {
                         100,
                         false
                 );
-back.setOnAction(e -> {
 
-    BudgetC budgetPage = new BudgetC();
+        back.setOnAction(e -> {
 
-    LandingPage.landingPageStage.setScene(
-            budgetPage.getBudgetScene(
-                    null,
-                    () -> {
-                        // NEXT → AI Planning
-                    }
-            )
-    );
+            BudgetC budgetPage =
+                    new BudgetC(
+                            uid,
+                            idToken
+                    );
 
-});
-
-        
-
-
+            LandingPage.landingPageStage.setScene(
+                    budgetPage.getBudgetScene()
+            );
+        });
 
         HBox leftButtons =
                 new HBox(
@@ -474,61 +559,271 @@ back.setOnAction(e -> {
         );
 
         footer.setPadding(
-                new Insets(10, 30, 12, 30)
+                new Insets(
+                        10,
+                        30,
+                        12,
+                        30
+                )
         );
 
         footer.setPrefHeight(68);
-        footer.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:#DCE5EC;-fx-border-width:1 0 0 0;");
 
-        VBox center = new VBox(topBar, mainContent, footer);
-        center.setStyle("-fx-background-color:" + BG + ";");
-        VBox.setVgrow(mainContent, Priority.ALWAYS);
+        footer.setStyle(
+                "-fx-background-color:#F8FAFC;" +
+                "-fx-border-color:#DCE5EC;" +
+                "-fx-border-width:1 0 0 0;"
+        );
 
-        BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color:" + NAVY + ";");
+        // =========================
+        // CENTER
+        // =========================
+
+        VBox center =
+                new VBox(
+                        topBar,
+                        mainContent,
+                        footer
+                );
+
+        center.setStyle(
+                "-fx-background-color:" + BG + ";"
+        );
+
+        VBox.setVgrow(
+                mainContent,
+                Priority.ALWAYS
+        );
+
+        // =========================
+        // ROOT
+        // =========================
+
+        BorderPane root =
+                new BorderPane();
+
+        root.setStyle(
+                "-fx-background-color:" + NAVY + ";"
+        );
+
         root.setLeft(sidebar);
         root.setCenter(center);
 
-        scene = new Scene(root, 1365, 850);
-
-
-        Scene scene =
-                new Scene(root);
+        scene =
+                new Scene(
+                        root,
+                        1365,
+                        850
+                );
 
         return scene;
     }
 
-    private Label label(String text, double size, boolean bold, Color color) {
-        Label l = new Label(text);
-        l.setFont(Font.font("Arial", bold ? FontWeight.BOLD : FontWeight.NORMAL, size));
+    // =========================
+    // TOGGLE STYLE
+    // =========================
+
+    private void updateToggleStyle(
+            ToggleButton button,
+            boolean selected
+    ) {
+
+        button.setStyle(
+                "-fx-background-color:" +
+                (selected ? NAVY : "#9AA5B1") +
+                ";" +
+                "-fx-background-radius:20;" +
+                "-fx-text-fill:white;"
+        );
+    }
+
+    // =========================
+    // LABEL
+    // =========================
+
+    private Label label(
+            String text,
+            double size,
+            boolean bold,
+            Color color
+    ) {
+
+        Label l =
+                new Label(text);
+
+        l.setFont(
+                Font.font(
+                        "Arial",
+                        bold
+                                ? FontWeight.BOLD
+                                : FontWeight.NORMAL,
+                        size
+                )
+        );
+
         l.setTextFill(color);
+
         return l;
     }
 
-    private HBox navItem(String icon, String text, boolean active) {
-        Label iconLabel = label(icon, 16, false, active ? Color.WHITE : Color.web("#D0DFEC"));
-        Label textLabel = label(text, 12, true, active ? Color.WHITE : Color.web("#D0DFEC"));
-        HBox item = new HBox(12, iconLabel, textLabel);
-        item.setAlignment(Pos.CENTER_LEFT);
+    // =========================
+    // NAV ITEM
+    // =========================
+
+    private HBox navItem(
+            String icon,
+            String text,
+            boolean active
+    ) {
+
+        Label iconLabel =
+                label(
+                        icon,
+                        16,
+                        false,
+                        active
+                                ? Color.WHITE
+                                : Color.web("#D0DFEC")
+                );
+
+        Label textLabel =
+                label(
+                        text,
+                        12,
+                        true,
+                        active
+                                ? Color.WHITE
+                                : Color.web("#D0DFEC")
+                );
+
+        HBox item =
+                new HBox(
+                        12,
+                        iconLabel,
+                        textLabel
+                );
+
+        item.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
         item.setPrefHeight(38);
-        item.setPadding(new Insets(7, 10, 7, 12));
+
+        item.setPadding(
+                new Insets(
+                        7,
+                        10,
+                        7,
+                        12
+                )
+        );
+
         if (active) {
-            item.setStyle("-fx-background-color:#07396E;-fx-border-color:#C2F0F4;-fx-border-width:0 0 0 3;-fx-background-radius:7;");
+
+            item.setStyle(
+                    "-fx-background-color:#07396E;" +
+                    "-fx-border-color:#C2F0F4;" +
+                    "-fx-border-width:0 0 0 3;" +
+                    "-fx-background-radius:7;"
+            );
+
         } else {
-            item.setStyle("-fx-background-color:transparent;");
+
+            item.setStyle(
+                    "-fx-background-color:transparent;"
+            );
         }
+
         return item;
     }
 
-    private Button footerButton(String text, double width, boolean primary) {
-        Button b = new Button(text);
-        b.setPrefSize(width, 42);
-        b.setStyle(primary
-                ? "-fx-background-color:" + NAVY + ";-fx-background-radius:7;-fx-text-fill:white;-fx-font-weight:bold;-fx-cursor:hand;"
-                : "-fx-background-color:white;-fx-border-color:#9EB1C1;-fx-border-radius:7;-fx-background-radius:7;-fx-text-fill:" + NAVY + ";-fx-cursor:hand;");
+    // =========================
+    // FEATURE
+    // =========================
+
+    private VBox feature(
+            String icon,
+            String title,
+            String description
+    ) {
+
+        Label iconLabel =
+                label(
+                        icon,
+                        20,
+                        true,
+                        Color.web(BLUE)
+                );
+
+        Label titleLabel =
+                label(
+                        title,
+                        12,
+                        true,
+                        Color.web(TEXT)
+                );
+
+        Label descriptionLabel =
+                label(
+                        description,
+                        10,
+                        false,
+                        Color.web(GREY)
+                );
+
+        VBox box =
+                new VBox(
+                        5,
+                        iconLabel,
+                        titleLabel,
+                        descriptionLabel
+                );
+
+        box.setPadding(
+                new Insets(5)
+        );
+
+        return box;
+    }
+
+    // =========================
+    // FOOTER BUTTON
+    // =========================
+
+    private Button footerButton(
+            String text,
+            double width,
+            boolean primary
+    ) {
+
+        Button b =
+                new Button(text);
+
+        b.setPrefSize(
+                width,
+                42
+        );
+
+        b.setStyle(
+                primary
+                        ? "-fx-background-color:" +
+                          NAVY +
+                          ";" +
+                          "-fx-background-radius:7;" +
+                          "-fx-text-fill:white;" +
+                          "-fx-font-weight:bold;" +
+                          "-fx-cursor:hand;"
+
+                        : "-fx-background-color:white;" +
+                          "-fx-border-color:#9EB1C1;" +
+                          "-fx-border-radius:7;" +
+                          "-fx-background-radius:7;" +
+                          "-fx-text-fill:" +
+                          NAVY +
+                          ";" +
+                          "-fx-cursor:hand;"
+        );
+
         return b;
     }
-}
-
-    
 }
