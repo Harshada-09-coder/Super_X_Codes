@@ -170,7 +170,18 @@ HBox btnGroup = new HBox(16);
 
         Button getStartedBtn = new Button("Get Started  →");
         getStartedBtn.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: bold; -fx-background-color: " + NAVY + "; -fx-text-fill: " + WHITE + "; -fx-background-radius: 10; -fx-padding: 11 26; -fx-cursor: hand;");
-        getStartedBtn.setOnAction(e -> System.out.println("Get Started clicked"));
+        getStartedBtn.setOnAction(e -> {
+                System.out.println("Get Started clicked");
+                LoginPage backToLoginPage = new LoginPage();
+                Runnable callBackAction1 = new Runnable() {
+                        public void run(){
+                                backToLandingPage();
+                        }
+                };
+
+                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
+      
+        });
 
         Button watchDemoBtn = new Button("Watch Demo  ◉");
         watchDemoBtn.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: bold; -fx-background-color: " + WHITE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 10 24; -fx-cursor: hand;");

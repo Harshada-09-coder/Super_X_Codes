@@ -1,12 +1,24 @@
 package com.techtrio.view;
 
 import com.techtrio.controller.NavigationManager;
+import com.techtrio.controller.SignInResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.techtrio.controller.AdminController;
+import com.techtrio.controller.AuthController;
+import com.techtrio.model.AdminProfile;
+
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
@@ -27,6 +39,24 @@ import javafx.stage.Stage;
 public class ProfileA  {
 
         private Scene profilScene;
+
+        private final AdminController adminController = new AdminController();
+
+        private String adminId;
+
+      
+        private Label name;
+        private Label emailText;
+        private Label idText;
+
+        private TextField fullName;
+        private TextField email;
+        private TextField mobile;
+
+        public ProfileA(String adminId) {
+    this.adminId = adminId;
+}
+
 
     // ---------- COLORS ----------
     private final String NAVY = "#062653";
@@ -206,26 +236,26 @@ sidebar.getChildren().addAll(
 
         VBox titleBox = new VBox(5, title, subtitle);
 
-        Button edit = new Button("✎  Edit Profile");
-        edit.setPrefSize(150, 46);
+        
+        Button edit = new Button("Edit Profile");
+        edit.setPrefSize(210, 46);
         edit.setStyle(
-                "-fx-background-color:#E7E9ED;" +
-                "-fx-text-fill:#062A60;" +
-                "-fx-border-color:#BFC6D0;" +
-                "-fx-border-radius:7;" +
-                "-fx-background-radius:7;" +
-                "-fx-font-size:15px;"
-        );
-
-        Button changeTop = new Button("↻  Change Password");
-        changeTop.setPrefSize(210, 46);
-        changeTop.setStyle(
                 "-fx-background-color:#062A60;" +
                 "-fx-text-fill:white;" +
                 "-fx-font-size:15px;" +
                 "-fx-font-weight:bold;" +
                 "-fx-background-radius:7;"
         );
+
+        edit.setOnAction(e -> {
+
+                fullName.setDisable(false);
+                email.setDisable(false);
+                mobile.setDisable(false);
+
+                System.out.println("Edit Profile enabled");
+
+        });
 
         Region headerSpace = new Region();
         HBox.setHgrow(headerSpace, Priority.ALWAYS);
@@ -234,8 +264,7 @@ sidebar.getChildren().addAll(
                 16,
                 titleBox,
                 headerSpace,
-                edit,
-                changeTop
+                edit
         );
 
         header.setAlignment(Pos.CENTER_LEFT);
@@ -268,7 +297,7 @@ sidebar.getChildren().addAll(
 
         avatar.getChildren().add(avatarText);
 
-        Label name = new Label("Admin User");
+        name = new Label("Loading...");
         name.setTextFill(Color.web("#10274B"));
         name.setFont(Font.font("Arial", FontWeight.BOLD, 18));
 
@@ -298,7 +327,7 @@ sidebar.getChildren().addAll(
 
 
         Label emailIcon = new Label("✉");
-        Label emailText = new Label("admin@eventxpert.com");
+        emailText = new Label("Loading...");
 
         emailIcon.setFont(Font.font(18));
         emailText.setFont(Font.font("Arial", 15));
@@ -313,7 +342,7 @@ sidebar.getChildren().addAll(
         );
 
         Label idIcon = new Label("▣");
-        Label idText = new Label("ID: ADM001");
+        idText = new Label("ID: Loading...");
 
         idIcon.setFont(Font.font(18));
         idText.setFont(Font.font("Arial", 15));
@@ -369,6 +398,20 @@ sidebar.getChildren().addAll(
                 "-fx-font-size:15px;" +
                 "-fx-background-radius:7;"
         );
+        logout.setOnAction(e -> {
+
+    // Clear current admin session
+    NavigationManager.setCurrentAdminId(null);
+
+    // Go to Login Page
+    LandingPage.landingPageStage.setScene(
+            new LoginPage().getloginPageScene(null)
+    );
+});
+        
+
+
+        
 
         accountCard.getChildren().addAll(
                 accountSeparator,
@@ -411,10 +454,16 @@ sidebar.getChildren().addAll(
 
         form.getColumnConstraints().addAll(col1, col2);
 
-        TextField fullName = textField("Admin User");
+        fullName = textField("");
+
         TextField roleField = textField("System Administrator");
-        TextField email = textField("admin@eventxpert.com");
-        TextField mobile = textField("+91 98765 43210");
+
+        email = textField("");
+
+        mobile = textField("");
+        fullName.setDisable(true);
+        email.setDisable(true);
+        mobile.setDisable(true);
 
         roleField.setDisable(true);
 
@@ -439,6 +488,57 @@ sidebar.getChildren().addAll(
                 "-fx-font-weight:bold;" +
                 "-fx-background-radius:7;"
         );
+        save.setOnAction(e -> {
+
+    String newName =
+            fullName.getText().trim();
+
+    String newEmail =
+            email.getText().trim();
+
+    String newPhone =
+            mobile.getText().trim();
+
+    if (newName.isEmpty()) {
+
+        System.out.println(
+                "Name cannot be empty."
+        );
+
+        return;
+    }
+
+    boolean success =
+            adminController.updateAdminProfile(
+                    adminId,
+                    newName,
+                    newEmail,
+                    newPhone,
+                    ""
+            );
+
+    if (success) {
+
+        name.setText(newName);
+
+                        emailText.setText(newEmail);
+                        fullName.setDisable(true);
+                        email.setDisable(true);
+                        mobile.setDisable(true);
+
+        System.out.println(
+                "Profile updated successfully."
+        );
+
+    } else {
+
+        System.out.println(
+                "Profile update failed."
+        );
+    }
+});
+
+
 
         HBox saveBox = new HBox(save);
         saveBox.setAlignment(Pos.CENTER_RIGHT);
@@ -476,6 +576,9 @@ sidebar.getChildren().addAll(
                 "-fx-background-radius:7;" +
                 "-fx-font-size:15px;"
         );
+        changePassword.setOnAction(e -> {
+    showChangePasswordDialog();
+});
 
         passwordRow.getChildren().add(changePassword);
 
@@ -496,6 +599,41 @@ sidebar.getChildren().addAll(
                 "-fx-font-size:13px;" +
                 "-fx-font-weight:bold;"
         );
+
+        twoFA.setOnAction(e -> {
+
+    boolean currentlyOn =
+            twoFA.getText()
+                    .equals("ON");
+
+    boolean newStatus =
+            !currentlyOn;
+
+    AdminController controller =
+            new AdminController();
+
+    boolean updated =
+            controller.updateTwoFactorStatus(
+                    adminId,
+                    newStatus
+            );
+
+    if (updated) {
+
+        if (newStatus) {
+            twoFA.setText("ON");
+        } else {
+            twoFA.setText("OFF");
+        }
+
+    } else {
+
+        showAlert(
+                "Error",
+                "Unable to update 2FA status."
+        );
+    }
+});
 
         twoFARow.getChildren().add(twoFA);
 
@@ -591,6 +729,7 @@ sidebar.getChildren().addAll(
 
         Scene scene = new Scene(root,1550,750);
         profilScene =  scene;
+        loadAdminProfile();
         
     return profilScene;
 }
@@ -844,6 +983,363 @@ sidebar.getChildren().addAll(
 
         return row;
     }
+
+    private void loadAdminProfile() {
+
+    if (adminId == null || adminId.isBlank()) {
+
+        System.out.println(
+                "Admin ID is not available."
+        );
+
+        return;
+    }
+
+    Task<AdminProfile> task =
+            new Task<>() {
+
+        @Override
+        protected AdminProfile call() {
+
+            return adminController
+                    .getAdminProfile(adminId);
+        }
+    };
+
+    task.setOnSucceeded(e -> {
+
+        AdminProfile admin =
+                task.getValue();
+
+        if (admin != null) {
+
+            updateProfileUI(admin);
+
+        } else {
+
+            System.out.println(
+                    "Admin profile not found."
+            );
+        }
+
+
+    });
+    
+
+    task.setOnFailed(e -> {
+
+        e.getSource()
+         .getException()
+         .printStackTrace();
+    });
+
+    Thread thread = new Thread(task);
+
+    thread.setDaemon(true);
+
+    thread.start();
+    }
+
+
+
+    private void updateProfileUI(
+        AdminProfile admin) {
+
+    Platform.runLater(() -> {
+
+        String adminName =
+                admin.getName() != null
+                        ? admin.getName()
+                        : "";
+
+        String adminEmail =
+                admin.getEmail() != null
+                        ? admin.getEmail()
+                        : "";
+
+        String adminPhone =
+                admin.getmobileNo() != null
+                        ? admin.getmobileNo()
+                        : "";
+
+        name.setText(adminName);
+
+        emailText.setText(adminEmail);
+
+        idText.setText(
+                "ID: " +
+                admin.getAdminId()
+        );
+
+        fullName.setText(adminName);
+
+        email.setText(adminEmail);
+
+        mobile.setText(adminPhone);
+    });
+}
+
+    private void showChangePasswordDialog() {
+
+    Dialog<ButtonType> dialog = new Dialog<>();
+
+    dialog.setTitle("Change Password");
+    dialog.setHeaderText("Change your password");
+
+    PasswordToggle currentPassword =
+            new PasswordToggle("Current Password");
+
+    PasswordToggle newPassword =
+            new PasswordToggle("New Password");
+
+    PasswordToggle confirmPassword =
+            new PasswordToggle("Confirm New Password");
+
+    GridPane grid = new GridPane();
+
+    grid.setHgap(10);
+    grid.setVgap(15);
+    grid.setPadding(new Insets(20));
+
+    grid.add(
+            new Label("Current Password:"),
+            0, 0
+    );
+
+    grid.add(
+            currentPassword.box,
+            1, 0
+    );
+
+    grid.add(
+            new Label("New Password:"),
+            0, 1
+    );
+
+    grid.add(
+            newPassword.box,
+            1, 1
+    );
+
+    grid.add(
+            new Label("Confirm Password:"),
+            0, 2
+    );
+
+    grid.add(
+            confirmPassword.box,
+            1, 2
+    );
+
+    dialog.getDialogPane().setContent(grid);
+
+    ButtonType changeButton =
+            new ButtonType("Change Password");
+
+    dialog.getDialogPane()
+            .getButtonTypes()
+            .addAll(
+                    changeButton,
+                    ButtonType.CANCEL
+            );
+
+    dialog.setResultConverter(button -> {
+
+        if (button == changeButton) {
+
+            String current =
+                    currentPassword.getText();
+
+            String newPass =
+                    newPassword.getText();
+
+            String confirm =
+                    confirmPassword.getText();
+
+            performPasswordChange(
+                    current,
+                    newPass,
+                    confirm
+            );
+        }
+
+        return button;
+    });
+
+    dialog.showAndWait();
+
+
+
+
+
+
+}
+
+
+private void performPasswordChange(
+        String currentPassword,
+        String newPassword,
+        String confirmPassword) {
+
+    if (currentPassword.isBlank()
+            || newPassword.isBlank()
+            || confirmPassword.isBlank()) {
+
+        showAlert(
+                "Error",
+                "All password fields are required."
+        );
+
+        return;
+    }
+
+    if (!newPassword.equals(confirmPassword)) {
+
+        showAlert(
+                "Error",
+                "New password and confirm password do not match."
+        );
+
+        return;
+    }
+
+    if (newPassword.length() < 6) {
+
+        showAlert(
+                "Error",
+                "Password must contain at least 6 characters."
+        );
+
+        return;
+    }
+
+    AuthController authController =
+            new AuthController();
+
+    /*
+     * Current logged-in user's email
+     */
+    String emailAddress =
+            emailText.getText();
+
+    /*
+     * Verify current password
+     */
+    SignInResult loginResult =
+            authController.signIn(
+                    emailAddress,
+                    currentPassword
+            );
+
+    if (loginResult == null) {
+
+        showAlert(
+                "Error",
+                "Current password is incorrect."
+        );
+
+        return;
+    }
+
+    /*
+     * Current password correct.
+     * Now update password.
+     */
+    boolean changed =
+            authController.changePassword(
+                    loginResult.getIdToken(),
+                    newPassword
+            );
+
+    if (changed) {
+
+        showAlert(
+                "Success",
+                "Password changed successfully."
+        );
+
+    } else {
+
+        showAlert(
+                "Error",
+                "Failed to change password."
+        );
+    }
+}
+private void showAlert(
+        String title,
+        String message) {
+
+    Alert alert =
+            new Alert(Alert.AlertType.INFORMATION);
+
+    alert.setTitle(title);
+    alert.setHeaderText(null);
+    alert.setContentText(message);
+
+    alert.showAndWait();
+}
+
+private class PasswordToggle {
+
+    PasswordField passwordField;
+    TextField textField;
+    HBox box;
+
+    PasswordToggle(String prompt) {
+
+        passwordField = new PasswordField();
+        passwordField.setPromptText(prompt);
+
+        textField = new TextField();
+        textField.setPromptText(prompt);
+
+        // सुरुवातीला password hide
+        textField.setVisible(false);
+
+        Button eyeButton = new Button("👁");
+
+        eyeButton.setOnAction(e -> {
+
+            if (passwordField.isVisible()) {
+
+                // SHOW PASSWORD
+                textField.setText(passwordField.getText());
+
+                passwordField.setVisible(false);
+                textField.setVisible(true);
+
+            } else {
+
+                // HIDE PASSWORD
+                passwordField.setText(textField.getText());
+
+                textField.setVisible(false);
+                passwordField.setVisible(true);
+            }
+        });
+        eyeButton.setPrefWidth(45);
+eyeButton.setPrefHeight(30);
+
+        box = new HBox(5);
+
+        box.getChildren().addAll(
+                passwordField,
+                textField,
+                eyeButton
+        );
+    }
+
+    String getText() {
+
+        if (passwordField.isVisible()) {
+            return passwordField.getText();
+        } else {
+            return textField.getText();
+        }
+    }
+}
+
 
 }
   

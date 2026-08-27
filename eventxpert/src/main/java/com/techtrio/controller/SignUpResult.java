@@ -9,4 +9,11 @@ public class SignUpResult {
         this.uid = uid;
         this.idToken = idToken;
     }
+     public String getUid() {
+        return uid;
+    }
+
+    public String getIdToken() {
+        return idToken;
+    }
 }
