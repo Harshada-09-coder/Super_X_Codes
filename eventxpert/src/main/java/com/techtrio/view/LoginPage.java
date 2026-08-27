@@ -1,6 +1,8 @@
 package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
+import com.techtrio.controller.CustomerController;
+import com.techtrio.controller.CustomerState;
 import com.techtrio.controller.SignInResult;
 import com.techtrio.controller.VendorController;
 import com.techtrio.controller.VendorState;
@@ -328,16 +330,34 @@ public class LoginPage {
 
     LandingPage.landingPageStage.setScene(adminDashboard.getadminDashboardScene()
       );
-      } else if (role.equalsIgnoreCase("customer")) {
-        System.out.println("Opening Customer Dashboard");
-        ActiveCustomerDashboardC customerDashboardC = new ActiveCustomerDashboardC();
+      // Inside LoginPage.java, in the role handling block for Customer:
 
-        Runnable callBackAction1 = new Runnable() {
-                public void run(){
-                        backToLoginPage();
-                }
-        };
-       LandingPage.landingPageStage.setScene( customerDashboardC.getactiveCustomerScene(callBackAction1));
+} else if (role.equalsIgnoreCase("customer")) {
+    System.out.println("Opening Customer Dashboard");
+
+    CustomerController customerController = new CustomerController();
+    CustomerState customerState = customerController.getCustomerState(uid, idToken);
+
+    Runnable callBackAction1 = new Runnable() {
+        public void run() {
+            backToLoginPage();
+        }
+    };
+
+    if (customerState == null || !customerState.hasCreatedEvent()) {
+        System.out.println("========== CUSTOMER REGISTRATION / NEW SESSION ==========");
+        System.out.println("Customer UID: " + uid);
+        System.out.println("Customer authenticated: true");
+        System.out.println("Opening Inactive Customer Dashboard");
+        System.out.println("=======================================================");
+
+        NewCustomerDashboard newCustomerDashboard = new NewCustomerDashboard(uid, idToken);
+        LandingPage.landingPageStage.setScene(newCustomerDashboard.getnewCustomerScene(callBackAction1));
+    } else {
+        System.out.println("Opening EXISTING Customer Dashboard");
+        ActiveCustomerDashboardC activeCustomerDashboard = new ActiveCustomerDashboardC(uid, idToken);
+        LandingPage.landingPageStage.setScene(activeCustomerDashboard.getactiveCustomerScene(callBackAction1));
+    }
 
      } else if (role.equalsIgnoreCase("organizer")) {
          System.out.println( "Opening Organizer Dashboard");
