@@ -141,7 +141,7 @@ side.getChildren().addAll(
        
       
         Button settingsCrumb = new Button("Back");
-        settingsCrumb.setStyle("-fx-background-color:NAVY;" +
+        settingsCrumb.setStyle("-fx-background-color:"+NAVY+";" +
         "-fx-text-fill:#F5F7FA;"+
         "-fx-font-size:15px;" +
         "-fx-font-weight:bold;"
@@ -358,7 +358,7 @@ notificationRules.getChildren().addAll(
 
         data.getChildren().addAll(exportData, backup, restore);
 
-        right.getChildren().addAll(notifications, security, data);
+        right.getChildren().addAll(notificationRules, security, data);
 
         /* ================= COLUMNS ================= */
 
@@ -554,10 +554,10 @@ notificationRules.getChildren().addAll(
         a.setContentText(msg);
         a.showAndWait();
     }
-
 }
 
+
+
+
+
       
-
-
-       
