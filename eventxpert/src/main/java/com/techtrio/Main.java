@@ -13,8 +13,4 @@ public class Main {
 
         Application.launch(LandingPage.class, args);
     }
-<<<<<<< HEAD
 } 
-=======
-}
->>>>>>> dcc37cf3b610c7e18062f9cf1a58de699f2b39c7
