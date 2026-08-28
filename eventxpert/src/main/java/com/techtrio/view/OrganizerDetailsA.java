@@ -1,5 +1,7 @@
 package com.techtrio.view;
 
+import com.techtrio.controller.NavigationManager;
+
 import javafx.application.Application;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -9,7 +11,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
-public class OrganizerDetailsA extends Application {
+public class OrganizerDetailsA  {
+
+    private Scene organizerDetailsScene;
 
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6",
                  LIGHT="#C2E0F4", BG="#F6F9FC";
@@ -296,10 +300,9 @@ public class OrganizerDetailsA extends Application {
 
     /* ================= MAIN ================= */
 
-    @Override
-    public void start(Stage stage){
+    public Scene getorganizerDetailsScene(){
 
-        BorderPane root=new BorderPane();
+          BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
         root.setLeft(sidebar());
 
@@ -307,6 +310,11 @@ public class OrganizerDetailsA extends Application {
         content.setPadding(new Insets(20,25,25,25));
 
         Button back=button("←  Back to Organizers");
+        back.setOnAction(e -> {
+            Stage stage = (Stage) back.getScene().getWindow();
+
+            NavigationManager.navigate("Organizers", stage);
+        });
 
         Label title=label("Organizer Details",35,true);
         Label sub=label(
@@ -328,6 +336,7 @@ public class OrganizerDetailsA extends Application {
             stat("Upcoming","5"),
             stat("Cancelled","2")
         );
+        stats.setCursor(javafx.scene.Cursor.HAND);
 
         for(javafx.scene.Node n:stats.getChildren())
             HBox.setHgrow(n,Priority.ALWAYS);
@@ -360,20 +369,19 @@ public class OrganizerDetailsA extends Application {
         root.setCenter(scroll);
 
         Scene scene=new Scene(root,1550,750);
+        organizerDetailsScene = scene;
+        return organizerDetailsScene;
 
-        stage.setTitle("EventXpert - Organizer Details");
-        stage.setScene(scene);
-        stage.setMinWidth(1200);
-        stage.setMinHeight(700);
-        stage.show();
     }
 
-    public static void main(String[] args){
-        launch(args);
-    }
 }
 
 
     
 
    
+
+      
+    
+
+      

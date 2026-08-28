@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -24,7 +25,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class SupportA extends Application{
+public class SupportA {
+        private Scene supportScene;
 
     // Colors
     private final String NAVY = "#062B63";
@@ -32,13 +34,11 @@ public class SupportA extends Application{
     private final String BG = "#F5F8FC";
     private final String BORDER = "#D6DEE8";
     private final String TEXT = "#14213D";
-    private final String GRAY = "#596579";   
-   
-   
-   
-    @Override
-    public void start(Stage stage) {
+    private final String GRAY = "#596579";  
 
+    public Scene getsupportScene(){
+
+        
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
@@ -92,27 +92,56 @@ public class SupportA extends Application{
                 "♧   Notifications"
         };
 
-        for (String item : menu) {
-            Label nav = new Label(item);
-            nav.setMaxWidth(Double.MAX_VALUE);
-            nav.setPrefHeight(48);
-            nav.setAlignment(Pos.CENTER_LEFT);
-            nav.setPadding(new Insets(0, 12, 0, 10));
-            nav.setTextFill(Color.web("#9FB3CE"));
-            nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
 
-            nav.setStyle("-fx-background-radius:8;");
 
-            nav.setOnMouseEntered(e ->
-                    nav.setStyle("-fx-background-color:#0C3975;-fx-background-radius:8;")
-            );
+for (String item : menu) {
 
-            nav.setOnMouseExited(e ->
-                    nav.setStyle("-fx-background-color:transparent;-fx-background-radius:8;")
-            );
+    Label nav = new Label(item);
 
-            mainNav.getChildren().add(nav);
-        }
+    nav.setMaxWidth(Double.MAX_VALUE);
+    nav.setPrefHeight(48);
+    nav.setAlignment(Pos.CENTER_LEFT);
+    nav.setPadding(new Insets(0, 12, 0, 10));
+    nav.setTextFill(Color.web("#9FB3CE"));
+    nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+
+    nav.setStyle("-fx-background-radius:8;");
+
+    nav.setOnMouseEntered(e ->
+            nav.setStyle(
+                    "-fx-background-color:#0C3975;" +
+                    "-fx-background-radius:8;"
+            )
+    );
+
+    nav.setOnMouseExited(e ->
+            nav.setStyle(
+                    "-fx-background-color:transparent;" +
+                    "-fx-background-radius:8;"
+            )
+    );
+
+    // Navigation
+    nav.setOnMouseClicked(e -> {
+
+        Stage stage =
+                (Stage) nav.getScene().getWindow();
+
+        String page = item
+                .replace("▦", "")
+                .replace("▣", "")
+                .replace("♙", "")
+                .replace("▤", "")
+                .replace("△", "")
+                .replace("▥", "")
+                .replace("♧", "")
+                .trim();
+
+        NavigationManager.navigate(page, stage);
+    });
+
+    mainNav.getChildren().add(nav);
+}
 
         Region space = new Region();
         VBox.setVgrow(space, Priority.ALWAYS);
@@ -125,16 +154,32 @@ public class SupportA extends Application{
                 "●   Profile"
         };
 
-        for (String item : bottom) {
-            Label nav = new Label(item);
-            nav.setMaxWidth(Double.MAX_VALUE);
-            nav.setPrefHeight(48);
-            nav.setAlignment(Pos.CENTER_LEFT);
-            nav.setPadding(new Insets(0, 12, 0, 10));
-            nav.setTextFill(Color.web("#9FB3CE"));
-            nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-            bottomNav.getChildren().add(nav);
-        }
+    for (String item : bottom) {
+
+    Label nav = new Label(item);
+
+    nav.setMaxWidth(Double.MAX_VALUE);
+    nav.setPrefHeight(48);
+    nav.setAlignment(Pos.CENTER_LEFT);
+    nav.setPadding(new Insets(0, 12, 0, 10));
+    nav.setTextFill(Color.web("#9FB3CE"));
+    nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+
+    nav.setOnMouseClicked(e -> {
+
+        Stage stage =
+                (Stage) nav.getScene().getWindow();
+
+        String page = item
+                .replace("⚙", "")
+                .replace("●", "")
+                .trim();
+
+        NavigationManager.navigate(page, stage);
+    });
+
+    bottomNav.getChildren().add(nav);
+}
 
         // Support active
         Label supportNav = new Label("❔   Support");
@@ -257,6 +302,8 @@ public class SupportA extends Application{
         // ================= HELP CARDS =================
         HBox helpCards = new HBox(25);
         helpCards.setFillHeight(true);
+        helpCards.setCursor(javafx.scene.Cursor.HAND);
+
 
         VBox guide = helpCard(
                 "▤",
@@ -364,7 +411,7 @@ public class SupportA extends Application{
         // Description
         Label descLabel = formLabel("Description");
         TextArea description = new TextArea();
-        description.setPrefRowCount(5);
+        description.setPrefRowCount(3);
         description.setWrapText(true);
         description.setStyle(
                 "-fx-border-color:#C9D2DE;" +
@@ -490,12 +537,11 @@ public class SupportA extends Application{
 
         // ================= SCENE =================
         Scene scene = new Scene(root, 1550, 750);
+        supportScene = scene;
 
-        stage.setTitle("EventXpert - Support");
-        stage.setScene(scene);
-        stage.setMinWidth(1100);
-        stage.setMinHeight(650);
-        stage.show();
+        return supportScene;
+        
+
     }
 
     // ================= HELPER METHODS =================
@@ -614,3 +660,12 @@ public class SupportA extends Application{
     }
 
 }
+
+    
+    
+    
+    
+   
+   
+   
+   

@@ -1,6 +1,6 @@
 package com.techtrio.view;
+import com.techtrio.controller.NavigationManager;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -23,11 +23,13 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class CalenderA extends Application{
+public class CalenderA{
+        private Scene calenderScene;
+
 
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6", LIGHT="#C2E0F4";
 
-    Label label(String s,int size,boolean bold){
+     Label label(String s,int size,boolean bold){
         Label l=new Label(s);
         l.setFont(Font.font("Arial",bold?FontWeight.BOLD:FontWeight.NORMAL,size));
         return l;
@@ -114,8 +116,11 @@ public class CalenderA extends Application{
         return row;
     }
 
-    @Override
-    public void start(Stage stage) throws Exception {
+
+
+
+        public Scene getcalenderScene(){
+
         VBox sidebar=new VBox(7);
         sidebar.setPrefWidth(260);
         sidebar.setMinWidth(260);
@@ -144,6 +149,14 @@ public class CalenderA extends Application{
 
             if(item.equals("Calendar"))
                 m.setStyle("-fx-background-color:#07539A;-fx-background-radius:5;");
+
+             m.setOnMouseClicked(e -> {
+
+        Stage stage =(Stage) m.getScene().getWindow();
+
+        NavigationManager.navigate(item, stage);
+    });
+
 
             menu.getChildren().add(m);
         }
@@ -224,6 +237,7 @@ public class CalenderA extends Application{
                 summary("Upcoming","18 Events","→",false),
                 summary("Conflicts","1 Detected","⚠",true)
         );
+        cards.setCursor(javafx.scene.Cursor.HAND);
 
         /* ================= CALENDAR TOOLBAR ================= */
 
@@ -351,12 +365,20 @@ public class CalenderA extends Application{
 
         /* ================= UPCOMING ================= */
 
-        HBox upcomingTitle=new HBox(
-                label("Upcoming Events",20,true),
-                new Region(),
-                label("View All",13,true)
-        );
-        HBox.setHgrow(upcomingTitle.getChildren().get(1),Priority.ALWAYS);
+        Label viewAll = label("View All", 13, true);
+
+        viewAll.setOnMouseClicked(e -> {
+                Stage stage = (Stage) viewAll.getScene().getWindow();
+                NavigationManager.navigate("Events", stage);
+        });
+
+        HBox upcomingTitle = new HBox(
+                        label("Upcoming Events", 20, true),
+                        new Region(),
+                        viewAll);
+
+        HBox.setHgrow(upcomingTitle.getChildren().get(1), Priority.ALWAYS);
+      
 
         VBox upcomingBox=new VBox(
                 16,
@@ -406,17 +428,16 @@ public class CalenderA extends Application{
         root.setCenter(center);
 
         Scene scene=new Scene(root,1550,750);
+        calenderScene = scene;
 
-        stage.setTitle("EventXpert - Calendar");
-        stage.setScene(scene);
-        stage.setWidth(1550);
-        stage.setHeight(750);
-        stage.setResizable(false);
-        stage.show();
+        return calenderScene;
     }
-
-
-        
+    
     }
     
 
+
+
+
+      
+  

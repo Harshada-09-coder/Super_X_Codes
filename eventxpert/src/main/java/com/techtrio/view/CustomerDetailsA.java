@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -19,7 +20,9 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 
-public class CustomerDetailsA extends Application {
+public class CustomerDetailsA  {
+
+    private Scene customerDetailsScene;
 final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC";
 
     Label label(String t,int s,boolean b){
@@ -235,11 +238,10 @@ final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC
 
         return v;
     }
+    
+  public Scene getcustomerDetailsScene (){
 
-    @Override
-    public void start(Stage stage){
-
-        BorderPane root=new BorderPane();
+     BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
 
         root.setLeft(sidebar());
@@ -248,6 +250,12 @@ final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC
         content.setPadding(new Insets(20,25,25,25));
 
         Button back=btn("←  Back to Customers");
+        back.setOnAction(e -> {
+
+            Stage stage = (Stage) back.getScene().getWindow();
+
+            NavigationManager.navigate("Customers", stage);
+        });
 
         Label title=label("Customer Details",34,true);
 
@@ -268,6 +276,7 @@ final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC
                 stat("Completed","1"),
                 stat("Cancelled","0")
         );
+        stats.setCursor(javafx.scene.Cursor.HAND);
 
         for(javafx.scene.Node n:stats.getChildren())
             HBox.setHgrow(n,Priority.ALWAYS);
@@ -296,11 +305,14 @@ final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC
         root.setCenter(scroll);
 
         Scene scene=new Scene(root,1550,750);
+        customerDetailsScene = scene;
+         return customerDetailsScene;
 
-        stage.setTitle("EventXpert - Customer Details");
-        stage.setScene(scene);
-        stage.setMinWidth(1200);
-        stage.setMinHeight(700);
-        stage.show();
+
+       
     }
 }
+
+   
+  
+       

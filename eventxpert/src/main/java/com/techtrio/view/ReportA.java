@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -28,18 +29,17 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class ReportA extends Application {
-
-    
+public class ReportA  {
+        private Scene reportScene;
 
 
     private final String NAVY = "#062B63";
     private final String BG = "#F6F8FB";
     private final String BORDER = "#D6DEE8";
-   
-    @Override
-    public void start(Stage stage) {
+    
+    public Scene getreportScene(){
 
+        
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
@@ -112,7 +112,7 @@ public class ReportA extends Application {
         month.setValue("This Month");
         month.setPrefWidth(130);
 
-        Button back = new Button(" Back to Dashboard");
+       /* Button back = new Button(" Back to Dashboard");
         back.setStyle(
                 "-fx-background-color:NAVY;" +
                 "-fx-border-color:" + NAVY + ";" +
@@ -121,6 +121,7 @@ public class ReportA extends Application {
                 "-fx-font-weight:bold;"+
                 "-fx-font-size:15;"
         );
+        */
         
 
         Button export = new Button("⇩  Export Report");
@@ -154,6 +155,8 @@ public class ReportA extends Application {
         /* ================= KPI CARDS ================= */
 
         HBox cards = new HBox(12);
+        cards.setCursor(javafx.scene.Cursor.HAND);
+
 
         cards.getChildren().addAll(
                 card("TOTAL EVENTS", "45", "All events"),
@@ -222,6 +225,8 @@ public class ReportA extends Application {
                 "Events by Type",
                 pie
         );
+        typeBox.setCursor(javafx.scene.Cursor.HAND);
+
 
         HBox charts = new HBox(18, eventBox, typeBox);
         HBox.setHgrow(eventBox, Priority.ALWAYS);
@@ -445,7 +450,7 @@ public class ReportA extends Application {
 
         main.getChildren().addAll(
 
-                back,
+            //    back,
                 heading,
                 cards,
                 charts,
@@ -461,42 +466,67 @@ public class ReportA extends Application {
         root.setCenter(scroll);
 
         Scene scene = new Scene(root, 1550, 750);
-
-        stage.setTitle("EventXpert - Reports & Analytics");
-        stage.setScene(scene);
-        stage.show();
+        reportScene = scene;
+        return reportScene;
     }
+
+        
 
     /* ================= SIDEBAR BUTTON ================= */
-
     private Button navButton(String text, boolean active) {
 
-        Button b = new Button(text);
-        b.setMaxWidth(Double.MAX_VALUE);
-        b.setAlignment(Pos.CENTER_LEFT);
-        b.setPadding(new Insets(10, 8, 10, 8));
-        b.setFont(Font.font(
-                "Arial",
-                active ? FontWeight.BOLD : FontWeight.NORMAL,
-                13
-        ));
+    Button b = new Button(text);
 
-        if (active) {
-            b.setStyle(
-                    "-fx-background-color:#BBDCF2;" +
-                    "-fx-text-fill:#062B63;" +
-                    "-fx-background-radius:7;"
-            );
-        } else {
-            b.setStyle(
-                    "-fx-background-color:transparent;" +
-                    "-fx-text-fill:white;"
-            );
-        }
+    b.setMaxWidth(Double.MAX_VALUE);
+    b.setAlignment(Pos.CENTER_LEFT);
+    b.setPadding(new Insets(10, 8, 10, 8));
 
-        return b;
+    b.setFont(Font.font(
+            "Arial",
+            active ? FontWeight.BOLD : FontWeight.NORMAL,
+            13
+    ));
+
+    if (active) {
+
+        b.setStyle(
+                "-fx-background-color:#BBDCF2;" +
+                "-fx-text-fill:#062B63;" +
+                "-fx-background-radius:7;"
+        );
+
+    } else {
+
+        b.setStyle(
+                "-fx-background-color:transparent;" +
+                "-fx-text-fill:white;"
+        );
     }
 
+    // Navigation
+    b.setOnAction(e -> {
+
+        Stage stage =
+                (Stage) b.getScene().getWindow();
+
+        String page = text
+                .replace("▦", "")
+                .replace("▣", "")
+                .replace("♙", "")
+                .replace("▱", "")
+                .replace("△", "")
+                .replace("🔔", "")
+                .replace("⚙", "")
+                .replace("👤", "")
+                .replace("?", "")
+                .trim();
+
+        NavigationManager.navigate(page, stage);
+    });
+
+    return b;
+}
+    
     /* ================= KPI CARD ================= */
 
     private VBox card(
@@ -638,3 +668,9 @@ public class ReportA extends Application {
     }
 
 }
+
+
+
+        
+    
+    

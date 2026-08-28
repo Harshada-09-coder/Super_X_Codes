@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -25,7 +26,10 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 
-public class ConflictDetectionA extends Application {
+public class ConflictDetectionA{
+    
+    private Scene conflictDetectionScene;
+
 
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC";
 
@@ -93,22 +97,50 @@ public class ConflictDetectionA extends Application {
                 l.setStyle("-fx-background-color:#1264A3;"+
                         "-fx-background-radius:6;-fx-font-weight:bold;");
 
+            l.setOnMouseClicked(e -> {
+    Stage stage = (Stage) l.getScene().getWindow();
+    NavigationManager.navigate(s, stage);
+});
+
             menu.getChildren().add(l);
         }
 
         Region gap=new Region();
         VBox.setVgrow(gap,Priority.ALWAYS);
 
-        Label n=new Label("🔔  Notifications");
-        Label set=new Label("⚙  Settings");
-        Label p=new Label("👤  Profile");
-        Label s=new Label("?  Support");
+        Label n=new Label(" Notifications");
+        Label set=new Label("  Settings");
+        Label p=new Label("  Profile");
+        Label s=new Label(" Support");
 
-        for(Label l:new Label[]{n,set,p,s}){
-            l.setTextFill(Color.WHITE);
-            l.setFont(Font.font("Arial",17));
-            l.setPadding(new Insets(7,14,7,14));
-        }
+    for(Label l:new Label[]{n,set,p,s}){
+
+    l.setTextFill(Color.WHITE);
+    l.setFont(Font.font("Arial",17));
+    l.setPadding(new Insets(7,14,7,14));
+}
+
+n.setOnMouseClicked(e -> {
+    Stage stage = (Stage) n.getScene().getWindow();
+    NavigationManager.navigate("Notifications", stage);
+});
+
+set.setOnMouseClicked(e -> {
+    Stage stage = (Stage) set.getScene().getWindow();
+    NavigationManager.navigate("Settings", stage);
+});
+
+p.setOnMouseClicked(e -> {
+    Stage stage = (Stage) p.getScene().getWindow();
+    NavigationManager.navigate("Profile", stage);
+});
+
+s.setOnMouseClicked(e -> {
+    Stage stage = (Stage) s.getScene().getWindow();
+    NavigationManager.navigate("Support", stage);
+});
+
+      
 
         side.getChildren().addAll(head,menu,gap,n,set,p,s);
         side.setCursor(javafx.scene.Cursor.HAND);
@@ -147,11 +179,13 @@ public class ConflictDetectionA extends Application {
             Button review=button("Review");
 
             {
-                review.setOnAction(e->{
-                    Conflict x=getTableView().getItems().get(getIndex());
-                    new Alert(Alert.AlertType.INFORMATION,
-                            "Conflict: "+x.getConflict()).showAndWait();
-                });
+                review.setOnAction(e -> {
+
+                    Stage stage = (Stage) review.getScene().getWindow();
+
+                    NavigationManager.navigate("Conflict Detection Review", stage);
+
+    });
             }
 
             @Override
@@ -210,10 +244,9 @@ public class ConflictDetectionA extends Application {
 
     /* ================= MAIN ================= */
 
-    @Override
-    public void start(Stage stage){
+   public Scene getconflictDetectionScene(){
 
-        BorderPane root=new BorderPane();
+     BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
         root.setLeft(sidebar());
 
@@ -234,6 +267,7 @@ public class ConflictDetectionA extends Application {
                 stat("PENDING RESOLUTION","6","Needs admin action"),
                 stat("RESOLVED","3","Successfully resolved")
         );
+        stats.setCursor(javafx.scene.Cursor.HAND);
 
         for(javafx.scene.Node n:stats.getChildren())
             HBox.setHgrow(n,Priority.ALWAYS);
@@ -316,10 +350,8 @@ public class ConflictDetectionA extends Application {
         root.setCenter(scroll);
 
         Scene scene=new Scene(root,1550,750);
-        stage.setTitle("EventXpert - Conflict Detection");
-        stage.setScene(scene);
-        stage.setResizable(false);
-        stage.show();
+        conflictDetectionScene = scene;
+        return conflictDetectionScene;
     }
 
     static class Conflict{
@@ -343,5 +375,8 @@ public class ConflictDetectionA extends Application {
 
    
 }
+
+   
+   
 
    

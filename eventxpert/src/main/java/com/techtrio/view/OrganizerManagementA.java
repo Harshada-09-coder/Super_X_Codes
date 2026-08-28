@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -24,7 +25,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-public class OrganizerManagementA extends Application {
+public class OrganizerManagementA  {
+
+    private Scene organizerScene;
+
 
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC";
 
@@ -87,6 +91,14 @@ public class OrganizerManagementA extends Application {
             if(x.equals("Organizers"))
                 l.setStyle("-fx-background-color:#1264A3;"+
                         "-fx-background-radius:6;-fx-font-weight:bold;");
+
+            l.setOnMouseClicked(e -> {
+
+        Stage stage =
+            (Stage) l.getScene().getWindow();
+
+        NavigationManager.navigate(x, stage);
+    });
 
             menu.getChildren().add(l);
         }
@@ -152,11 +164,15 @@ public class OrganizerManagementA extends Application {
         action.setCellFactory(c->new TableCell<>(){
             Button b=button("View");
             {
-                b.setOnAction(e->{
-                    Organizer o=getTableView().getItems().get(getIndex());
-                    new Alert(Alert.AlertType.INFORMATION,
-                            "Organizer: "+o.getName()).showAndWait();
+                 b.setOnAction(e -> {
+
+                    Stage stage = (Stage) b.getScene().getWindow();
+
+                    NavigationManager.navigate("Organizer Details", stage);
+
                 });
+               
+
             }
             @Override protected void updateItem(String s,boolean empty){
                 super.updateItem(s,empty);
@@ -185,10 +201,10 @@ public class OrganizerManagementA extends Application {
                 o.getLocation().toLowerCase().contains(q)));
     }
 
-    @Override
-    public void start(Stage stage){
 
-        BorderPane root=new BorderPane();
+    public Scene getorganizerScene(){
+
+         BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
 
         root.setLeft(sidebar());
@@ -217,6 +233,7 @@ public class OrganizerManagementA extends Application {
                 stat("New Organizers","8","This month"),
                 stat("Inactive Organizers","6","Need attention"));
             stats.setStyle("fx-font-size:18");
+        stats.setCursor(javafx.scene.Cursor.HAND);
 
         for(javafx.scene.Node n:stats.getChildren())
             HBox.setHgrow(n,Priority.ALWAYS);
@@ -274,12 +291,11 @@ public class OrganizerManagementA extends Application {
         root.setCenter(scroll);
 
         Scene scene=new Scene(root,1550,750);
-
-        stage.setTitle("EventXpert - Organizer Management");
-        stage.setScene(scene);
-        stage.setMinWidth(1200);
-        stage.setMinHeight(700);
-        stage.show();
+        organizerScene = scene;
+        
+        return organizerScene;
+    
+       
     }
 
     public static class Organizer{
@@ -307,3 +323,10 @@ public class OrganizerManagementA extends Application {
 
 
 }
+
+
+
+    
+
+
+       

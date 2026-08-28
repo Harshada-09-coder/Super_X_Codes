@@ -1,8 +1,6 @@
 package com.techtrio.view;
+import com.techtrio.controller.NavigationManager;
 
-
-
-import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -26,16 +24,15 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class EventRequestA extends Application {
+public class EventRequestA {
+    private Scene eventRequstScene;
 
    
     private final String PRIMARY = "#002A60";
 
     private final String LIGHT = "#C2E0F4";
-  
 
-    @Override
-    public void start(Stage stage) {
+    public Scene geteventRequestScene(){
 
         VBox sidebar=new VBox(12);
         sidebar.setPrefWidth(235);
@@ -66,6 +63,14 @@ public class EventRequestA extends Application {
 
             if(item.equals("Event Requests"))
                 l.setStyle("-fx-background-color:#084A8F;-fx-text-fill:white;-fx-background-radius:4;");
+             l.setOnMouseClicked(e -> {
+
+        Stage stage =
+            (Stage) l.getScene().getWindow();
+
+        NavigationManager.navigate(item, stage);
+    });
+           
 
             menu.getChildren().add(l);
         }
@@ -146,6 +151,7 @@ public class EventRequestA extends Application {
         headingBox.setPadding(new Insets(15,30,15,30));
 
         HBox cards=new HBox(25);
+        cards.setCursor(javafx.scene.Cursor.HAND);
         cards.setPadding(new Insets(5,30,20,30));
 
         cards.getChildren().addAll(
@@ -221,16 +227,25 @@ public class EventRequestA extends Application {
 
             {
                 review.setStyle(
-                        "-fx-background-color:#FFFFFF;"+
-                        "-fx-border-color:"+PRIMARY+";"+
-                        "-fx-text-fill:"+PRIMARY+";"+
-                        "-fx-border-radius:7;"
-                );
+                        "-fx-background-color:#FFFFFF;" +
+                                "-fx-border-color:" + PRIMARY + ";" +
+                                "-fx-text-fill:" + PRIMARY + ";" +
+                                "-fx-border-radius:7;");
 
-                review.setOnAction(e->{
-                    Event selected=getTableView().getItems().get(getIndex());
+                review.setOnAction(e -> {
+                    Event selected = getTableView().getItems().get(getIndex());
                     showReview(selected);
                 });
+
+                review.setOnAction(e -> {
+                    Stage stage = (Stage) review.getScene().getWindow();
+
+                    EventRequesReviewA reviewPage = new EventRequesReviewA();
+
+                    stage.setScene(reviewPage.geteventRequestReviewScene());
+                });
+
+
             }
 
             @Override
@@ -323,13 +338,11 @@ public class EventRequestA extends Application {
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
         Scene scene=new Scene(scroll,1550,750);
+        eventRequstScene = scene;
 
-        stage.setTitle("EventXpert - Event Requests");
-        stage.setScene(scene);
-        stage.setWidth(1550);
-        stage.setHeight(750);
-        stage.show();
+        return eventRequstScene;
     }
+
 
     private VBox card(String icon,String title,String value){
 
@@ -438,3 +451,10 @@ public class EventRequestA extends Application {
             
     }
 }
+
+
+      
+  
+
+   
+       

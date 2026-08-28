@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -16,11 +17,11 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class NotificationsA extends Application {
+public class NotificationsA  {
 
-    
+        private  Scene notificationsScene;
 
-   
+
     final String NAVY = "#062957";
     final String BG = "#F6F8FB";
 
@@ -30,10 +31,9 @@ public class NotificationsA extends Application {
     Label critical = new Label("2");
     Label today = new Label("4");
 
-    @Override
-    public void start(Stage stage) {
+   public Scene getnotificationsScene(){
 
-        /* ================= SIDEBAR ================= */
+          /* ================= SIDEBAR ================= */
 
         VBox side = new VBox(10);
         side.setPrefWidth(258);
@@ -76,18 +76,39 @@ public class NotificationsA extends Application {
                 "▣   Reports & Analytics"
         };
 
-        for (String text : menus) {
-            Label item = new Label(text);
-            item.setMaxWidth(Double.MAX_VALUE);
-            item.setPrefHeight(40);
-            item.setPadding(new Insets(10, 8, 10, 8));
-            item.setStyle(
-                    "-fx-text-fill:#AAB9CC;" +
-                    "-fx-font-size:14px;"
-            );
-            menu.getChildren().add(item);
-        }
+       for (String text : menus) {
 
+    Label item = new Label(text);
+
+    item.setMaxWidth(Double.MAX_VALUE);
+    item.setPrefHeight(40);
+    item.setPadding(new Insets(10, 8, 10, 8));
+
+    item.setStyle(
+            "-fx-text-fill:#AAB9CC;" +
+            "-fx-font-size:14px;"
+    );
+
+    item.setOnMouseClicked(e -> {
+
+        Stage stage =
+                (Stage) item.getScene().getWindow();
+
+        String page = text
+                .replace("▦", "")
+                .replace("◫", "")
+                .replace("▣", "")
+                .replace("▤", "")
+                .replace("♧", "")
+                .replace("♟", "")
+                .replace("⚠", "")
+                .trim();
+
+        NavigationManager.navigate(page, stage);
+    });
+
+    menu.getChildren().add(item);
+}
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
@@ -100,10 +121,44 @@ public class NotificationsA extends Application {
                 "-fx-background-radius:7;" +
                 "-fx-padding:10px 8px;"
         );
-
+       
         Label settings = sideItem("⚙   Settings");
         Label profile = sideItem("◉   Profile");
         Label support = sideItem("?   Support");
+        notification.setOnMouseClicked(e -> {
+
+    Stage stage =
+            (Stage) notification.getScene().getWindow();
+
+    NavigationManager.navigate("Notifications", stage);
+});
+
+
+settings.setOnMouseClicked(e -> {
+
+    Stage stage =
+            (Stage) settings.getScene().getWindow();
+
+    NavigationManager.navigate("Settings", stage);
+});
+
+
+profile.setOnMouseClicked(e -> {
+
+    Stage stage =
+            (Stage) profile.getScene().getWindow();
+
+    NavigationManager.navigate("Profile", stage);
+});
+
+
+support.setOnMouseClicked(e -> {
+
+    Stage stage =
+            (Stage) support.getScene().getWindow();
+
+    NavigationManager.navigate("Support", stage);
+});
 
         VBox bottom = new VBox(5,
                 notification,
@@ -315,10 +370,9 @@ public class NotificationsA extends Application {
         root.setCenter(main);
 
         Scene scene = new Scene(root, 1550, 750);
+        notificationsScene = scene;
+        return notificationsScene;
 
-        stage.setTitle("EventXpert - Notifications");
-        stage.setScene(scene);
-        stage.show();
     }
 
     /* ================= SUMMARY CARD ================= */
@@ -499,6 +553,8 @@ public class NotificationsA extends Application {
             });
 
             notificationBox.getChildren().add(review);
+            notificationBox.setCursor(javafx.scene.Cursor.HAND);
+
         }
 
         notificationList.getChildren().add(notificationBox);
@@ -550,3 +606,9 @@ public class NotificationsA extends Application {
     }
 
 }
+
+
+      
+   
+
+      

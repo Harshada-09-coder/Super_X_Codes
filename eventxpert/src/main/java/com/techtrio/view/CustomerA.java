@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -24,12 +25,14 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-public class CustomerA extends Application {
+public class CustomerA  {
+
+    private Scene customerScene;
 
 
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6", LIGHT="#C2E0F4", BG="#F6F9FC";
     final String WHITE="#FFFFFF";
-    
+
     
     TableView<CustomerData> table=new TableView<>();
     ObservableList<CustomerData> data=FXCollections.observableArrayList();
@@ -37,9 +40,9 @@ public class CustomerA extends Application {
     TextField search=new TextField();
     ComboBox<String> status=new ComboBox<>(), activity=new ComboBox<>(), date=new ComboBox<>();
 
-    @Override
-    public void start(Stage stage) {
+    public Scene getcustomerScene(){
 
+        
         BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
 
@@ -66,8 +69,17 @@ public class CustomerA extends Application {
             m.setTextFill(Color.WHITE);
             m.setMaxWidth(Double.MAX_VALUE);
             m.setPadding(new Insets(9,13,9,13));
-            if(s.equals("Event Requests"))
-                m.setStyle("-fx-background-color:#07539A;-fx-background-radius:5;");
+            if(s.equals("Customer"))
+                m.setStyle( "-fx-background-color:#084A8F;" + "-fx-text-fill:white;" + "-fx-background-radius:4;");
+
+                                           
+            m.setOnMouseClicked(e -> {
+
+    Stage stage =
+        (Stage) m.getScene().getWindow();
+
+    NavigationManager.navigate(s, stage);
+});
             menu.getChildren().add(m);
         }
 
@@ -109,7 +121,7 @@ public class CustomerA extends Application {
         Label title=lbl("Customer Management",30,true);
         title.setTextFill(Color.web(PRIMARY));
 
-        Label sub=lbl("Manage and monitor all registered customers on EventXpert.",15,false);
+        Label sub=lbl(" Manage and monitor all registered customers on EventXpert.",15,false);
         VBox heading=new VBox(3,title,sub);
 
         // CARDS
@@ -118,6 +130,7 @@ public class CustomerA extends Application {
                 card("Active Customers","1,120","Currently active"),
                 card("New Customers","48","This month"),
                 card("Inactive Customers","128","Need attention"));
+         cards.setCursor(javafx.scene.Cursor.HAND);
 
         // FILTERS
         search.setPromptText("Search customers...");
@@ -203,9 +216,9 @@ public class CustomerA extends Application {
         root.setCenter(center);
 
         Scene scene=new Scene(root,1550,750);
-        stage.setTitle("EventXpert - Customer Management");
-        stage.setScene(scene);
-        stage.show();
+        customerScene = scene;
+        return customerScene;
+        
     }
 
     void createTable(){
@@ -229,9 +242,10 @@ public class CustomerA extends Application {
 
             {
                 view.setPrefWidth(60);
-                view.setOnAction(e->{
-                    // Navigation later
-                });
+                view.setOnAction(e -> {
+                    Stage stage = (Stage) view.getScene().getWindow();
+                    NavigationManager.navigate("Customer Details", stage);
+});
             }
 
             @Override
@@ -313,3 +327,10 @@ public class CustomerA extends Application {
         public String getStatus(){return status;}
     }
 }
+
+
+
+       
+    
+
+  

@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -24,11 +25,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-public class VendorManagementA extends Application {
+public class VendorManagementA {
+        private Scene vendorScene;
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC";
-     
 
-    TableView<Vendor> table;
+      TableView<Vendor> table;
     TextField search;
 
     Label label(String text,int size,boolean bold){
@@ -88,6 +89,14 @@ public class VendorManagementA extends Application {
             if(x.equals("Vendors"))
                 l.setStyle("-fx-background-color:#1264A3;"+
                         "-fx-background-radius:6;-fx-font-weight:bold;");
+
+             l.setOnMouseClicked(e -> {
+
+        Stage stage =
+            (Stage) l.getScene().getWindow();
+
+        NavigationManager.navigate(x, stage);
+    });
 
             menu.getChildren().add(l);
         }
@@ -169,11 +178,12 @@ public class VendorManagementA extends Application {
             Button b=button("View");
 
             {
-                b.setOnAction(e->{
-                    Vendor v=getTableView().getItems().get(getIndex());
-                    new Alert(Alert.AlertType.INFORMATION,
-                            "Vendor: "+v.getName()).showAndWait();
-                });
+                        b.setOnAction(e -> {
+
+                                Stage stage = (Stage) b.getScene().getWindow();
+
+                                NavigationManager.navigate("Vendor Details", stage);
+                        });
             }
 
             @Override
@@ -213,8 +223,11 @@ public class VendorManagementA extends Application {
                 v.getLocation().toLowerCase().contains(q)));
     }
 
-    @Override
-    public void start(Stage stage){
+
+
+
+
+    public Scene getvendorScene(){
 
         BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
@@ -238,6 +251,7 @@ public class VendorManagementA extends Application {
                 stat("New Vendors","12","This month"),
                 stat("Inactive Vendors","16","Need attention")
         );
+        stats.setCursor(javafx.scene.Cursor.HAND);
 
         stats.setStyle("-fx-font-size:18px;");
 
@@ -312,12 +326,10 @@ public class VendorManagementA extends Application {
         root.setCenter(scroll);
 
         Scene scene=new Scene(root,1550,750);
+        vendorScene = scene;
+        return vendorScene;
 
-        stage.setTitle("EventXpert - Vendor Management");
-        stage.setScene(scene);
-        stage.setMinWidth(1200);
-        stage.setMinHeight(700);
-        stage.show();
+      
     }
 
     public static class Vendor{
@@ -349,3 +361,16 @@ public class VendorManagementA extends Application {
         String getStatus(){return status;}
     }
 }
+
+
+       
+    
+
+    
+     
+
+  
+
+   
+
+        

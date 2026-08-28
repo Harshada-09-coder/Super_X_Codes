@@ -1,5 +1,7 @@
 package com.techtrio.view;
 
+import com.techtrio.controller.NavigationManager;
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -21,7 +23,11 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class OrganizerAssignA extends Application  {
+public class OrganizerAssignA {
+
+        private Scene organizerAssignScene;
+
+
     final String P="#002A60", S="#8CAFC6", L="#C2E0F4";
 
     Label lbl(String t,int s,boolean b){
@@ -79,6 +85,11 @@ public class OrganizerAssignA extends Application  {
             selected.setText("✓  SELECTED ORGANIZER\n"+name);
             current[0]=name;
         });
+        details.setOnAction(e -> {
+                Stage stage = (Stage) details.getScene().getWindow();
+
+                NavigationManager.navigate("Organizer Details", stage);
+        });
 
         HBox buttons=new HBox(8,details,select);
         details.setMaxWidth(Double.MAX_VALUE);select.setMaxWidth(Double.MAX_VALUE);
@@ -103,8 +114,7 @@ public class OrganizerAssignA extends Application  {
         return card;
     }
 
-    @Override
-    public void start(Stage stage) throws Exception {
+    public Scene getorganizerAssignScene(){
 
         VBox sidebar=new VBox(7);
         sidebar.setPrefWidth(260);
@@ -185,14 +195,19 @@ public class OrganizerAssignA extends Application  {
         Button back=btn("←  Back to Review",false);
         back.setPrefWidth(145);
 
+        back.setOnAction(e -> {
+                Stage stage = (Stage) back.getScene().getWindow();
+
+                NavigationManager.navigate("Event Request Review", stage);
+        });
+
         Region ts=new Region();
         HBox.setHgrow(ts,Priority.ALWAYS);
 
         HBox titleRow=new HBox(titleBox,ts,back);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        back.setOnAction(e->alert("Navigation","Back to Review",
-                "Returning to Review Event Request."));
+        
 
        
 
@@ -263,15 +278,29 @@ public class OrganizerAssignA extends Application  {
 
         Button confirmBtn=btn("Confirm Assignment  ✓",true);
         Button changeBtn=btn("Change Organizer",false);
+        confirmBtn.setOnAction(e -> {
 
-        confirmBtn.setOnAction(e->{
-            status.setText("Assignment Confirmed");
-            status.setStyle("-fx-background-color:#DDF5EA;-fx-text-fill:#087A4B;"
-                    +"-fx-background-radius:15;");
-            alert("Success","Organizer Assigned Successfully",
-                    "Organizer: "+current[0]+
-                    "\nEvent: Corporate Seminar"+
-                    "\nAssignment confirmed successfully.");
+                status.setText("Assignment Confirmed");
+
+                status.setStyle(
+                                "-fx-background-color:#DDF5EA;" +
+                                                "-fx-text-fill:#087A4B;" +
+                                                "-fx-background-radius:15;");
+
+                Alert a = new Alert(Alert.AlertType.INFORMATION);
+
+                a.setTitle("Success");
+                a.setHeaderText("Organizer Assigned Successfully");
+                a.setContentText(
+                                "Organizer: " + current[0] +
+                                                "\nEvent: Corporate Seminar" +
+                                                "\nAssignment confirmed successfully.");
+
+                a.showAndWait();
+
+                Stage stage = (Stage) confirmBtn.getScene().getWindow();
+
+                NavigationManager.navigate("Event Requests", stage);
         });
 
         changeBtn.setOnAction(e->{
@@ -310,11 +339,8 @@ public class OrganizerAssignA extends Application  {
         /* ================= STAGE ================= */
 
         Scene scene=new Scene(root,1550,750);
-        stage.setTitle("EventXpert - Organizer Assignment");
-        stage.setScene(scene);
-        stage.setWidth(1550);
-        stage.setHeight(750);
-        stage.show();
+        organizerAssignScene = scene;
+        return organizerAssignScene;
     }
 
     void alert(String t,String h,String c){
@@ -330,3 +356,5 @@ public class OrganizerAssignA extends Application  {
 
 
    
+
+      
