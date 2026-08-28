@@ -2,7 +2,9 @@ package com.techtrio.services;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -79,5 +81,89 @@ public class EventService {
         }
 
         return events;
+    }
+
+    public List<Event> getAllEvents() {
+        List<Event> events = new ArrayList<>();
+        try {
+            Firestore db = getDb();
+            if (db == null) return events;
+
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME).get();
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+            for (DocumentSnapshot doc : documents) {
+                Event event = doc.toObject(Event.class);
+                if (event != null) {
+                    events.add(event);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching all events: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return events;
+    }
+
+    public Event getEventById(String eventId) {
+        if (eventId == null || eventId.isBlank()) return null;
+        try {
+            Firestore db = getDb();
+            if (db == null) return null;
+
+            ApiFuture<DocumentSnapshot> future = db.collection(COLLECTION_NAME).document(eventId.trim()).get();
+            DocumentSnapshot doc = future.get();
+            if (doc.exists()) {
+                return doc.toObject(Event.class);
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching event by ID " + eventId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean assignOrganizerToEvent(String eventId, String organizerId, String organizerName) {
+        if (eventId == null || eventId.isBlank()) return false;
+        try {
+            Firestore db = getDb();
+            if (db == null) return false;
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("organizerId", organizerId);
+            updates.put("organizerName", organizerName);
+            updates.put("status", "ASSIGNED");
+            updates.put("updatedAt", Instant.now().toString());
+
+            ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME).document(eventId.trim()).update(updates);
+            future.get();
+            System.out.println("Organizer assigned to event " + eventId + " successfully!");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error assigning organizer to event " + eventId + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateEventStatus(String eventId, String status) {
+        if (eventId == null || eventId.isBlank()) return false;
+        try {
+            Firestore db = getDb();
+            if (db == null) return false;
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("status", status);
+            updates.put("updatedAt", Instant.now().toString());
+
+            ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME).document(eventId.trim()).update(updates);
+            future.get();
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error updating event status: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }
