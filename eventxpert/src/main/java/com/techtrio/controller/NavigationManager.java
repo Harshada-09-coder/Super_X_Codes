@@ -1,8 +1,5 @@
 package com.techtrio.controller;
-
-import javafx.scene.Scene;
 import javafx.stage.Stage;
-
 import com.techtrio.view.AdminDashboardA;
 import com.techtrio.view.EventRequestA;
 import com.techtrio.view.EventsA;
@@ -25,6 +22,16 @@ import com.techtrio.view.EventDetailsA;
 import com.techtrio.view.EventRequesReviewA;
 
 public class NavigationManager {
+
+    private static String currentAdminId;
+
+    public static void setCurrentAdminId(String adminId) {
+        currentAdminId = adminId;
+    }
+
+    public static String getCurrentAdminId() {
+        return currentAdminId;
+    }
 
     public static void navigate(String page, Stage stage) {
 
@@ -121,8 +128,7 @@ public class NavigationManager {
                 break;
 
             case "Profile":
-                stage.setScene(
-                    new ProfileA().getprofileScene());
+                stage.setScene(new ProfileA(currentAdminId).getprofileScene());
                 break;
 
             case "Support":
