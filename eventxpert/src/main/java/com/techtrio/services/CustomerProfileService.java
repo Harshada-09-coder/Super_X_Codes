@@ -74,4 +74,29 @@ public class CustomerProfileService {
             return false;
         }
     }
+
+    public boolean updateCustomerProfileFields(String customerId, Map<String, Object> updates) {
+        if (customerId == null || customerId.isBlank() || updates == null || updates.isEmpty()) {
+            System.err.println("Cannot update profile: customerId or updates map is null/empty.");
+            return false;
+        }
+
+        try {
+            Firestore db = getDb();
+            if (db == null) return false;
+
+            ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME)
+                    .document(customerId.trim())
+                    .update(updates);
+
+            future.get();
+            System.out.println("Customer profile updated successfully in Firestore for UID: " + customerId);
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error updating Customer Profile in Firestore for UID " + customerId + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

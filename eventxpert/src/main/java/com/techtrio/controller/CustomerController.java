@@ -1,6 +1,7 @@
 package com.techtrio.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
@@ -41,5 +42,13 @@ public class CustomerController {
 
     public List<Event> getEventsByCustomerId(String customerId) {
         return eventService.getEventsByCustomerId(customerId);
+    }
+
+    public CustomerProfile getCustomerProfile(String customerId) {
+        return customerProfileService.getCustomerProfile(customerId);
+    }
+
+    public boolean updateCustomerProfileFields(String uid, Map<String, Object> updates) {
+        return customerProfileService.updateCustomerProfileFields(uid, updates);
     }
 }
