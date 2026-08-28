@@ -2,7 +2,6 @@ package com.techtrio.view;
 
 import com.techtrio.controller.NavigationManager;
 
-import javafx.application.Application;
 import javafx.geometry.*;
 import javafx.scene.Node;
 import javafx.scene.Scene;

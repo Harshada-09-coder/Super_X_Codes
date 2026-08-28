@@ -2,7 +2,6 @@ package com.techtrio.view;
 
 import com.techtrio.controller.NavigationManager;
 
-import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
