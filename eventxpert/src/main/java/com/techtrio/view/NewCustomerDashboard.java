@@ -23,7 +23,6 @@ public class NewCustomerDashboard {
     private final String LIGHT = "#F5F8FC";
     private final String TEXT = "#082E6B";
     private final String GRAY = "#526071";
-    private Scene dashboardScene;
 
     public NewCustomerDashboard() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -65,124 +64,33 @@ public class NewCustomerDashboard {
 
         sidebar.getChildren().add(brand);
 
+        HBox dashNav = navItem("▦", "Dashboard", true, () -> {});
+        HBox createEventNav = navItem("⊕", "Create Event", false, this::openCreateEvent);
+        HBox myEventsNav = navItem("□", "My Events", false, this::openCreateEvent);
+        HBox calendarNav = navItem("□", "Calendar", false, () -> {});
+        HBox notificationsNav = navItem("♧", "Notifications", false, () -> {});
+
         sidebar.getChildren().addAll(
-                navItem("▦", "Dashboard", true),
-                navItem("⊕", "Create Event", false, this::openCreateEvent),
-                navItem("□", "My Events", false),
-                navItem("□", "Calendar", false),
-                navItem("♧", "Notifications", false)
+                dashNav,
+                createEventNav,
+                myEventsNav,
+                calendarNav,
+                notificationsNav
         );
-HBox createEventNav = navItem("⊕", "Create Event", false);
-
-createEventNav.setOnMouseClicked(e -> {
-
-    NoEventC noEventPage = new NoEventC();
-
-    LandingPage.landingPageStage.setScene(
-            noEventPage.getNoEventScene(
-
-                    // BACK → NEW CUSTOMER DASHBOARD
-                    () -> {
-
-                        NewCustomerDashboard dashboardPage =
-                                new NewCustomerDashboard();
-
-                        LandingPage.landingPageStage.setScene(
-                                dashboardPage.getnewCustomerScene(null)
-                        );
-
-                    }
-            )
-    );
-});
-
-HBox notificationsNav = navItem("♧", "Notifications", false); 
-
-    
-   notificationsNav.setOnMouseClicked(e -> {
-
-    Notification notificationPage =
-            new Notification();
-
-    LandingPage.landingPageStage.setScene(
-            notificationPage.getNotificationScene()
-    );
-}); 
-
-  
-
-
-sidebar.getChildren().addAll(
-        navItem("▦", "Dashboard", true),
-        createEventNav,
-        notificationsNav
-);
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
 
+        HBox profileNav = navItem("♙", "Profile", false, () -> {});
+        HBox settingsNav = navItem("⚙", "Settings", false, () -> {});
+        HBox supportNav = navItem("?", "Support", false, () -> {});
 
-        HBox profileNav = navItem(
-        "♙",
-        "Profile",
-        false
-);
-
-profileNav.setOnMouseClicked(e -> {
-
-    ProfilePageC profilePage =
-            new ProfilePageC();
-
-    LandingPage.landingPageStage.setScene(
-            profilePage.getProfileScene(
-
-                    // BACK → NEW CUSTOMER DASHBOARD
-                    () -> {
-
-                        NewCustomerDashboard dashboardPage =
-                                new NewCustomerDashboard();
-
-                        LandingPage.landingPageStage.setScene(
-                                dashboardPage.getnewCustomerScene(
-                                        null
-                                )
-                        );
-
-                    }
-            )
-    );
-});
-         HBox settingsNav = navItem(
-        "⚙",
-        "Settings",
-        false
-);
-
-settingsNav.setOnMouseClicked(e -> {
-
-    SettingC settingPage = new SettingC();
-
-    LandingPage.landingPageStage.setScene(
-            settingPage.getSettingScene(
-                    // BACK → NEW CUSTOMER DASHBOARD
-                    () -> {
-                        NewCustomerDashboard dashboardPage =
-                                new NewCustomerDashboard();
-
-                        LandingPage.landingPageStage.setScene(
-                                dashboardPage.getnewCustomerScene(null)
-                        );
-                    }
-            )
-    );
-});
-
-sidebar.getChildren().addAll(
-        sideSpace,
-        profileNav,
-        settingsNav,
-        navItem("?", "Support", false)
-);
+        sidebar.getChildren().addAll(
+                sideSpace,
+                profileNav,
+                settingsNav,
+                supportNav
+        );
 
         HBox topBar = new HBox(18);
         topBar.setAlignment(Pos.CENTER_RIGHT);
@@ -227,7 +135,6 @@ sidebar.getChildren().addAll(
         );
         createTop.setOnAction(e -> openCreateEvent());
 
-
         Circle topProfile = new Circle(20);
         topProfile.setFill(Color.web("#D7EAF8"));
 
@@ -237,7 +144,7 @@ sidebar.getChildren().addAll(
 
         StackPane topUser = new StackPane(topProfile, topInitial);
 
-        topBar.getChildren().addAll(topSpace, search, notification,  topUser);
+        topBar.getChildren().addAll(topSpace, search, notification, createTop, topUser);
 
         VBox content = new VBox(18);
         content.setPadding(new Insets(22, 32, 35, 32));
@@ -274,26 +181,8 @@ sidebar.getChildren().addAll(
         firstButton.setStyle(buttonStyle());
         firstButton.setOnAction(e -> openCreateEvent());
 
+        // Added EXACTLY ONCE to prevent JavaFX duplicate children error
         firstEvent.getChildren().addAll(firstTitle, firstDescription, firstButton);
-      firstButton.setOnAction(e -> {
-
-    NoEventC noEventPage = new NoEventC();
-
-    LandingPage.landingPageStage.setScene(
-        noEventPage.getNoEventScene(
-            () -> LandingPage.landingPageStage.setScene(
-                getnewCustomerScene(null)
-            )
-        )
-    );
-
-});
-
-        firstEvent.getChildren().addAll(
-                firstTitle,
-                firstDescription,
-                firstButton
-        );
 
         VBox aiCard = new VBox(12);
         aiCard.setPadding(new Insets(20));
