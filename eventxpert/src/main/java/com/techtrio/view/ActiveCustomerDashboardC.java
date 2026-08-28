@@ -348,7 +348,6 @@ public class ActiveCustomerDashboardC {
             @Override
             protected List<Event> call() {
                 CustomerController controller = new CustomerController();
-                // Load Profile for name
                 CustomerProfile profile = controller.getCustomerProfile(uid);
                 if (profile != null) {
                     Platform.runLater(() -> {

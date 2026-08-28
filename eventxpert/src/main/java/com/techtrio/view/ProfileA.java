@@ -3,6 +3,7 @@ package com.techtrio.view;
 import com.techtrio.controller.NavigationManager;
 import com.techtrio.controller.SignInResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.UserRecord;
 import com.techtrio.controller.AdminController;
 import com.techtrio.controller.AuthController;
 import com.techtrio.model.AdminProfile;
@@ -1245,10 +1246,22 @@ private void performPasswordChange(
      * Current password correct.
      * Now update password.
      */
-    boolean changed =
-            authController.changePassword(loginResult.getIdToken(),
-                    newPassword
-            );
+    boolean changed = false;
+
+    try {
+        String uid = FirebaseAuth.getInstance()
+                .verifyIdToken(loginResult.getIdToken())
+                .getUid();
+
+        FirebaseAuth.getInstance().updateUser(
+                new UserRecord.UpdateRequest(uid)
+                        .setPassword(newPassword)
+        );
+
+        changed = true;
+    } catch (Exception exception) {
+        changed = false;
+    }
 
     if (changed) {
 

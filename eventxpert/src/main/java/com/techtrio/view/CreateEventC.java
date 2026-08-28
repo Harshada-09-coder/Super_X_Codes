@@ -1,5 +1,7 @@
 package com.techtrio.view;
 
+import com.techtrio.controller.CustomerController;
+import com.techtrio.controller.CustomerState;
 import com.techtrio.session.UserSession;
 
 import javafx.geometry.Insets;
@@ -177,8 +179,15 @@ public class CreateEventC {
             if (backAction != null) {
                 backAction.run();
             } else {
-                NewCustomerDashboard dash = new NewCustomerDashboard(uid, idToken);
-                LandingPage.landingPageStage.setScene(dash.getnewCustomerScene(null));
+                CustomerController controller = new CustomerController();
+                CustomerState state = controller.getCustomerState(uid, idToken);
+                if (state != null && state.hasCreatedEvent()) {
+                    ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(uid, idToken);
+                    LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
+                } else {
+                    NewCustomerDashboard dash = new NewCustomerDashboard(uid, idToken);
+                    LandingPage.landingPageStage.setScene(dash.getnewCustomerScene(null));
+                }
             }
         });
 

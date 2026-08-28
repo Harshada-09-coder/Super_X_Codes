@@ -1,11 +1,15 @@
 package com.techtrio.services;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.techtrio.firebase.FirebaseConfig;
 import com.techtrio.model.CustomerProfile;
@@ -47,6 +51,30 @@ public class CustomerProfileService {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public List<CustomerProfile> getAllCustomerProfiles() {
+        List<CustomerProfile> list = new ArrayList<>();
+        try {
+            Firestore db = getDb();
+            if (db == null) return list;
+
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME).get();
+            List<QueryDocumentSnapshot> docs = future.get().getDocuments();
+            for (DocumentSnapshot doc : docs) {
+                CustomerProfile profile = doc.toObject(CustomerProfile.class);
+                if (profile != null) {
+                    if (profile.getCustomerId() == null || profile.getCustomerId().isBlank()) {
+                        profile.setCustomerId(doc.getId());
+                    }
+                    list.add(profile);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching all customer profiles: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return list;
     }
 
     public boolean markCustomerAsExisting(String customerId) {
