@@ -1,5 +1,6 @@
 package com.techtrio.controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,45 +11,82 @@ import com.techtrio.services.EventService;
 
 public class CustomerController {
 
-    private final CustomerProfileService customerProfileService = new CustomerProfileService();
+    private final CustomerProfileService customerService = new CustomerProfileService();
     private final EventService eventService = new EventService();
 
+    // ==========================================
+    // CUSTOMER STATE & ONBOARDING
+    // ==========================================
+
     public CustomerState getCustomerState(String uid, String idToken) {
-        if (uid == null || uid.isBlank()) return null;
+        if (uid == null || uid.isBlank()) return new CustomerState(false, "NEW");
 
-        // Check if customer profile has created event
-        CustomerProfile profile = customerProfileService.getCustomerProfile(uid);
-        if (profile != null && profile.isHasCreatedEvent()) {
-            return new CustomerState(true, "EXISTING");
-        }
+        List<Event> customerEvents = eventService.getEventsByCustomerId(uid);
+        boolean hasEvents = customerEvents != null && !customerEvents.isEmpty();
 
-        // Double-check if any event document exists in 'events' collection
-        List<Event> events = eventService.getEventsByCustomerId(uid);
-        if (!events.isEmpty()) {
-            customerProfileService.markCustomerAsExisting(uid);
-            return new CustomerState(true, "EXISTING");
-        }
+        CustomerProfile profile = customerService.getCustomerProfile(uid);
+        String status = (profile != null && profile.getOnboardingStatus() != null)
+                ? profile.getOnboardingStatus()
+                : (hasEvents ? "EXISTING" : "NEW");
 
-        return new CustomerState(false, "NEW");
+        return new CustomerState(hasEvents, status);
     }
+
+    public boolean markCustomerAsExisting(String customerId) {
+        if (customerId == null || customerId.isBlank()) return false;
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("profileCompleted", true);
+        updates.put("onboardingStatus", "EXISTING");
+
+        return customerService.updateCustomerProfileFields(customerId, updates);
+    }
+
+    // ==========================================
+    // CUSTOMER PROFILE OPERATIONS
+    // ==========================================
+
+    public boolean createCustomerProfile(CustomerProfile profile) {
+        return customerService.saveCustomerProfile(profile);
+    }
+
+    public CustomerProfile getCustomerProfile(String customerId) {
+        return customerService.getCustomerProfile(customerId);
+    }
+
+    public List<CustomerProfile> getAllCustomerProfiles() {
+        return customerService.getAllCustomerProfiles();
+    }
+
+    public boolean updateCustomerProfileFields(String customerId, Map<String, Object> updates) {
+        return customerService.updateCustomerProfileFields(customerId, updates);
+    }
+
+    // ==========================================
+    // CUSTOMER EVENT OPERATIONS (Firestore "events")
+    // ==========================================
 
     public boolean createEvent(Event event) {
         return eventService.createEvent(event);
     }
 
-    public boolean markCustomerAsExisting(String customerId) {
-        return customerProfileService.markCustomerAsExisting(customerId);
+    public boolean saveEvent(Event event) {
+        return eventService.createEvent(event);
+    }
+
+    public Event getEventById(String eventId) {
+        return eventService.getEventById(eventId);
     }
 
     public List<Event> getEventsByCustomerId(String customerId) {
         return eventService.getEventsByCustomerId(customerId);
     }
 
-    public CustomerProfile getCustomerProfile(String customerId) {
-        return customerProfileService.getCustomerProfile(customerId);
+    public List<Event> getAllEvents() {
+        return eventService.getAllEvents();
     }
 
-    public boolean updateCustomerProfileFields(String uid, Map<String, Object> updates) {
-        return customerProfileService.updateCustomerProfileFields(uid, updates);
+    public boolean updateEventStatus(String eventId, String status) {
+        return eventService.updateEventStatus(eventId, status);
     }
 }

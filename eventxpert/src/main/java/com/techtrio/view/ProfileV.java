@@ -182,14 +182,8 @@ public class ProfileV {
     }
 
     private void navigateBackToDashboard() {
-        if (vendorDashboard != null) {
-            vendorDashboard.backToVendorDashboard();
-        } else if (inactVendorDashboard != null) {
-            inactVendorDashboard.backToInactVendorDashboard();
-        } else if (vendorId != null && !vendorId.isBlank()) {
-            InactiveVendorDash dash = new InactiveVendorDash(vendorId, idToken);
-            LandingPage.landingPageStage.setScene(dash.getinactiveVendorScene());
-        }
+        VendorDashboardV vendorDashboardV = new VendorDashboardV(vendorId, idToken);
+        LandingPage.landingPageStage.setScene(vendorDashboardV.getvendorDashboardScene());
     }
 
     private Label createSidebarCategory(String title) {
@@ -266,7 +260,7 @@ public class ProfileV {
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Button previewBtn = createSecondaryButton("👁 Preview Profile");
-        Button editBtn = createPrimaryButton("Edit Profile");
+        Button editBtn = createPrimaryButton("Edit & Activate Profile");
         editBtn.setOnAction(e -> openEditProfileModal(stage));
 
         titleRow.getChildren().addAll(title, spacer, previewBtn, editBtn);
@@ -565,13 +559,13 @@ public class ProfileV {
         Stage modal = new Stage();
         modal.initModality(Modality.APPLICATION_MODAL);
         modal.initOwner(parentStage);
-        modal.setTitle("Edit Vendor Profile");
+        modal.setTitle("Edit Vendor Profile & Activate Account");
 
         VBox layout = new VBox(12);
         layout.setPadding(new Insets(20));
         layout.setStyle("-fx-background-color: " + WHITE + ";");
 
-        Label title = new Label("✏ Edit Business Profile");
+        Label title = new Label("✏ Edit & Activate Vendor Profile");
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + SIDEBAR_NAVY + ";");
 
         String currentBusName = busNameLabel != null ? busNameLabel.getText() : "";
@@ -597,7 +591,7 @@ public class ProfileV {
         errorLabel.setVisible(false);
         errorLabel.setManaged(false);
 
-        Button saveBtn = createPrimaryButton("Save Changes");
+        Button saveBtn = createPrimaryButton("Save & Activate Account");
 
         saveBtn.setOnAction(e -> {
             String newBusName = nameIn.getText().trim();
@@ -605,7 +599,6 @@ public class ProfileV {
             String newEmail = emailIn.getText().trim();
             String newBio = bioIn.getText().trim();
 
-            // Validation
             if (newBusName.isEmpty()) {
                 showModalError(errorLabel, "Business name cannot be empty.");
                 return;
@@ -614,21 +607,22 @@ public class ProfileV {
                 showModalError(errorLabel, "Phone number cannot be empty.");
                 return;
             }
-            if (newEmail.isEmpty() || !newEmail.contains("@") || !newEmail.contains(".")) {
-                showModalError(errorLabel, "Please enter a valid email address.");
-                return;
-            }
 
             errorLabel.setVisible(false);
             errorLabel.setManaged(false);
             saveBtn.setDisable(true);
-            saveBtn.setText("Saving...");
+            saveBtn.setText("Saving & Activating...");
 
+            // FIRESTORE ACTIVATION MAP - SETS STATUS TO ACTIVE & PROVIED SERVICE
             Map<String, Object> updates = new HashMap<>();
             updates.put("businessName", newBusName);
             updates.put("phone", newPhone);
             updates.put("email", newEmail);
             updates.put("bio", newBio);
+            updates.put("profileCompleted", true);
+            updates.put("hasProvidedService", true);
+            updates.put("onboardingStatus", "ACTIVE");
+            updates.put("currentProcess", "NONE");
 
             Task<Boolean> updateTask = new Task<>() {
                 @Override
@@ -641,10 +635,9 @@ public class ProfileV {
             updateTask.setOnSucceeded(evt -> {
                 boolean success = updateTask.getValue();
                 saveBtn.setDisable(false);
-                saveBtn.setText("Save Changes");
+                saveBtn.setText("Save & Activate Account");
 
                 if (success) {
-                    // Update JavaFX UI Controls
                     Platform.runLater(() -> {
                         if (busNameLabel != null) busNameLabel.setText(newBusName);
                         if (busPhoneLabel != null) busPhoneLabel.setText("📞 " + newPhone);
@@ -653,8 +646,12 @@ public class ProfileV {
                         if (businessNameInfoLabel != null) businessNameInfoLabel.setText(newBusName);
                     });
 
-                    showToast(parentStage, "Profile updated successfully!");
+                    showToast(parentStage, "✓ Vendor account activated successfully!");
                     modal.close();
+
+                    // Navigate to Active Vendor Dashboard
+                    VendorDashboardV activeDash = new VendorDashboardV(vendorId, idToken);
+                    LandingPage.landingPageStage.setScene(activeDash.getvendorDashboardScene());
                 } else {
                     showModalError(errorLabel, "Unable to update vendor profile. Please try again.");
                 }
@@ -664,7 +661,7 @@ public class ProfileV {
                 Throwable ex = updateTask.getException();
                 if (ex != null) ex.printStackTrace();
                 saveBtn.setDisable(false);
-                saveBtn.setText("Save Changes");
+                saveBtn.setText("Save & Activate Account");
                 showModalError(errorLabel, "Unable to update vendor profile. Please try again.");
             });
 

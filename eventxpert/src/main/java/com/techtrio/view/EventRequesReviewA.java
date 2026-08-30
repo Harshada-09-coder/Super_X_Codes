@@ -1,10 +1,13 @@
 package com.techtrio.view;
 
+import java.util.List;
+import java.util.Optional;
+
 import com.techtrio.context.AdminContext;
 import com.techtrio.controller.AdminController;
-import com.techtrio.controller.NavigationManager;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
+import com.techtrio.model.OrganizerProfile;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -47,8 +50,6 @@ public class EventRequesReviewA {
     private Label themeReq;
     private Label cateringReq;
     private Label decorReq;
-    private Label photoReq;
-    private Label avReq;
     private Label notesReq;
 
     private ComboBox<String> statusCombo;
@@ -139,8 +140,8 @@ public class EventRequesReviewA {
         Button back = new Button("←  Back to Requests");
         back.setPrefSize(145, 36); back.setStyle("-fx-background-color:white;-fx-border-color:#8B949E;-fx-border-radius:7;-fx-cursor:hand;");
         back.setOnAction(e -> {
-            Stage stage = (Stage) back.getScene().getWindow();
-            NavigationManager.navigate("Event Requests", stage);
+            EventRequestA requestsView = new EventRequestA();
+            LandingPage.landingPageStage.setScene(requestsView.geteventRequestScene());
         });
 
         Region ts = new Region(); HBox.setHgrow(ts, Priority.ALWAYS);
@@ -203,8 +204,6 @@ public class EventRequesReviewA {
         themeReq = lbl("Standard", 15, false);
         cateringReq = lbl("Required", 15, false);
         decorReq = lbl("Required", 15, false);
-        photoReq = lbl("Required", 15, false);
-        avReq = lbl("Required", 15, false);
         notesReq = lbl("No additional notes provided.", 14, false);
 
         rg.add(box("Category", themeReq), 0, 0);
@@ -223,29 +222,7 @@ public class EventRequesReviewA {
         notesArea = new TextArea(); notesArea.setPromptText("Add internal admin notes regarding organizer assignment..."); notesArea.setWrapText(true); notesArea.setPrefRowCount(3);
 
         Button assign = btn("Assign Organizer", true);
-        assign.setOnAction(e -> {
-            String selectedEvtId = AdminContext.getSelectedEventId();
-            if (selectedEvtId == null || selectedEvtId.isBlank()) return;
-
-            TextInputDialog dialog = new TextInputDialog("Dreams Events");
-            dialog.setTitle("Assign Organizer");
-            dialog.setHeaderText("Assign Organizer to Event");
-            dialog.setContentText("Enter Organizer Name:");
-
-            dialog.showAndWait().ifPresent(orgName -> {
-                AdminController controller = new AdminController();
-                boolean updated = controller.assignOrganizerToEvent(selectedEvtId, "ORG_" + System.currentTimeMillis(), orgName.trim());
-                if (updated) {
-                    Alert a = new Alert(Alert.AlertType.INFORMATION, "Organizer assigned successfully!");
-                    a.showAndWait();
-                    Stage stage = (Stage) assign.getScene().getWindow();
-                    NavigationManager.navigate("Event Requests", stage);
-                } else {
-                    Alert a = new Alert(Alert.AlertType.ERROR, "Failed to assign organizer.");
-                    a.showAndWait();
-                }
-            });
-        });
+        assign.setOnAction(e -> handleAssignOrganizerModal());
 
         Button reject = btn("Reject Request", false);
         reject.setOnAction(e -> {
@@ -258,8 +235,8 @@ public class EventRequesReviewA {
                 if (response == ButtonType.YES) {
                     AdminController controller = new AdminController();
                     controller.updateEventStatus(selectedEvtId, "REJECTED");
-                    Stage stage = (Stage) reject.getScene().getWindow();
-                    NavigationManager.navigate("Event Requests", stage);
+                    EventRequestA requestsView = new EventRequestA();
+                    LandingPage.landingPageStage.setScene(requestsView.geteventRequestScene());
                 }
             });
         });
@@ -281,9 +258,60 @@ public class EventRequesReviewA {
 
         loadEventReviewDetailsAsync();
 
-        Scene scene = new Scene(root, 1550, 750);
-        eventRequestReviewScene = scene;
+        eventRequestReviewScene = new Scene(root, 1550, 750);
         return eventRequestReviewScene;
+    }
+
+    private void handleAssignOrganizerModal() {
+        String selectedEvtId = AdminContext.getSelectedEventId();
+        if (selectedEvtId == null || selectedEvtId.isBlank()) {
+            Alert a = new Alert(Alert.AlertType.WARNING, "No event selected for review.");
+            a.showAndWait();
+            return;
+        }
+
+        AdminController controller = new AdminController();
+        List<OrganizerProfile> activeOrganizers = controller.getAllActiveOrganizers();
+
+        if (activeOrganizers.isEmpty()) {
+            Alert a = new Alert(Alert.AlertType.WARNING, "No active organizers found in Firestore to assign.");
+            a.showAndWait();
+            return;
+        }
+
+        ChoiceDialog<OrganizerProfile> dialog = new ChoiceDialog<>(activeOrganizers.get(0), activeOrganizers);
+        dialog.setTitle("Assign Organizer");
+        dialog.setHeaderText("Select an Active Organizer from Firestore");
+        dialog.setContentText("Organizer:");
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == ButtonType.OK) {
+                return dialog.getSelectedItem();
+            }
+            return null;
+        });
+
+        Optional<OrganizerProfile> result = dialog.showAndWait();
+        result.ifPresent(selectedOrganizer -> {
+            String orgUid = selectedOrganizer.getOrganizerId();
+            String orgName = selectedOrganizer.getOrganizationName() != null && !selectedOrganizer.getOrganizationName().isBlank()
+                    ? selectedOrganizer.getOrganizationName()
+                    : selectedOrganizer.getName();
+
+            String notes = notesArea != null ? notesArea.getText().trim() : "";
+
+            boolean updated = controller.assignOrganizerToEvent(selectedEvtId, orgUid, orgName, "ADMIN_UID", notes);
+            if (updated) {
+                Alert a = new Alert(Alert.AlertType.INFORMATION, "Organizer [" + orgName + "] successfully assigned to Event in Firestore!");
+                a.showAndWait();
+
+                EventRequestA requestsView = new EventRequestA();
+                LandingPage.landingPageStage.setScene(requestsView.geteventRequestScene());
+            } else {
+                Alert a = new Alert(Alert.AlertType.ERROR, "Failed to update organizer assignment in Firestore.");
+                a.showAndWait();
+            }
+        });
     }
 
     private void loadEventReviewDetailsAsync() {

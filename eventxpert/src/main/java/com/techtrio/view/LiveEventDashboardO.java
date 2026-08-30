@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -11,11 +10,11 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
-import java.util.Optional;
+import com.techtrio.session.UserSession;
 
-public class LiveEventDashboardO extends Application {
+public class LiveEventDashboardO {
 
-    // Color Palette
+    // COLOR PALETTE CONSTANTS
     private static final String NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
     private static final String BRIGHT_BLUE = "#2563C7";
@@ -35,36 +34,40 @@ public class LiveEventDashboardO extends Application {
     private static final String RED_TEXT = "#C5221F";
     private static final String RED_BTN = "#A81C1C";
 
-    @Override
-    public void start(Stage primaryStage) {
+    private String uid;
+    private String idToken;
+    private Runnable backAction;
+
+    public LiveEventDashboardO() {
+        this(UserSession.getUid(), UserSession.getIdToken());
+    }
+
+    public LiveEventDashboardO(String uid, String idToken) {
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+    }
+
+    public Scene getScene(Stage stage, Runnable backAction) {
+        this.backAction = backAction;
+
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;");
+        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
 
-        // Top Navigation Bar
         root.setTop(createTopBar());
+        root.setLeft(createSidebar(stage));
 
-        // Sidebar Navigation
-        root.setLeft(createSidebar());
-
-        // Main Scrollable Area
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
 
-        VBox mainContent = createMainContent(primaryStage);
+        VBox mainContent = createMainContent(stage);
         scrollPane.setContent(mainContent);
 
         root.setCenter(scrollPane);
 
-        Scene scene = new Scene(root, 1440, 900);
-        primaryStage.setTitle("EventXpert - Live Event Command Center");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        return new Scene(root, 1550, 785);
     }
 
-    // ==========================================
-    // TOP BAR
-    // ==========================================
     private HBox createTopBar() {
         HBox topBar = new HBox();
         topBar.setAlignment(Pos.CENTER_LEFT);
@@ -72,7 +75,6 @@ public class LiveEventDashboardO extends Application {
         topBar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
         topBar.setSpacing(16);
 
-        // Search Bar
         HBox searchBox = new HBox();
         searchBox.setAlignment(Pos.CENTER_LEFT);
         searchBox.setPadding(new Insets(6, 14, 6, 14));
@@ -84,7 +86,7 @@ public class LiveEventDashboardO extends Application {
         searchIcon.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 13px;");
 
         TextField topSearch = new TextField();
-        topSearch.setPromptText("Search event activity, guests, vendors...");
+        topSearch.setPromptText("Search event data...");
         topSearch.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 13px;");
         HBox.setHgrow(topSearch, Priority.ALWAYS);
 
@@ -99,7 +101,6 @@ public class LiveEventDashboardO extends Application {
         Button helpBtn = new Button("❓");
         helpBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 16px; -fx-cursor: hand;");
 
-        // Profile Box
         HBox profileBox = new HBox(10);
         profileBox.setAlignment(Pos.CENTER);
 
@@ -109,72 +110,55 @@ public class LiveEventDashboardO extends Application {
         avatarText.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px;");
         avatar.getChildren().addAll(circle, avatarText);
 
-        VBox userInfo = new VBox(1);
-        Label userName = new Label("John Doe");
-        userName.setStyle("-fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 12px;");
-        Label userRole = new Label("Live Event Operations");
-        userRole.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 11px;");
-        userInfo.getChildren().addAll(userName, userRole);
-
-        profileBox.getChildren().addAll(avatar, userInfo);
-
         topBar.getChildren().addAll(searchBox, spacer, notifBtn, helpBtn, profileBox);
         return topBar;
     }
 
-    // ==========================================
-    // SIDEBAR
-    // ==========================================
-    private VBox createSidebar() {
+    private VBox createSidebar(Stage stage) {
         VBox sidebar = new VBox();
         sidebar.setPrefWidth(240);
-        sidebar.setMinWidth(240);
+        sidebar.setStyle("-fx-background-color: " + NAVY + ";");
         sidebar.setPadding(new Insets(18, 14, 18, 14));
-        sidebar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 1 0 0;");
         sidebar.setSpacing(6);
 
-        // Logo
-        HBox brand = new HBox(10);
-        brand.setAlignment(Pos.CENTER_LEFT);
-        brand.setPadding(new Insets(0, 0, 10, 6));
-
-        StackPane logoBg = new StackPane();
-        Rectangle rect = new Rectangle(34, 34);
-        rect.setArcWidth(8);
-        rect.setArcHeight(8);
-        rect.setFill(Color.web(PRIMARY_BLUE));
-        Label logoText = new Label("EX");
-        logoText.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
-        logoBg.getChildren().addAll(rect, logoText);
-
-        VBox brandTitles = new VBox(1);
         Label brandName = new Label("EventXpert");
-        brandName.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: " + NAVY + ";");
-        Label brandSub = new Label("Corporate Management");
-        brandSub.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        brandTitles.getChildren().addAll(brandName, brandSub);
+        brandName.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: white;");
 
-        brand.getChildren().addAll(logoBg, brandTitles);
-        sidebar.getChildren().addAll(brand, new Separator());
-
-        // Nav Menu
-        sidebar.getChildren().addAll(
-            createNavHeader("EVENT MANAGEMENT"),
-            createNavItem("Dashboard", false),
-            createNavItem("Event Requests", false),
-            createNavItem("My Events", false),
-
-            createNavHeader("EVENT PLANNING"),
-            createNavItem("AI Planner", false),
-            createNavItem("Budget", false),
-            createNavItem("Venue", false),
-            createNavItem("Vendors", false),
-            createNavItem("Schedule", false),
-
-            createNavHeader("EVENT EXECUTION"),
-            createNavItem("Guest Management", false),
-            createNavItem("QR Check-In", false),
-            createNavItem("Live Event", true) // Active Highlight
+        sidebar.getChildren().addAll(brandName, new Separator(),
+            createNavItem("Dashboard", false, () -> goDashboard(stage)),
+            createNavItem("Event Requests", false, () -> {
+                EventRequestsO view = new EventRequestsO(uid, idToken);
+                LandingPage.landingPageStage.setScene(view.geteventRequestsOScene(() -> goDashboard(stage)));
+            }),
+            createNavItem("My Events", false, () -> {
+                MyEventsO view = new MyEventsO(uid, idToken);
+                LandingPage.landingPageStage.setScene(view.getMyEventsOScene(() -> goDashboard(stage)));
+            }),
+            createNavItem("AI Planner", false, () -> {
+                AIEventPlannerO view = new AIEventPlannerO();
+                LandingPage.landingPageStage.setScene(view.getScene(stage, () -> handleBack(stage)));
+            }),
+            createNavItem("Budget", false, () -> {
+                BudgetExpenseTrackerO view = new BudgetExpenseTrackerO();
+                LandingPage.landingPageStage.setScene(view.getScene(stage, () -> handleBack(stage)));
+            }),
+            createNavItem("Venue", false, () -> {
+                VenueManagementO view = new VenueManagementO();
+                LandingPage.landingPageStage.setScene(view.getScene(stage, () -> handleBack(stage)));
+            }),
+            createNavItem("Vendors", false, () -> {
+                VendorManagementO view = new VendorManagementO(uid, idToken);
+                LandingPage.landingPageStage.setScene(view.getvendorManagementOScene(() -> handleBack(stage)));
+            }),
+            createNavItem("Schedule", false, () -> {
+                ScheduleO view = new ScheduleO();
+                LandingPage.landingPageStage.setScene(view.getScene(stage, () -> handleBack(stage)));
+            }),
+            createNavItem("Guest Management", false, () -> {
+                GuestManagementO view = new GuestManagementO();
+                LandingPage.landingPageStage.setScene(view.getScene(stage, () -> handleBack(stage)));
+            }),
+            createNavItem("Live Event", true, () -> {})
         );
 
         Region spacer = new Region();
@@ -183,57 +167,38 @@ public class LiveEventDashboardO extends Application {
         VBox bottomMenu = new VBox(4);
         bottomMenu.getChildren().addAll(
             new Separator(),
-            createNavItem("Settings", false),
-            createNavItem("Help Center", false)
+            createNavItem("Settings", false, () -> {
+                SettingsO view = new SettingsO(uid, idToken);
+                LandingPage.landingPageStage.setScene(view.getSettingScene(() -> goDashboard(stage)));
+            }),
+            createNavItem("Help Center", false, () -> {})
         );
 
         sidebar.getChildren().addAll(spacer, bottomMenu);
         return sidebar;
     }
 
-    private Label createNavHeader(String title) {
-        Label header = new Label(title);
-        header.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-padding: 8 0 2 6;");
-        return header;
-    }
-
-    private Button createNavItem(String text, boolean isActive) {
+    private Button createNavItem(String text, boolean isActive, Runnable action) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setAlignment(Pos.CENTER_LEFT);
-        btn.setPadding(new Insets(7, 10, 7, 10));
-
-        if (isActive) {
-            btn.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;");
-        } else {
-            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + TEXT_MAIN + "; -fx-background-radius: 6; -fx-cursor: hand;");
-            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-background-radius: 6; -fx-cursor: hand;"));
-            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + TEXT_MAIN + "; -fx-background-radius: 6; -fx-cursor: hand;"));
-        }
-
-        btn.setOnAction(e -> {
-            if (!isActive) {
-                showInfoAlert("Navigation", "Navigating to " + text + "...");
-            }
-        });
-
+        btn.setStyle(isActive ? "-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-padding: 8 12; -fx-background-radius: 6;"
+                : "-fx-background-color: transparent; -fx-text-fill: white; -fx-padding: 8 12; -fx-cursor: hand;");
+        if (action != null) btn.setOnAction(e -> action.run());
         return btn;
     }
 
-    // ==========================================
-    // MAIN CONTENT
-    // ==========================================
     private VBox createMainContent(Stage stage) {
         VBox mainBox = new VBox(20);
         mainBox.setPadding(new Insets(24, 30, 30, 30));
 
-        // Breadcrumbs
+        // Breadcrumbs & Title
         HBox breadcrumbs = new HBox(8);
         breadcrumbs.setAlignment(Pos.CENTER_LEFT);
 
         Label bc1 = new Label("My Events");
         bc1.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 13px; -fx-cursor: hand;");
-        bc1.setOnMouseClicked(e -> showInfoAlert("Navigation", "Navigating to My Events..."));
+        bc1.setOnMouseClicked(e -> handleBack(stage));
 
         Label bcSep1 = new Label(">");
         bcSep1.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 12px;");
@@ -249,7 +214,7 @@ public class LiveEventDashboardO extends Application {
 
         breadcrumbs.getChildren().addAll(bc1, bcSep1, bc2, bcSep2, bc3);
 
-        // Header Title Row
+        // Header Row
         HBox headerRow = new HBox(12);
         headerRow.setAlignment(Pos.CENTER_LEFT);
 
@@ -267,7 +232,7 @@ public class LiveEventDashboardO extends Application {
 
         headerRow.getChildren().addAll(title, headerSpacer, liveBadge, clockLabel);
 
-        // Top 5 Live Summary Cards
+        // Top 5 Summary KPI Cards Row
         HBox summaryRow = new HBox(14);
         summaryRow.getChildren().addAll(
             createSummaryCardProgress("Guests Checked In", "142/250", "56.8% Attendance", 0.568),
@@ -277,10 +242,10 @@ public class LiveEventDashboardO extends Application {
             createSummaryCardText("Open Alerts", "02", "Requires Attention")
         );
 
-        // Main 2-Column Grid
+        // Main 2-Column Grid Layout
         HBox bodyGrid = new HBox(20);
 
-        // Left Column (Live Operations Area)
+        // Left Column
         VBox leftCol = new VBox(20);
         HBox.setHgrow(leftCol, Priority.ALWAYS);
 
@@ -292,7 +257,7 @@ public class LiveEventDashboardO extends Application {
             createLiveActivityFeedCard()
         );
 
-        // Right Column (Controls & Sidebar Widgets)
+        // Right Column
         VBox rightCol = new VBox(20);
         rightCol.setPrefWidth(320);
         rightCol.setMinWidth(300);
@@ -301,7 +266,7 @@ public class LiveEventDashboardO extends Application {
             createEventHealthCard(),
             createLiveQrCheckInCard(),
             createVendorStatusCard(),
-            createQuickActionsCard(stage),
+            createQuickActionsCard(),
             createAILiveAssistantCard()
         );
 
@@ -312,7 +277,7 @@ public class LiveEventDashboardO extends Application {
     }
 
     // ==========================================
-    // TOP SUMMARY CARDS
+    // TOP KPI CARDS
     // ==========================================
     private VBox createSummaryCardProgress(String title, String val, String sub, double progress) {
         VBox card = new VBox(6);
@@ -320,18 +285,14 @@ public class LiveEventDashboardO extends Application {
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10; -fx-background-radius: 10;");
         HBox.setHgrow(card, Priority.ALWAYS);
 
-        Label t = new Label(title);
-        t.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        Label v = new Label(val);
-        v.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        Label t = new Label(title); t.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label v = new Label(val); v.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         ProgressBar pb = new ProgressBar(progress);
         pb.setMaxWidth(Double.MAX_VALUE);
         pb.setStyle("-fx-accent: " + PRIMARY_BLUE + "; -fx-pref-height: 4;");
 
-        Label s = new Label(sub);
-        s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label s = new Label(sub); s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         card.getChildren().addAll(t, v, pb, s);
         return card;
@@ -343,14 +304,9 @@ public class LiveEventDashboardO extends Application {
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10; -fx-background-radius: 10;");
         HBox.setHgrow(card, Priority.ALWAYS);
 
-        Label t = new Label(title);
-        t.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        Label v = new Label(val);
-        v.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-
-        Label s = new Label(sub);
-        s.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label t = new Label(title); t.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label v = new Label(val); v.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        Label s = new Label(sub); s.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (title.contains("Vendors") ? GREEN_TEXT : SECONDARY_TEXT) + ";");
 
         card.getChildren().addAll(t, v, s);
         return card;
@@ -398,8 +354,7 @@ public class LiveEventDashboardO extends Application {
 
         StackPane camBox = new StackPane();
         Rectangle bg = new Rectangle(50, 50);
-        bg.setArcWidth(8);
-        bg.setArcHeight(8);
+        bg.setArcWidth(8); bg.setArcHeight(8);
         bg.setFill(Color.web(LIGHT_BLUE));
         Label camIcon = new Label("📹");
         camIcon.setStyle("-fx-font-size: 20px;");
@@ -467,7 +422,6 @@ public class LiveEventDashboardO extends Application {
 
         VBox alerts = new VBox(8);
 
-        // Alert 1 (Weather)
         VBox a1 = new VBox(4);
         a1.setPadding(new Insets(10));
         a1.setStyle("-fx-background-color: " + RED_BG + "; -fx-background-radius: 6;");
@@ -477,7 +431,6 @@ public class LiveEventDashboardO extends Application {
         a1D.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
         a1.getChildren().addAll(a1T, a1D);
 
-        // Alert 2 (Catering)
         VBox a2 = new VBox(4);
         a2.setPadding(new Insets(10));
         a2.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-background-radius: 6;");
@@ -488,7 +441,6 @@ public class LiveEventDashboardO extends Application {
         a2.getChildren().addAll(a2T, a2D);
 
         alerts.getChildren().addAll(a1, a2);
-
         card.getChildren().addAll(title, alerts);
         return card;
     }
@@ -551,16 +503,14 @@ public class LiveEventDashboardO extends Application {
 
     private VBox createFeedItem(String text, String time) {
         VBox item = new VBox(2);
-        Label t = new Label(text);
-        t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
-        Label tm = new Label(time);
-        tm.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label t = new Label(text); t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
+        Label tm = new Label(time); tm.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         item.getChildren().addAll(t, tm);
         return item;
     }
 
     // ==========================================
-    // RIGHT COLUMN CARDS (Sidebar Controls)
+    // RIGHT COLUMN CARDS
     // ==========================================
     private VBox createEventHealthCard() {
         VBox card = new VBox(10);
@@ -585,12 +535,9 @@ public class LiveEventDashboardO extends Application {
 
     private HBox createHealthRow(String label, String status, String colorHex) {
         HBox row = new HBox();
-        Label l = new Label(label);
-        l.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label s = new Label(status);
-        s.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + colorHex + ";");
+        Label l = new Label(label); l.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label s = new Label(status); s.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + colorHex + ";");
         row.getChildren().addAll(l, spacer, s);
         return row;
     }
@@ -660,17 +607,15 @@ public class LiveEventDashboardO extends Application {
     private HBox createVendorRow(String name, String status, String bgCol, String textCol) {
         HBox row = new HBox();
         row.setAlignment(Pos.CENTER_LEFT);
-        Label n = new Label(name);
-        n.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label n = new Label(name); n.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
         Label s = new Label(status);
         s.setStyle("-fx-background-color: " + bgCol + "; -fx-text-fill: " + textCol + "; -fx-font-size: 9px; -fx-font-weight: bold; -fx-padding: 2 6 2 6; -fx-background-radius: 4;");
         row.getChildren().addAll(n, spacer, s);
         return row;
     }
 
-    private VBox createQuickActionsCard(Stage stage) {
+    private VBox createQuickActionsCard() {
         VBox card = new VBox(10);
         card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10; -fx-background-radius: 10;");
@@ -679,38 +624,23 @@ public class LiveEventDashboardO extends Application {
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         GridPane grid = new GridPane();
-        grid.setHgap(8);
-        grid.setVgap(8);
+        grid.setHgap(8); grid.setVgap(8);
 
         Button scanBtn = createActionButton("📱 Scan QR", PRIMARY_BLUE, "white");
-        scanBtn.setOnAction(e -> showInfoAlert("QR Scanner", "Opening live QR scanner window..."));
-
         Button reportBtn = createActionButton("⚠️ Report Issue", RED_BTN, "white");
-        reportBtn.setOnAction(e -> showInfoAlert("Report Issue", "Incident report dispatched to security operations."));
-
         Button announceBtn = createActionButton("📻 Announce", LIGHT_BLUE, PRIMARY_BLUE);
-        announceBtn.setOnAction(e -> showInfoAlert("Public Announcement", "Broadcasting PA announcement to Main Hall..."));
-
         Button aiBtn = createActionButton("🤖 Contact AI", LIGHT_BLUE, PRIMARY_BLUE);
-        aiBtn.setOnAction(e -> showInfoAlert("EventXpert AI", "Connecting to live AI Event Assistant..."));
 
         grid.add(scanBtn, 0, 0);
         grid.add(reportBtn, 1, 0);
         grid.add(announceBtn, 0, 1);
         grid.add(aiBtn, 1, 1);
 
-        ColumnConstraints col1 = new ColumnConstraints();
-        col1.setPercentWidth(50);
-        ColumnConstraints col2 = new ColumnConstraints();
-        col2.setPercentWidth(50);
+        ColumnConstraints col1 = new ColumnConstraints(); col1.setPercentWidth(50);
+        ColumnConstraints col2 = new ColumnConstraints(); col2.setPercentWidth(50);
         grid.getColumnConstraints().addAll(col1, col2);
 
-        Button endEventBtn = new Button("End Live Event");
-        endEventBtn.setMaxWidth(Double.MAX_VALUE);
-        endEventBtn.setStyle("-fx-background-color: white; -fx-border-color: " + RED_TEXT + "; -fx-text-fill: " + RED_TEXT + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 6; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
-        endEventBtn.setOnAction(e -> handleEndEventConfirm());
-
-        card.getChildren().addAll(title, grid, endEventBtn);
+        card.getChildren().addAll(title, grid);
         return card;
     }
 
@@ -736,32 +666,22 @@ public class LiveEventDashboardO extends Application {
         Button applyBtn = new Button("Apply Insight");
         applyBtn.setMaxWidth(Double.MAX_VALUE);
         applyBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 8; -fx-background-radius: 6; -fx-cursor: hand;");
-        applyBtn.setOnAction(e -> showInfoAlert("AI Assistant", "Catering team notified to open second buffet line at 12:50 PM."));
 
         card.getChildren().addAll(title, msg, applyBtn);
         return card;
     }
 
-    // ==========================================
-    // ACTION HANDLERS
-    // ==========================================
-    private void handleEndEventConfirm() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("End Live Event?");
-        alert.setHeaderText("End Live Event Monitoring?");
-        alert.setContentText("Are you sure you want to end live event monitoring for TechVision Annual Summit?");
-
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            showInfoAlert("Event Concluded", "Live event session ended successfully. Event archived to Completed list.");
+    private void handleBack(Stage stage) {
+        if (backAction != null) {
+            backAction.run();
+        } else {
+            ViewEventO view = new ViewEventO(uid, idToken);
+            LandingPage.landingPageStage.setScene(view.getScene(stage, () -> goDashboard(stage)));
         }
     }
 
-    private void showInfoAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+    private void goDashboard(Stage stage) {
+        OrganizerDashboardO dash = new OrganizerDashboardO(uid, idToken);
+        LandingPage.landingPageStage.setScene(dash.getorganizerDashboardScene(null));
     }
 }

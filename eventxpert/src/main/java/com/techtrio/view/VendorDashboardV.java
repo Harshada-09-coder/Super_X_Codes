@@ -1,5 +1,13 @@
 package com.techtrio.view;
 
+import java.util.List;
+
+import com.techtrio.controller.VendorController;
+import com.techtrio.model.VendorBooking;
+import com.techtrio.session.UserSession;
+
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,11 +18,12 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 
 public class VendorDashboardV {
+
     private Scene vendorDashboardScene;
     private String uid;
     private String idToken;
 
-    // Color Palette Constants
+    // COLOR PALETTE CONSTANTS (EXACT ORIGINAL VENDOR THEME)
     private static final String SIDEBAR_NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
     private static final String LIGHT_BLUE = "#EAF3FF";
@@ -29,17 +38,23 @@ public class VendorDashboardV {
     private static final String WARNING_TEXT = "#D97706";
     private static final String ORANGE_BTN = "#EA580C";
 
+    private VBox requestsContainerBox;
+    private Label newReqValLbl;
+    private Label upcomingValLbl;
+
     public VendorDashboardV() {
+        this(UserSession.getUid(), UserSession.getIdToken());
     }
 
     public VendorDashboardV(String uid, String idToken) {
-        this.uid = uid;
-        this.idToken = idToken;
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+        UserSession.setSession(this.uid, this.idToken, null, "Vendor");
     }
 
     public Scene getvendorDashboardScene() {
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BACKGROUND + ";");
+        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
 
         VBox sidebar = createSidebar();
         root.setLeft(sidebar);
@@ -71,149 +86,120 @@ public class VendorDashboardV {
 
         root.setCenter(mainArea);
 
-        Scene scene = new Scene(root, 1550, 785);
-        vendorDashboardScene = scene;
+        loadVendorRequestsFromFirestoreAsync();
+
+        vendorDashboardScene = new Scene(root, 1550, 785);
         return vendorDashboardScene;
     }
 
-    private VBox createSidebar() {
-        VBox sidebar = new VBox();
-        sidebar.setPrefWidth(250);
-        sidebar.setStyle("-fx-background-color: " + SIDEBAR_NAVY + ";");
-        sidebar.setPadding(new Insets(20, 14, 20, 14));
-        sidebar.setSpacing(6);
-
-        HBox logoBox = new HBox(10);
-        logoBox.setAlignment(Pos.CENTER_LEFT);
-        Label logoIcon = new Label("E");
-        logoIcon.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 4 10; -fx-background-radius: 6px;");
-
-        VBox brandBox = new VBox(0);
-        Label brandTitle = new Label("EventXpert");
-        brandTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
-        Label brandSub = new Label("Plan.Manage.Celebrate");
-        brandSub.setStyle("-fx-font-size: 10px; -fx-text-fill: #94A3B8; -fx-font-weight: bold;");
-        brandBox.getChildren().addAll(brandTitle, brandSub);
-        logoBox.getChildren().addAll(logoIcon, brandBox);
-
-        Button addServiceBtn = new Button("+ Add Service");
-        addServiceBtn.setMaxWidth(Double.MAX_VALUE);
-        addServiceBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 10; -fx-background-radius: 8px; -fx-cursor: hand;");
-
-        sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
-
-        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", true, () -> {}));
-        sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false, this::openServiceRequests));
-        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, this::openMyBookings));
-        sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, this::openServicesPackages));
-        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, this::openCalenderV));
-        sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, this::openEarningsPaymentsV));
-        sidebar.getChildren().add(createSidebarItem("🔔 Notifications", false, this::openNotificationsV));
-        sidebar.getChildren().add(createSidebarItem("⚙ Settings", false, this::openSettingsV));
-        sidebar.getChildren().add(createSidebarItem("👤 Profile", false, this::openProfileV));
-        sidebar.getChildren().add(createSidebarItem("❓ Support", false, this::openSupportV));
-
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-
-        HBox profilePill = new HBox(10);
-        profilePill.setAlignment(Pos.CENTER_LEFT);
-        profilePill.setPadding(new Insets(10));
-        profilePill.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 8px; -fx-cursor: hand;");
-        profilePill.setOnMouseClicked(e -> openProfileV());
-
-        Circle avatar = new Circle(16, Color.web(WHITE));
-        Text avatarText = new Text("VP");
-        avatarText.setStyle("-fx-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 11px;");
-        StackPane avatarPane = new StackPane(avatar, avatarText);
-
-        VBox userDetails = new VBox(2);
-        Label userName = new Label("Vendor Portal");
-        userName.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: white;");
-        Label userSub = new Label("● Active Session");
-        userSub.setStyle("-fx-font-size: 10px; -fx-text-fill: #4ADE80;");
-        userDetails.getChildren().addAll(userName, userSub);
-
-        profilePill.getChildren().addAll(avatarPane, userDetails);
-        sidebar.getChildren().addAll(spacer, profilePill);
-        return sidebar;
+    // ==========================================
+    // BACK NAVIGATION METHOD FOR VENDOR VIEWS
+    // ==========================================
+    public void backToVendorDashboard() {
+        if (LandingPage.landingPageStage != null) {
+            if (vendorDashboardScene == null) {
+                getvendorDashboardScene();
+            }
+            LandingPage.landingPageStage.setScene(vendorDashboardScene);
+        }
     }
 
-    private Button createSidebarItem(String title, boolean isActive, Runnable action) {
-        Button btn = new Button(title);
-        btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setAlignment(Pos.CENTER_LEFT);
-        btn.setOnAction(e -> {
-            if (action != null) action.run();
+    // ==========================================
+    // DYNAMIC FIRESTORE SERVICE REQUESTS LOADER
+    // ==========================================
+    private void loadVendorRequestsFromFirestoreAsync() {
+        if (uid == null || uid.isBlank()) return;
+
+        Task<List<VendorBooking>> task = new Task<>() {
+            @Override
+            protected List<VendorBooking> call() {
+                VendorController controller = new VendorController();
+                return controller.getVendorBookings(uid);
+            }
+        };
+
+        task.setOnSucceeded(evt -> {
+            List<VendorBooking> bookings = task.getValue();
+            Platform.runLater(() -> {
+                if (requestsContainerBox != null) requestsContainerBox.getChildren().clear();
+
+                int pendingCount = 0;
+                int confirmedCount = 0;
+
+                if (bookings != null) {
+                    for (VendorBooking b : bookings) {
+                        String st = b.getStatus() != null ? b.getStatus().toUpperCase() : "PENDING";
+                        if ("PENDING".equals(st)) {
+                            pendingCount++;
+                            if (requestsContainerBox != null) {
+                                requestsContainerBox.getChildren().add(createRequestBox(b));
+                            }
+                        } else if ("CONFIRMED".equals(st)) {
+                            confirmedCount++;
+                        }
+                    }
+                }
+
+                if (newReqValLbl != null) newReqValLbl.setText(String.valueOf(pendingCount));
+                if (upcomingValLbl != null) upcomingValLbl.setText(String.valueOf(confirmedCount));
+
+                if (requestsContainerBox != null && requestsContainerBox.getChildren().isEmpty()) {
+                    Label empty = new Label("No new service requests in Firestore.");
+                    empty.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+                    requestsContainerBox.getChildren().add(empty);
+                }
+            });
         });
 
-        if (isActive) {
-            btn.setStyle(
-                "-fx-background-color: white;" +
-                "-fx-text-fill: " + SIDEBAR_NAVY + ";" +
-                "-fx-font-weight: bold;" +
-                "-fx-font-size: 13px;" +
-                "-fx-background-radius: 8px;" +
-                "-fx-padding: 8 12;"
-            );
-        } else {
-            btn.setStyle(
-                "-fx-background-color: transparent;" +
-                "-fx-text-fill: #94A3B8;" +
-                "-fx-font-size: 13px;" +
-                "-fx-padding: 8 12;" +
-                "-fx-cursor: hand;"
-            );
-            btn.setOnMouseEntered(e ->
-                btn.setStyle(
-                    "-fx-background-color: rgba(255,255,255,0.05);" +
-                    "-fx-text-fill: white;" +
-                    "-fx-font-size: 13px;" +
-                    "-fx-padding: 8 12;" +
-                    "-fx-cursor: hand;"
-                )
-            );
-            btn.setOnMouseExited(e ->
-                btn.setStyle(
-                    "-fx-background-color: transparent;" +
-                    "-fx-text-fill: #94A3B8;" +
-                    "-fx-font-size: 13px;" +
-                    "-fx-padding: 8 12;"
-                )
-            );
-        }
-        return btn;
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
     }
 
-    private HBox createTopBar() {
-        HBox topBar = new HBox();
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setPadding(new Insets(12, 24, 12, 24));
-        topBar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
-        topBar.setSpacing(16);
+    private VBox createRequestBox(VendorBooking b) {
+        VBox box = new VBox(6);
+        box.setPadding(new Insets(12));
+        box.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 8px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px;");
 
-        TextField searchField = new TextField();
-        searchField.setPromptText("🔍 Search bookings, requests...");
-        searchField.setPrefWidth(380);
-        searchField.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 20px; -fx-background-radius: 20px; -fx-padding: 6 14;");
+        HBox top = new HBox();
+        Label t = new Label(b.getEventName() != null ? b.getEventName() : "Event");
+        t.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
+        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+        Label p = new Label(b.getAmount() != null ? b.getAmount() : "N/A");
+        p.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
+        top.getChildren().addAll(t, sp, p);
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label s = new Label("Category: " + (b.getServiceCategory() != null ? b.getServiceCategory() : "General"));
+        s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label d = new Label("Date: " + (b.getEventDate() != null ? b.getEventDate() : "TBD"));
+        d.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        Button helpBtn = new Button("❓"); helpBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-        Button notifBtn = new Button("🔔"); notifBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-        Button settingsBtn = new Button("⚙"); settingsBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-        Button viewCalBtn = createSecondaryButton("📅 View Calendar");
+        HBox btns = new HBox(8);
+        Button acceptBtn = new Button("Accept");
+        acceptBtn.setStyle("-fx-background-color: " + SIDEBAR_NAVY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        acceptBtn.setOnAction(e -> {
+            VendorController controller = new VendorController();
+            boolean success = controller.acceptBookingRequest(b.getBookingId());
+            if (success) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Booking Request Accepted!");
+                alert.showAndWait();
+                loadVendorRequestsFromFirestoreAsync();
+            }
+        });
 
-        Circle topAvatar = new Circle(14, Color.web(PRIMARY_BLUE));
-        Text topAvatarText = new Text("VP");
-        topAvatarText.setStyle("-fx-fill: white; -fx-font-size: 10px; -fx-font-weight: bold;");
-        StackPane profilePill = new StackPane(topAvatar, topAvatarText);
-        profilePill.setStyle("-fx-cursor: hand;");
-        profilePill.setOnMouseClicked(e -> openProfileV());
+        Button rejectBtn = new Button("Reject");
+        rejectBtn.setStyle("-fx-background-color: #E2E8F0; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        rejectBtn.setOnAction(e -> {
+            VendorController controller = new VendorController();
+            boolean success = controller.rejectBookingRequest(b.getBookingId());
+            if (success) {
+                loadVendorRequestsFromFirestoreAsync();
+            }
+        });
 
-        topBar.getChildren().addAll(searchField, spacer, helpBtn, notifBtn, settingsBtn, viewCalBtn, profilePill);
-        return topBar;
+        btns.getChildren().addAll(acceptBtn, rejectBtn);
+        box.getChildren().addAll(top, s, d, btns);
+        return box;
     }
 
     private VBox createPageHeader() {
@@ -293,16 +279,14 @@ public class VendorDashboardV {
         Label actionTitle = new Label("Action Required"); actionTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #92400E;");
         actionHeader.getChildren().addAll(warnIcon, actionTitle);
 
-        Label actionText = new Label("You have 8 new service requests waiting for your response.");
+        Label actionText = new Label("You have new service requests waiting for your response.");
         actionText.setWrapText(true);
         actionText.setStyle("-fx-font-size: 12px; -fx-text-fill: #78350F;");
 
         HBox tagsRow = new HBox(8);
-        Label tag1 = new Label("2 High Priority");
+        Label tag1 = new Label("High Priority");
         tag1.setStyle("-fx-background-color: white; -fx-text-fill: #92400E; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 6px; -fx-border-color: #FCD34D; -fx-border-radius: 6px;");
-        Label tag2 = new Label("3 This Week");
-        tag2.setStyle("-fx-background-color: white; -fx-text-fill: #92400E; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 6px; -fx-border-color: #FCD34D; -fx-border-radius: 6px;");
-        tagsRow.getChildren().addAll(tag1, tag2);
+        tagsRow.getChildren().add(tag1);
 
         Region flexSpace = new Region();
         VBox.setVgrow(flexSpace, Priority.ALWAYS);
@@ -318,17 +302,20 @@ public class VendorDashboardV {
 
     private HBox createSummaryCardsRow() {
         HBox row = new HBox(14);
+        newReqValLbl = new Label("0");
+        upcomingValLbl = new Label("0");
+
         row.getChildren().addAll(
-                createStatCard("New Service Requests", "8", "+3 this week", "✉"),
-                createStatCard("Upcoming Bookings", "12", "Next: 18 May", "📱"),
-                createStatCard("Active Services", "6", "Currently Listed", "📦"),
+                createStatCard("New Service Requests", newReqValLbl, "+3 this week", "✉"),
+                createStatCard("Upcoming Bookings", upcomingValLbl, "Next: 18 May", "📱"),
+                createStatCard("Active Services", new Label("6"), "Currently Listed", "📦"),
                 createStatCard("Total Earnings", "₹2.48L", "+12.5% vs last month", "💼"),
                 createStatCard("Pending Payments", "₹42k", "Across 3 payments", "⏳")
         );
         return row;
     }
 
-    private VBox createStatCard(String title, String val, String sub, String iconStr) {
+    private VBox createStatCard(String title, Label valLbl, String sub, String iconStr) {
         VBox card = createCardContainer();
         HBox.setHgrow(card, Priority.ALWAYS);
         card.setPadding(new Insets(14));
@@ -342,8 +329,7 @@ public class VendorDashboardV {
         ic.setStyle("-fx-font-size: 14px; -fx-text-fill: " + PRIMARY_BLUE + ";");
         top.getChildren().addAll(t, sp, ic);
 
-        Label v = new Label(val);
-        v.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        valLbl.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Label s = new Label(sub);
         if (sub.contains("+")) {
@@ -352,8 +338,12 @@ public class VendorDashboardV {
             s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         }
 
-        card.getChildren().addAll(top, v, s);
+        card.getChildren().addAll(top, valLbl, s);
         return card;
+    }
+
+    private VBox createStatCard(String title, String valStr, String sub, String iconStr) {
+        return createStatCard(title, new Label(valStr), sub, iconStr);
     }
 
     private HBox createMainSplitSection() {
@@ -390,7 +380,6 @@ public class VendorDashboardV {
         addTableRow(grid, 1, "TechVision Annual Summit", "18 May 2026", "Audio & Visual", "₹85,000", "Confirmed");
         addTableRow(grid, 2, "Corporate Leadership Meet", "22 May 2026", "Stage Lighting", "₹45,000", "Confirmed");
         addTableRow(grid, 3, "Startup Connect 2026", "05 Jun 2026", "Sound System", "₹72,000", "Pending Payment");
-        addTableRow(grid, 4, "Annual Gala Night", "12 Jun 2026", "Full A/V Setup", "₹60,000", "Confirmed");
 
         tableCard.getChildren().addAll(tableHeader, grid);
 
@@ -400,7 +389,7 @@ public class VendorDashboardV {
         HBox reqHeader = new HBox(8);
         reqHeader.setAlignment(Pos.CENTER_LEFT);
 
-        Label rTitle = new Label("Recent Service Requests");
+        Label rTitle = new Label("Recent Service Requests (Firestore)");
         rTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Label newBadge = new Label("New");
@@ -408,10 +397,8 @@ public class VendorDashboardV {
 
         reqHeader.getChildren().addAll(rTitle, newBadge);
 
-        VBox req1 = createRequestBox("Global Marketing Expo", "₹1.2L", "📱 Audio & Visual Setup", "📅 25 Aug 2026");
-        VBox req2 = createRequestBox("Sharma Wedding", "₹85k", "📍 Stage Lighting", "📅 10 Sep 2026");
-
-        requestsCard.getChildren().addAll(reqHeader, req1, req2);
+        requestsContainerBox = new VBox(10);
+        requestsCard.getChildren().addAll(reqHeader, new Separator(), requestsContainerBox);
 
         row.getChildren().addAll(tableCard, requestsCard);
         return row;
@@ -441,34 +428,6 @@ public class VendorDashboardV {
         grid.add(sLbl, 2, row);
         grid.add(aLbl, 3, row);
         grid.add(statusBadge, 4, row);
-    }
-
-    private VBox createRequestBox(String title, String price, String service, String date) {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        box.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 8px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px;");
-
-        HBox top = new HBox();
-        Label t = new Label(title);
-        t.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
-        Region sp = new Region();
-        HBox.setHgrow(sp, Priority.ALWAYS);
-        Label p = new Label(price);
-        p.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
-        top.getChildren().addAll(t, sp, p);
-
-        Label s = new Label(service); s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Label d = new Label(date); d.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        HBox btns = new HBox(8);
-        Button acceptBtn = new Button("Accept");
-        acceptBtn.setStyle("-fx-background-color: " + SIDEBAR_NAVY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
-        Button rejectBtn = new Button("Reject");
-        rejectBtn.setStyle("-fx-background-color: #E2E8F0; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
-
-        btns.getChildren().addAll(acceptBtn, rejectBtn);
-        box.getChildren().addAll(top, s, d, btns);
-        return box;
     }
 
     private VBox createServicesPreviewSection() {
@@ -522,6 +481,118 @@ public class VendorDashboardV {
         Button btn = new Button(text);
         btn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 0; -fx-cursor: hand;");
         return btn;
+    }
+
+    private VBox createSidebar() {
+        VBox sidebar = new VBox();
+        sidebar.setPrefWidth(250);
+        sidebar.setStyle("-fx-background-color: " + SIDEBAR_NAVY + ";");
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setSpacing(6);
+
+        HBox logoBox = new HBox(10);
+        logoBox.setAlignment(Pos.CENTER_LEFT);
+        Label logoIcon = new Label("E");
+        logoIcon.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 4 10; -fx-background-radius: 6px;");
+
+        VBox brandBox = new VBox(0);
+        Label brandTitle = new Label("EventXpert");
+        brandTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
+        Label brandSub = new Label("Plan.Manage.Celebrate");
+        brandSub.setStyle("-fx-font-size: 10px; -fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+        brandBox.getChildren().addAll(brandTitle, brandSub);
+        logoBox.getChildren().addAll(logoIcon, brandBox);
+
+        Button addServiceBtn = new Button("+ Add Service");
+        addServiceBtn.setMaxWidth(Double.MAX_VALUE);
+        addServiceBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 10; -fx-background-radius: 8px; -fx-cursor: hand;");
+
+        sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
+
+        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", true, () -> {}));
+        sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false, this::openServiceRequests));
+        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, this::openMyBookings));
+        sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, this::openServicesPackages));
+        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, this::openCalenderV));
+        sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, this::openEarningsPaymentsV));
+        sidebar.getChildren().add(createSidebarItem("🔔 Notifications", false, this::openNotificationsV));
+        sidebar.getChildren().add(createSidebarItem("⚙ Settings", false, this::openSettingsV));
+        sidebar.getChildren().add(createSidebarItem("👤 Profile", false, this::openProfileV));
+        sidebar.getChildren().add(createSidebarItem("❓ Support", false, this::openSupportV));
+
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        HBox profilePill = new HBox(10);
+        profilePill.setAlignment(Pos.CENTER_LEFT);
+        profilePill.setPadding(new Insets(10));
+        profilePill.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 8px; -fx-cursor: hand;");
+        profilePill.setOnMouseClicked(e -> openProfileV());
+
+        Circle avatar = new Circle(16, Color.web(WHITE));
+        Text avatarText = new Text("VP");
+        avatarText.setStyle("-fx-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 11px;");
+        StackPane avatarPane = new StackPane(avatar, avatarText);
+
+        VBox userDetails = new VBox(2);
+        Label userName = new Label("Vendor Portal");
+        userName.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: white;");
+        Label userSub = new Label("● Active Session");
+        userSub.setStyle("-fx-font-size: 10px; -fx-text-fill: #4ADE80;");
+        userDetails.getChildren().addAll(userName, userSub);
+
+        profilePill.getChildren().addAll(avatarPane, userDetails);
+        sidebar.getChildren().addAll(spacer, profilePill);
+        return sidebar;
+    }
+
+    private Button createSidebarItem(String title, boolean isActive, Runnable action) {
+        Button btn = new Button(title);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setOnAction(e -> {
+            if (action != null) action.run();
+        });
+
+        if (isActive) {
+            btn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 8px; -fx-padding: 8 12;");
+        } else {
+            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #94A3B8; -fx-font-size: 13px; -fx-padding: 8 12; -fx-cursor: hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.05); -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 8 12; -fx-cursor: hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #94A3B8; -fx-font-size: 13px; -fx-padding: 8 12;"));
+        }
+        return btn;
+    }
+
+    private HBox createTopBar() {
+        HBox topBar = new HBox();
+        topBar.setAlignment(Pos.CENTER_LEFT);
+        topBar.setPadding(new Insets(12, 24, 12, 24));
+        topBar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
+        topBar.setSpacing(16);
+
+        TextField searchField = new TextField();
+        searchField.setPromptText("🔍 Search bookings, requests...");
+        searchField.setPrefWidth(380);
+        searchField.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 20px; -fx-background-radius: 20px; -fx-padding: 6 14;");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button helpBtn = new Button("❓"); helpBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        Button notifBtn = new Button("🔔"); notifBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        Button settingsBtn = new Button("⚙"); settingsBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+        Button viewCalBtn = createSecondaryButton("📅 View Calendar");
+
+        Circle topAvatar = new Circle(14, Color.web(PRIMARY_BLUE));
+        Text topAvatarText = new Text("VP");
+        topAvatarText.setStyle("-fx-fill: white; -fx-font-size: 10px; -fx-font-weight: bold;");
+        StackPane profilePill = new StackPane(topAvatar, topAvatarText);
+        profilePill.setStyle("-fx-cursor: hand;");
+        profilePill.setOnMouseClicked(e -> openProfileV());
+
+        topBar.getChildren().addAll(searchField, spacer, helpBtn, notifBtn, settingsBtn, viewCalBtn, profilePill);
+        return topBar;
     }
 
     private void openProfileV() {
@@ -601,12 +672,6 @@ public class VendorDashboardV {
         Scene supportVScene = supportV.getsupportVScene(null);
         if (LandingPage.landingPageStage != null) {
             LandingPage.landingPageStage.setScene(supportVScene);
-        }
-    }
-
-    public void backToVendorDashboard() {
-        if (vendorDashboardScene != null && LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(vendorDashboardScene);
         }
     }
 }
