@@ -9,7 +9,7 @@ public class Event {
     private String customerId;
     private String eventName;
     private String eventType;
-    private String category; // Formal / Informal
+    private String category;
     private int guests;
     private String eventDate;
     private String time;
@@ -20,9 +20,19 @@ public class Event {
     private String venueType;
     private String budget;
     private boolean aiEnabled;
-    private String status; // PENDING
+    private String status; // PENDING, ASSIGNED, CONFIRMED, REJECTED
     private String createdAt;
     private String updatedAt;
+
+    // --- ORGANIZER ASSIGNMENT EXTENSIONS ---
+    private String organizerId;
+    private String organizerName;
+    private String organizerStatus; // NOT_ASSIGNED, PENDING, ACCEPTED, REJECTED
+    private String assignedAt;
+    private String assignedBy;
+    private String acceptedAt;
+    private String rejectedAt;
+    private String adminReviewNotes;
 
     public Event() {
     }
@@ -169,5 +179,70 @@ public class Event {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // --- ORGANIZER GETTERS AND SETTERS ---
+    public String getOrganizerId() {
+        return organizerId;
+    }
+
+    public void setOrganizerId(String organizerId) {
+        this.organizerId = organizerId;
+    }
+
+    public String getOrganizerName() {
+        return organizerName;
+    }
+
+    public void setOrganizerName(String organizerName) {
+        this.organizerName = organizerName;
+    }
+
+    public String getOrganizerStatus() {
+        return organizerStatus;
+    }
+
+    public void setOrganizerStatus(String organizerStatus) {
+        this.organizerStatus = organizerStatus;
+    }
+
+    public String getAssignedAt() {
+        return assignedAt;
+    }
+
+    public void setAssignedAt(String assignedAt) {
+        this.assignedAt = assignedAt;
+    }
+
+    public String getAssignedBy() {
+        return assignedBy;
+    }
+
+    public void setAssignedBy(String assignedBy) {
+        this.assignedBy = assignedBy;
+    }
+
+    public String getAcceptedAt() {
+        return acceptedAt;
+    }
+
+    public void setAcceptedAt(String acceptedAt) {
+        this.acceptedAt = acceptedAt;
+    }
+
+    public String getRejectedAt() {
+        return rejectedAt;
+    }
+
+    public void setRejectedAt(String rejectedAt) {
+        this.rejectedAt = rejectedAt;
+    }
+
+    public String getAdminReviewNotes() {
+        return adminReviewNotes;
+    }
+
+    public void setAdminReviewNotes(String adminReviewNotes) {
+        this.adminReviewNotes = adminReviewNotes;
     }
 }

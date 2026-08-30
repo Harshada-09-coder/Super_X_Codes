@@ -1,376 +1,322 @@
 package com.techtrio.view;
 
-import com.techtrio.controller.NavigationManager;
+import java.util.List;
 
+import com.techtrio.context.AdminContext;
+import com.techtrio.controller.AdminController;
+import com.techtrio.controller.NavigationManager;
+import com.techtrio.model.VendorProfile;
+
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Separator;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class VendorManagementA {
-        private Scene vendorScene;
-    final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC";
 
-      TableView<Vendor> table;
+    private Scene vendorScene;
+    final String PRIMARY = "#002A60", SECONDARY = "#8CAFC6", LIGHT = "#C2E0F4", BG = "#F6F9FC";
+
+    TableView<VendorProfile> table;
+    ObservableList<VendorProfile> data = FXCollections.observableArrayList();
     TextField search;
 
-    Label label(String text,int size,boolean bold){
-        Label l=new Label(text);
-        l.setFont(Font.font("Arial",size));
+    private Label totalVendorsVal;
+    private Label activeVendorsVal;
+    private Label newVendorsVal;
+    private Label inactiveVendorsVal;
+
+    Label label(String text, int size, boolean bold) {
+        Label l = new Label(text);
+        l.setFont(Font.font("Arial", size));
         l.setTextFill(Color.web(PRIMARY));
-        if(bold) l.setStyle("-fx-font-weight:bold;");
+        if (bold) l.setStyle("-fx-font-weight:bold;");
         return l;
     }
 
-    Button button(String text){
-        Button b=new Button(text);
-        b.setStyle("-fx-background-color:white;-fx-text-fill:"+PRIMARY+
-                ";-fx-border-color:"+SECONDARY+";-fx-border-radius:6;"+
-                "-fx-background-radius:6;-fx-font-weight:bold;");
-        b.setPadding(new Insets(8,14,8,14));
+    Button button(String text) {
+        Button b = new Button(text);
+        b.setStyle("-fx-background-color:white;-fx-text-fill:" + PRIMARY +
+                ";-fx-border-color:" + SECONDARY + ";-fx-border-radius:6;" +
+                "-fx-background-radius:6;-fx-font-weight:bold;-fx-cursor:hand;");
+        b.setPadding(new Insets(8, 14, 8, 14));
         return b;
     }
 
-    VBox card(){
-        VBox v=new VBox(8);
+    VBox card() {
+        VBox v = new VBox(8);
         v.setPadding(new Insets(18));
-        v.setStyle("-fx-background-color:white;-fx-border-color:#D9E1EA;"+
+        v.setStyle("-fx-background-color:white;-fx-border-color:#D9E1EA;" +
                 "-fx-border-radius:8;-fx-background-radius:8;");
         return v;
     }
 
-    VBox sidebar(){
-        VBox side=new VBox(7);
+    VBox sidebar() {
+        VBox side = new VBox(7);
         side.setPrefWidth(285);
-        side.setPadding(new Insets(24,12,15,12));
-        side.setStyle("-fx-background-color:"+PRIMARY+";");
+        side.setPadding(new Insets(24, 12, 15, 12));
+        side.setStyle("-fx-background-color:" + PRIMARY + ";");
 
-        Label logo=label("EventXpert",30,true);
+        Label logo = label("EventXpert", 30, true);
         logo.setTextFill(Color.WHITE);
 
-        Label admin=new Label("ADMIN DASHBOARD");
+        Label admin = new Label("ADMIN DASHBOARD");
         admin.setTextFill(Color.WHITE);
         admin.setStyle("-fx-font-size:16px;-fx-font-weight:bold;");
 
-        VBox head=new VBox(2,logo,admin);
-        head.setPadding(new Insets(0,12,18,12));
+        VBox head = new VBox(2, logo, admin);
+        head.setPadding(new Insets(0, 12, 18, 12));
 
-        String[] items={"Dashboard","Event Requests","Events","Calendar",
-                "Customers","Organizers","Vendors","Conflict Detection",
+        String[] items = {"Dashboard", "Event Requests", "Events", "Calendar",
+                "Customers", "Organizers", "Vendors", "Conflict Detection",
                 "Reports & Analytics"};
 
-        VBox menu=new VBox(4);
+        VBox menu = new VBox(4);
 
-        for(String x:items){
-            Label l=new Label(x);
+        for (String x : items) {
+            Label l = new Label(x);
             l.setTextFill(Color.WHITE);
-            l.setFont(Font.font("Arial",17));
-            l.setPadding(new Insets(9,14,9,14));
+            l.setFont(Font.font("Arial", 17));
+            l.setPadding(new Insets(9, 14, 9, 14));
             l.setMaxWidth(Double.MAX_VALUE);
 
-            if(x.equals("Vendors"))
-                l.setStyle("-fx-background-color:#1264A3;"+
+            if (x.equals("Vendors"))
+                l.setStyle("-fx-background-color:#1264A3;" +
                         "-fx-background-radius:6;-fx-font-weight:bold;");
 
-             l.setOnMouseClicked(e -> {
-
-        Stage stage =
-            (Stage) l.getScene().getWindow();
-
-        NavigationManager.navigate(x, stage);
-    });
+            l.setOnMouseClicked(e -> {
+                Stage stage = (Stage) l.getScene().getWindow();
+                NavigationManager.navigate(x, stage);
+            });
 
             menu.getChildren().add(l);
         }
 
-        Region gap=new Region();
-        VBox.setVgrow(gap,Priority.ALWAYS);
+        Region gap = new Region();
+        VBox.setVgrow(gap, Priority.ALWAYS);
 
-        Label notifications=new Label("🔔  Notifications");
-        Label settings=new Label("⚙  Settings");
-        Label profile=new Label("👤  Profile");
-        Label support=new Label("?  Support");
+        Label notifications = new Label("🔔  Notifications");
+        Label settings = new Label("⚙  Settings");
+        Label profile = new Label("👤  Profile");
+        Label support = new Label("?  Support");
 
-        for(Label l:new Label[]{notifications,settings,profile,support}){
+        for (Label l : new Label[]{notifications, settings, profile, support}) {
             l.setTextFill(Color.WHITE);
-            l.setFont(Font.font("Arial",17));
-            l.setPadding(new Insets(7,14,7,14));
+            l.setFont(Font.font("Arial", 17));
+            l.setPadding(new Insets(7, 14, 7, 14));
         }
 
-        side.getChildren().addAll(
-                head,menu,gap,
-                notifications,settings,profile,support
-        );
-
+        side.getChildren().addAll(head, menu, gap, notifications, settings, profile, support);
         return side;
     }
 
-    VBox stat(String title,String value,String sub){
-        VBox v=card();
+    VBox stat(String title, Label valLabel, String sub) {
+        VBox v = card();
         v.setPrefHeight(125);
+        valLabel.setFont(Font.font("Arial", FontWeight.BOLD, 34));
+        valLabel.setTextFill(Color.web(PRIMARY));
+
         v.getChildren().addAll(
-                label(title.toUpperCase(),14,false),
-                label(value,34,true),
-                label(sub,14,false)
+                label(title.toUpperCase(), 14, false),
+                valLabel,
+                label(sub, 14, false)
         );
         return v;
     }
 
-    ObservableList<Vendor> data=FXCollections.observableArrayList(
-            new Vendor("Royal Caterers","Catering",
-                    "royal@example.com","+91 98765 43210",
-                    "Pune","48 Events","4.7 ★","Active"),
-
-            new Vendor("Projector and microphone","Special Requirements",
-                    "floral@example.com","+91 98234 56789",
-                    "Mumbai","36 Events","4.6 ★","Active"),
-
-            new Vendor("Click Moments","Photography",
-                    "click@example.com","+91 97654 32109",
-                    "Pune","52 Events","4.8 ★","Active"),
-
-            new Vendor("Sound Pro","Entertainment",
-                    "sound@example.com","+91 98989 12345",
-                    "Nashik","29 Events","4.4 ★","Busy"),
-
-            new Vendor("Grand Venue","Venue",
-                    "venue@example.com","+91 98123 45678",
-                    "Pune","41 Events","4.5 ★","Inactive")
-    );
-
-    void createTable(){
-
-        table=new TableView<>();
+    void createTable() {
+        table = new TableView<>();
         table.setItems(data);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setPrefHeight(300);
 
-        TableColumn<Vendor,String> name=col("Vendor",Vendor::getName);
-        TableColumn<Vendor,String> type=col("Type",Vendor::getType);
-        TableColumn<Vendor,String> email=col("Email",Vendor::getEmail);
-        TableColumn<Vendor,String> phone=col("Phone",Vendor::getPhone);
-        TableColumn<Vendor,String> location=col("Location",Vendor::getLocation);
-        TableColumn<Vendor,String> events=col("Events Served",Vendor::getEvents);
-        TableColumn<Vendor,String> rating=col("Rating",Vendor::getRating);
-        TableColumn<Vendor,String> status=col("Status",Vendor::getStatus);
+        TableColumn<VendorProfile, String> nameCol = new TableColumn<>("Vendor Business");
+        nameCol.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
+                d.getValue().getBusinessName() != null && !d.getValue().getBusinessName().isBlank()
+                        ? d.getValue().getBusinessName()
+                        : (d.getValue().getFullName() != null ? d.getValue().getFullName() : d.getValue().getName())
+        ));
 
-        TableColumn<Vendor,String> action=new TableColumn<>("Actions");
+        TableColumn<VendorProfile, String> typeCol = new TableColumn<>("Type / Category");
+        typeCol.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
+                d.getValue().getCategory() != null ? d.getValue().getCategory() : "General"
+        ));
 
-        action.setCellFactory(c->new TableCell<>(){
-            Button b=button("View");
+        TableColumn<VendorProfile, String> emailCol = new TableColumn<>("Email");
+        emailCol.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
+                d.getValue().getEmail() != null ? d.getValue().getEmail() : "N/A"
+        ));
+
+        TableColumn<VendorProfile, String> phoneCol = new TableColumn<>("Phone");
+        phoneCol.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
+                d.getValue().getPhone() != null && !d.getValue().getPhone().isBlank()
+                        ? d.getValue().getPhone()
+                        : (d.getValue().getMobileNo() != null ? d.getValue().getMobileNo() : "N/A")
+        ));
+
+        TableColumn<VendorProfile, String> locationCol = new TableColumn<>("Location");
+        locationCol.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
+                d.getValue().getAddress() != null ? d.getValue().getAddress() : "N/A"
+        ));
+
+        TableColumn<VendorProfile, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
+                d.getValue().getOnboardingStatus() != null ? d.getValue().getOnboardingStatus() : "NEW"
+        ));
+
+        TableColumn<VendorProfile, Void> actionCol = new TableColumn<>("Actions");
+        actionCol.setCellFactory(c -> new TableCell<>() {
+            Button b = button("View");
 
             {
-                        b.setOnAction(e -> {
-
-                                Stage stage = (Stage) b.getScene().getWindow();
-
-                                NavigationManager.navigate("Vendor Details", stage);
-                        });
+                b.setOnAction(e -> {
+                    VendorProfile selected = getTableView().getItems().get(getIndex());
+                    AdminContext.setSelectedVendorId(selected.getVendorId());
+                    Stage stage = (Stage) b.getScene().getWindow();
+                    NavigationManager.navigate("Vendor Details", stage);
+                });
             }
 
             @Override
-            protected void updateItem(String s,boolean empty){
-                super.updateItem(s,empty);
-                setGraphic(empty?null:b);
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : b);
             }
         });
 
-        table.getColumns().addAll(
-                name,type,email,phone,location,events,rating,status,action
-        );
+        table.getColumns().addAll(nameCol, typeCol, emailCol, phoneCol, locationCol, statusCol, actionCol);
     }
 
-    TableColumn<Vendor,String> col(
-            String title,
-            java.util.function.Function<Vendor,String> f){
+    public Scene getvendorScene() {
 
-        TableColumn<Vendor,String> c=new TableColumn<>(title);
-
-        c.setCellValueFactory(x->
-                new javafx.beans.property.SimpleStringProperty(
-                        f.apply(x.getValue())));
-
-        return c;
-    }
-
-    void filterData(String text){
-
-        String q=text.toLowerCase().trim();
-
-        table.setItems(data.filtered(v->
-                q.isEmpty() ||
-                v.getName().toLowerCase().contains(q) ||
-                v.getType().toLowerCase().contains(q) ||
-                v.getEmail().toLowerCase().contains(q) ||
-                v.getLocation().toLowerCase().contains(q)));
-    }
-
-
-
-
-
-    public Scene getvendorScene(){
-
-        BorderPane root=new BorderPane();
-        root.setStyle("-fx-background-color:"+BG+";");
-
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color:" + BG + ";");
         root.setLeft(sidebar());
 
-        VBox content=new VBox(18);
+        VBox content = new VBox(18);
         content.setPadding(new Insets(25));
 
-        Label title=label("Vendor Management",32,true);
-        Label sub=label(
-                "Manage and monitor all registered vendors on EventXpert.",
-                18,false);
+        Label title = label("Vendor Management", 32, true);
+        Label sub = label("Manage and monitor all registered vendors on EventXpert.", 18, false);
+        VBox heading = new VBox(5, title, sub);
 
-        VBox heading=new VBox(5,title,sub);
+        totalVendorsVal = new Label("0");
+        activeVendorsVal = new Label("0");
+        newVendorsVal = new Label("0");
+        inactiveVendorsVal = new Label("0");
 
-        HBox stats=new HBox(
+        HBox stats = new HBox(
                 15,
-                stat("Total Vendors","214","198 Active"),
-                stat("Active Vendors","198","Currently active"),
-                stat("New Vendors","12","This month"),
-                stat("Inactive Vendors","16","Need attention")
+                stat("Total Vendors", totalVendorsVal, "Registered"),
+                stat("Active Vendors", activeVendorsVal, "Currently active"),
+                stat("New Vendors", newVendorsVal, "Recent onboarding"),
+                stat("Inactive Vendors", inactiveVendorsVal, "Need attention")
         );
         stats.setCursor(javafx.scene.Cursor.HAND);
-
         stats.setStyle("-fx-font-size:18px;");
 
-        for(javafx.scene.Node n:stats.getChildren())
-            HBox.setHgrow(n,Priority.ALWAYS);
+        for (javafx.scene.Node n : stats.getChildren())
+            HBox.setHgrow(n, Priority.ALWAYS);
 
-        VBox vendorCard=card();
+        VBox vendorCard = card();
 
-        HBox tableHead=new HBox();
+        HBox tableHead = new HBox();
         tableHead.setAlignment(Pos.CENTER_LEFT);
 
-        Label all=label("All Vendors",21,true);
+        Label all = label("All Vendors", 21, true);
 
-        Region space=new Region();
-        HBox.setHgrow(space,Priority.ALWAYS);
+        Region space = new Region();
+        HBox.setHgrow(space, Priority.ALWAYS);
 
-        TextField tableSearch=new TextField();
+        TextField tableSearch = new TextField();
         tableSearch.setPromptText("Search vendors...");
         tableSearch.setPrefWidth(280);
 
-        tableSearch.textProperty().addListener(
-                (a,b,c)->filterData(c));
+        Button filter = button("☰  Filter");
+        filter.setOnAction(e -> tableSearch.clear());
 
-        Button filter=button("☰  Filter");
-
-        filter.setOnAction(e->{
-            tableSearch.clear();
-        });
-
-        tableHead.getChildren().addAll(
-                all,space,tableSearch,filter
-        );
+        tableHead.getChildren().addAll(all, space, tableSearch, filter);
 
         createTable();
 
-        HBox pagination=new HBox(10);
+        HBox pagination = new HBox(10);
         pagination.setAlignment(Pos.CENTER_RIGHT);
 
-        Button previous=button("Previous");
-        Button next=button("Next");
+        Button previous = button("Previous");
+        Button next = button("Next");
 
-        pagination.getChildren().addAll(previous,next);
+        pagination.getChildren().addAll(previous, next);
 
-        HBox footer=new HBox();
+        HBox footer = new HBox();
+        Region fspace = new Region();
+        HBox.setHgrow(fspace, Priority.ALWAYS);
 
-        Region fspace=new Region();
-        HBox.setHgrow(fspace,Priority.ALWAYS);
+        Label showing = label("Showing Vendors from Firestore", 14, false);
 
-        Label showing=label(
-                "Showing 1–10 of 214 vendors",14,false);
+        footer.getChildren().addAll(showing, fspace, pagination);
 
-        footer.getChildren().addAll(
-                showing,fspace,pagination
-        );
+        vendorCard.getChildren().addAll(tableHead, table, new Separator(), footer);
+        content.getChildren().addAll(heading, stats, vendorCard);
 
-        vendorCard.getChildren().addAll(
-                tableHead,table,new Separator(),footer
-        );
-
-        content.getChildren().addAll(
-                heading,stats,vendorCard
-        );
-
-        ScrollPane scroll=new ScrollPane(content);
+        ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(
-                ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setStyle(
-                "-fx-background-color:"+BG+";"
-        );
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setStyle("-fx-background-color:" + BG + ";");
 
         root.setCenter(scroll);
 
-        Scene scene=new Scene(root,1550,750);
+        loadVendorsDataAsync();
+
+        Scene scene = new Scene(root, 1550, 750);
         vendorScene = scene;
         return vendorScene;
-
-      
     }
 
-    public static class Vendor{
+    private void loadVendorsDataAsync() {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                AdminController controller = new AdminController();
+                List<VendorProfile> vendors = controller.getAllVendors();
 
-        String name,type,email,phone,location,
-                events,rating,status;
+                Platform.runLater(() -> {
+                    data.clear();
+                    int activeCount = 0;
+                    int newCount = 0;
+                    int inactiveCount = 0;
 
-        Vendor(String name,String type,String email,
-               String phone,String location,String events,
-               String rating,String status){
+                    for (VendorProfile v : vendors) {
+                        String st = v.getOnboardingStatus() != null ? v.getOnboardingStatus().toUpperCase() : "NEW";
+                        if ("ACTIVE".equals(st) || "EXISTING".equals(st) || v.isProfileCompleted() || v.isHasProvidedService()) {
+                            activeCount++;
+                        } else if ("NEW".equals(st)) {
+                            newCount++;
+                        } else {
+                            inactiveCount++;
+                        }
+                        data.add(v);
+                    }
 
-            this.name=name;
-            this.type=type;
-            this.email=email;
-            this.phone=phone;
-            this.location=location;
-            this.events=events;
-            this.rating=rating;
-            this.status=status;
-        }
+                    totalVendorsVal.setText(String.valueOf(vendors.size()));
+                    activeVendorsVal.setText(String.valueOf(activeCount));
+                    newVendorsVal.setText(String.valueOf(newCount));
+                    inactiveVendorsVal.setText(String.valueOf(inactiveCount));
+                });
+                return null;
+            }
+        };
 
-        String getName(){return name;}
-        String getType(){return type;}
-        String getEmail(){return email;}
-        String getPhone(){return phone;}
-        String getLocation(){return location;}
-        String getEvents(){return events;}
-        String getRating(){return rating;}
-        String getStatus(){return status;}
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
     }
 }
-
-
-       
-    
-
-    
-     
-
-  
-
-   
-
-        

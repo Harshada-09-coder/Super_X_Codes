@@ -84,12 +84,13 @@ public class AuthController {
             JSONObject document = new JSONObject().put("fields", fields);
             String projectId = "eventxpert-6f453";
             role = role.trim().toLowerCase();
-            String collection;
+            String collection = null;
 
             if (role.equalsIgnoreCase("customer")) {
                 collection = "Customers";
             } else if (role.equalsIgnoreCase("organizer")) {
-                collection = "Organizers";
+           fields.put("profileCompleted", new JSONObject().put("booleanValue", false));
+           fields.put("onboardingStatus", new JSONObject().put("stringValue", "NEW"));
             } else if (role.equalsIgnoreCase("vendor")) {
                 collection = "Vendors";
             } else {
