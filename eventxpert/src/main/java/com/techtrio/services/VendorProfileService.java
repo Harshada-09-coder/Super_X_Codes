@@ -1,10 +1,15 @@
 package com.techtrio.services;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.techtrio.firebase.FirebaseConfig;
 import com.techtrio.model.VendorProfile;
@@ -49,7 +54,7 @@ public class VendorProfileService {
     }
 
     // =========================
-    // READ / GET PROFILE
+    // READ / GET SINGLE PROFILE
     // =========================
     public VendorProfile getVendorProfile(String vendorId) {
         if (vendorId == null || vendorId.isBlank()) {
@@ -87,6 +92,49 @@ public class VendorProfileService {
             e.printStackTrace();
             return null;
         }
+    }
+
+    // =========================
+    // READ ALL VENDORS (FOR FIND VENDORS / ADMIN)
+    // =========================
+    public List<VendorProfile> getAllVendors() {
+        List<VendorProfile> list = new ArrayList<>();
+        try {
+            Firestore db = getDb();
+            if (db == null) return list;
+
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME).get();
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+            for (DocumentSnapshot doc : documents) {
+                VendorProfile vendor = doc.toObject(VendorProfile.class);
+                if (vendor != null) {
+                    if (vendor.getVendorId() == null || vendor.getVendorId().isBlank()) {
+                        vendor.setVendorId(doc.getId());
+                    }
+                    list.add(vendor);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching all Vendors from Firestore: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // =========================
+    // MARK VENDOR AS ACTIVE IN FIRESTORE
+    // =========================
+    public boolean markVendorAsActive(String vendorId) {
+        if (vendorId == null || vendorId.isBlank()) return false;
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("profileCompleted", true);
+        updates.put("hasProvidedService", true);
+        updates.put("onboardingStatus", "ACTIVE");
+        updates.put("currentProcess", "NONE");
+
+        return updateVendorProfileFields(vendorId, updates);
     }
 
     // =========================

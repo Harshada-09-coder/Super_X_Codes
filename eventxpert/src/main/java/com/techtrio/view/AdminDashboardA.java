@@ -6,6 +6,8 @@ import com.techtrio.controller.AdminController;
 import com.techtrio.controller.NavigationManager;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
+import com.techtrio.model.OrganizerProfile;
+import com.techtrio.model.VendorProfile;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -29,6 +31,8 @@ public class AdminDashboardA {
     private final String BACKGROUND = "#F8FAFC";
 
     private Label totalCustomersVal;
+    private Label totalOrganizersVal;
+    private Label totalVendorsVal;
     private Label activeEventsVal;
     private Label pendingRequestsVal;
     private TableView<String[]> table;
@@ -140,12 +144,14 @@ public class AdminDashboardA {
         HBox cards = new HBox(12);
 
         totalCustomersVal = new Label("0");
+        totalOrganizersVal = new Label("0");
+        totalVendorsVal = new Label("0");
         activeEventsVal = new Label("0");
         pendingRequestsVal = new Label("0");
 
         VBox customerCard = createCard("Total Customers", totalCustomersVal, "Registered");
-        VBox organizerCard = createCard("Total Organizers", new Label("0"), "Active");
-        VBox vendorCard = createCard("Total Vendors", new Label("0"), "Active");
+        VBox organizerCard = createCard("Total Organizers", totalOrganizersVal, "Active");
+        VBox vendorCard = createCard("Total Vendors", totalVendorsVal, "Active");
         VBox activeEventsCard = createCard("Active Events", activeEventsVal, "Planning");
         VBox pendingRequestsCard = createCard("Pending Requests", pendingRequestsVal, "Need review");
 
@@ -309,9 +315,14 @@ public class AdminDashboardA {
                 AdminController controller = new AdminController();
                 List<CustomerProfile> customers = controller.getAllCustomerProfiles();
                 List<Event> events = controller.getAllEvents();
+                List<OrganizerProfile> organizers = controller.getAllOrganizers();
+                List<VendorProfile> vendors = controller.getAllVendors();
 
                 Platform.runLater(() -> {
                     totalCustomersVal.setText(String.valueOf(customers.size()));
+                    totalOrganizersVal.setText(String.valueOf(organizers.size()));
+                    totalVendorsVal.setText(String.valueOf(vendors.size()));
+
                     int pendingCount = 0;
                     int activeCount = 0;
 
@@ -327,7 +338,7 @@ public class AdminDashboardA {
                                 .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
                                 .findFirst().orElse(null);
 
-                        String custName = cust != null ? cust.getName() : "Customer (" + ev.getCustomerId().substring(0, Math.min(6, ev.getCustomerId().length())) + ")";
+                        String custName = cust != null ? cust.getName() : "Customer (" + (ev.getCustomerId() != null && ev.getCustomerId().length() > 6 ? ev.getCustomerId().substring(0, 6) : "N/A") + ")";
                         table.getItems().add(new String[]{
                                 custName,
                                 ev.getEventType() != null ? ev.getEventType() : "General",
