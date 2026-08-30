@@ -78,7 +78,7 @@ public class ActiveCustomerDashboardC {
         createEventMenu.setOnMouseClicked(e -> openCreateEvent());
 
         HBox myEventsMenu = menuItem("▣", "My Events", false);
-        HBox calendarMenu = menuItem("□", "Calendar", false);
+    
         HBox notificationMenu = menuItem("♧", "Notifications", false);
 
         notificationMenu.setOnMouseClicked(e -> {
@@ -88,7 +88,7 @@ public class ActiveCustomerDashboardC {
             }
         });
 
-        menu.getChildren().addAll(dashboardMenu, createEventMenu, myEventsMenu, calendarMenu, notificationMenu);
+        menu.getChildren().addAll(dashboardMenu, createEventMenu, myEventsMenu,  notificationMenu);
 
         Region sidebarSpace = new Region();
         VBox.setVgrow(sidebarSpace, Priority.ALWAYS);
