@@ -1,12 +1,10 @@
 package com.techtrio.services;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.techtrio.model.ConflictResult;
 import com.techtrio.model.Event;
 import com.techtrio.model.VendorBooking;
-import com.techtrio.controller.AdminController;
 import com.techtrio.model.Conflict;
 
 import java.time.LocalDateTime;
@@ -16,7 +14,7 @@ public class ConflictDetectionService {
         private final EventService eventService = new EventService();
         private final ConflictService conflictService = new ConflictService();
         private final VendorBookingService vendorBookingService = new VendorBookingService();
-       
+
 
    /* public ConflictResult checkAllConflicts(Event newEvent) {
 

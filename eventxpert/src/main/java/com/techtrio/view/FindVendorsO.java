@@ -6,10 +6,13 @@ import java.util.stream.Collectors;
 
 import com.techtrio.context.AdminContext;
 import com.techtrio.controller.AdminController;
+import com.techtrio.controller.OrganizerController;
 import com.techtrio.controller.VendorController;
 import com.techtrio.model.Event;
+import com.techtrio.model.OrganizerProfile;
 import com.techtrio.model.VendorBooking;
 import com.techtrio.model.VendorProfile;
+import com.techtrio.services.EventService;
 import com.techtrio.services.VendorProfileService;
 import com.techtrio.session.UserSession;
 
@@ -40,6 +43,8 @@ public class FindVendorsO {
 
     private FlowPane allVendorsPane;
     private Label resultsCountLabel;
+    private Label eventTagLabel;
+    private Label breadcrumbLabel;
 
     private List<VendorProfile> realVendorsList = new ArrayList<>();
     private String selectedCategory = "All Categories";
@@ -84,6 +89,7 @@ public class FindVendorsO {
         root.setCenter(scrollPane);
 
         loadRealVendorsFromFirestoreAsync(stage);
+        loadDynamicEventBadgeAsync();
 
         return new Scene(root, 1550, 785);
     }
@@ -107,11 +113,47 @@ public class FindVendorsO {
         t.start();
     }
 
+    private void loadDynamicEventBadgeAsync() {
+        String currentEvtId = AdminContext.getSelectedEventId();
+        if (currentEvtId != null && !currentEvtId.isBlank() && !"EVT_DEFAULT".equals(currentEvtId)) {
+            Task<Event> task = new Task<>() {
+                @Override
+                protected Event call() {
+                    EventService eventService = new EventService();
+                    return eventService.getEventById(currentEvtId);
+                }
+            };
+            task.setOnSucceeded(e -> {
+                Event ev = task.getValue();
+                if (ev != null) {
+                    Platform.runLater(() -> {
+                        if (eventTagLabel != null) {
+                            eventTagLabel.setText("● " + ev.getEventName() + " • " + (ev.getCity() != null ? ev.getCity() : "India") + " • " + (ev.getEventDate() != null ? ev.getEventDate() : "TBD") + " • " + ev.getGuests() + " Guests");
+                        }
+                        if (breadcrumbLabel != null) {
+                            breadcrumbLabel.setText("My Events  >  " + ev.getEventName() + "  >  Vendors  >  Find Vendors");
+                        }
+                    });
+                }
+            });
+            Thread t = new Thread(task);
+            t.setDaemon(true);
+            t.start();
+        } else {
+            if (eventTagLabel != null) {
+                eventTagLabel.setText("● Browsing All Vendors (No Event Selected)");
+            }
+            if (breadcrumbLabel != null) {
+                breadcrumbLabel.setText("Vendors  >  Find Vendors (Directory Mode)");
+            }
+        }
+    }
+
     private VBox createPageHeader(Stage stage) {
         VBox headerBox = new VBox(6);
 
-        Label breadcrumb = new Label("My Events  >  TechVision Annual Summit  >  Vendors  >  Find Vendors");
-        breadcrumb.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        breadcrumbLabel = new Label("My Events  >  TechVision Annual Summit  >  Vendors  >  Find Vendors");
+        breadcrumbLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         HBox titleRow = new HBox(12);
         titleRow.setAlignment(Pos.CENTER_LEFT);
@@ -122,18 +164,18 @@ public class FindVendorsO {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label eventTag = new Label("● TechVision Annual Summit • Pune • 18 May 2026 • 250 Guests");
-        eventTag.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + BRIGHT_BLUE + "; -fx-font-weight: bold; -fx-padding: 6 12; -fx-background-radius: 16px; -fx-font-size: 12px;");
+        eventTagLabel = new Label("● TechVision Annual Summit • Pune • 18 May 2026 • 250 Guests");
+        eventTagLabel.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + BRIGHT_BLUE + "; -fx-font-weight: bold; -fx-padding: 6 12; -fx-background-radius: 16px; -fx-font-size: 12px;");
 
         Button backBtn = createSecondaryButton("← Back to Vendor Management");
         backBtn.setOnAction(e -> handleBack(stage));
 
-        titleRow.getChildren().addAll(title, backBtn, spacer, eventTag);
+        titleRow.getChildren().addAll(title, backBtn, spacer, eventTagLabel);
 
         Label subtitle = new Label("Discover trusted vendors that match your event requirements, budget and location.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        headerBox.getChildren().addAll(breadcrumb, titleRow, subtitle);
+        headerBox.getChildren().addAll(breadcrumbLabel, titleRow, subtitle);
         return headerBox;
     }
 
@@ -226,44 +268,77 @@ public class FindVendorsO {
         Button requestQuoteBtn = createPrimaryButton("Request Quote & Assign");
         requestQuoteBtn.setMaxWidth(Double.MAX_VALUE);
 
+        // =========================================================================
+        // CONDITIONAL ASSIGNMENT & DYNAMIC ORGANIZER + EVENT FIRESTORE LINKAGE
+        // =========================================================================
         requestQuoteBtn.setOnAction(e -> {
             String selectedEvtId = AdminContext.getSelectedEventId();
-            if (selectedEvtId == null || selectedEvtId.isBlank()) {
-                selectedEvtId = "EVT_DEFAULT";
+
+            // 1. CONDITION: IF ORGANIZER IS IN DIRECT VENDOR MANAGEMENT (NO EVENT SELECTED)
+            if (selectedEvtId == null || selectedEvtId.isBlank() || "EVT_DEFAULT".equalsIgnoreCase(selectedEvtId)) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Event Not Selected");
+                alert.setHeaderText("Cannot Assign Vendor Directly");
+                alert.setContentText("You are currently in general Vendor Management.\n\nTo assign this vendor to an event, please go to:\nMy Events ➔ View Planning ➔ Manage Vendors.");
+                alert.showAndWait();
+                return;
             }
 
-            final String evtId = selectedEvtId;
+            // 2. CONDITION MET: FETCH ACTUAL EVENT & ORGANIZER DETAILS FROM FIRESTORE
+            EventService eventService = new EventService();
+            Event event = eventService.getEventById(selectedEvtId);
 
-            AdminController adminController = new AdminController();
-            Event event = adminController.getEventById(evtId);
-            String evtName = event != null && event.getEventName() != null ? event.getEventName() : "Corporate Event";
-            String evtDate = event != null && event.getEventDate() != null ? event.getEventDate() : "18 May 2026";
-            int evtGuests = event != null ? event.getGuests() : 250;
-            String evtLoc = event != null && event.getCity() != null ? event.getCity() : "Pune";
+            if (event == null) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Event details not found in Firestore.");
+                alert.showAndWait();
+                return;
+            }
 
+            OrganizerController orgController = new OrganizerController();
+            OrganizerProfile orgProfile = orgController.getOrganizerProfile(uid);
+
+            String organizerName = (orgProfile != null && orgProfile.getName() != null && !orgProfile.getName().isBlank()) 
+                    ? orgProfile.getName() 
+                    : (event.getOrganizerName() != null ? event.getOrganizerName() : "Organizer");
+            
+            String orgPhone = (orgProfile != null && orgProfile.getMobileNo() != null) ? orgProfile.getMobileNo() : "";
+            String orgEmail = (orgProfile != null && orgProfile.getEmail() != null) ? orgProfile.getEmail() : "";
+
+            String evtName = event.getEventName() != null ? event.getEventName() : "Event";
+            String evtDate = event.getEventDate() != null ? event.getEventDate() : "TBD";
+            int evtGuests = event.getGuests() > 0 ? event.getGuests() : 200;
+            String evtLoc = event.getCity() != null ? event.getCity() : (event.getLocality() != null ? event.getLocality() : "Pune");
+            String estAmount = event.getBudget() != null && !event.getBudget().isBlank() ? event.getBudget() : "₹75,000";
+
+            // 3. CREATE DYNAMIC VENDOR BOOKING
             VendorBooking booking = new VendorBooking(
                     "BKG_" + System.currentTimeMillis(),
-                    evtId,
+                    selectedEvtId,
                     evtName,
                     evtDate,
                     uid,
-                    "Organizer",
+                    organizerName,
                     v.getVendorId(),
                     bName,
                     cat,
-                    "₹75,000",
+                    estAmount,
                     evtGuests,
                     evtLoc
             );
+
+            // Set Customer/Organizer contact info for the Vendor to see
+            booking.setCustomerName(organizerName);
+            booking.setCustomerPhone(orgPhone);
+            booking.setCustomerEmail(orgEmail);
 
             VendorController vendorController = new VendorController();
             boolean success = vendorController.requestVendorBooking(booking);
 
             if (success) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Booking request sent to Vendor [" + bName + "] in Firestore!");
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Booking request for event [" + evtName + "] sent to Vendor [" + bName + "] in Firestore!");
                 alert.showAndWait();
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to send booking request.");
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to send booking request to Vendor.");
                 alert.showAndWait();
             }
         });
