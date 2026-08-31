@@ -8,7 +8,9 @@ import com.techtrio.context.AdminContext;
 import com.techtrio.controller.OrganizerController;
 import com.techtrio.model.Event;
 import com.techtrio.model.OrganizerProfile;
+import com.techtrio.model.WeatherData;
 import com.techtrio.services.EventService;
+import com.techtrio.services.WeatherService;
 import com.techtrio.session.UserSession;
 
 import javafx.application.Platform;
@@ -66,6 +68,11 @@ public class OrganizerDashboardO {
 
     private VBox upcomingEventsTableBox;
     private VBox tasksContainerBox;
+
+    // Weather Dynamic Components
+    private VBox weatherBox;
+    private Label wTitle;
+    private Label wDesc;
 
     public OrganizerDashboardO() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -133,6 +140,11 @@ public class OrganizerDashboardO {
                 List<Event> assignedEvents = eventService.getEventsByOrganizerId(uid);
 
                 Platform.runLater(() -> {
+                    String eventCity = "Pune";      // Default City
+                    String targetEventDate = null;  // Nearest Upcoming Event Date
+                    LocalDate nearestDate = null;
+                    LocalDate today = LocalDate.now();
+
                     if (assignedEvents == null || assignedEvents.isEmpty()) {
                         activeEventsValLabel.setText("00");
                         pendingRequestsValLabel.setText("00");
@@ -161,6 +173,31 @@ public class OrganizerDashboardO {
                             if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(evStatus)) {
                                 activeCount++;
                                 upcomingCount++;
+
+                                // फक्त आजचे किंवा भविष्यातील इव्हेंट तपासून सर्वात जवळचा इव्हेंट निवडणे
+                                if (ev.getEventDate() != null && !ev.getEventDate().isBlank()) {
+                                    try {
+                                        LocalDate parsedDate = LocalDate.parse(ev.getEventDate().trim());
+                                        // जर इव्हेंटची तारीख आजची किंवा पुढची असेल
+                                        if (!parsedDate.isBefore(today)) {
+                                            if (nearestDate == null || parsedDate.isBefore(nearestDate)) {
+                                                nearestDate = parsedDate;
+                                                targetEventDate = ev.getEventDate().trim();
+                                                if (ev.getCity() != null && !ev.getCity().isBlank()) {
+                                                    eventCity = ev.getCity().trim();
+                                                }
+                                            }
+                                        }
+                                    } catch (Exception ex) {
+                                        // तारीख पार्सिंग एरर असल्यास फॉलबॅक
+                                        if (targetEventDate == null) {
+                                            targetEventDate = ev.getEventDate().trim();
+                                            if (ev.getCity() != null && !ev.getCity().isBlank()) {
+                                                eventCity = ev.getCity().trim();
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             // Render row in upcoming events table
@@ -187,10 +224,18 @@ public class OrganizerDashboardO {
                         activeEventsValLabel.setText(String.format("%02d", activeCount));
                         pendingRequestsValLabel.setText(String.format("%02d", pendingCount));
                         upcomingEventsValLabel.setText(String.format("%02d", upcomingCount));
-                        tasksDueValLabel.setText("00"); // 00 until task backend collection exists
+                        tasksDueValLabel.setText("00");
 
                         renderEmptyTasksState();
                     }
+
+                    // जर सर्व इव्हेंट्स जुने असतील तर आजचे हवामान दाखवावे
+                    if (targetEventDate == null) {
+                        targetEventDate = today.toString();
+                    }
+
+                    // 3. FETCH WEATHER FOR NEAREST UPCOMING EVENT
+                    fetchWeatherAsync(eventCity, targetEventDate);
                 });
 
                 return null;
@@ -200,6 +245,39 @@ public class OrganizerDashboardO {
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
+    }
+
+    // ==========================================
+    // ASYNC WEATHER UPDATE HELPER
+    // ==========================================
+    private void fetchWeatherAsync(String city, String eventDate) {
+        new Thread(() -> {
+            WeatherService service = new WeatherService();
+            WeatherData data = service.getWeatherForEventDate(city, eventDate);
+
+            Platform.runLater(() -> {
+                if (data != null && wTitle != null && wDesc != null) {
+                    String dateSuffix = (eventDate != null && !eventDate.isBlank()) ? " (" + eventDate + ")" : "";
+                    
+                    if (data.getTemperature() != 0) {
+                        wTitle.setText("Weather: " + city + dateSuffix + " (" + data.getTemperature() + "°C)");
+                    } else {
+                        wTitle.setText("Weather: " + city + dateSuffix);
+                    }
+                    wDesc.setText(data.getAlertMessage());
+
+                    if ("WARNING".equals(data.getAlertType())) {
+                        weatherBox.setStyle("-fx-background-color: #FFF4E5; -fx-border-color: #FFA726; -fx-border-radius: 6px;");
+                        wTitle.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #B06000;");
+                        wDesc.setStyle("-fx-font-size: 10px; -fx-text-fill: #B06000;");
+                    } else {
+                        weatherBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px;");
+                        wTitle.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+                        wDesc.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+                    }
+                }
+            });
+        }).start();
     }
 
     private void renderEmptyEventsState() {
@@ -481,13 +559,13 @@ public class OrganizerDashboardO {
         title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
         header.getChildren().addAll(alertIcon, title);
 
-        VBox weatherBox = new VBox(2);
+        weatherBox = new VBox(2);
         weatherBox.setPadding(new Insets(6, 8, 6, 8));
         weatherBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px;");
 
-        Label wTitle = new Label("Weather Update");
+        wTitle = new Label("Weather Update");
         wTitle.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-        Label wDesc = new Label("No urgent weather risks detected.");
+        wDesc = new Label("Checking live weather forecast...");
         wDesc.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         weatherBox.getChildren().addAll(wTitle, wDesc);
@@ -688,7 +766,7 @@ public class OrganizerDashboardO {
         return btn;
     }
 
-    // NAVIGATION HANDLERS
+    // NAVIGATION HANDLERS (EXACT ORIGINAL)
     private void openEventRequests() {
         EventRequestsO view = new EventRequestsO(uid, idToken);
         LandingPage.landingPageStage.setScene(view.geteventRequestsOScene(this::backToOrganizerDashboard));
