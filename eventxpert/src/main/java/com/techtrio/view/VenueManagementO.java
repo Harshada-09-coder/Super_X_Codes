@@ -1,19 +1,34 @@
 package com.techtrio.view;
 
+import java.awt.Desktop;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+import com.techtrio.session.UserSession;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Arc;
 import javafx.scene.shape.ArcType;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.Line;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
-
-import com.techtrio.session.UserSession;
 
 public class VenueManagementO {
 
@@ -34,8 +49,23 @@ public class VenueManagementO {
     private static final String WARNING_BG = "#FEF7E0";
     private static final String WARNING_TEXT = "#B06000";
 
-    private String selectedVenueName = "Grand Convention Center";
+    // Dynamic State Variables (Loaded from Customer's Input)
+    private String selectedVenueName = (ReviewPageC.EventData.confirmedVenueName != null && !ReviewPageC.EventData.confirmedVenueName.isBlank())
+            ? ReviewPageC.EventData.confirmedVenueName
+            : "Grand Convention Center";
+
+    private String selectedVenueAddress = (ReviewPageC.EventData.confirmedVenueAddress != null && !ReviewPageC.EventData.confirmedVenueAddress.isBlank())
+            ? ReviewPageC.EventData.confirmedVenueAddress
+            : "Senapati Bapat Rd, Pune";
+
     private String selectedVenueCost = "₹1,50,000";
+
+    // UI elements to update dynamically
+    private Label venueNameLabel;
+    private Label venueLocationSubLabel;
+    private Label venueCostLabel;
+    private Label mapCalloutName;
+    private Label mapCalloutAddr;
 
     private String uid;
     private String idToken;
@@ -84,7 +114,7 @@ public class VenueManagementO {
     private VBox createPageHeader(Stage stage) {
         VBox headerBox = new VBox(6);
 
-        Label breadcrumb = new Label("My Events  >  TechVision Annual Summit  >  Venue");
+        Label breadcrumb = new Label("My Events  >  Event Setup  >  Venue Management");
         breadcrumb.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         HBox titleRow = new HBox(12);
@@ -96,10 +126,24 @@ public class VenueManagementO {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        // BUTTON 1: CONFIRM & ASSIGN TO VENDOR
+        Button assignToVendorBtn = createPrimaryButton("✓ Confirm & Send to Vendor");
+        assignToVendorBtn.setOnAction(e -> {
+            ReviewPageC.EventData.confirmedVenueName = selectedVenueName;
+            ReviewPageC.EventData.confirmedVenueAddress = selectedVenueAddress;
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Venue Assigned");
+            alert.setHeaderText("Success!");
+            alert.setContentText("Venue details and Map location sent to Customer & Assigned Vendors successfully.");
+            alert.showAndWait();
+        });
+
+        // BUTTON 2: BACK
         Button backBtn = createSecondaryButton("← Back to Planning");
         backBtn.setOnAction(e -> handleBack(stage));
 
-        titleRow.getChildren().addAll(title, spacer, backBtn);
+        titleRow.getChildren().addAll(title, spacer, assignToVendorBtn, backBtn);
 
         Label subtitle = new Label("Manage the event venue, location, availability and backup options.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
@@ -131,27 +175,27 @@ public class VenueManagementO {
         costBox.setAlignment(Pos.TOP_RIGHT);
         Label costTitle = new Label("Total Cost");
         costTitle.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Label costVal = new Label(selectedVenueCost);
-        costVal.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
-        costBox.getChildren().addAll(costTitle, costVal);
+        venueCostLabel = new Label(selectedVenueCost);
+        venueCostLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        costBox.getChildren().addAll(costTitle, venueCostLabel);
 
         cardHeader.getChildren().addAll(statusBadge, sp, costBox);
 
-        Label venueName = new Label(selectedVenueName);
-        venueName.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+        venueNameLabel = new Label(selectedVenueName);
+        venueNameLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
-        Label locationSub = new Label("📍 Senapati Bapat Road, Pune");
-        locationSub.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        venueLocationSubLabel = new Label("📍 " + selectedVenueAddress);
+        venueLocationSubLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         HBox metricsGrid = new HBox(16);
         metricsGrid.setPadding(new Insets(12, 0, 0, 0));
         metricsGrid.getChildren().addAll(
                 createMiniSpecBox("Capacity", "500 (Req: 250)", "✓ Fits Guests"),
-                createMiniSpecBox("Availability", "Dates secured", "✓ 18 May 2026"),
+                createMiniSpecBox("Availability", "Dates secured", "✓ Confirmed"),
                 createMiniSpecBox("Budget", "Within Limit", "✓ Approved")
         );
 
-        mainVenueCard.getChildren().addAll(cardHeader, venueName, locationSub, new Separator(), metricsGrid);
+        mainVenueCard.getChildren().addAll(cardHeader, venueNameLabel, venueLocationSubLabel, new Separator(), metricsGrid);
 
         // Card 2: Smart Venue Match Gauge Card
         VBox matchCard = createCardContainer();
@@ -166,7 +210,7 @@ public class VenueManagementO {
         StackPane circleGauge = createCircularGauge(95);
 
         VBox gaugeDetails = new VBox(4);
-        Label matchRating = new Label("Excellent fit for TechVision Summit.");
+        Label matchRating = new Label("Excellent fit for the event requirements.");
         matchRating.setWrapText(true);
         matchRating.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         gaugeDetails.getChildren().addAll(matchRating);
@@ -175,9 +219,9 @@ public class VenueManagementO {
 
         VBox checklist = new VBox(4);
         checklist.getChildren().addAll(
-                new Label("✓ Capacity (250+ req)"),
+                new Label("✓ Capacity Match"),
                 new Label("✓ Central Location"),
-                new Label("✓ Corporate Setup")
+                new Label("✓ Complete Logistics Setup")
         );
         for (javafx.scene.Node n : checklist.getChildren()) {
             n.setStyle("-fx-font-size: 11px; -fx-text-fill: " + GREEN_TEXT + ";");
@@ -188,7 +232,7 @@ public class VenueManagementO {
         aiInsightBox.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-background-radius: 8px;");
         Label aiHeader = new Label("💡 AI Insight:");
         aiHeader.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: " + PRIMARY_BLUE + ";");
-        Label aiText = new Label("While this venue is a 95% match, weather patterns suggest a medium rain risk. Ensure the indoor backup area is fully prepped.");
+        Label aiText = new Label("Venue fits capacity & logistics smoothly. Weather patterns recommend confirming air-conditioned banquet halls.");
         aiText.setWrapText(true);
         aiText.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
         aiInsightBox.getChildren().addAll(aiHeader, aiText);
@@ -245,30 +289,51 @@ public class VenueManagementO {
         mapTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + NAVY + ";");
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
 
-        Button directionsBtn = createSecondaryButton("🗺 Directions");
+        // DIRECTIONS BUTTON - OPENS GOOGLE MAPS
+        Button directionsBtn = createSecondaryButton("📍 Open in Google Maps");
+        directionsBtn.setOnAction(e -> openInGoogleMaps(selectedVenueName + " " + selectedVenueAddress));
+
         mapHeader.getChildren().addAll(mapTitle, sp, directionsBtn);
 
+        // Map Visual Panel
         StackPane mapVisual = new StackPane();
-        mapVisual.setPrefHeight(200);
+        mapVisual.setPrefHeight(220);
         mapVisual.setStyle("-fx-background-color: #E5EEF8; -fx-background-radius: 8px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px;");
 
-        Pane linesPane = new Pane();
-        Line line1 = new Line(0, 50, 600, 120); line1.setStroke(Color.WHITE); line1.setStrokeWidth(8);
-        Line line2 = new Line(200, 0, 150, 200); line2.setStroke(Color.WHITE); line2.setStrokeWidth(6);
-        linesPane.getChildren().addAll(line1, line2);
+        try {
+            Image mapImage = new Image(getClass().getResource("/assets/images/map img.jpg").toExternalForm());
+            ImageView mapView = new ImageView(mapImage);
+            mapView.setFitWidth(550);
+            mapView.setFitHeight(210);
+            mapView.setPreserveRatio(false);
+            mapView.setSmooth(true);
+            mapVisual.getChildren().add(mapView);
+        } catch (Exception ex) {
+            Label noImg = new Label("🗺 Interactive Map Preview");
+            noImg.setStyle("-fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + ";");
+            mapVisual.getChildren().add(noImg);
+        }
 
+        // Floating Callout Info
         VBox callout = new VBox(4);
-        callout.setMaxSize(280, 80);
+        callout.setMaxSize(340, 85);
         callout.setPadding(new Insets(10));
-        callout.setStyle("-fx-background-color: " + WHITE + "; -fx-background-radius: 8px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 8, 0, 0, 2);");
+        callout.setStyle("-fx-background-color: " + WHITE + "; -fx-background-radius: 8px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 8, 0, 0, 2);");
 
-        Label cName = new Label("Grand Convention Center"); cName.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + NAVY + ";");
-        Label cAddr = new Label("123 Senapati Bapat Rd, Pune, Maharashtra 411016"); cAddr.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Label cDist = new Label("🚗 8.4 km   ⏰ 25-35 min"); cDist.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        mapCalloutName = new Label(selectedVenueName);
+        mapCalloutName.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + NAVY + ";");
 
-        callout.getChildren().addAll(cName, cAddr, cDist);
-        mapVisual.getChildren().addAll(linesPane, callout);
+        mapCalloutAddr = new Label(selectedVenueAddress);
+        mapCalloutAddr.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
+        Label cDist = new Label("🚗 Logistics Route Ready   [Click 'Open in Google Maps']");
+        cDist.setStyle("-fx-font-size: 9px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
+
+        callout.getChildren().addAll(mapCalloutName, mapCalloutAddr, cDist);
+        StackPane.setAlignment(callout, Pos.BOTTOM_LEFT);
+        StackPane.setMargin(callout, new Insets(0, 0, 10, 10));
+
+        mapVisual.getChildren().add(callout);
         mapCard.getChildren().addAll(mapHeader, mapVisual);
 
         // Right Risk Overview Card
@@ -312,30 +377,52 @@ public class VenueManagementO {
         VBox section = new VBox(12);
 
         HBox sectionHeader = new HBox();
-        Label title = new Label("Alternative Venues");
+        Label title = new Label("Alternative Venues (Click to select & preview location)");
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
 
-        Label viewAll = new Label("View All Options");
+        Label viewAll = new Label("Reset to Customer Location");
         viewAll.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-cursor: hand;");
+        viewAll.setOnMouseClicked(e -> {
+            String defaultAddr = (ReviewPageC.EventData.confirmedVenueAddress != null && !ReviewPageC.EventData.confirmedVenueAddress.isBlank())
+                    ? ReviewPageC.EventData.confirmedVenueAddress
+                    : "Senapati Bapat Rd, Pune";
+
+            String defaultName = (ReviewPageC.EventData.confirmedVenueName != null && !ReviewPageC.EventData.confirmedVenueName.isBlank())
+                    ? ReviewPageC.EventData.confirmedVenueName
+                    : "Grand Convention Center";
+
+            updateSelectedVenue(defaultName, defaultAddr, "₹1,50,000");
+        });
 
         sectionHeader.getChildren().addAll(title, sp, viewAll);
 
+        String currentCity = (ReviewPageC.EventData.city != null && !ReviewPageC.EventData.city.isBlank())
+                ? ReviewPageC.EventData.city : "Pune";
+
         HBox cardsRow = new HBox(16);
         cardsRow.getChildren().addAll(
-                createVenueOptionCard("Blue Horizon Hall", "88% Match", "👥 Cap: 300", "📍 12 km away", "₹1,35,000"),
-                createVenueOptionCard("Pune Business Center", "82% Match", "👥 Cap: 250", "📍 5 km away", "₹1,60,000"),
-                createVenueOptionCard("Riverside Corporate Hall", "75% Match", "👥 Cap: 400", "📍 18 km away", "₹1,20,000")
+                createVenueOptionCard("Blue Horizon Hall", "Downtown, " + currentCity, "88% Match", "👥 Cap: 300", "📍 12 km away", "₹1,35,000"),
+                createVenueOptionCard("Royal Business Center", "Central Avenue, " + currentCity, "82% Match", "👥 Cap: 250", "📍 5 km away", "₹1,60,000"),
+                createVenueOptionCard("Riverside Palace", "Riverside Road, " + currentCity, "75% Match", "👥 Cap: 400", "📍 18 km away", "₹1,20,000")
         );
 
         section.getChildren().addAll(sectionHeader, cardsRow);
         return section;
     }
 
-    private VBox createVenueOptionCard(String name, String match, String cap, String dist, String price) {
+    private VBox createVenueOptionCard(String name, String address, String match, String cap, String dist, String price) {
         VBox card = createCardContainer();
         HBox.setHgrow(card, Priority.ALWAYS);
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-background-radius: 12px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 12px; -fx-cursor: hand;");
+
+        // Hover Effect
+        card.setOnMouseEntered(e -> card.setStyle("-fx-background-color: #FAFCFF; -fx-background-radius: 12px; -fx-border-color: " + PRIMARY_BLUE + "; -fx-border-radius: 12px; -fx-cursor: hand;"));
+        card.setOnMouseExited(e -> card.setStyle("-fx-background-color: " + WHITE + "; -fx-background-radius: 12px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 12px; -fx-cursor: hand;"));
+
+        // Click to dynamically select venue
+        card.setOnMouseClicked(e -> updateSelectedVenue(name, address, price));
 
         HBox topRow = new HBox();
         Label matchBadge = new Label(match);
@@ -344,6 +431,7 @@ public class VenueManagementO {
         topRow.getChildren().addAll(sp, matchBadge);
 
         Label vName = new Label(name); vName.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + NAVY + ";");
+        Label vAddr = new Label("📍 " + address); vAddr.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         Label vCap = new Label(cap); vCap.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         Label vDist = new Label(dist); vDist.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
@@ -354,8 +442,43 @@ public class VenueManagementO {
         Label costVal = new Label(price); costVal.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + PRIMARY_BLUE + ";");
         bottomRow.getChildren().addAll(costLbl, bSp, costVal);
 
-        card.getChildren().addAll(topRow, vName, vCap, vDist, new Separator(), bottomRow);
+        card.getChildren().addAll(topRow, vName, vAddr, vCap, vDist, new Separator(), bottomRow);
         return card;
+    }
+
+    // ==========================================
+    // HELPER METHODS: DYNAMIC UPDATE & GOOGLE MAPS
+    // ==========================================
+    private void updateSelectedVenue(String name, String address, String cost) {
+        this.selectedVenueName = name;
+        this.selectedVenueAddress = address;
+        this.selectedVenueCost = cost;
+
+        if (venueNameLabel != null) venueNameLabel.setText(name);
+        if (venueLocationSubLabel != null) venueLocationSubLabel.setText("📍 " + address);
+        if (venueCostLabel != null) venueCostLabel.setText(cost);
+        if (mapCalloutName != null) mapCalloutName.setText(name);
+        if (mapCalloutAddr != null) mapCalloutAddr.setText(address);
+    }
+
+    private void openInGoogleMaps(String locationQuery) {
+        try {
+            String encodedQuery = URLEncoder.encode(locationQuery, StandardCharsets.UTF_8);
+            String mapUrl = "https://www.google.com/maps/search/?api=1&query=" + encodedQuery;
+
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(mapUrl));
+            } else {
+                Runtime.getRuntime().exec(new String[]{"rundll32", "url.dll,FileProtocolHandler", mapUrl});
+            }
+        } catch (Exception ex) {
+            System.err.println("Error opening map: " + ex.getMessage());
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Location Info");
+            alert.setHeaderText(null);
+            alert.setContentText("Could not open Google Maps.");
+            alert.showAndWait();
+        }
     }
 
     private void handleBack(Stage stage) {
