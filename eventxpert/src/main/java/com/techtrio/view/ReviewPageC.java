@@ -49,6 +49,10 @@ public class ReviewPageC {
         public static String budget = "₹ 8,45,000";
         public static boolean aiEnabled = true;
 
+        // Shared with Organizer and Vendor
+        public static String confirmedVenueName = "Grand Convention Center";
+        public static String confirmedVenueAddress = "Senapati Bapat Road, Pune";
+
         public static void reset() {
             category = "Formal";
             eventName = "";
@@ -63,6 +67,9 @@ public class ReviewPageC {
             venue = "";
             budget = "₹ 8,45,000";
             aiEnabled = true;
+
+            confirmedVenueName = "Grand Convention Center";
+            confirmedVenueAddress = "Senapati Bapat Road, Pune";
         }
     }
 
@@ -138,7 +145,6 @@ public class ReviewPageC {
         Label subtitle = label("Please double-check your event setup and AI recommendations before final submission.", 13, FontWeight.NORMAL, MUTED_TEXT);
         VBox titleBoxPage = new VBox(3, title, subtitle);
 
-        // 50%-50% BALANCED 2-COLUMN GRID (Prevents any card from being squished)
         GridPane grid = new GridPane();
         grid.setHgap(16);
         grid.setVgap(16);
@@ -158,7 +164,6 @@ public class ReviewPageC {
         grid.add(requirementsCard(), 0, 1);
         grid.add(budgetReviewCard(), 1, 1);
 
-        // AI Planning Summary Banner Card (Bottom Full-Width)
         VBox aiPlanCard = aiPlanningSummaryCard();
 
         page.getChildren().addAll(titleBoxPage, grid, aiPlanCard);
