@@ -104,7 +104,13 @@ public class ActiveCustomerDashboardC {
         HBox dashboardMenu = menuItem("▦", "Dashboard", true);
         HBox createEventMenu = menuItem("⊕", "Create Event", false);
         createEventMenu.setOnMouseClicked(e -> openCreateEvent());
+        
+        // ==========================================
+        // फक्त येथे My Events चे नेव्हिगेशन जोडले आहे
+        // ==========================================
         HBox myEventsMenu = menuItem("▣", "My Events", false);
+        myEventsMenu.setOnMouseClicked(e -> openMyEvents());
+
         HBox notificationMenu = menuItem("♧", "Notifications", false);
 
         notificationMenu.setOnMouseClicked(e -> {
@@ -278,6 +284,16 @@ public class ActiveCustomerDashboardC {
         CreateEventC createView = new CreateEventC(uid, idToken);
         if (LandingPage.landingPageStage != null) {
             LandingPage.landingPageStage.setScene(createView.getCreateEventScene(this::returnToDashboard));
+        }
+    }
+
+    // ==========================================
+    // MyEvents पेज उघडण्यासाठीची पद्धत
+    // ==========================================
+    private void openMyEvents() {
+        MyEvents myEventsPage = new MyEvents(uid, idToken);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(myEventsPage.getMyEventsScene(this::returnToDashboard));
         }
     }
 
