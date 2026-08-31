@@ -51,6 +51,10 @@ public class ReviewPageC {
         public static String aiPlanJson = "";
         public static String theme = "Classic Elegance";
 
+        // Shared with Organizer and Vendor
+        public static String confirmedVenueName = "Grand Convention Center";
+        public static String confirmedVenueAddress = "Senapati Bapat Road, Pune";
+
         public static void reset() {
             category = "Formal";
             eventName = "";
@@ -67,6 +71,9 @@ public class ReviewPageC {
             aiEnabled = true;
             aiPlanJson = "";
             theme = "Classic Elegance";
+
+            confirmedVenueName = "Grand Convention Center";
+            confirmedVenueAddress = "Senapati Bapat Road, Pune";
         }
     }
 
@@ -162,7 +169,6 @@ public class ReviewPageC {
         grid.add(requirementsCard(), 0, 1);
         grid.add(budgetReviewCard(), 1, 1);
 
-        // AI Planning Summary Banner Card (Bottom Full-Width)
         VBox aiPlanCard = aiPlanningSummaryCard();
 
         page.getChildren().addAll(titleBoxPage, grid, aiPlanCard);
