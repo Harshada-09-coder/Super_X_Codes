@@ -49,6 +49,30 @@ public class VendorBookingService {
         }
     }
 
+    // =========================================================================
+    // NEW: FETCH SINGLE BOOKING BY ID (FOR DETAILS PAGES)
+    // =========================================================================
+    public VendorBooking getBookingById(String bookingId) {
+        if (bookingId == null || bookingId.isBlank()) return null;
+        try {
+            Firestore db = getDb();
+            if (db == null) return null;
+
+            ApiFuture<DocumentSnapshot> future = db.collection(COLLECTION_NAME).document(bookingId.trim()).get();
+            DocumentSnapshot doc = future.get();
+            if (doc.exists()) {
+                VendorBooking b = doc.toObject(VendorBooking.class);
+                if (b != null && (b.getBookingId() == null || b.getBookingId().isBlank())) {
+                    b.setBookingId(doc.getId());
+                }
+                return b;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public List<VendorBooking> getBookingsByVendorId(String vendorId) {
         List<VendorBooking> list = new ArrayList<>();
         if (vendorId == null || vendorId.isBlank()) return list;

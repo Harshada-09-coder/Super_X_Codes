@@ -285,6 +285,8 @@ public class LoginPage {
                 } else if (role.equalsIgnoreCase("vendor")) {
                     System.out.println("Opening Vendor Dashboard");
                     VendorController vendorController = new VendorController();
+                    
+                    // FIXED: Used getVendorState to return VendorState object correctly
                     VendorState vendorState = vendorController.getVendorState(uid, idToken);
 
                     if (vendorState == null) {
@@ -298,8 +300,6 @@ public class LoginPage {
                     System.out.println("Current Process: " + vendorState.getCurrentProcess());
                     System.out.println("==================================");
 
-                    // CORRECTED VENDOR ACTIVE CONDITION:
-                    // Vendor is Active if profile is completed OR has provided service OR status is ACTIVE/EXISTING
                     boolean isActiveVendor = vendorState.isProfileCompleted()
                             || vendorState.hasProvidedService()
                             || "ACTIVE".equalsIgnoreCase(vendorState.getOnboardingStatus())

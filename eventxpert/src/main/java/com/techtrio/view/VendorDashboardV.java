@@ -23,7 +23,7 @@ public class VendorDashboardV {
     private String uid;
     private String idToken;
 
-    // COLOR PALETTE CONSTANTS (EXACT ORIGINAL VENDOR THEME)
+    // COLOR PALETTE CONSTANTS
     private static final String SIDEBAR_NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
     private static final String LIGHT_BLUE = "#EAF3FF";
@@ -41,6 +41,7 @@ public class VendorDashboardV {
     private VBox requestsContainerBox;
     private Label newReqValLbl;
     private Label upcomingValLbl;
+    private GridPane upcomingTableGrid;
 
     public VendorDashboardV() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -83,7 +84,6 @@ public class VendorDashboardV {
 
         scrollPane.setContent(mainContent);
         mainArea.setCenter(scrollPane);
-
         root.setCenter(mainArea);
 
         loadVendorRequestsFromFirestoreAsync();
@@ -92,15 +92,9 @@ public class VendorDashboardV {
         return vendorDashboardScene;
     }
 
-    // ==========================================
-    // BACK NAVIGATION METHOD FOR VENDOR VIEWS
-    // ==========================================
     public void backToVendorDashboard() {
         if (LandingPage.landingPageStage != null) {
-            if (vendorDashboardScene == null) {
-                getvendorDashboardScene();
-            }
-            LandingPage.landingPageStage.setScene(vendorDashboardScene);
+            LandingPage.landingPageStage.setScene(getvendorDashboardScene());
         }
     }
 
@@ -122,9 +116,13 @@ public class VendorDashboardV {
             List<VendorBooking> bookings = task.getValue();
             Platform.runLater(() -> {
                 if (requestsContainerBox != null) requestsContainerBox.getChildren().clear();
+                if (upcomingTableGrid != null) {
+                    upcomingTableGrid.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) > 0);
+                }
 
                 int pendingCount = 0;
                 int confirmedCount = 0;
+                int tableRow = 1;
 
                 if (bookings != null) {
                     for (VendorBooking b : bookings) {
@@ -136,6 +134,9 @@ public class VendorDashboardV {
                             }
                         } else if ("CONFIRMED".equals(st)) {
                             confirmedCount++;
+                            if (upcomingTableGrid != null && tableRow <= 5) {
+                                addTableRow(upcomingTableGrid, tableRow++, b.getEventName(), b.getEventDate(), b.getServiceCategory(), b.getAmount(), "Confirmed");
+                            }
                         }
                     }
                 }
@@ -147,6 +148,10 @@ public class VendorDashboardV {
                     Label empty = new Label("No new service requests in Firestore.");
                     empty.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
                     requestsContainerBox.getChildren().add(empty);
+                }
+
+                if (upcomingTableGrid != null && tableRow == 1) {
+                    addTableRow(upcomingTableGrid, 1, "No upcoming bookings yet", "-", "-", "-", "Pending");
                 }
             });
         });
@@ -266,6 +271,8 @@ public class VendorDashboardV {
         bottomMeta.getChildren().addAll(serviceGuests, sp2, amount);
 
         Button viewBookingBtn = createLinkButton("View Booking →");
+        viewBookingBtn.setOnAction(e -> openMyBookings());
+
         nextBookingCard.getChildren().addAll(topRow1, eventTitle, detailsGrid, new Separator(), bottomMeta, viewBookingBtn);
 
         VBox actionCard = createCardContainer();
@@ -363,25 +370,22 @@ public class VendorDashboardV {
 
         Label viewAll = new Label("View All");
         viewAll.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-cursor: hand;");
+        viewAll.setOnMouseClicked(e -> openMyBookings());
 
         tableHeader.getChildren().addAll(tTitle, sp, viewAll);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(16);
-        grid.setVgap(12);
-        grid.setPadding(new Insets(10, 0, 0, 0));
+        upcomingTableGrid = new GridPane();
+        upcomingTableGrid.setHgap(16);
+        upcomingTableGrid.setVgap(12);
+        upcomingTableGrid.setPadding(new Insets(10, 0, 0, 0));
 
-        addTableHeader(grid, "EVENT", 0);
-        addTableHeader(grid, "DATE", 1);
-        addTableHeader(grid, "SERVICE", 2);
-        addTableHeader(grid, "AMOUNT", 3);
-        addTableHeader(grid, "STATUS", 4);
+        addTableHeader(upcomingTableGrid, "EVENT", 0);
+        addTableHeader(upcomingTableGrid, "DATE", 1);
+        addTableHeader(upcomingTableGrid, "SERVICE", 2);
+        addTableHeader(upcomingTableGrid, "AMOUNT", 3);
+        addTableHeader(upcomingTableGrid, "STATUS", 4);
 
-        addTableRow(grid, 1, "TechVision Annual Summit", "18 May 2026", "Audio & Visual", "₹85,000", "Confirmed");
-        addTableRow(grid, 2, "Corporate Leadership Meet", "22 May 2026", "Stage Lighting", "₹45,000", "Confirmed");
-        addTableRow(grid, 3, "Startup Connect 2026", "05 Jun 2026", "Sound System", "₹72,000", "Pending Payment");
-
-        tableCard.getChildren().addAll(tableHeader, grid);
+        tableCard.getChildren().addAll(tableHeader, upcomingTableGrid);
 
         VBox requestsCard = createCardContainer();
         requestsCard.setPrefWidth(380);
@@ -604,7 +608,7 @@ public class VendorDashboardV {
     }
 
     private void openServiceRequests() {
-        ServiceRequestsV serviceRequestsV = new ServiceRequestsV();
+        ServiceRequestsV serviceRequestsV = new ServiceRequestsV(uid, idToken);
         serviceRequestsV.setVendorDashboard(this);
         Scene serviceScene = serviceRequestsV.getserviceRequestVScene();
         if (LandingPage.landingPageStage != null) {
@@ -613,7 +617,7 @@ public class VendorDashboardV {
     }
 
     private void openMyBookings() {
-        MyBookingsV myBookingsV = new MyBookingsV();
+        MyBookingsV myBookingsV = new MyBookingsV(uid, idToken);
         myBookingsV.setVendorDashboard(this);
         Scene bookingScene = myBookingsV.getmyBookingScene();
         if (LandingPage.landingPageStage != null) {
