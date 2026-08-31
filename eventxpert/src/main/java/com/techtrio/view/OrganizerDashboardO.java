@@ -104,9 +104,6 @@ public class OrganizerDashboardO {
         return organizerDashboardScene;
     }
 
-    // =========================================================================
-    // DYNAMIC FIRESTORE DATA LOADER
-    // =========================================================================
     private void loadOrganizerDashboardDataAsync() {
         if (uid == null || uid.isBlank()) return;
 
@@ -128,17 +125,14 @@ public class OrganizerDashboardO {
                     }
                 });
 
-                // 2. Fetch Events Assigned specifically to this Organizer
+                // 2. Fetch Events Assigned specifically to this Organizer UID
                 EventService eventService = new EventService();
                 List<Event> assignedEvents = eventService.getEventsByOrganizerId(uid);
-
-                // 3. Fetch All Pending Customer Event Requests from Firestore
-                List<Event> pendingIncomingRequests = controller.getPendingEventRequests();
 
                 Platform.runLater(() -> {
                     int activeCount = 0;
                     int upcomingCount = 0;
-                    int pendingCount = (pendingIncomingRequests != null) ? pendingIncomingRequests.size() : 0;
+                    int pendingCount = 0;
 
                     if (upcomingEventsTableBox != null) {
                         upcomingEventsTableBox.getChildren().clear();
@@ -152,8 +146,9 @@ public class OrganizerDashboardO {
                             String oStatus = ev.getOrganizerStatus() != null ? ev.getOrganizerStatus().toUpperCase() : "";
                             String evStatus = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "";
 
-                            // FAKTA ACCEPTED / CONFIRMED ZALELICH EVENTS UPCOMING MADHYE DAKHVA
-                            if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(evStatus)) {
+                            if ("PENDING".equals(oStatus)) {
+                                pendingCount++;
+                            } else if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(evStatus)) {
                                 activeCount++;
                                 upcomingCount++;
                                 hasConfirmedEvents = true;
@@ -210,7 +205,7 @@ public class OrganizerDashboardO {
         Label icon = new Label("📅"); icon.setStyle("-fx-font-size: 28px;");
         Label title = new Label("No active events in planning");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
-        Label sub = new Label("Accept new requests from 'Event Requests' to start planning.");
+        Label sub = new Label("When Admin assigns you an event and you accept it, it will appear here.");
         sub.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         emptyBox.getChildren().addAll(icon, title, sub);
@@ -404,7 +399,7 @@ public class OrganizerDashboardO {
         HBox.setHgrow(kpiGroup, Priority.ALWAYS);
         kpiGroup.getChildren().addAll(
                 createSummaryCard(activeEventsValLabel, "Active Events", SVG_CALENDAR, PRIMARY_BLUE),
-                createSummaryCard(pendingRequestsValLabel, "Pending Requests", SVG_ALERT, AMBER_TEXT),
+                createSummaryCard(pendingRequestsValLabel, "Assigned Requests", SVG_ALERT, AMBER_TEXT),
                 createSummaryCard(upcomingEventsValLabel, "Upcoming Events", SVG_CALENDAR, BRIGHT_BLUE),
                 createSummaryCard(tasksDueValLabel, "Tasks Due Today", SVG_CHECK, GREEN_TEXT)
         );

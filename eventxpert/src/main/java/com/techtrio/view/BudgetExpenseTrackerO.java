@@ -1,5 +1,7 @@
 package com.techtrio.view;
 
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,6 +15,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.techtrio.context.AdminContext;
+import com.techtrio.controller.AdminController;
+import com.techtrio.controller.VendorController;
+import com.techtrio.model.AiEventPlan;
+import com.techtrio.model.Event;
+import com.techtrio.model.VendorBooking;
+import com.techtrio.services.EventService;
+import com.techtrio.services.GeminiAiService;
 import com.techtrio.session.UserSession;
 
 public class BudgetExpenseTrackerO {
@@ -37,15 +47,32 @@ public class BudgetExpenseTrackerO {
     private double approvedBudget = 500000.0;
     private double allocatedBudget = 420000.0;
     
+    private Label approvedBudgetValLabel;
+    private Label allocatedBudgetValLabel;
     private Label spentValLabel;
     private Label remainingValLabel;
-    private Label utilizationPercentLabel;
-    private ProgressBar utilizationBar;
+
+    private Label breadcrumbLabel;
+    private Label eventBadgeLabel;
+
+    private Label budgetOverviewTotalLabel;
+    private ProgressBar budgetOverviewProgressBar;
+    private VBox budgetOverviewListContainer;
+    private VBox budgetBreakdownItemsContainer;
+
+    private Label eventDateDetailLabel;
+    private Label eventGuestsDetailLabel;
+    private Label eventVenueDetailLabel;
+
     private VBox expensesTableContainer;
 
     private String uid;
     private String idToken;
     private Runnable backAction;
+
+    private Event currentEvent;
+    private AiEventPlan currentAiPlan;
+    private final GeminiAiService aiService = new GeminiAiService();
 
     private static class ExpenseItem {
         String category;
@@ -72,12 +99,6 @@ public class BudgetExpenseTrackerO {
     public BudgetExpenseTrackerO(String uid, String idToken) {
         this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
         this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
-        if (expenseList.isEmpty()) {
-            expenseList.add(new ExpenseItem("AV Equipment", "SoundMasters Inc.", "10 May 2026", 15000, "Paid"));
-            expenseList.add(new ExpenseItem("Catering Advance", "Gourmet Bites", "12 May 2026", 20000, "Paid"));
-            expenseList.add(new ExpenseItem("Photography", "Lens & Light", "14 May 2026", 7000, "Paid"));
-            expenseList.add(new ExpenseItem("Decoration", "Flora Designs", "Pending", 25000, "Pending"));
-        }
     }
 
     public Scene getScene(Stage stage, Runnable backAction) {
@@ -97,9 +118,224 @@ public class BudgetExpenseTrackerO {
         scrollPane.setContent(mainContent);
 
         root.setCenter(scrollPane);
-        recalculateBudget();
+
+        loadDynamicEventBudgetDataAsync();
 
         return new Scene(root, 1550, 785);
+    }
+
+    // =========================================================================
+    // DYNAMIC EVENT & ACCEPTED VENDOR EXPENSES LOADER
+    // =========================================================================
+    private void loadDynamicEventBudgetDataAsync() {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                AdminController adminController = new AdminController();
+                String selectedEvtId = AdminContext.getSelectedEventId();
+
+                // 1. Resolve Active Event
+                if (selectedEvtId != null && !selectedEvtId.isBlank()) {
+                    currentEvent = adminController.getEventById(selectedEvtId);
+                }
+
+                if (currentEvent == null) {
+                    EventService eventService = new EventService();
+                    List<Event> assigned = eventService.getEventsByOrganizerId(uid);
+                    if (assigned != null && !assigned.isEmpty()) {
+                        currentEvent = assigned.get(0);
+                        selectedEvtId = currentEvent.getEventId();
+                        AdminContext.setSelectedEventId(selectedEvtId);
+                    }
+                }
+
+                // 2. Parse Event AI Plan from Firestore JSON
+                if (currentEvent != null && currentEvent.getAiPlanJson() != null && !currentEvent.getAiPlanJson().isBlank()) {
+                    currentAiPlan = AiEventPlan.fromJson(currentEvent.getAiPlanJson());
+                }
+
+                if (currentAiPlan == null && currentEvent != null) {
+                    String eventTypeQuery = (currentEvent.getEventType() != null) ? currentEvent.getEventType() : "Corporate Event";
+                    try {
+                        currentAiPlan = aiService.generatePlanFromEventData(eventTypeQuery);
+                    } catch (Exception e) {
+                        currentAiPlan = aiService.generateIntelligentFallback(eventTypeQuery);
+                    }
+                }
+
+                // 3. Fetch Real Vendor Bookings from Firestore via VendorController ("vendorBookings")
+                if (selectedEvtId != null && !selectedEvtId.isBlank()) {
+                    fetchAcceptedVendorExpenses(selectedEvtId);
+                }
+
+                Platform.runLater(() -> renderDynamicBudgetData());
+                return null;
+            }
+        };
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void fetchAcceptedVendorExpenses(String eventId) {
+        if (eventId == null || eventId.isBlank()) return;
+
+        try {
+            VendorController vendorController = new VendorController();
+            List<VendorBooking> bookings = vendorController.getEventVendorBookings(eventId.trim());
+            expenseList.clear();
+
+            if (bookings != null && !bookings.isEmpty()) {
+                for (VendorBooking vb : bookings) {
+                    double amt = 0.0;
+                    try {
+                        String clean = vb.getAmount() != null ? vb.getAmount().replaceAll("[^0-9.]", "") : "0";
+                        if (!clean.isEmpty()) amt = Double.parseDouble(clean);
+                    } catch (Exception ignored) {}
+
+                    String vName = vb.getVendorName() != null && !vb.getVendorName().isBlank() ? vb.getVendorName() : "Vendor Partner";
+                    String cat = vb.getServiceCategory() != null ? vb.getServiceCategory() : "Service";
+                    String dt = vb.getEventDate() != null ? vb.getEventDate() : "Upcoming";
+                    
+                    String rawStatus = vb.getStatus() != null ? vb.getStatus().toUpperCase() : "PENDING";
+                    String st = ("CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus)) ? "Paid" : "Pending";
+
+                    expenseList.add(new ExpenseItem(cat, vName, dt, amt, st));
+                }
+                System.out.println("✅ Loaded " + expenseList.size() + " vendor bookings from Firestore collection 'vendorBookings' for event: " + eventId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void renderDynamicBudgetData() {
+        String eventName = (currentEvent != null && currentEvent.getEventName() != null) ? currentEvent.getEventName() : "Annual Tech Summit";
+        String eventDate = (currentEvent != null && currentEvent.getEventDate() != null) ? currentEvent.getEventDate() : "18 May 2026";
+        int guests = (currentEvent != null && currentEvent.getGuests() > 0) ? currentEvent.getGuests() : 250;
+        String venue = (currentEvent != null && currentEvent.getVenueType() != null) ? currentEvent.getVenueType() : "Conference Center";
+        String budgetStr = (currentEvent != null && currentEvent.getBudget() != null) ? currentEvent.getBudget() : "₹ 20,000";
+
+        // Parse numerical budget
+        try {
+            String clean = budgetStr.replaceAll("[^0-9]", "");
+            if (!clean.isEmpty()) {
+                approvedBudget = Double.parseDouble(clean);
+                allocatedBudget = approvedBudget * 0.85;
+            }
+        } catch (Exception ignored) {}
+
+        if (breadcrumbLabel != null) breadcrumbLabel.setText("My Events  >  " + eventName + "  >  Budget");
+        if (eventBadgeLabel != null) eventBadgeLabel.setText("● " + eventName + " (In Planning)");
+
+        if (approvedBudgetValLabel != null) approvedBudgetValLabel.setText(budgetStr);
+        if (allocatedBudgetValLabel != null) allocatedBudgetValLabel.setText("₹ " + String.format("%,.0f", allocatedBudget));
+
+        if (eventDateDetailLabel != null) eventDateDetailLabel.setText(eventDate);
+        if (eventGuestsDetailLabel != null) eventGuestsDetailLabel.setText(guests + " Expected");
+        if (eventVenueDetailLabel != null) eventVenueDetailLabel.setText(venue);
+
+        // 1. RENDER BUDGET OVERVIEW CARD (DYNAMICALLY PROPORTIONED TO ACTUAL APPROVED BUDGET)
+        if (budgetOverviewTotalLabel != null) budgetOverviewTotalLabel.setText(budgetStr);
+        if (budgetOverviewProgressBar != null) budgetOverviewProgressBar.setProgress(0.70);
+
+        if (budgetOverviewListContainer != null) {
+            budgetOverviewListContainer.getChildren().clear();
+            if (currentAiPlan != null && currentAiPlan.getBudgetBreakdown() != null && !currentAiPlan.getBudgetBreakdown().isEmpty()) {
+                for (AiEventPlan.BudgetItem bi : currentAiPlan.getBudgetBreakdown()) {
+                    double catAmount = (bi.getPercentage() / 100.0) * approvedBudget;
+                    String formattedAmt = "₹ " + String.format("%,.0f", catAmount);
+
+                    HBox row = new HBox(8);
+                    row.setAlignment(Pos.CENTER_LEFT);
+                    Label dot = new Label("■");
+                    dot.setStyle("-fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-size: 10px;");
+                    Label cat = new Label(bi.getCategory());
+                    cat.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+                    Region sp = new Region();
+                    HBox.setHgrow(sp, Priority.ALWAYS);
+                    Label val = new Label(formattedAmt + " (" + (int)bi.getPercentage() + "%)");
+                    val.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+                    row.getChildren().addAll(dot, cat, sp, val);
+                    budgetOverviewListContainer.getChildren().add(row);
+                }
+            } else {
+                renderDefaultProportionedOverview(approvedBudget);
+            }
+        }
+
+        // 2. RENDER BUDGET BREAKDOWN CARD (WITH DYNAMIC PERCENTAGE PROGRESS BARS)
+        if (budgetBreakdownItemsContainer != null) {
+            budgetBreakdownItemsContainer.getChildren().clear();
+            if (currentAiPlan != null && currentAiPlan.getBudgetBreakdown() != null && !currentAiPlan.getBudgetBreakdown().isEmpty()) {
+                for (AiEventPlan.BudgetItem bi : currentAiPlan.getBudgetBreakdown()) {
+                    double catAmount = (bi.getPercentage() / 100.0) * approvedBudget;
+                    String formattedAmt = "₹ " + String.format("%,.0f", catAmount);
+
+                    HBox row = new HBox(12);
+                    row.setAlignment(Pos.CENTER_LEFT);
+                    row.setPadding(new Insets(7, 10, 7, 10));
+                    row.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px;");
+
+                    Label cat = new Label(bi.getCategory());
+                    cat.setMinWidth(130);
+                    cat.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+
+                    ProgressBar pb = new ProgressBar(bi.getPercentage() / 100.0);
+                    pb.setMaxWidth(Double.MAX_VALUE);
+                    pb.setStyle("-fx-accent: " + PRIMARY_BLUE + "; -fx-pref-height: 8;");
+                    HBox.setHgrow(pb, Priority.ALWAYS);
+
+                    Label amt = new Label(formattedAmt);
+                    amt.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
+
+                    row.getChildren().addAll(cat, pb, amt);
+                    budgetBreakdownItemsContainer.getChildren().add(row);
+                }
+            } else {
+                renderDefaultProportionedBreakdown(approvedBudget);
+            }
+        }
+
+        renderExpenseRows();
+        recalculateBudget();
+    }
+
+    private void renderDefaultProportionedOverview(double total) {
+        String[][] defaults = {{"Venue", "30"}, {"Catering", "35"}, {"Decoration", "15"}, {"Sound & Photography", "10"}, {"Others & Contingency", "10"}};
+        for (String[] d : defaults) {
+            double pct = Double.parseDouble(d[1]);
+            double catAmount = (pct / 100.0) * total;
+            HBox row = new HBox(8);
+            row.setAlignment(Pos.CENTER_LEFT);
+            Label dot = new Label("■"); dot.setStyle("-fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-size: 10px;");
+            Label cat = new Label(d[0]); cat.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+            Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+            Label val = new Label("₹ " + String.format("%,.0f", catAmount) + " (" + (int)pct + "%)");
+            val.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+            row.getChildren().addAll(dot, cat, sp, val);
+            budgetOverviewListContainer.getChildren().add(row);
+        }
+    }
+
+    private void renderDefaultProportionedBreakdown(double total) {
+        String[][] defaults = {{"Venue", "30"}, {"Catering", "35"}, {"Decoration", "15"}, {"Sound & Photography", "10"}, {"Others & Contingency", "10"}};
+        for (String[] d : defaults) {
+            double pct = Double.parseDouble(d[1]);
+            double catAmount = (pct / 100.0) * total;
+            HBox row = new HBox(12);
+            row.setAlignment(Pos.CENTER_LEFT);
+            row.setPadding(new Insets(7, 10, 7, 10));
+            row.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px;");
+
+            Label cat = new Label(d[0]); cat.setMinWidth(130); cat.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+            ProgressBar pb = new ProgressBar(pct / 100.0); pb.setMaxWidth(Double.MAX_VALUE); pb.setStyle("-fx-accent: " + PRIMARY_BLUE + "; -fx-pref-height: 8;"); HBox.setHgrow(pb, Priority.ALWAYS);
+            Label amt = new Label("₹ " + String.format("%,.0f", catAmount)); amt.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
+
+            row.getChildren().addAll(cat, pb, amt);
+            budgetBreakdownItemsContainer.getChildren().add(row);
+        }
     }
 
     private HBox createTopBar() {
@@ -175,8 +411,8 @@ public class BudgetExpenseTrackerO {
 
         // Breadcrumbs & Title
         VBox titleBox = new VBox(4);
-        Label breadcrumb = new Label("My Events  >  TechVision Annual Summit  >  Budget");
-        breadcrumb.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        breadcrumbLabel = new Label("My Events  >  Annual Tech Summit  >  Budget");
+        breadcrumbLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         HBox headerRow = new HBox(12);
         headerRow.setAlignment(Pos.CENTER_LEFT);
@@ -187,30 +423,33 @@ public class BudgetExpenseTrackerO {
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        Label badge = new Label("● TechVision 2026 (In Planning)");
-        badge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + BRIGHT_BLUE + "; -fx-font-weight: bold; -fx-padding: 6 12; -fx-background-radius: 16px; -fx-font-size: 12px;");
+        eventBadgeLabel = new Label("● Annual Tech Summit (In Planning)");
+        eventBadgeLabel.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + BRIGHT_BLUE + "; -fx-font-weight: bold; -fx-padding: 6 12; -fx-background-radius: 16px; -fx-font-size: 12px;");
 
         Button addExpenseBtn = new Button("+ Add Expense");
         addExpenseBtn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 6px; -fx-cursor: hand;");
         addExpenseBtn.setOnAction(e -> handleAddExpenseDialog());
 
-        headerRow.getChildren().addAll(title, headerSpacer, badge, addExpenseBtn);
+        headerRow.getChildren().addAll(title, headerSpacer, eventBadgeLabel, addExpenseBtn);
 
         Label subtitle = new Label("Monitor event spending, optimize allocations and stay within the approved budget.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        titleBox.getChildren().addAll(breadcrumb, headerRow, subtitle);
+        titleBox.getChildren().addAll(breadcrumbLabel, headerRow, subtitle);
 
         // Top Summary KPI Cards (4 Cards)
+        approvedBudgetValLabel = new Label("₹ 20,000");
+        allocatedBudgetValLabel = new Label("₹ 17,000");
+
         HBox summaryRow = new HBox(16);
         summaryRow.getChildren().addAll(
-            createSummaryCard("Approved Budget 🔒", "₹5,00,000", TEXT_MAIN),
-            createSummaryCard("Allocated", "₹4,20,000", TEXT_MAIN),
+            createCustomSummaryCard("Approved Budget 🔒", approvedBudgetValLabel, TEXT_MAIN),
+            createCustomSummaryCard("Allocated", allocatedBudgetValLabel, TEXT_MAIN),
             createSummaryCardSpent(),
             createSummaryCardRemaining()
         );
 
-        // Middle Grid Section
+        // Middle Grid Section (Equal 50-50 Split)
         HBox middleGrid = new HBox(20);
 
         VBox leftCol = new VBox(20);
@@ -218,9 +457,12 @@ public class BudgetExpenseTrackerO {
 
         HBox middleCards = new HBox(16);
         middleCards.getChildren().addAll(
-            createBudgetUtilizationCard(),
-            createAIOptimizerCard()
+            createBudgetOverviewCard(),
+            createBudgetBreakdownCard()
         );
+        HBox.setHgrow(middleCards.getChildren().get(0), Priority.ALWAYS);
+        HBox.setHgrow(middleCards.getChildren().get(1), Priority.ALWAYS);
+
         leftCol.getChildren().add(middleCards);
 
         VBox rightCol = new VBox(20);
@@ -241,16 +483,16 @@ public class BudgetExpenseTrackerO {
         return mainBox;
     }
 
-    private VBox createSummaryCard(String title, String val, String valColor) {
+    private VBox createCustomSummaryCard(String title, Label valLbl, String valColor) {
         VBox card = new VBox(6);
         card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
         HBox.setHgrow(card, Priority.ALWAYS);
 
         Label t = new Label(title); t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Label v = new Label(val); v.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + valColor + ";");
+        valLbl.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + valColor + ";");
 
-        card.getChildren().addAll(t, v);
+        card.getChildren().addAll(t, valLbl);
         return card;
     }
 
@@ -261,7 +503,7 @@ public class BudgetExpenseTrackerO {
         HBox.setHgrow(card, Priority.ALWAYS);
 
         Label t = new Label("Spent"); t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        spentValLabel = new Label("₹42,000"); spentValLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + BRIGHT_BLUE + ";");
+        spentValLabel = new Label("₹ 0"); spentValLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + BRIGHT_BLUE + ";");
 
         card.getChildren().addAll(t, spentValLabel);
         return card;
@@ -274,13 +516,13 @@ public class BudgetExpenseTrackerO {
         HBox.setHgrow(card, Priority.ALWAYS);
 
         Label t = new Label("Remaining"); t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        remainingValLabel = new Label("₹4,58,000"); remainingValLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        remainingValLabel = new Label("₹ 20,000"); remainingValLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
 
         card.getChildren().addAll(t, remainingValLabel);
         return card;
     }
 
-    private VBox createBudgetUtilizationCard() {
+    private VBox createBudgetOverviewCard() {
         VBox card = new VBox(12);
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
@@ -289,35 +531,31 @@ public class BudgetExpenseTrackerO {
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
 
-        Label title = new Label("Budget Utilization");
+        Label title = new Label("💰 Budget Overview");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label statusTag = new Label("✓ On Track");
+        Label statusTag = new Label("✓ AI Validated");
         statusTag.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + BRIGHT_BLUE + "; -fx-font-size: 11px; -fx-padding: 3 8; -fx-background-radius: 12px;");
 
         header.getChildren().addAll(title, spacer, statusTag);
 
-        utilizationPercentLabel = new Label("8.4% spent");
-        utilizationPercentLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        budgetOverviewTotalLabel = new Label("₹ 20,000");
+        budgetOverviewTotalLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
 
-        utilizationBar = new ProgressBar(0.084);
-        utilizationBar.setMaxWidth(Double.MAX_VALUE);
-        utilizationBar.setStyle("-fx-accent: " + PRIMARY_BLUE + "; -fx-pref-height: 8;");
+        budgetOverviewProgressBar = new ProgressBar(0.70);
+        budgetOverviewProgressBar.setMaxWidth(Double.MAX_VALUE);
+        budgetOverviewProgressBar.setStyle("-fx-accent: " + PRIMARY_BLUE + "; -fx-pref-height: 8;");
 
-        HBox rangeRow = new HBox();
-        Label minL = new Label("₹0"); minL.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Region rSpacer = new Region(); HBox.setHgrow(rSpacer, Priority.ALWAYS);
-        Label maxL = new Label("₹5,00,000"); maxL.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        rangeRow.getChildren().addAll(minL, rSpacer, maxL);
+        budgetOverviewListContainer = new VBox(7);
 
-        card.getChildren().addAll(header, utilizationPercentLabel, utilizationBar, rangeRow);
+        card.getChildren().addAll(header, budgetOverviewTotalLabel, budgetOverviewProgressBar, budgetOverviewListContainer);
         return card;
     }
 
-    private VBox createAIOptimizerCard() {
+    private VBox createBudgetBreakdownCard() {
         VBox card = new VBox(12);
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
@@ -326,45 +564,21 @@ public class BudgetExpenseTrackerO {
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
 
-        Label title = new Label("✨ AI Optimizer");
+        Label title = new Label("📊 AI Budget Breakdown");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button viewAll = new Button("View All");
-        viewAll.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-size: 11px; -fx-cursor: hand;");
+        Label badge = new Label("Allocated");
+        badge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-size: 11px; -fx-padding: 3 8; -fx-background-radius: 12px;");
 
-        header.getChildren().addAll(title, spacer, viewAll);
+        header.getChildren().addAll(title, spacer, badge);
 
-        VBox recs = new VBox(8);
-        recs.getChildren().addAll(
-            createAIOptionRow("AV & Sound", "Reallocate ₹5k-10k from unused buffer", "Review"),
-            createAIOptionRow("Catering", "Compare premium packages", "Compare"),
-            createAIOptionRow("Miscellaneous", "Move ₹15k to unexpected costs", "Apply")
-        );
+        budgetBreakdownItemsContainer = new VBox(8);
 
-        card.getChildren().addAll(header, recs);
+        card.getChildren().addAll(header, budgetBreakdownItemsContainer);
         return card;
-    }
-
-    private HBox createAIOptionRow(String category, String text, String btnText) {
-        HBox row = new HBox(8);
-        row.setAlignment(Pos.CENTER_LEFT);
-
-        VBox textGroup = new VBox(2);
-        Label cat = new Label(category); cat.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-        Label desc = new Label(text); desc.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        textGroup.getChildren().addAll(cat, desc);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Button actionBtn = new Button(btnText);
-        actionBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 11px; -fx-border-radius: 4px; -fx-cursor: hand;");
-
-        row.getChildren().addAll(textGroup, spacer, actionBtn);
-        return row;
     }
 
     private VBox createEventDetailsCard() {
@@ -375,22 +589,26 @@ public class BudgetExpenseTrackerO {
         Label title = new Label("Event Details");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
+        eventDateDetailLabel = new Label("18 May 2026");
+        eventGuestsDetailLabel = new Label("250 Expected");
+        eventVenueDetailLabel = new Label("Conference Center");
+
         VBox details = new VBox(6);
         details.getChildren().addAll(
-            createDetailItem("📅 Date", "18 May 2026"),
-            createDetailItem("👥 Guests", "250 Expected"),
-            createDetailItem("📍 Venue", "Grand Horizon Center")
+            createCustomDetailItem("📅 Date", eventDateDetailLabel),
+            createCustomDetailItem("👥 Guests", eventGuestsDetailLabel),
+            createCustomDetailItem("📍 Venue", eventVenueDetailLabel)
         );
 
         card.getChildren().addAll(title, details);
         return card;
     }
 
-    private VBox createDetailItem(String label, String val) {
+    private VBox createCustomDetailItem(String label, Label valLbl) {
         VBox item = new VBox(2);
         Label l = new Label(label); l.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Label v = new Label(val); v.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-        item.getChildren().addAll(l, v);
+        valLbl.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        item.getChildren().addAll(l, valLbl);
         return item;
     }
 
@@ -428,7 +646,7 @@ public class BudgetExpenseTrackerO {
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
 
-        Label title = new Label("Recent Expenses");
+        Label title = new Label("Recent Expenses (Accepted Vendors)");
         title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Region spacer = new Region();
@@ -466,7 +684,19 @@ public class BudgetExpenseTrackerO {
     }
 
     private void renderExpenseRows() {
+        if (expensesTableContainer == null) return;
         expensesTableContainer.getChildren().clear();
+
+        if (expenseList.isEmpty()) {
+            VBox empty = new VBox(8);
+            empty.setAlignment(Pos.CENTER);
+            empty.setPadding(new Insets(24));
+            Label l = new Label("No accepted vendor bookings or expenses recorded yet for this event.");
+            l.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+            empty.getChildren().add(l);
+            expensesTableContainer.getChildren().add(empty);
+            return;
+        }
 
         for (ExpenseItem item : expenseList) {
             GridPane row = new GridPane();
@@ -477,12 +707,12 @@ public class BudgetExpenseTrackerO {
             row.add(new Label(item.vendor), 1, 0);
             row.add(new Label(item.date), 2, 0);
             
-            Label amtLbl = new Label("₹" + String.format("%,.0f", item.amount));
+            Label amtLbl = new Label("₹ " + String.format("%,.0f", item.amount));
             amtLbl.setStyle("-fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
             row.add(amtLbl, 3, 0);
 
             Label statusBadge = new Label(item.status);
-            if (item.status.equalsIgnoreCase("Paid")) {
+            if (item.status.equalsIgnoreCase("Paid") || item.status.equalsIgnoreCase("Confirmed") || item.status.equalsIgnoreCase("Accepted")) {
                 statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
             } else {
                 statusBadge.setStyle("-fx-background-color: " + PENDING_BG + "; -fx-text-fill: " + PENDING_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
@@ -511,14 +741,15 @@ public class BudgetExpenseTrackerO {
     private void recalculateBudget() {
         double totalSpent = 0;
         for (ExpenseItem item : expenseList) {
-            totalSpent += item.amount;
+            if ("Paid".equalsIgnoreCase(item.status) || "Confirmed".equalsIgnoreCase(item.status) || "Accepted".equalsIgnoreCase(item.status)) {
+                totalSpent += item.amount;
+            }
         }
         double remaining = approvedBudget - totalSpent;
+        if (remaining < 0) remaining = 0;
 
-        if (spentValLabel != null) spentValLabel.setText("₹" + String.format("%,.0f", totalSpent));
-        if (remainingValLabel != null) remainingValLabel.setText("₹" + String.format("%,.0f", remaining));
-        if (utilizationPercentLabel != null) utilizationPercentLabel.setText(String.format("%.1f%% spent", (totalSpent / approvedBudget) * 100));
-        if (utilizationBar != null) utilizationBar.setProgress(totalSpent / approvedBudget);
+        if (spentValLabel != null) spentValLabel.setText("₹ " + String.format("%,.0f", totalSpent));
+        if (remainingValLabel != null) remainingValLabel.setText("₹ " + String.format("%,.0f", remaining));
     }
 
     private void handleAddExpenseDialog() {
@@ -565,13 +796,13 @@ public class BudgetExpenseTrackerO {
         if (backAction != null) {
             backAction.run();
         } else {
-            ViewEventO view = new ViewEventO(uid, idToken);
-            LandingPage.landingPageStage.setScene(view.getScene(stage, () -> goDashboard(stage)));
+            ViewEventO view = new ViewEventO();
+            stage.setScene(view.getScene(stage, () -> goDashboard(stage)));
         }
     }
 
     private void goDashboard(Stage stage) {
-        OrganizerDashboardO dash = new OrganizerDashboardO(uid, idToken);
-        LandingPage.landingPageStage.setScene(dash.getorganizerDashboardScene(null));
+        OrganizerDashboardO dash = new OrganizerDashboardO();
+        stage.setScene(dash.getorganizerDashboardScene(null));
     }
 }

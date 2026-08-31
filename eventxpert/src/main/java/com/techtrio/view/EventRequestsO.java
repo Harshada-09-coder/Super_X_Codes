@@ -1,9 +1,6 @@
 package com.techtrio.view;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import com.techtrio.context.AdminContext;
 import com.techtrio.controller.OrganizerController;
@@ -39,8 +36,6 @@ public class EventRequestsO {
 
     private static final String HIGH_BG = "#FCE8E6";
     private static final String HIGH_TEXT = "#C5221F";
-    private static final String MEDIUM_BG = "#EAF3FF";
-    private static final String MEDIUM_TEXT = "#2563C7";
 
     private VBox rowsContainer;
     private Label newReqValLbl;
@@ -76,7 +71,7 @@ public class EventRequestsO {
         VBox titleBox = new VBox(4);
         Label title = new Label("Event Requests");
         title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
-        Label subtitle = new Label("Review incoming event requests and decide which events you want to manage.");
+        Label subtitle = new Label("Review event requests assigned to you by the Admin and confirm your decision.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         titleBox.getChildren().addAll(title, subtitle);
 
@@ -114,38 +109,13 @@ public class EventRequestsO {
             @Override
             protected List<Event> call() {
                 OrganizerController controller = new OrganizerController();
-                // 1. Fetch pending unassigned customer requests
-                List<Event> pendingRequests = controller.getPendingEventRequests();
-                // 2. Fetch assigned requests specifically to this organizer
-                List<Event> assignedRequests = controller.getAssignedEvents(uid);
-
-                List<Event> combined = new ArrayList<>();
-                Set<String> addedIds = new HashSet<>();
-
-                if (pendingRequests != null) {
-                    for (Event ev : pendingRequests) {
-                        if (ev != null && ev.getEventId() != null && !addedIds.contains(ev.getEventId())) {
-                            combined.add(ev);
-                            addedIds.add(ev.getEventId());
-                        }
-                    }
-                }
-
-                if (assignedRequests != null) {
-                    for (Event ev : assignedRequests) {
-                        if (ev != null && ev.getEventId() != null && !addedIds.contains(ev.getEventId())) {
-                            combined.add(ev);
-                            addedIds.add(ev.getEventId());
-                        }
-                    }
-                }
-
-                return combined;
+                // FETCH ONLY EVENTS ASSIGNED SPECIFICALLY TO THIS ORGANIZER UID
+                return controller.getAssignedEvents(uid);
             }
         };
 
         task.setOnSucceeded(evt -> {
-            List<Event> allList = task.getValue();
+            List<Event> assignedList = task.getValue();
             Platform.runLater(() -> {
                 if (rowsContainer != null) rowsContainer.getChildren().clear();
 
@@ -154,22 +124,15 @@ public class EventRequestsO {
                 int acceptedCount = 0;
                 int rejectedCount = 0;
 
-                if (allList != null && !allList.isEmpty()) {
-                    for (Event ev : allList) {
+                if (assignedList != null && !assignedList.isEmpty()) {
+                    for (Event ev : assignedList) {
                         String oStatus = ev.getOrganizerStatus() != null ? ev.getOrganizerStatus().toUpperCase() : "PENDING";
-                        String evStatus = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "PENDING";
 
-                        if ("PENDING".equals(oStatus) || "PENDING".equals(evStatus) || "NOT_ASSIGNED".equals(oStatus)) {
+                        if ("PENDING".equals(oStatus)) {
                             newCount++;
                             pendingCount++;
-                        } else if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(evStatus)) {
-                            acceptedCount++;
-                        } else if ("REJECTED".equals(oStatus)) {
-                            rejectedCount++;
-                        }
 
-                        // Only show Pending / Not Assigned requests in this review table
-                        if ("PENDING".equals(oStatus) || "NOT_ASSIGNED".equals(oStatus) || "PENDING".equals(evStatus)) {
+                            // Render pending request for organizer decision
                             if (rowsContainer != null) {
                                 String detailsStr = "📅 " + (ev.getEventDate() != null ? ev.getEventDate() : "TBD") +
                                         "   👥 " + ev.getGuests() + " Guests" +
@@ -181,9 +144,13 @@ public class EventRequestsO {
                                         ev.getEventType() != null ? ev.getEventType() : "General",
                                         detailsStr,
                                         "High", HIGH_BG, HIGH_TEXT,
-                                        "Pending Review", LIGHT_BLUE, PRIMARY_BLUE
+                                        "Assigned by Admin", LIGHT_BLUE, PRIMARY_BLUE
                                 ));
                             }
+                        } else if ("ACCEPTED".equals(oStatus)) {
+                            acceptedCount++;
+                        } else if ("REJECTED".equals(oStatus)) {
+                            rejectedCount++;
                         }
                     }
                 }
@@ -210,9 +177,9 @@ public class EventRequestsO {
         emptyBox.setPadding(new Insets(35));
 
         Label icon = new Label("📫"); icon.setStyle("-fx-font-size: 28px;");
-        Label title = new Label("No new pending requests");
+        Label title = new Label("No new requests assigned");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
-        Label sub = new Label("When customers create new events, their requests will appear here for your review.");
+        Label sub = new Label("When the Admin assigns an event request to you, it will appear here.");
         sub.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         emptyBox.getChildren().addAll(icon, title, sub);
@@ -294,7 +261,7 @@ public class EventRequestsO {
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
-        Label cardTitle = new Label("Incoming Event Requests");
+        Label cardTitle = new Label("Assigned Event Requests");
         cardTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
         HBox tableHeader = new HBox();
@@ -377,7 +344,7 @@ public class EventRequestsO {
         cardTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         VBox itemsBox = new VBox(14);
-        itemsBox.getChildren().add(createInsightItem("⚠️ Requests Assigned", "Review your pending requests to keep customer SLAs on track."));
+        itemsBox.getChildren().add(createInsightItem("⚠️ Assigned Requests", "Review your pending requests assigned by Admin."));
         itemsBox.getChildren().add(createInsightItem("❗ Action Required", "Accept or reject requests to confirm event schedule."));
 
         card.getChildren().addAll(cardTitle, itemsBox);

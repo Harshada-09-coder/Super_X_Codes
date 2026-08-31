@@ -40,16 +40,7 @@ public class OrganizerController {
         return service.markOrganizerAsExisting(uid);
     }
 
-    // --- FETCH NEW INCOMING EVENT REQUESTS FOR ORGANIZER ---
-    public List<Event> getPendingEventRequests() {
-        return eventService.getPendingEventRequests();
-    }
-
-    public List<Event> getNewRequestsByCity(String city) {
-        return eventService.getAvailableEventsForCity(city);
-    }
-
-    // --- ASSIGNED EVENTS ---
+    // --- FETCH ONLY EVENTS ASSIGNED BY ADMIN TO THIS SPECIFIC ORGANIZER ---
     public List<Event> getAssignedEvents(String organizerId) {
         return eventService.getEventsByOrganizerId(organizerId);
     }

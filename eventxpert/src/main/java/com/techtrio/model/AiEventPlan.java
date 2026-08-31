@@ -2,6 +2,8 @@ package com.techtrio.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class AiEventPlan {
 
@@ -60,6 +62,94 @@ public class AiEventPlan {
         public String getCategory() { return category; }
         public String getAmount() { return amount; }
         public double getPercentage() { return percentage; }
+    }
+
+    // --- JSON SERIALIZATION & DESERIALIZATION FOR FIRESTORE ---
+    public String toJson() {
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("summary", summary);
+            obj.put("theme", theme);
+            obj.put("duration", duration);
+            obj.put("estimatedTasks", estimatedTasks);
+            obj.put("recommendedVendorsCount", recommendedVendorsCount);
+
+            JSONArray tArray = new JSONArray();
+            for (ScheduleItem si : timeline) {
+                JSONObject tObj = new JSONObject();
+                tObj.put("time", si.getTime());
+                tObj.put("activity", si.getActivity());
+                tArray.put(tObj);
+            }
+            obj.put("timeline", tArray);
+
+            JSONArray vArray = new JSONArray();
+            for (VendorRecommendation vr : vendorRecommendations) {
+                JSONObject vObj = new JSONObject();
+                vObj.put("category", vr.getCategory());
+                vObj.put("name", vr.getName());
+                vObj.put("rating", vr.getRating());
+                vArray.put(vObj);
+            }
+            obj.put("vendorRecommendations", vArray);
+
+            JSONArray bArray = new JSONArray();
+            for (BudgetItem bi : budgetBreakdown) {
+                JSONObject bObj = new JSONObject();
+                bObj.put("category", bi.getCategory());
+                bObj.put("amount", bi.getAmount());
+                bObj.put("percentage", bi.getPercentage());
+                bArray.put(bObj);
+            }
+            obj.put("budgetBreakdown", bArray);
+
+            return obj.toString();
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    public static AiEventPlan fromJson(String jsonStr) {
+        if (jsonStr == null || jsonStr.isBlank()) return null;
+        try {
+            JSONObject obj = new JSONObject(jsonStr);
+            AiEventPlan plan = new AiEventPlan();
+            plan.setSummary(obj.optString("summary", ""));
+            plan.setTheme(obj.optString("theme", "Classic Elegance"));
+            plan.setDuration(obj.optString("duration", "1 Day"));
+            plan.setEstimatedTasks(obj.optInt("estimatedTasks", 25));
+            plan.setRecommendedVendorsCount(obj.optInt("recommendedVendorsCount", 12));
+
+            JSONArray tArray = obj.optJSONArray("timeline");
+            if (tArray != null) {
+                for (int i = 0; i < tArray.length(); i++) {
+                    JSONObject t = tArray.getJSONObject(i);
+                    plan.getTimeline().add(new ScheduleItem(t.optString("time"), t.optString("activity")));
+                }
+            }
+
+            JSONArray vArray = obj.optJSONArray("vendorRecommendations");
+            if (vArray != null) {
+                for (int i = 0; i < vArray.length(); i++) {
+                    JSONObject v = vArray.getJSONObject(i);
+                    plan.getVendorRecommendations().add(new VendorRecommendation(
+                            v.optString("category"), v.optString("name"), v.optDouble("rating", 4.5)));
+                }
+            }
+
+            JSONArray bArray = obj.optJSONArray("budgetBreakdown");
+            if (bArray != null) {
+                for (int i = 0; i < bArray.length(); i++) {
+                    JSONObject b = bArray.getJSONObject(i);
+                    plan.getBudgetBreakdown().add(new BudgetItem(
+                            b.optString("category"), b.optString("amount"), b.optDouble("percentage", 20.0)));
+                }
+            }
+
+            return plan;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     // Getters and Setters

@@ -13,7 +13,6 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import org.json.JSONObject;
 
 public class AiPlanningC {
 
@@ -22,11 +21,8 @@ public class AiPlanningC {
     private String idToken;
 
     // High Contrast Brand Colors
-    // SIDEBAR COLORS — KEPT UNCHANGED
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
-
-    // Main Content Colors — High-contrast visibility palette
     private static final String MAIN_BLUE = "#002A60";
     private static final String MAIN_STRONG_BLUE = "#0D3979";
     private static final String BG = "#F4F7FC";
@@ -352,7 +348,6 @@ public class AiPlanningC {
     }
 
     private void renderOverviewTab() {
-        // Event Summary Box
         VBox summaryBox = new VBox(10);
         summaryBox.setPadding(new Insets(16));
         summaryBox.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
@@ -371,10 +366,8 @@ public class AiPlanningC {
 
         summaryBox.getChildren().addAll(sumTitle, sumText, statsChips);
 
-        // Lower split row: Vendors preview + Budget Overview
         HBox splitRow = new HBox(18);
 
-        // Vendors Preview Box
         VBox vendorsBox = new VBox(10);
         vendorsBox.setPadding(new Insets(16));
         vendorsBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
@@ -402,7 +395,6 @@ public class AiPlanningC {
             vendorsBox.getChildren().add(vrRow);
         }
 
-        // Budget Overview Box
         VBox budgetBox = new VBox(10);
         budgetBox.setPadding(new Insets(16));
         budgetBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
@@ -507,14 +499,11 @@ public class AiPlanningC {
         activeTabContent.getChildren().add(bBox);
     }
 
+    // --- SAVES COMPLETE DYNAMIC AI PLAN AS JSON FOR REVIEW & ORGANIZER ---
     private void savePlanToMemory() {
         if (currentPlan != null) {
-            JSONObject obj = new JSONObject();
-            obj.put("summary", currentPlan.getSummary());
-            obj.put("theme", currentPlan.getTheme());
-            obj.put("duration", currentPlan.getDuration());
-            obj.put("estimatedTasks", currentPlan.getEstimatedTasks());
-            obj.put("recommendedVendorsCount", currentPlan.getRecommendedVendorsCount());
+            ReviewPageC.EventData.aiPlanJson = currentPlan.toJson();
+            ReviewPageC.EventData.theme = currentPlan.getTheme();
             ReviewPageC.EventData.notes = currentPlan.getSummary();
         }
     }
