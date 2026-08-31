@@ -8,6 +8,7 @@ import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 
 import com.google.firebase.cloud.FirestoreClient;
+import com.techtrio.controller.AdminController;
 import com.techtrio.model.Conflict;
 import com.google.cloud.Timestamp;
 import java.util.ArrayList;
@@ -17,6 +18,10 @@ public class ConflictService {
 
     private static final String COLLECTION =
             "conflicts";
+
+           
+
+
 
 
     // ==========================================

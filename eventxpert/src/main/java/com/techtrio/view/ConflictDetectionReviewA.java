@@ -35,7 +35,7 @@ private Label conflictingEventNameLabel;
 
 
     private Scene conflictDetectionReviewScene;
-    private final AdminController adminController = new AdminController();
+   
     private Conflict selectedConflict;
     private Event selectedEvent;
     private VBox activityLog;
@@ -44,6 +44,7 @@ private Label conflictingEventNameLabel;
 private HBox eventsContainer;
     private Event event;
 private Event conflictingEvent;
+private AdminController adminController = new AdminController();
 
     final String NAVY = "#002A60";
     final String BLUE = "#1976B8";

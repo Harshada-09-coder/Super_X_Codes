@@ -23,7 +23,6 @@ import com.techtrio.model.Conflict;
 public class AdminController {
 
     private final AdminProfileService service = new AdminProfileService();
-    private final AdminController adminController =new AdminController();
    
     private final CustomerProfileService customerService = new CustomerProfileService();
     private final EventService eventService = new EventService();
