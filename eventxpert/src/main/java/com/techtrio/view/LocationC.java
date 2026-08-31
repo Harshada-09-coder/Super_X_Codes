@@ -225,7 +225,6 @@ public class LocationC {
                 if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                     Desktop.getDesktop().browse(new URI(mapUrl));
                 } else {
-                    // Fallback for Windows
                     Runtime.getRuntime().exec(new String[]{"rundll32", "url.dll,FileProtocolHandler", mapUrl});
                 }
             } catch (Exception ex) {
@@ -283,7 +282,7 @@ public class LocationC {
         leftColumn.getChildren().addAll(locationCard, helpBox);
 
         // =========================
-        // MAP PANEL (SAFE & ORIGINAL IMAGE)
+        // MAP PANEL
         // =========================
         StackPane mapPanel = createMapPanel();
 
@@ -341,7 +340,7 @@ public class LocationC {
         );
 
         // =========================
-        // BACK BUTTON (ORIGINAL)
+        // BACK BUTTON
         // =========================
         back.setOnAction(e -> {
             RequirementsC reqView = new RequirementsC(uid, idToken);
@@ -349,12 +348,21 @@ public class LocationC {
         });
 
         // =========================
-        // NEXT BUTTON (ORIGINAL)
+        // NEXT BUTTON (SAVING VENUE DETAILS)
         // =========================
         next.setOnAction(e -> {
-            ReviewPageC.EventData.city = city.getText().trim();
-            ReviewPageC.EventData.area = locality.getText().trim();
-            ReviewPageC.EventData.venue = venueType.getValue() != null ? venueType.getValue() : "Banquet Hall";
+            String enteredCity = city.getText().trim();
+            String enteredArea = locality.getText().trim();
+            String selectedVenue = venueType.getValue() != null ? venueType.getValue() : "Banquet Hall";
+
+            ReviewPageC.EventData.city = enteredCity;
+            ReviewPageC.EventData.area = enteredArea;
+            ReviewPageC.EventData.venue = selectedVenue;
+
+            if (!enteredCity.isEmpty() || !enteredArea.isEmpty()) {
+                ReviewPageC.EventData.confirmedVenueAddress = (!enteredArea.isEmpty() ? enteredArea + ", " : "") + enteredCity;
+                ReviewPageC.EventData.confirmedVenueName = selectedVenue + " (" + (!enteredArea.isEmpty() ? enteredArea : enteredCity) + ")";
+            }
 
             BudgetC budgetView = new BudgetC(uid, idToken);
             LandingPage.landingPageStage.setScene(budgetView.getBudgetScene());

@@ -15,7 +15,6 @@ import com.techtrio.model.VendorProfile;
 import com.techtrio.services.EventService;
 import com.techtrio.services.VendorProfileService;
 import com.techtrio.session.UserSession;
-
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;

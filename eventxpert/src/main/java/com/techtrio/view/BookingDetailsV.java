@@ -1,5 +1,10 @@
 package com.techtrio.view;
 
+import java.awt.Desktop;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 import com.techtrio.controller.OrganizerController;
 import com.techtrio.controller.VendorController;
 import com.techtrio.model.Event;
@@ -13,8 +18,20 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
@@ -76,7 +93,6 @@ public class BookingDetailsV {
 
     // Venue Card
     private Label venueNameLabel;
-    private Label venueHallLabel;
     private Label venueAddressLabel;
     private Label venueCapacityLabel;
 
@@ -176,12 +192,20 @@ public class BookingDetailsV {
                     if (headerOrgName != null) headerOrgName.setText("Organizer: " + orgDisplay + "  •  📞 " + phoneDisplay);
 
                     // Event Information Card
+                    String currentVenueName = (ReviewPageC.EventData.confirmedVenueName != null && !ReviewPageC.EventData.confirmedVenueName.isBlank())
+                            ? ReviewPageC.EventData.confirmedVenueName
+                            : ((event != null && event.getLocality() != null) ? event.getLocality() : "Grand Convention Center");
+
+                    String currentVenueAddress = (ReviewPageC.EventData.confirmedVenueAddress != null && !ReviewPageC.EventData.confirmedVenueAddress.isBlank())
+                            ? ReviewPageC.EventData.confirmedVenueAddress
+                            : ((booking.getLocation() != null) ? booking.getLocation() : "Pune, Maharashtra");
+
                     if (specEventName != null) specEventName.setText(booking.getEventName());
                     if (specEventType != null && event != null) specEventType.setText(event.getEventType() != null ? event.getEventType() : "Corporate Conference");
                     if (specEventDate != null) specEventDate.setText("📅 " + (booking.getEventDate() != null ? booking.getEventDate() : "TBD"));
                     if (specEventTime != null) specEventTime.setText("⏰ " + (event != null && event.getTime() != null ? event.getTime() : "09:00 AM – 06:00 PM"));
-                    if (specVenue != null) specVenue.setText("🏢 " + (event != null && event.getLocality() != null ? event.getLocality() : "Grand Convention Center"));
-                    if (specLocation != null) specLocation.setText("📍 " + (booking.getLocation() != null ? booking.getLocation() : "Pune"));
+                    if (specVenue != null) specVenue.setText("🏢 " + currentVenueName);
+                    if (specLocation != null) specLocation.setText("📍 " + currentVenueAddress);
                     if (specExpectedGuests != null) specExpectedGuests.setText("👥 " + booking.getGuests() + " Guests");
 
                     // Service Info
@@ -209,8 +233,8 @@ public class BookingDetailsV {
                     if (payFinal != null) payFinal.setText("Escrow Protected");
 
                     // Venue Info
-                    if (venueNameLabel != null) venueNameLabel.setText("🏢 Venue Name: " + (event != null && event.getLocality() != null ? event.getLocality() : "Grand Convention Center"));
-                    if (venueAddressLabel != null) venueAddressLabel.setText("📍 Address: " + (booking.getLocation() != null ? booking.getLocation() : "Pune, Maharashtra"));
+                    if (venueNameLabel != null) venueNameLabel.setText("🏢 Venue Name: " + currentVenueName);
+                    if (venueAddressLabel != null) venueAddressLabel.setText("📍 Address: " + currentVenueAddress);
                     if (venueCapacityLabel != null) venueCapacityLabel.setText("👥 Capacity: Expected " + booking.getGuests() + " Guests");
 
                     // Summary Card
@@ -238,9 +262,7 @@ public class BookingDetailsV {
                     if (orgPhoneLabel != null) orgPhoneLabel.setText("📞 Phone: " + phoneDisplay);
                     if (orgEmailLabel != null) orgEmailLabel.setText("✉ Email: " + (orgProfile != null && orgProfile.getEmail() != null ? orgProfile.getEmail() : (booking.getCustomerEmail() != null ? booking.getCustomerEmail() : "N/A")));
 
-                    // =========================================================================
-                    // CONDITION: IF PENDING, PROVIDE ACCEPT / REJECT BUTTONS RIGHT HERE!
-                    // =========================================================================
+                    // Action Buttons
                     if (organizerActionBox != null) {
                         organizerActionBox.getChildren().clear();
 
@@ -269,9 +291,10 @@ public class BookingDetailsV {
 
                             organizerActionBox.getChildren().addAll(acceptBtn, rejectBtn);
                         } else {
+                            final String finalPhone = phoneDisplay;
                             Button contactBtn = createSecondaryButton("Contact Organizer");
                             contactBtn.setMaxWidth(Double.MAX_VALUE);
-                            contactBtn.setOnAction(e -> showToast(stage, "Organizer Contact: " + phoneDisplay));
+                            contactBtn.setOnAction(e -> showToast(stage, "Organizer Contact: " + finalPhone));
 
                             Button cancelBtn = createSecondaryButton("Cancel Booking");
                             cancelBtn.setMaxWidth(Double.MAX_VALUE);
@@ -668,6 +691,9 @@ public class BookingDetailsV {
         return r;
     }
 
+    // ==========================================
+    // VENUE CARD WITH DIRECT GOOGLE MAPS NAVIGATION
+    // ==========================================
     private VBox createVenueInformationCard(Stage stage) {
         VBox card = createCardContainer();
         HBox top = new HBox();
@@ -676,11 +702,28 @@ public class BookingDetailsV {
 
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
         Button mapBtn = createSecondaryButton("🗺 View on Map");
-        mapBtn.setOnAction(e -> System.out.println("Opening map location"));
+
+        // GOOGLE MAPS ACTION FOR VENDOR
+        mapBtn.setOnAction(e -> {
+            String venueTarget = (ReviewPageC.EventData.confirmedVenueName != null && !ReviewPageC.EventData.confirmedVenueName.isBlank())
+                    ? ReviewPageC.EventData.confirmedVenueName : "Grand Convention Center";
+
+            String addressTarget = (ReviewPageC.EventData.confirmedVenueAddress != null && !ReviewPageC.EventData.confirmedVenueAddress.isBlank())
+                    ? ReviewPageC.EventData.confirmedVenueAddress : "Pune, Maharashtra";
+
+            openInGoogleMaps(venueTarget + " " + addressTarget);
+        });
+
         top.getChildren().addAll(title, sp, mapBtn);
 
-        venueNameLabel = new Label("🏢 Venue Name: Grand Convention Center");
-        venueAddressLabel = new Label("📍 Address: Pune, Maharashtra");
+        String initialVenue = (ReviewPageC.EventData.confirmedVenueName != null && !ReviewPageC.EventData.confirmedVenueName.isBlank())
+                ? ReviewPageC.EventData.confirmedVenueName : "Grand Convention Center";
+
+        String initialAddr = (ReviewPageC.EventData.confirmedVenueAddress != null && !ReviewPageC.EventData.confirmedVenueAddress.isBlank())
+                ? ReviewPageC.EventData.confirmedVenueAddress : "Pune, Maharashtra";
+
+        venueNameLabel = new Label("🏢 Venue Name: " + initialVenue);
+        venueAddressLabel = new Label("📍 Address: " + initialAddr);
         venueCapacityLabel = new Label("👥 Expected Guests: 250");
 
         VBox details = new VBox(4, venueNameLabel, venueAddressLabel, venueCapacityLabel);
@@ -688,6 +731,26 @@ public class BookingDetailsV {
 
         card.getChildren().addAll(top, new Separator(), details);
         return card;
+    }
+
+    private void openInGoogleMaps(String locationQuery) {
+        try {
+            String encodedQuery = URLEncoder.encode(locationQuery, StandardCharsets.UTF_8);
+            String mapUrl = "https://www.google.com/maps/search/?api=1&query=" + encodedQuery;
+
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(mapUrl));
+            } else {
+                Runtime.getRuntime().exec(new String[]{"rundll32", "url.dll,FileProtocolHandler", mapUrl});
+            }
+        } catch (Exception ex) {
+            System.err.println("Error opening map: " + ex.getMessage());
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Location Info");
+            alert.setHeaderText(null);
+            alert.setContentText("Could not open Google Maps.");
+            alert.showAndWait();
+        }
     }
 
     private VBox createSummaryCard() {
