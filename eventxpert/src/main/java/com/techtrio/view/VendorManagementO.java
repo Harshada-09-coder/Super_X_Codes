@@ -2,7 +2,10 @@ package com.techtrio.view;
 
 import java.util.List;
 
+import com.techtrio.context.AdminContext;
+import com.techtrio.model.Event;
 import com.techtrio.model.VendorProfile;
+import com.techtrio.services.EventService;
 import com.techtrio.services.VendorProfileService;
 import com.techtrio.session.UserSession;
 
@@ -45,6 +48,7 @@ public class VendorManagementO {
     private Label activeVendorsValLbl;
     private Label inactiveVendorsValLbl;
     private Label newVendorsValLbl;
+    private Label eventBadge;
 
     // Dynamic Category Count Labels
     private Label decorCountLbl;
@@ -95,7 +99,7 @@ public class VendorManagementO {
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        Label eventBadge = new Label("● TechVision Annual Summit (In Planning)");
+        eventBadge = new Label("● All Vendors (Directory Mode)");
         eventBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + BRIGHT_BLUE + "; -fx-font-weight: bold; -fx-padding: 6 14; -fx-background-radius: 16px; -fx-font-size: 12px;");
 
         headerRow.getChildren().addAll(titleBox, headerSpacer, eventBadge);
@@ -118,8 +122,35 @@ public class VendorManagementO {
         root.setCenter(scrollPane);
 
         loadDynamicVendorDataFromFirestoreAsync();
+        loadDynamicEventContextBadgeAsync();
 
         return new Scene(root, 1550, 785);
+    }
+
+    private void loadDynamicEventContextBadgeAsync() {
+        String selectedEvtId = AdminContext.getSelectedEventId();
+        if (selectedEvtId != null && !selectedEvtId.isBlank() && !"EVT_DEFAULT".equalsIgnoreCase(selectedEvtId)) {
+            Task<Event> task = new Task<>() {
+                @Override
+                protected Event call() {
+                    EventService eventService = new EventService();
+                    return eventService.getEventById(selectedEvtId);
+                }
+            };
+            task.setOnSucceeded(e -> {
+                Event ev = task.getValue();
+                if (ev != null) {
+                    Platform.runLater(() -> {
+                        if (eventBadge != null) {
+                            eventBadge.setText("● " + ev.getEventName() + " (In Planning)");
+                        }
+                    });
+                }
+            });
+            Thread t = new Thread(task);
+            t.setDaemon(true);
+            t.start();
+        }
     }
 
     // ==========================================
@@ -381,7 +412,10 @@ public class VendorManagementO {
         menu.getChildren().add(createNavBtn("Event Requests", false, this::openEventRequests));
         menu.getChildren().add(createNavBtn("My Events", false, this::openMyEvents));
         menu.getChildren().add(createNavBtn("Venue", false, this::openVenue));
-        menu.getChildren().add(createNavBtn("Vendors", true, () -> {}));
+        
+        // When clicking directly on sidebar Vendors, clear any selected event context
+        menu.getChildren().add(createNavBtn("Vendors", true, this::openDirectVendors));
+        
         menu.getChildren().add(createNavBtn("Schedule", false, this::openSchedule));
 
         Region spacer = new Region();
@@ -464,6 +498,11 @@ public class VendorManagementO {
     private void openMyEvents() {
         MyEventsO view = new MyEventsO(uid, idToken);
         LandingPage.landingPageStage.setScene(view.getMyEventsOScene(this::openDashboardNull));
+    }
+    private void openDirectVendors() {
+        AdminContext.setSelectedEventId(null); // Clear context when coming from direct sidebar
+        VendorManagementO view = new VendorManagementO(uid, idToken);
+        LandingPage.landingPageStage.setScene(view.getvendorManagementOScene(this::openDashboardNull));
     }
     private void openVenue() {
         VenueManagementO view = new VenueManagementO();

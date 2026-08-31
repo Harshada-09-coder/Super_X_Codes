@@ -24,6 +24,10 @@ public class Event {
     private String createdAt;
     private String updatedAt;
 
+    // --- AI PLANNING EXTENSIONS ---
+    private String aiPlanJson;
+    private String theme;
+
     // --- ORGANIZER ASSIGNMENT EXTENSIONS ---
     private String organizerId;
     private String organizerName;
@@ -179,6 +183,22 @@ public class Event {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getAiPlanJson() {
+        return aiPlanJson;
+    }
+
+    public void setAiPlanJson(String aiPlanJson) {
+        this.aiPlanJson = aiPlanJson;
+    }
+
+    public String getTheme() {
+        return theme;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme;
     }
 
     // --- ORGANIZER GETTERS AND SETTERS ---
