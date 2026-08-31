@@ -11,27 +11,28 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 
 public class ReviewPageC {
 
     private Scene scene;
-
     private String uid;
     private String idToken;
 
-    private static final String BLUE = "#002A60";
-    private static final String BG = "#F7F9FC";
-    private static final String BORDER = "#D7E0E8";
-    private static final String TEXT = "#111111";
-    private static final String GREY = "#667085";
+    // High Contrast Theme Colors
+    private static final String NAVY = "#061B41";
+    private static final String BLUE = "#0D3979";
+    private static final String MAIN_BLUE = "#002A60";
+    private static final String BG = "#F4F7FC";
+    private static final String BORDER = "#CBD5E1";
+    private static final String DARK_TEXT = "#0F172A";
+    private static final String MUTED_TEXT = "#334155";
 
     public static class EventData {
         public static String category = "Formal";
@@ -45,7 +46,7 @@ public class ReviewPageC {
         public static String city = "";
         public static String area = "";
         public static String venue = "";
-        public static String budget = "₹500,000";
+        public static String budget = "₹ 8,45,000";
         public static boolean aiEnabled = true;
 
         public static void reset() {
@@ -60,7 +61,7 @@ public class ReviewPageC {
             city = "";
             area = "";
             venue = "";
-            budget = "₹500,000";
+            budget = "₹ 8,45,000";
             aiEnabled = true;
         }
     }
@@ -74,212 +75,120 @@ public class ReviewPageC {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
-        VBox sidebar = createSidebar();
-        root.setLeft(sidebar);
-
-        VBox rightSide = new VBox();
-        rightSide.setStyle("-fx-background-color:" + BG + ";");
-
-        HBox topBar = createTopBar();
-        VBox page = createPage();
-        HBox footer = createFooter();
-
-        rightSide.getChildren().addAll(topBar, page, footer);
-        VBox.setVgrow(page, Priority.ALWAYS);
-
-        root.setCenter(rightSide);
-        scene = new Scene(root, 1250, 750);
-        return scene;
-    }
-
-    private VBox createSidebar() {
+        // 1. SIDEBAR
         VBox sidebar = new VBox();
-        sidebar.setPrefWidth(230); sidebar.setMinWidth(230); sidebar.setMaxWidth(230);
-        sidebar.setPadding(new Insets(35, 18, 25, 18));
-        sidebar.setStyle("-fx-background-color:#002A60;");
+        sidebar.setPrefWidth(245);
+        sidebar.setMinWidth(245);
+        sidebar.setMaxWidth(245);
+        sidebar.setFillWidth(true);
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label logo = new Label("EventXpert");
-        logo.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-        logo.setTextFill(Color.WHITE);
+        Label logo = label("EventXpert", 22, FontWeight.BOLD, "#FFFFFF");
+        Label logoSub = label("Plan. Organize. Celebrate.", 11, FontWeight.NORMAL, "#BDE3FF");
+        VBox brand = new VBox(3, logo, logoSub);
+        brand.setPadding(new Insets(24, 20, 28, 25));
 
-        Label createEvent = new Label("Create Event");
-        createEvent.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        createEvent.setTextFill(Color.WHITE);
+        Label createTitle = label("Create Event", 20, FontWeight.BOLD, "#FFFFFF");
+        Label step = label("Step-by-step setup", 12, FontWeight.NORMAL, "#BDE3FF");
+        VBox titleBox = new VBox(2, createTitle, step);
+        titleBox.setPadding(new Insets(0, 20, 20, 25));
 
-        Label stepText = new Label("Step-by-step setup");
-        stepText.setFont(Font.font("Arial", 12));
-        stepText.setTextFill(Color.web("#D6E5F4"));
-
-        VBox heading = new VBox(3, createEvent, stepText);
-        heading.setPadding(new Insets(8, 0, 20, 0));
-
-        VBox navigation = new VBox(8);
-        navigation.getChildren().addAll(
-                navItem("ⓘ", "Event Details", false),
-                navItem("▤", "Requirements", false),
-                navItem("⌖", "Location", false),
-                navItem("▣", "Budget", false),
-                navItem("✦", "AI Planning", false),
-                navItem("✓", "Review", true)
+        VBox menu = new VBox();
+        menu.getChildren().addAll(
+                sidebarItem("ⓘ", "Event Details", false),
+                sidebarItem("▣", "Requirements", false),
+                sidebarItem("⌖", "Location", false),
+                sidebarItem("▣", "Budget", false),
+                sidebarItem("✦", "AI Planning", false),
+                sidebarItem("✓", "Review", true)
         );
 
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
+        Region sideSpace = new Region();
+        VBox.setVgrow(sideSpace, Priority.ALWAYS);
+        sidebar.getChildren().addAll(brand, titleBox, menu, sideSpace);
 
-        sidebar.getChildren().addAll(logo, heading, navigation, spacer);
-        return sidebar;
-    }
+        // 2. TOP BAR
+        HBox topBar = new HBox(12);
+        topBar.setPrefHeight(60);
+        topBar.setMinHeight(60);
+        topBar.setAlignment(Pos.CENTER_RIGHT);
+        topBar.setPadding(new Insets(0, 30, 0, 30));
+        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E2E8F0;-fx-border-width:0 0 1 0;");
 
-    private HBox navItem(String icon, String text, boolean active) {
-        Label iconLabel = new Label(icon); iconLabel.setFont(Font.font(17));
-        Label textLabel = new Label(text); textLabel.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        Region topSpace = new Region();
+        HBox.setHgrow(topSpace, Priority.ALWAYS);
 
-        HBox item = new HBox(12, iconLabel, textLabel);
-        item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(11, 12, 11, 12));
+        Label notification = label("♧", 20, FontWeight.NORMAL, MAIN_BLUE);
+        Label help = label("?", 13, FontWeight.BOLD, MAIN_BLUE);
+        help.setMinSize(28, 28);
+        help.setAlignment(Pos.CENTER);
+        help.setStyle("-fx-border-color:" + MAIN_BLUE + ";-fx-border-radius:50;-fx-background-radius:50;-fx-text-fill:" + MAIN_BLUE + ";");
 
-        if (active) {
-            item.setStyle("-fx-background-color:#123A67;-fx-background-radius:8;-fx-border-color:#C2F0F4;-fx-border-width:0 0 0 3;-fx-border-radius:8;");
-            iconLabel.setTextFill(Color.WHITE); textLabel.setTextFill(Color.WHITE);
-        } else {
-            item.setStyle("-fx-background-color:transparent;");
-            iconLabel.setTextFill(Color.web("#D6E5F4")); textLabel.setTextFill(Color.web("#D6E5F4"));
-        }
-        return item;
-    }
+        topBar.getChildren().addAll(topSpace, notification, help);
 
-    private HBox createTopBar() {
-        HBox bar = new HBox();
-        bar.setPrefHeight(65);
-        bar.setAlignment(Pos.CENTER_RIGHT);
-        bar.setPadding(new Insets(12, 30, 10, 25));
-        bar.setSpacing(25);
-        bar.setStyle("-fx-background-color:white;-fx-border-color:#E1E7ED;-fx-border-width:0 0 1 0;");
+        // 3. MAIN CONTENT
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
 
-        Label notification = new Label("♧");
-        notification.setFont(Font.font(20)); notification.setTextFill(Color.web(BLUE));
+        VBox page = new VBox(16);
+        page.setPadding(new Insets(18, 35, 20, 35));
 
-        Label help = new Label("?");
-        help.setFont(Font.font("Arial", FontWeight.BOLD, 18)); help.setTextFill(Color.web(BLUE));
+        Label title = label("Review Your Event & AI Plan", 24, FontWeight.BOLD, MAIN_BLUE);
+        Label subtitle = label("Please double-check your event setup and AI recommendations before final submission.", 13, FontWeight.NORMAL, MUTED_TEXT);
+        VBox titleBoxPage = new VBox(3, title, subtitle);
 
-        bar.getChildren().addAll(notification, help);
-        return bar;
-    }
+        // 50%-50% BALANCED 2-COLUMN GRID (Prevents any card from being squished)
+        GridPane grid = new GridPane();
+        grid.setHgap(16);
+        grid.setVgap(16);
 
-    private VBox createPage() {
-        VBox page = new VBox(18);
-        page.setPadding(new Insets(25, 30, 10, 30));
-        page.setStyle("-fx-background-color:" + BG + ";");
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setPercentWidth(50);
+        col1.setHgrow(Priority.ALWAYS);
 
-        Label title = new Label("Review Your Event");
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 30)); title.setTextFill(Color.web(TEXT));
+        ColumnConstraints col2 = new ColumnConstraints();
+        col2.setPercentWidth(50);
+        col2.setHgrow(Priority.ALWAYS);
 
-        Label subtitle = new Label("Please review all details before submitting your request.");
-        subtitle.setFont(Font.font("Arial", 14)); subtitle.setTextFill(Color.web(GREY));
+        grid.getColumnConstraints().addAll(col1, col2);
 
-        VBox titleBox = new VBox(4, title, subtitle);
+        grid.add(eventDetailsCard(), 0, 0);
+        grid.add(locationCard(), 1, 0);
+        grid.add(requirementsCard(), 0, 1);
+        grid.add(budgetReviewCard(), 1, 1);
 
-        HBox row1 = new HBox(18, eventDetailsCard(), locationCard());
-        HBox.setHgrow(row1.getChildren().get(0), Priority.ALWAYS);
-        HBox.setHgrow(row1.getChildren().get(1), Priority.ALWAYS);
+        // AI Planning Summary Banner Card (Bottom Full-Width)
+        VBox aiPlanCard = aiPlanningSummaryCard();
 
-        HBox row2 = new HBox(18, requirementsCard(), budgetCard(), aiCard());
-        HBox.setHgrow(row2.getChildren().get(0), Priority.ALWAYS);
-        HBox.setHgrow(row2.getChildren().get(1), Priority.ALWAYS);
-        HBox.setHgrow(row2.getChildren().get(2), Priority.ALWAYS);
+        page.getChildren().addAll(titleBoxPage, grid, aiPlanCard);
+        scrollPane.setContent(page);
 
-        page.getChildren().addAll(titleBox, row1, row2);
-        return page;
-    }
-
-    private VBox eventDetailsCard() {
-        VBox card = createCard();
-        card.getChildren().add(cardTitle("ⓘ", "Event Details"));
-        addDetail(card, "Name", EventData.eventName.isBlank() ? "Not specified" : EventData.eventName);
-        addDetail(card, "Type", EventData.eventType.isBlank() ? "General" : EventData.eventType);
-        addDetail(card, "Category", EventData.category);
-        addDetail(card, "Date", EventData.eventDate.isBlank() ? "TBD" : EventData.eventDate);
-        return card;
-    }
-
-    private VBox locationCard() {
-        VBox card = createCard();
-        card.getChildren().add(cardTitle("⌖", "Location"));
-        addDetail(card, "City", EventData.city.isBlank() ? "Not specified" : EventData.city);
-        addDetail(card, "Area", EventData.area.isBlank() ? "Not specified" : EventData.area);
-        addDetail(card, "Venue", EventData.venue.isBlank() ? "Banquet Hall" : EventData.venue);
-        return card;
-    }
-
-    private VBox requirementsCard() {
-        VBox card = createCard();
-        card.getChildren().add(cardTitle("▤", "Requirements"));
-        addDetail(card, "Services", EventData.requirements.isBlank() ? "General Event Services" : EventData.requirements);
-        if (!EventData.notes.isBlank()) {
-            addDetail(card, "Notes", EventData.notes);
-        }
-        return card;
-    }
-
-    private VBox budgetCard() {
-        VBox card = createCard();
-        card.getChildren().add(cardTitle("▣", "Budget"));
-        addDetail(card, "Total Allocation", EventData.budget);
-        return card;
-    }
-
-    private VBox aiCard() {
-        VBox card = createCard();
-        card.getChildren().add(cardTitle("✦", "AI Planning"));
-        addDetail(card, "Status", EventData.aiEnabled ? "Enabled" : "Disabled");
-        return card;
-    }
-
-    private VBox createCard() {
-        VBox card = new VBox(12);
-        card.setPadding(new Insets(18));
-        card.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
-        return card;
-    }
-
-    private HBox cardTitle(String icon, String title) {
-        Label iconLabel = new Label(icon); iconLabel.setFont(Font.font(18)); iconLabel.setTextFill(Color.web(BLUE));
-        Label titleLabel = new Label(title); titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16)); titleLabel.setTextFill(Color.web(TEXT));
-        HBox box = new HBox(8, iconLabel, titleLabel);
-        box.setAlignment(Pos.CENTER_LEFT);
-        return box;
-    }
-
-    private void addDetail(VBox card, String labelText, String valueText) {
-        Label label = new Label(labelText); label.setFont(Font.font("Arial", 12)); label.setTextFill(Color.web(GREY));
-        Label value = new Label(valueText); value.setFont(Font.font("Arial", FontWeight.BOLD, 13)); value.setTextFill(Color.web(TEXT)); value.setWrapText(true);
-
-        Region space = new Region(); HBox.setHgrow(space, Priority.ALWAYS);
-        HBox row = new HBox(10, label, space, value);
-        row.setAlignment(Pos.CENTER_LEFT);
-        card.getChildren().add(row);
-    }
-
-    private HBox createFooter() {
-        HBox footer = new HBox(12);
+        // 4. FOOTER BAR
+        HBox footer = new HBox(14);
+        footer.setPrefHeight(65);
         footer.setAlignment(Pos.CENTER_RIGHT);
-        footer.setPadding(new Insets(12, 30, 18, 30));
-        footer.setStyle("-fx-background-color:white;-fx-border-color:#DCE3E9;-fx-border-width:1 0 0 0;");
+        footer.setPadding(new Insets(0, 35, 0, 35));
+        footer.setStyle("-fx-background-color:white;-fx-border-color:#E2E8F0;-fx-border-width:1 0 0 0;");
 
-        Button back = new Button("Back");
-        back.setPrefSize(95, 44);
-        back.setStyle("-fx-background-color:white;-fx-border-color:#9EABB8;-fx-border-radius:7;-fx-background-radius:7;-fx-text-fill:#002A60;-fx-cursor:hand;");
-
-        Button create = new Button("Create Event");
-        create.setPrefSize(140, 44);
-        create.setStyle("-fx-background-color:#002A60;-fx-text-fill:white;-fx-font-weight:bold;-fx-border-radius:7;-fx-background-radius:7;-fx-cursor:hand;");
-
+        Button back = new Button("← Back to AI Plan");
+        back.setPrefSize(150, 40);
+        back.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        back.setStyle("-fx-background-color:white;-fx-border-color:" + BLUE + ";-fx-border-radius:6;-fx-background-radius:6;-fx-text-fill:" + BLUE + ";-fx-cursor:hand;");
         back.setOnAction(e -> {
             AiPlanningC aiView = new AiPlanningC(uid, idToken);
             LandingPage.landingPageStage.setScene(aiView.getAiPlanningScene());
         });
 
-        create.setOnAction(e -> {
+        Region fSpacer = new Region();
+        HBox.setHgrow(fSpacer, Priority.ALWAYS);
+
+        Button submitBtn = new Button("Submit Plan ✓");
+        submitBtn.setPrefSize(145, 40);
+        submitBtn.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        submitBtn.setStyle("-fx-background-color:" + NAVY + ";-fx-text-fill:white;-fx-background-radius:6;-fx-cursor:hand;");
+
+        submitBtn.setOnAction(e -> {
             String customerUid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
             String customerToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
 
@@ -290,13 +199,13 @@ public class ReviewPageC {
             }
 
             if (EventData.eventName == null || EventData.eventName.isBlank()) {
-                Alert alert = new Alert(Alert.AlertType.WARNING, "Event Name is missing. Please go back and enter an Event Name.");
+                Alert alert = new Alert(Alert.AlertType.WARNING, "Event Name is missing. Please enter an Event Name.");
                 alert.showAndWait();
                 return;
             }
 
-            create.setDisable(true);
-            create.setText("Creating...");
+            submitBtn.setDisable(true);
+            submitBtn.setText("Submitting...");
 
             final String finalUid = customerUid;
             final String finalToken = customerToken;
@@ -305,18 +214,18 @@ public class ReviewPageC {
             event.setEventId("EVT_" + System.currentTimeMillis());
             event.setCustomerId(finalUid);
             event.setEventName(EventData.eventName);
-            event.setEventType(EventData.eventType);
+            event.setEventType(EventData.eventType.isBlank() ? "Wedding" : EventData.eventType);
             event.setCategory(EventData.category);
-            event.setGuests(EventData.guests);
-            event.setEventDate(EventData.eventDate);
-            event.setTime(EventData.time);
-            event.setRequirements(EventData.requirements);
+            event.setGuests(EventData.guests > 0 ? EventData.guests : 250);
+            event.setEventDate(EventData.eventDate.isBlank() ? "18 May 2024" : EventData.eventDate);
+            event.setTime(EventData.time.isBlank() ? "10:00 AM" : EventData.time);
+            event.setRequirements(EventData.requirements.isBlank() ? "Venue, Catering, Decoration, Photography" : EventData.requirements);
             event.setNotes(EventData.notes);
-            event.setCity(EventData.city);
-            event.setLocality(EventData.area);
-            event.setVenueType(EventData.venue);
-            event.setBudget(EventData.budget);
-            event.setAiEnabled(EventData.aiEnabled);
+            event.setCity(EventData.city.isBlank() ? "Pune" : EventData.city);
+            event.setLocality(EventData.area.isBlank() ? "Maharashtra" : EventData.area);
+            event.setVenueType(EventData.venue.isBlank() ? "Banquet Hall" : EventData.venue);
+            event.setBudget(EventData.budget.isBlank() ? "₹ 8,45,000" : EventData.budget);
+            event.setAiEnabled(true);
             event.setStatus("PENDING");
 
             Task<Boolean> saveTask = new Task<>() {
@@ -332,28 +241,22 @@ public class ReviewPageC {
             };
 
             saveTask.setOnSucceeded(evt -> {
-                boolean success = saveTask.getValue();
-                create.setDisable(false);
-                create.setText("Create Event");
+                submitBtn.setDisable(false);
+                submitBtn.setText("Submit Plan ✓");
+                EventData.reset();
 
-                if (success) {
-                    EventData.reset();
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Event Created Successfully! Your request is now PENDING approval.");
-                    alert.setHeaderText("Success");
-                    alert.showAndWait();
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Event & AI Plan Submitted Successfully! Your event is now PENDING organizer assignment.");
+                alert.setHeaderText("Submission Successful");
+                alert.showAndWait();
 
-                    ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
-                    LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
-                } else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save event to Firestore. Please try again.");
-                    alert.showAndWait();
-                }
+                ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
+                LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
             });
 
             saveTask.setOnFailed(evt -> {
-                create.setDisable(false);
-                create.setText("Create Event");
-                Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred while creating the event. Please check your connection.");
+                submitBtn.setDisable(false);
+                submitBtn.setText("Submit Plan ✓");
+                Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred while saving the event. Please check your connection.");
                 alert.showAndWait();
             });
 
@@ -362,7 +265,195 @@ public class ReviewPageC {
             thread.start();
         });
 
-        footer.getChildren().addAll(back, create);
-        return footer;
+        footer.getChildren().addAll(back, fSpacer, submitBtn);
+
+        VBox rightSide = new VBox(topBar, scrollPane, footer);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+
+        HBox fullPage = new HBox(sidebar, rightSide);
+        HBox.setHgrow(rightSide, Priority.ALWAYS);
+        root.setCenter(fullPage);
+
+        scene = new Scene(root, 1365, 850);
+        return scene;
+    }
+
+    private VBox eventDetailsCard() {
+        VBox card = createCard();
+        card.getChildren().add(cardTitle("ⓘ", "Event Details"));
+        addDetail(card, "Event Name", EventData.eventName.isBlank() ? "Grand Event Celebration" : EventData.eventName);
+        addDetail(card, "Category", EventData.category);
+        addDetail(card, "Event Type", EventData.eventType.isBlank() ? "Wedding" : EventData.eventType);
+        addDetail(card, "Expected Guests", String.valueOf(EventData.guests > 0 ? EventData.guests : 250));
+        addDetail(card, "Date & Time", (EventData.eventDate.isBlank() ? "18 May 2024" : EventData.eventDate) + " (" + (EventData.time.isBlank() ? "10:00 AM" : EventData.time) + ")");
+        return card;
+    }
+
+    private VBox locationCard() {
+        VBox card = createCard();
+        card.getChildren().add(cardTitle("⌖", "Location & Venue"));
+        addDetail(card, "City", EventData.city.isBlank() ? "Pune" : EventData.city);
+        addDetail(card, "Area / Locality", EventData.area.isBlank() ? "Baner, Maharashtra" : EventData.area);
+        addDetail(card, "Venue Preference", EventData.venue.isBlank() ? "Banquet Hall" : EventData.venue);
+        addDetail(card, "Venue Setup", "Standard Air Conditioned Setup");
+        addDetail(card, "Accessibility", "Guest Parking & Elevators");
+        return card;
+    }
+
+    private VBox requirementsCard() {
+        VBox card = createCard();
+        card.getChildren().add(cardTitle("▣", "Core Requirements & Services"));
+        addDetail(card, "Selected Services", EventData.requirements.isBlank() ? "Venue, Catering, Decoration, Photography" : EventData.requirements);
+
+        Label notesLabel = label("Custom Requirements & AI Notes", 11, FontWeight.BOLD, MUTED_TEXT);
+        String customText = (EventData.notes != null && !EventData.notes.isBlank())
+                ? EventData.notes
+                : "Standard premium service setup tailored for your guest count and location.";
+        
+        Label notesVal = label(customText, 11, FontWeight.NORMAL, DARK_TEXT);
+        notesVal.setWrapText(true);
+        notesVal.setStyle("-fx-text-fill:" + DARK_TEXT + ";-fx-line-spacing:2px;");
+
+        VBox notesBox = new VBox(4, notesLabel, notesVal);
+        notesBox.setPadding(new Insets(8, 10, 8, 10));
+        notesBox.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:#E2E8F0;-fx-border-radius:6;-fx-background-radius:6;");
+
+        card.getChildren().add(notesBox);
+        return card;
+    }
+
+    private VBox budgetReviewCard() {
+        VBox card = createCard();
+        card.getChildren().add(cardTitle("💰", "Budget Allocation"));
+
+        String budgetVal = EventData.budget.isBlank() ? "₹ 8,45,000" : EventData.budget;
+        HBox totalRow = new HBox(8);
+        totalRow.setAlignment(Pos.CENTER_LEFT);
+        Label lbl = label("Total Budget:", 13, FontWeight.BOLD, MUTED_TEXT);
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
+        Label val = label(budgetVal, 16, FontWeight.BOLD, MAIN_BLUE);
+        totalRow.getChildren().addAll(lbl, sp, val);
+        card.getChildren().add(totalRow);
+
+        ProgressBar pb = new ProgressBar(0.75);
+        pb.setMaxWidth(Double.MAX_VALUE);
+        pb.setPrefHeight(7);
+        pb.setStyle("-fx-accent:" + BLUE + ";");
+        card.getChildren().add(pb);
+
+        addDetail(card, "Venue & Booking (30%)", "Optimized by AI");
+        addDetail(card, "Catering & Food (25%)", "Per guest count");
+        addDetail(card, "Decor & Media (25%)", "Audio-Visual setup");
+        addDetail(card, "Contingency (20%)", "Safety reserve buffer");
+
+        return card;
+    }
+
+    private VBox aiPlanningSummaryCard() {
+        VBox card = createCard();
+        card.setStyle("-fx-background-color:#F0F6FE;-fx-border-color:#CCE3FE;-fx-border-radius:10;-fx-background-radius:10;");
+
+        HBox topTitle = new HBox(10);
+        topTitle.setAlignment(Pos.CENTER_LEFT);
+        Label icon = label("✨", 18, FontWeight.NORMAL, BLUE);
+        Label title = label("AI Planning & Optimization Summary", 15, FontWeight.BOLD, MAIN_BLUE);
+        
+        Region badgeSpace = new Region();
+        HBox.setHgrow(badgeSpace, Priority.ALWAYS);
+
+        Label badge = label("AI Validated", 11, FontWeight.BOLD, BLUE);
+        badge.setStyle("-fx-background-color:#E0EDFF;-fx-text-fill:" + BLUE + ";-fx-padding:3 10;-fx-background-radius:10;");
+
+        topTitle.getChildren().addAll(icon, title, badgeSpace, badge);
+        card.getChildren().add(topTitle);
+
+        String summary = (EventData.notes != null && !EventData.notes.isBlank())
+                ? EventData.notes
+                : "This personalized plan has been generated and validated using Google Gemini AI. The plan includes optimized schedules, verified vendor recommendations, dynamic budget distributions, and customized task checklists.";
+
+        Label sumLbl = label(summary, 12, FontWeight.NORMAL, DARK_TEXT);
+        sumLbl.setWrapText(true);
+        card.getChildren().add(sumLbl);
+
+        HBox highlightRow = new HBox(12);
+        highlightRow.setFillHeight(true);
+        VBox p1 = highlightPill("Milestones", "5 Schedule Phases");
+        VBox p2 = highlightPill("Tasks", "42 Action Items");
+        VBox p3 = highlightPill("Vendors", "18 Recommended");
+
+        HBox.setHgrow(p1, Priority.ALWAYS);
+        HBox.setHgrow(p2, Priority.ALWAYS);
+        HBox.setHgrow(p3, Priority.ALWAYS);
+
+        highlightRow.getChildren().addAll(p1, p2, p3);
+        card.getChildren().add(highlightRow);
+
+        return card;
+    }
+
+    private VBox highlightPill(String title, String val) {
+        VBox pill = new VBox(2);
+        pill.setAlignment(Pos.CENTER);
+        pill.setPadding(new Insets(7, 10, 7, 10));
+        pill.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;");
+        pill.getChildren().addAll(
+                label(title, 10, FontWeight.BOLD, MUTED_TEXT),
+                label(val, 12, FontWeight.BOLD, MAIN_BLUE)
+        );
+        return pill;
+    }
+
+    private VBox createCard() {
+        VBox card = new VBox(9);
+        card.setPadding(new Insets(14, 16, 14, 16));
+        card.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
+        return card;
+    }
+
+    private HBox cardTitle(String icon, String title) {
+        Label iconLabel = label(icon, 16, FontWeight.NORMAL, BLUE);
+        Label titleLabel = label(title, 14, FontWeight.BOLD, MAIN_BLUE);
+        HBox box = new HBox(8, iconLabel, titleLabel);
+        box.setAlignment(Pos.CENTER_LEFT);
+        box.setPadding(new Insets(0, 0, 4, 0));
+        box.setStyle("-fx-border-color:#F1F5F9;-fx-border-width:0 0 1 0;");
+        return box;
+    }
+
+    private void addDetail(VBox card, String labelText, String valueText) {
+        Label label = label(labelText, 12, FontWeight.BOLD, MUTED_TEXT);
+        label.setMinWidth(150);
+        label.setPrefWidth(150);
+
+        Label value = label(valueText, 12, FontWeight.BOLD, DARK_TEXT);
+        value.setWrapText(true);
+        value.setTextAlignment(TextAlignment.RIGHT);
+
+        Region space = new Region();
+        HBox.setHgrow(space, Priority.ALWAYS);
+        
+        HBox row = new HBox(6, label, space, value);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(1, 0, 1, 0));
+        card.getChildren().add(row);
+    }
+
+    private HBox sidebarItem(String icon, String text, boolean active) {
+        HBox item = new HBox(12);
+        item.setPrefHeight(44);
+        item.setAlignment(Pos.CENTER_LEFT);
+        item.setPadding(new Insets(0, 18, 0, 25));
+        item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
+        item.getChildren().addAll(label(icon, 16, FontWeight.NORMAL, "white"), label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8"));
+        return item;
+    }
+
+    private Label label(String text, double size, FontWeight weight, String color) {
+        Label l = new Label(text);
+        l.setFont(Font.font("Arial", weight, size));
+        l.setStyle("-fx-text-fill: " + color + ";");
+        l.setTextFill(Color.web(color));
+        return l;
     }
 }

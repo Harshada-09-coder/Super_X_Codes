@@ -1,5 +1,15 @@
 package com.techtrio.view;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.techtrio.controller.VendorController;
+import com.techtrio.model.VendorBooking;
+import com.techtrio.session.UserSession;
+
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,15 +20,14 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class MyBookingsV {
     private Scene myBookingScene;
     private VendorDashboardV vendorDashboard;
 
-    // Color Palette Constants
+    private String uid;
+    private String idToken;
+
+    // Color Palette Constants (Exact Original)
     private static final String SIDEBAR_NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
     private static final String BRIGHT_BLUE = "#2563C7";
@@ -39,21 +48,22 @@ public class MyBookingsV {
     private static final String GRAY_BG = "#F1F5F9";
     private static final String GRAY_TEXT = "#64748B";
 
-    // Data Structure for Booking Record
-    private static class BookingData {
-        String id;
-        String organizer;
-        String eventName;
-        String venue;
-        String dateTime;
-        String service;
-        String guests;
-        String amount;
-        String status; // Confirmed, Pending Payment, In Progress, Completed, Cancelled
-        String payment; // Paid, Partial, Pending, Refunded
+    // Original Data Structure
+    public static class BookingData {
+        public String id;
+        public String organizer;
+        public String eventName;
+        public String venue;
+        public String dateTime;
+        public String service;
+        public String guests;
+        public String amount;
+        public String status; // Confirmed, Pending Payment, In Progress, Completed, Cancelled
+        public String payment; // Paid, Partial, Pending, Refunded
+        public VendorBooking rawBooking;
 
-        BookingData(String id, String organizer, String eventName, String venue, String dateTime,
-                    String service, String guests, String amount, String status, String payment) {
+        public BookingData(String id, String organizer, String eventName, String venue, String dateTime,
+                    String service, String guests, String amount, String status, String payment, VendorBooking rawBooking) {
             this.id = id;
             this.organizer = organizer;
             this.eventName = eventName;
@@ -64,6 +74,7 @@ public class MyBookingsV {
             this.amount = amount;
             this.status = status;
             this.payment = payment;
+            this.rawBooking = rawBooking;
         }
     }
 
@@ -71,34 +82,51 @@ public class MyBookingsV {
     private VBox tableRowsContainer;
     private String activeTabFilter = "All Bookings";
 
+    // Summary labels
+    private Label totalBookingsValLbl;
+    private Label upcomingValLbl;
+    private Label inProgressValLbl;
+    private Label completedValLbl;
+    private Label cancelledValLbl;
+
+    private HBox tabsRowContainer;
+    private TextField searchInput;
+    private ComboBox<String> statusCB;
+    private ComboBox<String> serviceCB;
+    private ComboBox<String> eventTypeCB;
+    private ComboBox<String> locationCB;
+    private ComboBox<String> dateCB;
+
+    public MyBookingsV() {
+        this(UserSession.getUid(), UserSession.getIdToken());
+    }
+
+    public MyBookingsV(String uid, String idToken) {
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+    }
+
     public void setVendorDashboard(VendorDashboardV vendorDashboard) {
         this.vendorDashboard = vendorDashboard;
     }
 
-
     public Scene getmyBookingScene() {
-        return getmyBookingScene(null);
+        return getmyBookingScene(LandingPage.landingPageStage);
     }
 
     public Scene getmyBookingScene(Stage primaryStage) {
-        initSampleBookings();
-
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // 1. Sidebar (Left - Fixed 250px Full Height)
         VBox sidebar = createSidebar(primaryStage);
         root.setLeft(sidebar);
 
-        // 2. Main Application Container
         BorderPane mainArea = new BorderPane();
         mainArea.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // Top Bar
         HBox topBar = createTopBar(primaryStage);
         mainArea.setTop(topBar);
 
-        // Scrollable Center Content
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -107,39 +135,96 @@ public class MyBookingsV {
         mainContent.setPadding(new Insets(24));
         mainContent.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // Build Sections
         mainContent.getChildren().addAll(
                 createPageHeader(primaryStage),
                 createSummaryCardsRow(),
                 createFilterSection(primaryStage),
-                createTabsRow(primaryStage),
+                tabsRowContainer = createTabsRow(primaryStage),
                 createMainSplitSection(primaryStage),
                 createPaginationRow()
         );
 
         scrollPane.setContent(mainContent);
         mainArea.setCenter(scrollPane);
-
         root.setCenter(mainArea);
 
-        // Scene Setup
-        Scene scene = new Scene(root, 1550, 785);
-        myBookingScene = scene;
+        loadBookingsFromFirestoreAsync(primaryStage);
+
+        myBookingScene = new Scene(root, 1550, 785);
         return myBookingScene;
     }
 
-    private void initSampleBookings() {
-        bookingList.add(new BookingData("1", "TechVision Events", "TechVision Annual Summit", "Grand Convention Center, Pune", "18 May 2026\n09:00 AM - 06:00 PM", "Audio & Visual", "250", "₹85,000", "Confirmed", "Paid"));
-        bookingList.add(new BookingData("2", "Corporate Connect", "Leadership Summit 2026", "Business Bay Convention Hall", "22 May 2026\n10:00 AM - 05:00 PM", "Sound System", "180", "₹45,000", "Confirmed", "Partial"));
-        bookingList.add(new BookingData("3", "Startup India Network", "Startup Connect 2026", "Pune International Center", "05 Jun 2026\n09:30 AM - 06:00 PM", "Stage & Lighting", "300", "₹72,000", "Pending Payment", "Pending"));
-        bookingList.add(new BookingData("4", "Royal Events", "Annual Gala Night", "Royal Orchid Banquet", "12 Jun 2026\n07:00 PM - 11:00 PM", "Lighting & Stage", "200", "₹60,000", "Confirmed", "Paid"));
-        bookingList.add(new BookingData("5", "Global Business Forum", "Business Growth Conference", "Westin Hotel, Pune", "20 Jun 2026\n09:00 AM - 05:00 PM", "Audio & Visual", "220", "₹50,000", "In Progress", "Paid"));
-        bookingList.add(new BookingData("6", "Dream Wedding Planners", "Sangeet Night", "Lakeside Garden, Pune", "28 Jun 2026\n06:00 PM - 10:00 PM", "Sound System", "150", "₹35,000", "Completed", "Paid"));
-        bookingList.add(new BookingData("7", "Event Masters", "Product Launch Event", "Hyatt Regency, Pune", "02 Jul 2026\n10:00 AM - 04:00 PM", "Stage & AV", "180", "₹48,000", "Cancelled", "Refunded"));
+    private void loadBookingsFromFirestoreAsync(Stage stage) {
+        if (uid == null || uid.isBlank()) return;
+
+        Task<List<VendorBooking>> task = new Task<>() {
+            @Override
+            protected List<VendorBooking> call() {
+                VendorController controller = new VendorController();
+                return controller.getVendorBookings(uid);
+            }
+        };
+
+        task.setOnSucceeded(evt -> {
+            List<VendorBooking> result = task.getValue();
+            Platform.runLater(() -> {
+                bookingList.clear();
+                if (result != null) {
+                    for (VendorBooking b : result) {
+                        String rawStatus = b.getStatus() != null ? b.getStatus().toUpperCase() : "PENDING";
+                        String uiStatus = "Pending Payment";
+                        if ("CONFIRMED".equals(rawStatus)) uiStatus = "Confirmed";
+                        else if ("REJECTED".equals(rawStatus)) uiStatus = "Cancelled";
+
+                        bookingList.add(new BookingData(
+                                b.getBookingId() != null ? b.getBookingId() : "",
+                                b.getOrganizerName() != null ? b.getOrganizerName() : "Organizer",
+                                b.getEventName() != null ? b.getEventName() : "Event",
+                                b.getLocation() != null ? b.getLocation() : "Grand Convention Center, Pune",
+                                (b.getEventDate() != null ? b.getEventDate() : "18 May 2026") + "\n09:00 AM - 06:00 PM",
+                                b.getServiceCategory() != null ? b.getServiceCategory() : "Audio & Visual",
+                                String.valueOf(b.getGuests() > 0 ? b.getGuests() : 250),
+                                b.getAmount() != null ? b.getAmount() : "₹85,000",
+                                uiStatus,
+                                "Paid",
+                                b
+                        ));
+                    }
+                }
+                updateSummaryCounts();
+                buildTabs(tabsRowContainer, stage);
+                renderBookingsTable(stage);
+            });
+        });
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void updateSummaryCounts() {
+        int total = bookingList.size();
+        int upcoming = 0;
+        int inProgress = 0;
+        int completed = 0;
+        int cancelled = 0;
+
+        for (BookingData b : bookingList) {
+            if ("Confirmed".equalsIgnoreCase(b.status)) upcoming++;
+            else if ("In Progress".equalsIgnoreCase(b.status)) inProgress++;
+            else if ("Completed".equalsIgnoreCase(b.status)) completed++;
+            else if ("Cancelled".equalsIgnoreCase(b.status)) cancelled++;
+        }
+
+        if (totalBookingsValLbl != null) totalBookingsValLbl.setText(String.valueOf(total));
+        if (upcomingValLbl != null) upcomingValLbl.setText(String.valueOf(upcoming));
+        if (inProgressValLbl != null) inProgressValLbl.setText(String.valueOf(inProgress));
+        if (completedValLbl != null) completedValLbl.setText(String.valueOf(completed));
+        if (cancelledValLbl != null) cancelledValLbl.setText(String.valueOf(cancelled));
     }
 
     // ==========================================
-    // 1. SIDEBAR (FULL HEIGHT)
+    // 1. SIDEBAR (EXACT ORIGINAL)
     // ==========================================
     private VBox createSidebar(Stage stage) {
         VBox sidebar = new VBox();
@@ -148,7 +233,6 @@ public class MyBookingsV {
         sidebar.setPadding(new Insets(20, 14, 20, 14));
         sidebar.setSpacing(6);
 
-        // Logo / Branding Area
         HBox logoBox = new HBox(10);
         logoBox.setAlignment(Pos.CENTER_LEFT);
         Label logoIcon = new Label("E");
@@ -162,7 +246,6 @@ public class MyBookingsV {
         brandBox.getChildren().addAll(brandTitle, brandSub);
         logoBox.getChildren().addAll(logoIcon, brandBox);
 
-        // Top Action Button
         Button addServiceBtn = new Button("+ Add Service");
         addServiceBtn.setMaxWidth(Double.MAX_VALUE);
         addServiceBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 10; -fx-background-radius: 8px; -fx-cursor: hand;");
@@ -170,20 +253,20 @@ public class MyBookingsV {
 
         sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
 
-        // Menu Sections
-        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> {showToast(stage, "Opening Dashboard...");
-         if (vendorDashboard != null) {
+        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> {
+            if (vendorDashboard != null) {
                 vendorDashboard.backToVendorDashboard();
             } else {
-                VendorDashboardV dashboard = new VendorDashboardV();
-                Scene dashboardScene = dashboard.getvendorDashboardScene();
-                if (LandingPage.landingPageStage != null) {
-                    LandingPage.landingPageStage.setScene(dashboardScene);
-                }
+                VendorDashboardV dashboard = new VendorDashboardV(uid, idToken);
+                LandingPage.landingPageStage.setScene(dashboard.getvendorDashboardScene());
             }
-    }));
-        sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false, e -> showToast(stage, "Opening Service Requests...")));
-        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", true, e -> {})); // Active Menu
+        }));
+        sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false, e -> {
+            ServiceRequestsV serviceRequestsV = new ServiceRequestsV(uid, idToken);
+            serviceRequestsV.setVendorDashboard(vendorDashboard);
+            LandingPage.landingPageStage.setScene(serviceRequestsV.getserviceRequestVScene());
+        }));
+        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", true, e -> {}));
         sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, e -> showToast(stage, "Opening Services...")));
         sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, e -> showToast(stage, "Opening Calendar...")));
         sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, e -> showToast(stage, "Opening Earnings...")));
@@ -194,7 +277,6 @@ public class MyBookingsV {
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        // Bottom Vendor Profile Pill
         HBox profilePill = new HBox(10);
         profilePill.setAlignment(Pos.CENTER_LEFT);
         profilePill.setPadding(new Insets(10));
@@ -213,7 +295,6 @@ public class MyBookingsV {
         userDetails.getChildren().addAll(userName, userSub);
 
         profilePill.getChildren().addAll(avatarPane, userDetails);
-
         sidebar.getChildren().addAll(spacer, profilePill);
         return sidebar;
     }
@@ -237,13 +318,10 @@ public class MyBookingsV {
     private HBox createSidebarItemWithBadge(String title, String badgeCount) {
         HBox row = new HBox();
         row.setAlignment(Pos.CENTER_LEFT);
-
         Button btn = createSidebarItem(title, false, e -> {});
         HBox.setHgrow(btn, Priority.ALWAYS);
-
         Label badge = new Label(badgeCount);
         badge.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 6; -fx-background-radius: 10px;");
-
         row.getChildren().addAll(btn, badge);
         return row;
     }
@@ -284,7 +362,6 @@ public class MyBookingsV {
     // ==========================================
     private VBox createPageHeader(Stage stage) {
         VBox header = new VBox(6);
-
         HBox titleRow = new HBox(12);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
@@ -310,23 +387,27 @@ public class MyBookingsV {
     }
 
     // ==========================================
-    // 4. SUMMARY CARDS ROW
+    // 4. SUMMARY CARDS ROW (5 EXACT CARDS)
     // ==========================================
     private HBox createSummaryCardsRow() {
         HBox row = new HBox(14);
+        totalBookingsValLbl = new Label("32");
+        upcomingValLbl = new Label("12");
+        inProgressValLbl = new Label("4");
+        completedValLbl = new Label("16");
+        cancelledValLbl = new Label("2");
 
         row.getChildren().addAll(
-                createSummaryCard("Total Bookings", "32", "All Time", PRIMARY_BLUE, "📱"),
-                createSummaryCard("Upcoming", "12", "Next: 18 May 2026", GREEN_TEXT, "📅"),
-                createSummaryCard("In Progress", "4", "Currently Live", BLUE_TEXT, "⌛"),
-                createSummaryCard("Completed", "16", "This Year", GREEN_TEXT, "✓"),
-                createSummaryCard("Cancelled", "2", "This Year", RED_TEXT, "🚫")
+                createSummaryCard("Total Bookings", totalBookingsValLbl, "All Time", PRIMARY_BLUE, "📱"),
+                createSummaryCard("Upcoming", upcomingValLbl, "Next: 18 May 2026", GREEN_TEXT, "📅"),
+                createSummaryCard("In Progress", inProgressValLbl, "Currently Live", BLUE_TEXT, "⌛"),
+                createSummaryCard("Completed", completedValLbl, "This Year", GREEN_TEXT, "✓"),
+                createSummaryCard("Cancelled", cancelledValLbl, "This Year", RED_TEXT, "🚫")
         );
-
         return row;
     }
 
-    private VBox createSummaryCard(String title, String val, String sub, String colorHex, String iconStr) {
+    private VBox createSummaryCard(String title, Label valLbl, String sub, String colorHex, String iconStr) {
         VBox card = createCardContainer();
         HBox.setHgrow(card, Priority.ALWAYS);
         card.setPadding(new Insets(14));
@@ -340,18 +421,16 @@ public class MyBookingsV {
         ic.setStyle("-fx-font-size: 14px;");
         top.getChildren().addAll(t, sp, ic);
 
-        Label v = new Label(val);
-        v.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + colorHex + ";");
-
+        valLbl.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + colorHex + ";");
         Label s = new Label(sub);
         s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        card.getChildren().addAll(top, v, s);
+        card.getChildren().addAll(top, valLbl, s);
         return card;
     }
 
     // ==========================================
-    // 5. FILTER SECTION
+    // 5. FILTER SECTION (EXACT GRID)
     // ==========================================
     private VBox createFilterSection(Stage stage) {
         VBox card = createCardContainer();
@@ -360,26 +439,26 @@ public class MyBookingsV {
         grid.setHgap(12);
         grid.setVgap(10);
 
-        TextField searchInput = new TextField();
+        searchInput = new TextField();
         searchInput.setPromptText("🔍 Search event, organizer, service...");
 
-        ComboBox<String> statusCB = new ComboBox<>();
+        statusCB = new ComboBox<>();
         statusCB.getItems().addAll("All Status", "Confirmed", "In Progress", "Pending Payment", "Completed", "Cancelled");
         statusCB.setValue("All Status");
 
-        ComboBox<String> serviceCB = new ComboBox<>();
+        serviceCB = new ComboBox<>();
         serviceCB.getItems().addAll("All Services", "Sound System", "Decoration", "Photography & Videography", "Rental Equipment", "Invitation & Printing", "Catering", "Anchor", "Cake & Dessert Services");
         serviceCB.setValue("All Services");
 
-        ComboBox<String> eventTypeCB = new ComboBox<>();
+        eventTypeCB = new ComboBox<>();
         eventTypeCB.getItems().addAll("All Event Types", "Corporate Conference", "Corporate Event", "Networking Event", "Corporate Gala");
         eventTypeCB.setValue("All Event Types");
 
-        ComboBox<String> locationCB = new ComboBox<>();
+        locationCB = new ComboBox<>();
         locationCB.getItems().addAll("All Locations", "Pune", "Mumbai", "Bangalore");
         locationCB.setValue("All Locations");
 
-        ComboBox<String> dateCB = new ComboBox<>();
+        dateCB = new ComboBox<>();
         dateCB.getItems().addAll("All Dates", "May 2026", "June 2026", "July 2026");
         dateCB.setValue("All Dates");
 
@@ -402,7 +481,6 @@ public class MyBookingsV {
         grid.add(serviceCB, 2, 0);
         grid.add(eventTypeCB, 3, 0);
         grid.add(locationCB, 4, 0);
-
         grid.add(dateCB, 0, 1);
 
         HBox btns = new HBox(8, applyBtn, clearBtn);
@@ -413,19 +491,38 @@ public class MyBookingsV {
     }
 
     // ==========================================
-    // 6. TABS ROW
+    // 6. TABS ROW (5 EXACT TABS)
     // ==========================================
     private HBox createTabsRow(Stage stage) {
         HBox row = new HBox(12);
         row.setAlignment(Pos.CENTER_LEFT);
+        buildTabs(row, stage);
+        return row;
+    }
 
-        String[] tabs = {"All Bookings 32", "Upcoming 12", "In Progress 4", "Completed 16", "Cancelled 2"};
+    private void buildTabs(HBox row, Stage stage) {
+        if (row == null) return;
+        row.getChildren().clear();
+
+        int allCount = bookingList.size();
+        long upcomingCount = bookingList.stream().filter(b -> "Confirmed".equalsIgnoreCase(b.status)).count();
+        long inProgressCount = bookingList.stream().filter(b -> "In Progress".equalsIgnoreCase(b.status)).count();
+        long completedCount = bookingList.stream().filter(b -> "Completed".equalsIgnoreCase(b.status)).count();
+        long cancelledCount = bookingList.stream().filter(b -> "Cancelled".equalsIgnoreCase(b.status)).count();
+
+        String[] tabs = {
+                "All Bookings " + allCount,
+                "Upcoming " + upcomingCount,
+                "In Progress " + inProgressCount,
+                "Completed " + completedCount,
+                "Cancelled " + cancelledCount
+        };
 
         for (String tab : tabs) {
             String tabName = tab.substring(0, tab.lastIndexOf(" "));
             Button tabBtn = new Button(tab);
 
-            if (tabName.equals(activeTabFilter)) {
+            if (tabName.equalsIgnoreCase(activeTabFilter)) {
                 tabBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-border-color: " + PRIMARY_BLUE + "; -fx-border-width: 0 0 2 0; -fx-padding: 6 12; -fx-cursor: hand;");
             } else {
                 tabBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 13px; -fx-padding: 6 12; -fx-cursor: hand;");
@@ -433,23 +530,20 @@ public class MyBookingsV {
 
             tabBtn.setOnAction(e -> {
                 activeTabFilter = tabName;
-                createTabsRow(stage);
+                buildTabs(row, stage);
                 renderBookingsTable(stage);
             });
 
             row.getChildren().add(tabBtn);
         }
-
-        return row;
     }
 
     // ==========================================
-    // 7. MAIN SPLIT SECTION (TABLE & CALENDAR WIDGETS)
+    // 7. MAIN SPLIT SECTION (TABLE & EXACT WIDGETS)
     // ==========================================
     private HBox createMainSplitSection(Stage stage) {
         HBox row = new HBox(20);
 
-        // Left Main Bookings Table Card
         VBox tableCard = createCardContainer();
         HBox.setHgrow(tableCard, Priority.ALWAYS);
 
@@ -472,7 +566,6 @@ public class MyBookingsV {
 
         tableCard.getChildren().addAll(tableHeader, tableRowsContainer);
 
-        // Right Side Column: Calendar Widget + Status Chart + Reminders
         VBox rightSideWidgets = new VBox(16);
         rightSideWidgets.setPrefWidth(380);
 
@@ -494,11 +587,26 @@ public class MyBookingsV {
     }
 
     private void renderBookingsTable(Stage stage) {
+        if (tableRowsContainer == null) return;
         tableRowsContainer.getChildren().clear();
 
         List<BookingData> filtered = bookingList.stream().filter(b -> {
-            if (activeTabFilter.equals("All Bookings")) return true;
-            return b.status.equalsIgnoreCase(activeTabFilter);
+            if (!"All Bookings".equalsIgnoreCase(activeTabFilter)) {
+                if ("Upcoming".equalsIgnoreCase(activeTabFilter) && !"Confirmed".equalsIgnoreCase(b.status)) return false;
+                if (!"Upcoming".equalsIgnoreCase(activeTabFilter) && !b.status.equalsIgnoreCase(activeTabFilter)) return false;
+            }
+            if (searchInput != null && !searchInput.getText().isBlank()) {
+                String q = searchInput.getText().toLowerCase().trim();
+                boolean match = b.eventName.toLowerCase().contains(q) || b.organizer.toLowerCase().contains(q) || b.service.toLowerCase().contains(q);
+                if (!match) return false;
+            }
+            if (statusCB != null && !"All Status".equals(statusCB.getValue()) && !b.status.equalsIgnoreCase(statusCB.getValue())) {
+                return false;
+            }
+            if (serviceCB != null && !"All Services".equals(serviceCB.getValue()) && !b.service.toLowerCase().contains(serviceCB.getValue().toLowerCase())) {
+                return false;
+            }
+            return true;
         }).collect(Collectors.toList());
 
         if (filtered.isEmpty()) {
@@ -514,7 +622,6 @@ public class MyBookingsV {
             row.setPadding(new Insets(10, 12, 10, 12));
             row.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
 
-            // Event & Organizer Column
             VBox eventBox = new VBox(2);
             eventBox.setPrefWidth(200);
             Label eventName = new Label(b.eventName);
@@ -523,43 +630,29 @@ public class MyBookingsV {
             orgVenue.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
             eventBox.getChildren().addAll(eventName, orgVenue);
 
-            // Date & Time
             Label dtLbl = new Label(b.dateTime); dtLbl.setPrefWidth(140);
             dtLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
 
-            // Service
             Label sLbl = new Label(b.service); sLbl.setPrefWidth(120);
             sLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
 
-            // Guests
             Label gLbl = new Label(b.guests); gLbl.setPrefWidth(60);
             gLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
 
-            // Amount
             Label aLbl = new Label(b.amount); aLbl.setPrefWidth(80);
             aLbl.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
 
-            // Status Badge
             Label statusBadge = new Label(b.status); statusBadge.setPrefWidth(100);
             statusBadge.setStyle(getStatusBadgeStyle(b.status));
 
-            // Payment Badge
             Label paymentBadge = new Label(b.payment); paymentBadge.setPrefWidth(80);
             paymentBadge.setStyle(getPaymentBadgeStyle(b.payment));
 
-            // Action
             Button viewBtn = createSecondaryButton("View Details");
             viewBtn.setStyle("-fx-font-size: 10px; -fx-padding: 4 8;");
             viewBtn.setOnAction(e -> {
-                showToast(stage, "Opening Booking Details for " + b.eventName);
-                BookingDetailsV bookingDetailsV = new BookingDetailsV();
-
-                Runnable callBackAction = new Runnable() {
-                    public void run(){
-                       backToMyBookingPage();
-                    }
-                };
-                LandingPage.landingPageStage.setScene(bookingDetailsV.getbookingDetailsScene(null , callBackAction));
+                BookingDetailsV bookingDetailsV = new BookingDetailsV(b.rawBooking);
+                LandingPage.landingPageStage.setScene(bookingDetailsV.getbookingDetailsScene(LandingPage.landingPageStage, this::backToMyBookingPage));
             });
 
             row.add(eventBox, 0, 0);
@@ -605,7 +698,7 @@ public class MyBookingsV {
     }
 
     // ==========================================
-    // 8. RIGHT SIDE WIDGETS (CALENDAR, CHART, REMINDERS)
+    // 8. RIGHT SIDE WIDGETS (EXACT ORIGINAL)
     // ==========================================
     private VBox createBookingCalendarCard() {
         VBox card = createCardContainer();
@@ -767,7 +860,6 @@ public class MyBookingsV {
         Button next = createSecondaryButton("Next →");
 
         HBox pBox = new HBox(4, prev, page1, page2, page3, page4, page5, next);
-
         row.getChildren().addAll(count, sp, pBox);
         return row;
     }
@@ -799,12 +891,11 @@ public class MyBookingsV {
         alert.setTitle("EventXpert Notification");
         alert.setHeaderText(null);
         alert.setContentText(message);
-        if (stage != null) {
-            alert.initOwner(stage);
-        }
+        if (stage != null) alert.initOwner(stage);
         alert.show();
     }
-    public void backToMyBookingPage(){
-        LandingPage.landingPageStage.setScene(myBookingScene);
+
+    public void backToMyBookingPage() {
+        LandingPage.landingPageStage.setScene(getmyBookingScene(LandingPage.landingPageStage));
     }
 }

@@ -77,7 +77,7 @@ public class EventsA {
     void createTable() {
         table = new TableView<>();
         table.setItems(eventDataList);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+       table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setPrefHeight(390);
 
         TableColumn<Event, String> customerCol = col("Customer", Event::getCustomerId);

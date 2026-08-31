@@ -1,5 +1,15 @@
 package com.techtrio.view;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.techtrio.controller.VendorController;
+import com.techtrio.model.VendorBooking;
+import com.techtrio.session.UserSession;
+
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -10,17 +20,15 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.Window;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class ServiceRequestsV {
     private Scene serviceRequestVScene;
     private VendorDashboardV vendorDashboard;
 
-    // Color Palette Constants
+    private String uid;
+    private String idToken;
+
+    // Color Palette Constants (Exact Original)
     private static final String SIDEBAR_NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
     private static final String BRIGHT_BLUE = "#2563C7";
@@ -37,26 +45,27 @@ public class ServiceRequestsV {
     private static final String RED_BG = "#FEF2F2";
     private static final String RED_TEXT = "#DC2626";
 
-    // Data Structure for Request Card
-    private static class RequestData {
-        String id;
-        String organizer;
-        String phone;
-        String eventName;
-        String eventType;
-        String date;
-        String time;
-        String location;
-        String guests;
-        String service;
-        String budget;
-        String priority;
-        String receivedTime;
-        String status; // New, Pending, Accepted, Conflict
+    // Original Data Structure
+    public static class RequestData {
+        public String id;
+        public String organizer;
+        public String phone;
+        public String eventName;
+        public String eventType;
+        public String date;
+        public String time;
+        public String location;
+        public String guests;
+        public String service;
+        public String budget;
+        public String priority;
+        public String receivedTime;
+        public String status; // New, Pending, Accepted, Conflict, Rejected
+        public VendorBooking rawBooking;
 
-        RequestData(String id, String organizer, String phone, String eventName, String eventType,
+        public RequestData(String id, String organizer, String phone, String eventName, String eventType,
                     String date, String time, String location, String guests, String service,
-                    String budget, String priority, String receivedTime, String status) {
+                    String budget, String priority, String receivedTime, String status, VendorBooking rawBooking) {
             this.id = id;
             this.organizer = organizer;
             this.phone = phone;
@@ -71,6 +80,7 @@ public class ServiceRequestsV {
             this.priority = priority;
             this.receivedTime = receivedTime;
             this.status = status;
+            this.rawBooking = rawBooking;
         }
     }
 
@@ -78,34 +88,50 @@ public class ServiceRequestsV {
     private VBox cardsContainer;
     private String activeTabFilter = "All";
 
+    // Summary Card Labels
+    private Label totalReqValLbl;
+    private Label newReqValLbl;
+    private Label pendingValLbl;
+    private Label acceptedValLbl;
+    private Label urgentValLbl;
+    private HBox tabsRowContainer;
+
+    // Filter controls
+    private TextField searchInput;
+    private ComboBox<String> statusCB;
+    private ComboBox<String> serviceCB;
+    private ComboBox<String> eventTypeCB;
+    private ComboBox<String> locationCB;
+    private ComboBox<String> dateCB;
+    private ComboBox<String> priorityCB;
+
+    public ServiceRequestsV() {
+        this(UserSession.getUid(), UserSession.getIdToken());
+    }
+
+    public ServiceRequestsV(String uid, String idToken) {
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+    }
+
     public void setVendorDashboard(VendorDashboardV vendorDashboard) {
         this.vendorDashboard = vendorDashboard;
     }
 
     public Scene getserviceRequestVScene() {
-        System.out.println(">>> ServiceRequestsV.getserviceRequestVScene() START");
-
-        initSampleRequests();
-
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
         serviceRequestVScene = new Scene(root, 1550, 785);
 
-        System.out.println(">>> Scene created");
-
         VBox sidebar = createSidebar(serviceRequestVScene);
         root.setLeft(sidebar);
-
-        System.out.println(">>> Sidebar created");
 
         BorderPane mainArea = new BorderPane();
         mainArea.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
         HBox topBar = createTopBar(serviceRequestVScene);
         mainArea.setTop(topBar);
-
-        System.out.println(">>> TopBar created");
 
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
@@ -115,22 +141,14 @@ public class ServiceRequestsV {
         mainContent.setPadding(new Insets(24));
         mainContent.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        System.out.println(">>> Creating page header");
         mainContent.getChildren().add(createPageHeader(serviceRequestVScene));
-
-        System.out.println(">>> Creating summary cards");
         mainContent.getChildren().add(createSummaryCardsRow());
-
-        System.out.println(">>> Creating filters");
         mainContent.getChildren().add(createFilterSection(serviceRequestVScene));
+        
+        tabsRowContainer = createTabsRow(serviceRequestVScene);
+        mainContent.getChildren().add(tabsRowContainer);
 
-        System.out.println(">>> Creating tabs");
-        mainContent.getChildren().add(createTabsRow(serviceRequestVScene));
-
-        System.out.println(">>> Creating main split section");
         mainContent.getChildren().add(createMainSplitSection(serviceRequestVScene));
-
-        System.out.println(">>> Creating pagination");
         mainContent.getChildren().add(createPaginationRow());
 
         scrollPane.setContent(mainContent);
@@ -138,21 +156,84 @@ public class ServiceRequestsV {
 
         root.setCenter(mainArea);
 
-        System.out.println(">>> ServiceRequestsV Scene COMPLETE");
-
+        loadFirestoreRequestsAsync(serviceRequestVScene);
         return serviceRequestVScene;
     }
 
-    private void initSampleRequests() {
-        if (!requestList.isEmpty()) return;
-        requestList.add(new RequestData("1", "TechVision Events", "+91 98765 43210", "TechVision Annual Summit", "Corporate Conference", "18 May 2026", "09:00 AM - 06:00 PM", "Grand Convention Center, Pune", "250", "Audio & Visual", "₹85,000", "Important", "10 minutes ago", "New"));
-        requestList.add(new RequestData("2", "Corporate Connect", "+91 91234 56789", "Leadership Summit 2026", "Corporate Event", "24 May 2026", "10:00 AM - 05:00 PM", "Business Bay Convention Hall", "180", "Sound System", "₹55,000", "Normal", "1 hour ago", "New"));
-        requestList.add(new RequestData("3", "Startup India Network", "+91 99887 66554", "Startup Connect 2026", "Networking Event", "02 Jun 2026", "09:30 AM - 06:00 PM", "Pune International Center", "300", "Rental Equipment", "₹70,000", "Important", "3 hours ago", "Pending"));
-        requestList.add(new RequestData("4", "Royal Events", "+91 88990 11223", "Annual Gala Night", "Corporate Gala", "15 Jun 2026", "07:00 PM - 11:00 PM", "Royal Orchid Banquet", "200", "Decoration", "₹60,000", "Urgent", "Yesterday", "Conflict"));
+    private void loadFirestoreRequestsAsync(Scene scene) {
+        if (uid == null || uid.isBlank()) return;
+
+        Task<List<VendorBooking>> task = new Task<>() {
+            @Override
+            protected List<VendorBooking> call() {
+                VendorController controller = new VendorController();
+                return controller.getVendorBookings(uid);
+            }
+        };
+
+        task.setOnSucceeded(evt -> {
+            List<VendorBooking> bookings = task.getValue();
+            Platform.runLater(() -> {
+                requestList.clear();
+                if (bookings != null) {
+                    for (VendorBooking b : bookings) {
+                        String rawStatus = b.getStatus() != null ? b.getStatus().toUpperCase() : "PENDING";
+                        String uiStatus = "Pending";
+                        if ("PENDING".equals(rawStatus)) uiStatus = "New";
+                        else if ("CONFIRMED".equals(rawStatus)) uiStatus = "Accepted";
+                        else if ("REJECTED".equals(rawStatus)) uiStatus = "Rejected";
+
+                        requestList.add(new RequestData(
+                                b.getBookingId() != null ? b.getBookingId() : "",
+                                b.getOrganizerName() != null ? b.getOrganizerName() : "Organizer",
+                                b.getCustomerPhone() != null ? b.getCustomerPhone() : "+91 98765 43210",
+                                b.getEventName() != null ? b.getEventName() : "Event",
+                                "Corporate Conference",
+                                b.getEventDate() != null ? b.getEventDate() : "18 May 2026",
+                                "09:00 AM - 06:00 PM",
+                                b.getLocation() != null ? b.getLocation() : "Grand Convention Center, Pune",
+                                String.valueOf(b.getGuests() > 0 ? b.getGuests() : 250),
+                                b.getServiceCategory() != null ? b.getServiceCategory() : "Audio & Visual",
+                                b.getAmount() != null ? b.getAmount() : "₹85,000",
+                                "Important",
+                                "Recent",
+                                uiStatus,
+                                b
+                        ));
+                    }
+                }
+                updateSummaryCounts();
+                buildTabs(tabsRowContainer, scene);
+                renderRequestCards(scene);
+            });
+        });
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void updateSummaryCounts() {
+        int total = requestList.size();
+        int newCount = 0;
+        int pending = 0;
+        int accepted = 0;
+
+        for (RequestData r : requestList) {
+            if ("New".equalsIgnoreCase(r.status)) newCount++;
+            if ("Pending".equalsIgnoreCase(r.status)) pending++;
+            if ("Accepted".equalsIgnoreCase(r.status)) accepted++;
+        }
+
+        if (totalReqValLbl != null) totalReqValLbl.setText(String.valueOf(total));
+        if (newReqValLbl != null) newReqValLbl.setText(String.valueOf(newCount));
+        if (pendingValLbl != null) pendingValLbl.setText(String.valueOf(pending));
+        if (acceptedValLbl != null) acceptedValLbl.setText(String.valueOf(accepted));
+        if (urgentValLbl != null) urgentValLbl.setText(String.valueOf(newCount > 0 ? 1 : 0));
     }
 
     // ==========================================
-    // 1. SIDEBAR (FULL HEIGHT)
+    // 1. SIDEBAR (EXACT ORIGINAL)
     // ==========================================
     private VBox createSidebar(Scene scene) {
         VBox sidebar = new VBox();
@@ -161,7 +242,6 @@ public class ServiceRequestsV {
         sidebar.setPadding(new Insets(20, 14, 20, 14));
         sidebar.setSpacing(6);
 
-        // Logo / Branding Area
         HBox logoBox = new HBox(10);
         logoBox.setAlignment(Pos.CENTER_LEFT);
         Label logoIcon = new Label("E");
@@ -175,7 +255,6 @@ public class ServiceRequestsV {
         brandBox.getChildren().addAll(brandTitle, brandSub);
         logoBox.getChildren().addAll(logoIcon, brandBox);
 
-        // Top Action Button
         Button addServiceBtn = new Button("+ Add Service");
         addServiceBtn.setMaxWidth(Double.MAX_VALUE);
         addServiceBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 10; -fx-background-radius: 8px; -fx-cursor: hand;");
@@ -183,32 +262,31 @@ public class ServiceRequestsV {
 
         sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
 
-        // Menu Sections
         sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> {
             if (vendorDashboard != null) {
                 vendorDashboard.backToVendorDashboard();
             } else {
-                VendorDashboardV dashboard = new VendorDashboardV();
-                Scene dashboardScene = dashboard.getvendorDashboardScene();
-                if (LandingPage.landingPageStage != null) {
-                    LandingPage.landingPageStage.setScene(dashboardScene);
-                }
+                VendorDashboardV dashboard = new VendorDashboardV(uid, idToken);
+                LandingPage.landingPageStage.setScene(dashboard.getvendorDashboardScene());
             }
         }));
 
         sidebar.getChildren().add(createSidebarItem("📋 Service Requests", true, e -> {})); 
-        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, e -> showToast(scene, "Opening My Bookings...")));
+        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false, e -> {
+            MyBookingsV myBookingsV = new MyBookingsV(uid, idToken);
+            myBookingsV.setVendorDashboard(vendorDashboard);
+            LandingPage.landingPageStage.setScene(myBookingsV.getmyBookingScene());
+        }));
         sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false, e -> showToast(scene, "Opening Services...")));
         sidebar.getChildren().add(createSidebarItem("📅 Calendar", false, e -> showToast(scene, "Opening Calendar...")));
         sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false, e -> showToast(scene, "Opening Earnings...")));
         sidebar.getChildren().add(createSidebarItemWithBadge("🔔 Notifications", "4"));
         sidebar.getChildren().add(createSidebarItem("👤 Settings", false, e -> showToast(scene, "Opening Settings...")));
-        sidebar.getChildren().add(createSidebarItem("❓Support", false, e -> showToast(scene, "Opening Support...")));
+        sidebar.getChildren().add(createSidebarItem("❓ Support", false, e -> showToast(scene, "Opening Support...")));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        // Bottom Vendor Profile Pill
         HBox profilePill = new HBox(10);
         profilePill.setAlignment(Pos.CENTER_LEFT);
         profilePill.setPadding(new Insets(10));
@@ -227,7 +305,6 @@ public class ServiceRequestsV {
         userDetails.getChildren().addAll(userName, userSub);
 
         profilePill.getChildren().addAll(avatarPane, userDetails);
-
         sidebar.getChildren().addAll(spacer, profilePill);
         return sidebar;
     }
@@ -251,13 +328,10 @@ public class ServiceRequestsV {
     private HBox createSidebarItemWithBadge(String title, String badgeCount) {
         HBox row = new HBox();
         row.setAlignment(Pos.CENTER_LEFT);
-
         Button btn = createSidebarItem(title, false, e -> {});
         HBox.setHgrow(btn, Priority.ALWAYS);
-
         Label badge = new Label(badgeCount);
         badge.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 6; -fx-background-radius: 10px;");
-
         row.getChildren().addAll(btn, badge);
         return row;
     }
@@ -298,7 +372,6 @@ public class ServiceRequestsV {
     // ==========================================
     private VBox createPageHeader(Scene scene) {
         VBox header = new VBox(6);
-
         HBox titleRow = new HBox(12);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
@@ -310,8 +383,8 @@ public class ServiceRequestsV {
 
         Button refreshBtn = createSecondaryButton("↻ Refresh");
         refreshBtn.setOnAction(e -> {
-            renderRequestCards(scene);
-            showToast(scene, "Requests list refreshed.");
+            loadFirestoreRequestsAsync(scene);
+            showToast(scene, "Requests list refreshed from Firestore.");
         });
 
         Button calendarBtn = createPrimaryButton("📅 View Calendar");
@@ -327,23 +400,27 @@ public class ServiceRequestsV {
     }
 
     // ==========================================
-    // 4. SUMMARY CARDS ROW
+    // 4. SUMMARY CARDS ROW (5 EXACT CARDS)
     // ==========================================
     private HBox createSummaryCardsRow() {
         HBox row = new HBox(14);
+        totalReqValLbl = new Label("24");
+        newReqValLbl = new Label("8");
+        pendingValLbl = new Label("5");
+        acceptedValLbl = new Label("9");
+        urgentValLbl = new Label("2");
 
         row.getChildren().addAll(
-                createSummaryCard("Total Requests", "24", "All Requests", PRIMARY_BLUE, "👥"),
-                createSummaryCard("New Requests", "8", "Needs Review (+3 this week)", GREEN_TEXT, "✉"),
-                createSummaryCard("Pending", "5", "Awaiting Response", WARNING_TEXT, "⏱"),
-                createSummaryCard("Accepted", "9", "Confirmed Services", GREEN_TEXT, "✓"),
-                createSummaryCard("Urgent", "2", "Requires Attention", RED_TEXT, "⚠️")
+                createSummaryCard("Total Requests", totalReqValLbl, "All Requests", PRIMARY_BLUE, "👥"),
+                createSummaryCard("New Requests", newReqValLbl, "Needs Review (+3 this week)", GREEN_TEXT, "✉"),
+                createSummaryCard("Pending", pendingValLbl, "Awaiting Response", WARNING_TEXT, "⏱"),
+                createSummaryCard("Accepted", acceptedValLbl, "Confirmed Services", GREEN_TEXT, "✓"),
+                createSummaryCard("Urgent", urgentValLbl, "Requires Attention", RED_TEXT, "⚠️")
         );
-
         return row;
     }
 
-    private VBox createSummaryCard(String title, String val, String sub, String colorHex, String iconStr) {
+    private VBox createSummaryCard(String title, Label valLbl, String sub, String colorHex, String iconStr) {
         VBox card = createCardContainer();
         HBox.setHgrow(card, Priority.ALWAYS);
         card.setPadding(new Insets(14));
@@ -357,18 +434,16 @@ public class ServiceRequestsV {
         ic.setStyle("-fx-font-size: 14px;");
         top.getChildren().addAll(t, sp, ic);
 
-        Label v = new Label(val);
-        v.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + colorHex + ";");
-
+        valLbl.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + colorHex + ";");
         Label s = new Label(sub);
         s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        card.getChildren().addAll(top, v, s);
+        card.getChildren().addAll(top, valLbl, s);
         return card;
     }
 
     // ==========================================
-    // 5. FILTER SECTION
+    // 5. FILTER SECTION (EXACT GRID)
     // ==========================================
     private VBox createFilterSection(Scene scene) {
         VBox card = createCardContainer();
@@ -377,30 +452,30 @@ public class ServiceRequestsV {
         grid.setHgap(12);
         grid.setVgap(10);
 
-        TextField searchInput = new TextField();
+        searchInput = new TextField();
         searchInput.setPromptText("🔍 Search event, organizer, service...");
 
-        ComboBox<String> statusCB = new ComboBox<>();
+        statusCB = new ComboBox<>();
         statusCB.getItems().addAll("All Status", "New", "Pending", "Accepted", "Rejected");
         statusCB.setValue("All Status");
 
-        ComboBox<String> serviceCB = new ComboBox<>();
+        serviceCB = new ComboBox<>();
         serviceCB.getItems().addAll("All Services", "Decoration", "Sound System", "Photography & Videography", "Rental Equipment", "Invitation & Printing", "Catering", "Anchor", "Cake & Dessert Services");
         serviceCB.setValue("All Services");
 
-        ComboBox<String> eventTypeCB = new ComboBox<>();
+        eventTypeCB = new ComboBox<>();
         eventTypeCB.getItems().addAll("All Event Types", "Corporate Conference", "Corporate Event", "Networking Event", "Corporate Gala");
         eventTypeCB.setValue("All Event Types");
 
-        ComboBox<String> locationCB = new ComboBox<>();
+        locationCB = new ComboBox<>();
         locationCB.getItems().addAll("All Locations", "Pune", "Mumbai", "Bangalore");
         locationCB.setValue("All Locations");
 
-        ComboBox<String> dateCB = new ComboBox<>();
+        dateCB = new ComboBox<>();
         dateCB.getItems().addAll("All Dates", "Next 7 Days", "Next 30 Days", "May 2026");
         dateCB.setValue("All Dates");
 
-        ComboBox<String> priorityCB = new ComboBox<>();
+        priorityCB = new ComboBox<>();
         priorityCB.getItems().addAll("All Priorities", "Normal", "Important", "Urgent");
         priorityCB.setValue("All Priorities");
 
@@ -436,7 +511,7 @@ public class ServiceRequestsV {
     }
 
     // ==========================================
-    // 6. REQUEST TABS ROW
+    // 6. REQUEST TABS ROW (6 EXACT TABS)
     // ==========================================
     private HBox createTabsRow(Scene scene) {
         HBox row = new HBox(12);
@@ -446,14 +521,29 @@ public class ServiceRequestsV {
     }
 
     private void buildTabs(HBox row, Scene scene) {
+        if (row == null) return;
         row.getChildren().clear();
-        String[] tabs = {"All 24", "New 8", "Pending 5", "Accepted 9", "Rejected 2", "Expired 0"};
+
+        int allCount = requestList.size();
+        long newCount = requestList.stream().filter(r -> "New".equalsIgnoreCase(r.status)).count();
+        long pendingCount = requestList.stream().filter(r -> "Pending".equalsIgnoreCase(r.status)).count();
+        long acceptedCount = requestList.stream().filter(r -> "Accepted".equalsIgnoreCase(r.status)).count();
+        long rejectedCount = requestList.stream().filter(r -> "Rejected".equalsIgnoreCase(r.status)).count();
+
+        String[] tabs = {
+                "All " + allCount,
+                "New " + newCount,
+                "Pending " + pendingCount,
+                "Accepted " + acceptedCount,
+                "Rejected " + rejectedCount,
+                "Expired 0"
+        };
 
         for (String tab : tabs) {
             Button tabBtn = new Button(tab);
             String tabName = tab.split(" ")[0];
 
-            if (tabName.equals(activeTabFilter)) {
+            if (tabName.equalsIgnoreCase(activeTabFilter)) {
                 tabBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-border-color: " + PRIMARY_BLUE + "; -fx-border-width: 0 0 2 0; -fx-padding: 6 12; -fx-cursor: hand;");
             } else {
                 tabBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 13px; -fx-padding: 6 12; -fx-cursor: hand;");
@@ -470,18 +560,16 @@ public class ServiceRequestsV {
     }
 
     // ==========================================
-    // 7. MAIN SPLIT SECTION (REQUEST FEED & INSIGHTS)
+    // 7. MAIN SPLIT SECTION (CARDS & RIGHT PANELS)
     // ==========================================
     private HBox createMainSplitSection(Scene scene) {
         HBox row = new HBox(20);
 
-        // Left Column: Request Cards Feed
         cardsContainer = new VBox(16);
         HBox.setHgrow(cardsContainer, Priority.ALWAYS);
 
         renderRequestCards(scene);
 
-        // Right Column: Insights & Alerts Panel
         VBox rightPanel = new VBox(16);
         rightPanel.setPrefWidth(380);
 
@@ -500,8 +588,21 @@ public class ServiceRequestsV {
         cardsContainer.getChildren().clear();
 
         List<RequestData> filtered = requestList.stream().filter(r -> {
-            if (activeTabFilter.equals("All")) return true;
-            return r.status.equalsIgnoreCase(activeTabFilter);
+            if (!"All".equalsIgnoreCase(activeTabFilter) && !r.status.equalsIgnoreCase(activeTabFilter)) {
+                return false;
+            }
+            if (searchInput != null && !searchInput.getText().isBlank()) {
+                String q = searchInput.getText().toLowerCase().trim();
+                boolean match = r.eventName.toLowerCase().contains(q) || r.organizer.toLowerCase().contains(q) || r.service.toLowerCase().contains(q);
+                if (!match) return false;
+            }
+            if (statusCB != null && !"All Status".equals(statusCB.getValue()) && !r.status.equalsIgnoreCase(statusCB.getValue())) {
+                return false;
+            }
+            if (serviceCB != null && !"All Services".equals(serviceCB.getValue()) && !r.service.toLowerCase().contains(serviceCB.getValue().toLowerCase())) {
+                return false;
+            }
+            return true;
         }).collect(Collectors.toList());
 
         if (filtered.isEmpty()) {
@@ -524,7 +625,6 @@ public class ServiceRequestsV {
         HBox topRow = new HBox(16);
         topRow.setAlignment(Pos.CENTER_LEFT);
 
-        // Organizer Info
         VBox orgBox = new VBox(2);
         Label orgName = new Label("👤 " + req.organizer);
         orgName.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + TEXT_MAIN + ";");
@@ -533,7 +633,6 @@ public class ServiceRequestsV {
         orgBox.getChildren().addAll(orgName, orgPhone);
         orgBox.setPrefWidth(160);
 
-        // Event Specs
         VBox eventBox = new VBox(2);
         Label eName = new Label(req.eventName);
         eName.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + PRIMARY_BLUE + ";");
@@ -542,7 +641,6 @@ public class ServiceRequestsV {
         eventBox.getChildren().addAll(eName, eDetails);
         HBox.setHgrow(eventBox, Priority.ALWAYS);
 
-        // Service & Budget
         VBox serviceBox = new VBox(2);
         Label sName = new Label("Service: " + req.service);
         sName.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
@@ -551,7 +649,6 @@ public class ServiceRequestsV {
         serviceBox.getChildren().addAll(sName, budget);
         serviceBox.setPrefWidth(140);
 
-        // Meta & Status
         VBox metaBox = new VBox(4);
         metaBox.setAlignment(Pos.TOP_RIGHT);
         Label prioLbl = new Label("● " + req.priority);
@@ -562,33 +659,27 @@ public class ServiceRequestsV {
         Label statusBadge = new Label(req.status);
         if (req.status.equals("New")) {
             statusBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
-        } else if (req.status.equals("Conflict")) {
+        } else if (req.status.equals("Accepted")) {
+            statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
+        } else if (req.status.equals("Conflict") || req.status.equals("Rejected")) {
             statusBadge.setStyle("-fx-background-color: " + RED_BG + "; -fx-text-fill: " + RED_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
         } else {
             statusBadge.setStyle("-fx-background-color: " + WARNING_BG + "; -fx-text-fill: " + WARNING_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
         }
 
         metaBox.getChildren().addAll(prioLbl, recLbl, statusBadge);
-
         topRow.getChildren().addAll(orgBox, new Separator(), eventBox, new Separator(), serviceBox, metaBox);
 
-        // Bottom Action Buttons
         HBox btnRow = new HBox(8);
         btnRow.setAlignment(Pos.CENTER_RIGHT);
 
         Button detailsBtn = createSecondaryButton("View Details");
         detailsBtn.setOnAction(e -> {
-            showToast(scene, "Opening Service Request Details for " + req.eventName);
-            ServiceRequestDetailsV serviceRequestDetailsV = new ServiceRequestDetailsV();
-            Runnable callBackAction = new Runnable() {
-                public void run(){
-                  backToServiceRequestsV();
-                }
-            };
-            LandingPage.landingPageStage.setScene(serviceRequestDetailsV.getserviceRequestDetailsScene(null, callBackAction));
+            ServiceRequestDetailsV serviceRequestDetailsV = new ServiceRequestDetailsV(req.rawBooking);
+            LandingPage.landingPageStage.setScene(serviceRequestDetailsV.getserviceRequestDetailsScene(LandingPage.landingPageStage, this::backToServiceRequestsV));
         });
 
-        if (req.status.equals("New")) {
+        if (req.status.equals("New") || req.status.equals("Pending")) {
             Button acceptBtn = createPrimaryButton("Accept");
             acceptBtn.setStyle("-fx-background-color: " + GREEN_TEXT + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-padding: 6 14; -fx-cursor: hand;");
             acceptBtn.setOnAction(e -> openAcceptConfirmationModal(scene, req));
@@ -602,7 +693,6 @@ public class ServiceRequestsV {
             Button conflictBtn = createSecondaryButton("View Conflict");
             conflictBtn.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-border-color: " + RED_TEXT + ";");
             conflictBtn.setOnAction(e -> showToast(scene, "Checking calendar conflicts for " + req.date));
-
             btnRow.getChildren().addAll(conflictBtn, detailsBtn);
         } else {
             Button reviewBtn = createPrimaryButton("Continue Review");
@@ -615,11 +705,10 @@ public class ServiceRequestsV {
     }
 
     // ==========================================
-    // RIGHT PANEL CARDS
+    // RIGHT PANEL CARDS (EXACT ORIGINAL)
     // ==========================================
     private VBox createQuickInsightsCard(Scene scene) {
         VBox card = createCardContainer();
-
         Label title = new Label("Quick Insights");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
@@ -648,7 +737,6 @@ public class ServiceRequestsV {
 
     private VBox createStatusOverviewCard() {
         VBox card = createCardContainer();
-
         Label title = new Label("Request Status Overview");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
@@ -675,7 +763,6 @@ public class ServiceRequestsV {
 
     private VBox createImportantAlertsCard(Scene scene) {
         VBox card = createCardContainer();
-
         Label title = new Label("Important Alerts");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
@@ -719,20 +806,17 @@ public class ServiceRequestsV {
         Button next = createSecondaryButton("Next →");
 
         HBox pBox = new HBox(4, prev, page1, page2, page3, next);
-
         row.getChildren().addAll(count, sp, pBox);
         return row;
     }
 
     // ==========================================
-    // MODALS & DIALOGS
+    // MODALS & DIALOGS (WITH FIRESTORE UPDATE)
     // ==========================================
     private void openAcceptConfirmationModal(Scene scene, RequestData req) {
         Stage modal = new Stage();
         modal.initModality(Modality.APPLICATION_MODAL);
-        if (scene != null && scene.getWindow() != null) {
-            modal.initOwner(scene.getWindow());
-        }
+        if (scene != null && scene.getWindow() != null) modal.initOwner(scene.getWindow());
         modal.setTitle("Accept Service Request");
 
         VBox layout = new VBox(12);
@@ -750,9 +834,11 @@ public class ServiceRequestsV {
         Button confirmBtn = createPrimaryButton("Accept Request");
         confirmBtn.setStyle("-fx-background-color: " + GREEN_TEXT + "; -fx-text-fill: white; -fx-font-weight: bold;");
         confirmBtn.setOnAction(e -> {
+            VendorController controller = new VendorController();
+            controller.acceptBookingRequest(req.id);
             req.status = "Accepted";
             renderRequestCards(scene);
-            showToast(scene, "✓ Request accepted successfully!");
+            showToast(scene, "✓ Request accepted successfully in Firestore!");
             modal.close();
         });
 
@@ -770,9 +856,7 @@ public class ServiceRequestsV {
     private void openRejectModal(Scene scene, RequestData req) {
         Stage modal = new Stage();
         modal.initModality(Modality.APPLICATION_MODAL);
-        if (scene != null && scene.getWindow() != null) {
-            modal.initOwner(scene.getWindow());
-        }
+        if (scene != null && scene.getWindow() != null) modal.initOwner(scene.getWindow());
         modal.setTitle("Reject Service Request");
 
         VBox layout = new VBox(10);
@@ -793,6 +877,8 @@ public class ServiceRequestsV {
         Button submitBtn = createPrimaryButton("Reject Request");
         submitBtn.setStyle("-fx-background-color: " + RED_TEXT + "; -fx-text-fill: white; -fx-font-weight: bold;");
         submitBtn.setOnAction(e -> {
+            VendorController controller = new VendorController();
+            controller.rejectBookingRequest(req.id);
             req.status = "Rejected";
             renderRequestCards(scene);
             showToast(scene, "Request rejected.");
@@ -806,9 +892,6 @@ public class ServiceRequestsV {
         modal.show();
     }
 
-    // ==========================================
-    // UI UTILITIES
-    // ==========================================
     private VBox createCardContainer() {
         VBox card = new VBox(12);
         card.setPadding(new Insets(16));
@@ -833,24 +916,11 @@ public class ServiceRequestsV {
         alert.setTitle("EventXpert Notification");
         alert.setHeaderText(null);
         alert.setContentText(message);
-        if (scene != null && scene.getWindow() != null) {
-            alert.initOwner(scene.getWindow());
-        }
+        if (scene != null && scene.getWindow() != null) alert.initOwner(scene.getWindow());
         alert.show();
     }
 
-    private void showToast(Window window, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("EventXpert Notification");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        if (window != null) {
-            alert.initOwner(window);
-        }
-        alert.show();
-    }
-    public void backToServiceRequestsV(){
-
-        LandingPage.landingPageStage.setScene(serviceRequestVScene);
+    public void backToServiceRequestsV() {
+        LandingPage.landingPageStage.setScene(getserviceRequestVScene());
     }
 }
