@@ -538,16 +538,9 @@ public class BudgetC {
         // FOOTER BUTTONS
         // =========================================================
 
-        Button save = footerButton(
-                "Save Draft",
-                105,
-                false
-        );
 
-        save.setOnAction(e -> {
-            ReviewPageC.EventData.budget =
-                    amount.getText().trim();
-        });
+
+
 
         Button back = footerButton(
                 "Back",
@@ -608,7 +601,6 @@ public class BudgetC {
 
         HBox buttons = new HBox(
                 10,
-                save,
                 back,
                 next
         );

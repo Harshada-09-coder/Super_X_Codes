@@ -2,6 +2,11 @@ package com.techtrio.view;
 
 import com.techtrio.session.UserSession;
 
+import java.awt.Desktop;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -40,6 +45,7 @@ public class LocationC {
     private static final String LIGHT_BLUE = "#DFF3FF";
 
     public LocationC(String uid, String idToken) {
+
         this.uid = (uid != null && !uid.isBlank())
                 ? uid
                 : UserSession.getUid();
@@ -54,182 +60,61 @@ public class LocationC {
         // =========================
         // ROOT
         // =========================
-
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
         // =========================
         // SIDEBAR
         // =========================
-
         VBox sidebar = new VBox();
-
         sidebar.setPrefWidth(245);
         sidebar.setMinWidth(245);
         sidebar.setMaxWidth(245);
         sidebar.setFillWidth(true);
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        sidebar.setStyle(
-                "-fx-background-color:" + NAVY + ";"
-        );
+        Label logo = label("EventXpert", 21, FontWeight.BOLD, "white");
+        Label logoSub = label("EVENT MANAGEMENT", 8, FontWeight.NORMAL, "#BDE3FF");
+        VBox brand = new VBox(3, logo, logoSub);
+        brand.setPadding(new Insets(24, 20, 28, 25));
 
-        Label logo = label(
-                "EventXpert",
-                21,
-                FontWeight.BOLD,
-                "white"
-        );
-
-        Label logoSub = label(
-                "EVENT MANAGEMENT",
-                8,
-                FontWeight.NORMAL,
-                "#BDE3FF"
-        );
-
-        VBox brand = new VBox(
-                3,
-                logo,
-                logoSub
-        );
-
-        brand.setPadding(
-                new Insets(
-                        24,
-                        20,
-                        28,
-                        25
-                )
-        );
-
-        Label create = label(
-                "Create Event",
-                19,
-                FontWeight.BOLD,
-                "white"
-        );
-
-        Label step = label(
-                "Step-by-step setup",
-                10,
-                FontWeight.NORMAL,
-                "#BDE3FF"
-        );
-
-        VBox title = new VBox(
-                2,
-                create,
-                step
-        );
-
-        title.setPadding(
-                new Insets(
-                        0,
-                        20,
-                        20,
-                        25
-                )
-        );
+        Label create = label("Create Event", 19, FontWeight.BOLD, "white");
+        Label step = label("Step-by-step setup", 10, FontWeight.NORMAL, "#BDE3FF");
+        VBox title = new VBox(2, create, step);
+        title.setPadding(new Insets(0, 20, 20, 25));
 
         VBox menu = new VBox();
-
         menu.getChildren().addAll(
-                sidebarItem(
-                        "ⓘ",
-                        "Event Details",
-                        false
-                ),
-                sidebarItem(
-                        "▣",
-                        "Requirements",
-                        false
-                ),
-                sidebarItem(
-                        "⌖",
-                        "Location",
-                        true
-                ),
-                sidebarItem(
-                        "▣",
-                        "Budget",
-                        false
-                ),
-                sidebarItem(
-                        "✦",
-                        "AI Planning",
-                        false
-                ),
-                sidebarItem(
-                        "▤",
-                        "Review",
-                        false
-                )
+                sidebarItem("ⓘ", "Event Details", false),
+                sidebarItem("▣", "Requirements", false),
+                sidebarItem("⌖", "Location", true),
+                sidebarItem("▣", "Budget", false),
+                sidebarItem("✦", "AI Planning", false),
+                sidebarItem("▤", "Review", false)
         );
 
-        sidebar.getChildren().addAll(
-                brand,
-                title,
-                menu
-        );
+        sidebar.getChildren().addAll(brand, title, menu);
 
         // =========================
         // TOP BAR
         // =========================
-
         HBox topBar = new HBox();
-
         topBar.setPrefHeight(60);
         topBar.setMinHeight(60);
-
-        topBar.setAlignment(
-                Pos.CENTER_RIGHT
-        );
-
-        topBar.setPadding(
-                new Insets(
-                        0,
-                        30,
-                        0,
-                        30
-                )
-        );
-
+        topBar.setAlignment(Pos.CENTER_RIGHT);
+        topBar.setPadding(new Insets(0, 30, 0, 30));
         topBar.setStyle(
                 "-fx-background-color:white;" +
                 "-fx-border-color:#E4E7EC;" +
                 "-fx-border-width:0 0 1 0;"
         );
 
-        Label topLogo = label(
-                "EventXpert",
-                14,
-                FontWeight.BOLD,
-                NAVY
-        );
+        Label topLogo = label("EventXpert", 14, FontWeight.BOLD, NAVY);
+        Label bell = label("♧", 20, FontWeight.NORMAL, NAVY);
+        Label help = label("?", 13, FontWeight.BOLD, NAVY);
 
-        Label bell = label(
-                "♧",
-                20,
-                FontWeight.NORMAL,
-                NAVY
-        );
-
-        Label help = label(
-                "?",
-                13,
-                FontWeight.BOLD,
-                NAVY
-        );
-
-        help.setMinSize(
-                28,
-                28
-        );
-
-        help.setAlignment(
-                Pos.CENTER
-        );
-
+        help.setMinSize(28, 28);
+        help.setAlignment(Pos.CENTER);
         help.setStyle(
                 "-fx-border-color:" + NAVY + ";" +
                 "-fx-border-radius:50;" +
@@ -237,52 +122,18 @@ public class LocationC {
         );
 
         Region topSpace = new Region();
-
-        HBox.setHgrow(
-                topSpace,
-                Priority.ALWAYS
-        );
-
-        topBar.getChildren().addAll(
-                topLogo,
-                topSpace,
-                bell,
-                help
-        );
+        HBox.setHgrow(topSpace, Priority.ALWAYS);
+        topBar.getChildren().addAll(topLogo, topSpace, bell, help);
 
         // =========================
         // CONTENT
         // =========================
-
         VBox content = new VBox(12);
+        content.setPadding(new Insets(25, 32, 18, 32));
+        content.setStyle("-fx-background-color:" + BG + ";");
 
-        content.setPadding(
-                new Insets(
-                        25,
-                        32,
-                        18,
-                        32
-                )
-        );
-
-        content.setStyle(
-                "-fx-background-color:" + BG + ";"
-        );
-
-        Label stepText = label(
-                "STEP 3 OF 6",
-                9,
-                FontWeight.BOLD,
-                BLUE
-        );
-
-        Label heading = label(
-                "Where is your event happening?",
-                25,
-                FontWeight.NORMAL,
-                "#050B16"
-        );
-
+        Label stepText = label("STEP 3 OF 6", 9, FontWeight.BOLD, BLUE);
+        Label heading = label("Where is your event happening?", 25, FontWeight.NORMAL, "#050B16");
         Label description = label(
                 "Provide location details to help us find the best logistical routes and venues.",
                 12,
@@ -293,15 +144,9 @@ public class LocationC {
         // =========================
         // LOCATION CARD
         // =========================
-
         VBox locationCard = new VBox(11);
-
-        locationCard.setPadding(
-                new Insets(18)
-        );
-
+        locationCard.setPadding(new Insets(18));
         locationCard.setPrefWidth(360);
-
         locationCard.setStyle(
                 "-fx-background-color:white;" +
                 "-fx-background-radius:7;" +
@@ -310,32 +155,18 @@ public class LocationC {
         );
 
         TextField city = new TextField(
-                ReviewPageC.EventData.city != null
-                        ? ReviewPageC.EventData.city
-                        : ""
+                ReviewPageC.EventData.city != null ? ReviewPageC.EventData.city : ""
         );
-
-        city.setPromptText(
-                "e.g. Pune / Mumbai"
-        );
-
+        city.setPromptText("e.g. Pune / Mumbai");
         styleField(city);
 
         TextField locality = new TextField(
-                ReviewPageC.EventData.area != null
-                        ? ReviewPageC.EventData.area
-                        : ""
+                ReviewPageC.EventData.area != null ? ReviewPageC.EventData.area : ""
         );
-
-        locality.setPromptText(
-                "e.g. Downtown, Baner"
-        );
-
+        locality.setPromptText("e.g. Downtown, Baner");
         styleField(locality);
 
-        ComboBox<String> venueType =
-                new ComboBox<>();
-
+        ComboBox<String> venueType = new ComboBox<>();
         venueType.getItems().addAll(
                 "Hotel",
                 "Banquet Hall",
@@ -346,66 +177,25 @@ public class LocationC {
                 "Other"
         );
 
-        if (ReviewPageC.EventData.venue != null
-                && !ReviewPageC.EventData.venue.isBlank()) {
-
-            venueType.setValue(
-                    ReviewPageC.EventData.venue
-            );
-
+        if (ReviewPageC.EventData.venue != null && !ReviewPageC.EventData.venue.isBlank()) {
+            venueType.setValue(ReviewPageC.EventData.venue);
         } else {
-
-            venueType.setPromptText(
-                    "Select venue type"
-            );
+            venueType.setPromptText("Select venue type");
         }
 
-        venueType.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
+        venueType.setMaxWidth(Double.MAX_VALUE);
         styleCombo(venueType);
 
-        locationCard.getChildren().addAll(
-                formField(
-                        "City",
-                        city
-                ),
-                formField(
-                        "Area / Locality",
-                        locality
-                ),
-                formField(
-                        "Venue Preference",
-                        venueType
-                )
-        );
+        Separator separator = new Separator();
 
-        // =========================
-        // CURRENT LOCATION
-        // =========================
-
-        Separator separator =
-                new Separator();
-
-        Button currentLocation =
-                new Button(
-                        "◎   Use my current location"
-                );
-
-        currentLocation.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        currentLocation.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        currentLocation.setPrefHeight(
-                34
-        );
-
-        currentLocation.setStyle(
+        // ==========================================
+        // "SHOW LOCATION" BUTTON
+        // ==========================================
+        Button showLocation = new Button("📍   Show Location");
+        showLocation.setAlignment(Pos.CENTER_LEFT);
+        showLocation.setMaxWidth(Double.MAX_VALUE);
+        showLocation.setPrefHeight(34);
+        showLocation.setStyle(
                 "-fx-background-color:transparent;" +
                 "-fx-text-fill:" + BLUE + ";" +
                 "-fx-font-size:11px;" +
@@ -414,57 +204,51 @@ public class LocationC {
                 "-fx-cursor:hand;"
         );
 
-        currentLocation.setOnAction(e -> {
+        // ==========================================
+        // SHOW LOCATION ACTION (DIRECT GOOGLE MAPS)
+        // ==========================================
+        showLocation.setOnAction(e -> {
+            String cityText = city.getText().trim();
+            String areaText = locality.getText().trim();
 
-            Alert alert =
-                    new Alert(
-                            Alert.AlertType.INFORMATION
-                    );
+            if (cityText.isEmpty() && areaText.isEmpty()) {
+                showLocationError("Please enter City or Area/Locality first.");
+                return;
+            }
 
-            alert.setTitle(
-                    "Location"
-            );
+            String fullAddress = (!areaText.isEmpty() ? areaText + ", " : "") + cityText;
 
-            alert.setHeaderText(
-                    "Current Location"
-            );
+            try {
+                String encodedAddress = URLEncoder.encode(fullAddress, StandardCharsets.UTF_8);
+                String mapUrl = "https://www.google.com/maps/search/?api=1&query=" + encodedAddress;
 
-            alert.setContentText(
-                    "Current location will be connected using API / Google Maps."
-            );
-
-            alert.showAndWait();
+                if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                    Desktop.getDesktop().browse(new URI(mapUrl));
+                } else {
+                    // Fallback for Windows
+                    Runtime.getRuntime().exec(new String[]{"rundll32", "url.dll,FileProtocolHandler", mapUrl});
+                }
+            } catch (Exception ex) {
+                System.err.println("Error opening map: " + ex.getMessage());
+                showLocationError("Could not open Google Maps.");
+            }
         });
 
         locationCard.getChildren().addAll(
+                formField("City", city),
+                formField("Area / Locality", locality),
+                formField("Venue Preference", venueType),
                 separator,
-                currentLocation
+                showLocation
         );
 
         // =========================
         // HELP BOX
         // =========================
-
-        HBox helpBox =
-                new HBox(12);
-
-        helpBox.setPrefHeight(
-                62
-        );
-
-        helpBox.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        helpBox.setPadding(
-                new Insets(
-                        10,
-                        14,
-                        10,
-                        14
-                )
-        );
-
+        HBox helpBox = new HBox(12);
+        helpBox.setPrefHeight(62);
+        helpBox.setAlignment(Pos.CENTER_LEFT);
+        helpBox.setPadding(new Insets(10, 14, 10, 14));
         helpBox.setStyle(
                 "-fx-background-color:#F8FAFC;" +
                 "-fx-border-color:" + BORDER + ";" +
@@ -472,196 +256,69 @@ public class LocationC {
                 "-fx-background-radius:7;"
         );
 
-        Label helpIcon =
-                label(
-                        "⌕",
-                        21,
-                        FontWeight.BOLD,
-                        BLUE
-                );
-
-        StackPane iconCircle =
-                new StackPane(
-                        helpIcon
-                );
-
-        iconCircle.setPrefSize(
-                34,
-                34
-        );
-
+        Label helpIcon = label("⌕", 21, FontWeight.BOLD, BLUE);
+        StackPane iconCircle = new StackPane(helpIcon);
+        iconCircle.setPrefSize(34, 34);
         iconCircle.setStyle(
-                "-fx-background-color:" +
-                LIGHT_BLUE +
-                ";" +
+                "-fx-background-color:" + LIGHT_BLUE + ";" +
                 "-fx-background-radius:50;"
         );
 
-        Label helpTitle =
-                label(
-                        "Need help finding a venue?",
-                        13,
-                        FontWeight.BOLD,
-                        TEXT
-                );
+        Label helpTitle = label("Need help finding a venue?", 13, FontWeight.BOLD, TEXT);
+        Label helpSub = label("Connect with our Venue Finder.", 10, FontWeight.NORMAL, GREY);
+        VBox helpText = new VBox(1, helpTitle, helpSub);
 
-        Label helpSub =
-                label(
-                        "Connect with our Venue Finder.",
-                        10,
-                        FontWeight.NORMAL,
-                        GREY
-                );
+        Region helpSpace = new Region();
+        HBox.setHgrow(helpSpace, Priority.ALWAYS);
 
-        VBox helpText =
-                new VBox(
-                        1,
-                        helpTitle,
-                        helpSub
-                );
-
-        Region helpSpace =
-                new Region();
-
-        HBox.setHgrow(
-                helpSpace,
-                Priority.ALWAYS
-        );
-
-        Label arrow =
-                label(
-                        "→",
-                        22,
-                        FontWeight.NORMAL,
-                        GREY
-                );
-
-        helpBox.getChildren().addAll(
-                iconCircle,
-                helpText,
-                helpSpace,
-                arrow
-        );
-
-        // =========================
-        // MAP
-        // =========================
-
-        StackPane mapPanel =
-                createMapPanel();
+        Label arrow = label("→", 22, FontWeight.NORMAL, GREY);
+        helpBox.getChildren().addAll(iconCircle, helpText, helpSpace, arrow);
 
         // =========================
         // LEFT COLUMN
         // =========================
+        VBox leftColumn = new VBox(18);
+        leftColumn.setPrefWidth(370);
+        leftColumn.setMaxWidth(Double.MAX_VALUE);
+        leftColumn.getChildren().addAll(locationCard, helpBox);
 
-        VBox leftColumn =
-                new VBox(18);
-
-        leftColumn.setPrefWidth(
-                370
-        );
-
-        leftColumn.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        leftColumn.getChildren().addAll(
-                locationCard,
-                helpBox
-        );
+        // =========================
+        // MAP PANEL (SAFE & ORIGINAL IMAGE)
+        // =========================
+        StackPane mapPanel = createMapPanel();
 
         // =========================
         // MAIN ROW
         // =========================
+        HBox mainRow = new HBox(45);
+        mainRow.setAlignment(Pos.TOP_LEFT);
+        mainRow.getChildren().addAll(leftColumn, mapPanel);
 
-        HBox mainRow =
-                new HBox(45);
-
-        mainRow.setAlignment(
-                Pos.TOP_LEFT
-        );
-
-        mainRow.getChildren().addAll(
-                leftColumn,
-                mapPanel
-        );
-
-        content.getChildren().addAll(
-                stepText,
-                heading,
-                description,
-                mainRow
-        );
+        content.getChildren().addAll(stepText, heading, description, mainRow);
 
         // =========================
         // FOOTER
         // =========================
-
-        HBox footer =
-                new HBox(15);
-
-        footer.setPrefHeight(
-                60
-        );
-
-        footer.setMinHeight(
-                60
-        );
-
-        footer.setAlignment(
-                Pos.CENTER_RIGHT
-        );
-
-        footer.setPadding(
-                new Insets(
-                        0,
-                        30,
-                        0,
-                        30
-                )
-        );
-
+        HBox footer = new HBox(15);
+        footer.setPrefHeight(60);
+        footer.setMinHeight(60);
+        footer.setAlignment(Pos.CENTER_RIGHT);
+        footer.setPadding(new Insets(0, 30, 0, 30));
         footer.setStyle(
                 "-fx-background-color:white;" +
                 "-fx-border-color:#E4E7EC;" +
                 "-fx-border-width:1 0 0 0;"
         );
 
-        Label copyright =
-                label(
-                        "© 2026 EventXpert",
-                        10,
-                        FontWeight.NORMAL,
-                        GREY
-                );
+        Label copyright = label("© 2026 EventXpert", 10, FontWeight.NORMAL, GREY);
+        Region footerSpace = new Region();
+        HBox.setHgrow(footerSpace, Priority.ALWAYS);
 
-        Region footerSpace =
-                new Region();
+        Button back = new Button("Back");
+        Button next = new Button("Next");
 
-        HBox.setHgrow(
-                footerSpace,
-                Priority.ALWAYS
-        );
-
-        Button back =
-                new Button(
-                        "Back"
-                );
-
-        Button next =
-                new Button(
-                        "Next"
-                );
-
-        back.setPrefSize(
-                82,
-                38
-        );
-
-        next.setPrefSize(
-                82,
-                38
-        );
+        back.setPrefSize(82, 38);
+        next.setPrefSize(82, 38);
 
         back.setStyle(
                 "-fx-background-color:white;" +
@@ -684,184 +341,85 @@ public class LocationC {
         );
 
         // =========================
-        // BACK BUTTON
+        // BACK BUTTON (ORIGINAL)
         // =========================
-
         back.setOnAction(e -> {
-
-            RequirementsC reqView =
-                    new RequirementsC(
-                            uid,
-                            idToken
-                    );
-
-            LandingPage.landingPageStage.setScene(
-                    reqView.getRequirementsScene()
-            );
+            RequirementsC reqView = new RequirementsC(uid, idToken);
+            LandingPage.landingPageStage.setScene(reqView.getRequirementsScene());
         });
 
         // =========================
-        // NEXT BUTTON
+        // NEXT BUTTON (ORIGINAL)
         // =========================
-
         next.setOnAction(e -> {
+            ReviewPageC.EventData.city = city.getText().trim();
+            ReviewPageC.EventData.area = locality.getText().trim();
+            ReviewPageC.EventData.venue = venueType.getValue() != null ? venueType.getValue() : "Banquet Hall";
 
-            ReviewPageC.EventData.city =
-                    city.getText().trim();
-
-            ReviewPageC.EventData.area =
-                    locality.getText().trim();
-
-            ReviewPageC.EventData.venue =
-                    venueType.getValue() != null
-                            ? venueType.getValue()
-                            : "Banquet Hall";
-
-            BudgetC budgetView =
-                    new BudgetC(
-                            uid,
-                            idToken
-                    );
-
-            LandingPage.landingPageStage.setScene(
-                    budgetView.getBudgetScene()
-            );
+            BudgetC budgetView = new BudgetC(uid, idToken);
+            LandingPage.landingPageStage.setScene(budgetView.getBudgetScene());
         });
 
-        footer.getChildren().addAll(
-                copyright,
-                footerSpace,
-                back,
-                next
-        );
+        footer.getChildren().addAll(copyright, footerSpace, back, next);
 
         // =========================
         // RIGHT SIDE
         // =========================
-
-        VBox rightSide =
-                new VBox();
-
-        rightSide.setFillWidth(
-                true
-        );
-
-        rightSide.getChildren().addAll(
-                topBar,
-                content,
-                footer
-        );
-
-        VBox.setVgrow(
-                content,
-                Priority.ALWAYS
-        );
+        VBox rightSide = new VBox();
+        rightSide.setFillWidth(true);
+        rightSide.getChildren().addAll(topBar, content, footer);
+        VBox.setVgrow(content, Priority.ALWAYS);
 
         // =========================
         // FULL PAGE
         // =========================
+        HBox fullPage = new HBox();
+        fullPage.setFillHeight(true);
+        fullPage.getChildren().addAll(sidebar, rightSide);
+        HBox.setHgrow(rightSide, Priority.ALWAYS);
 
-        HBox fullPage =
-                new HBox();
-
-        fullPage.setFillHeight(
-                true
-        );
-
-        fullPage.getChildren().addAll(
-                sidebar,
-                rightSide
-        );
-
-        HBox.setHgrow(
-                rightSide,
-                Priority.ALWAYS
-        );
-
-        root.setCenter(
-                fullPage
-        );
-
-        scene =
-                new Scene(
-                        root,
-                        1365,
-                        850
-                );
-
+        root.setCenter(fullPage);
+        scene = new Scene(root, 1365, 850);
         return scene;
+    }
+
+    // =========================
+    // LOCATION ERROR ALERT
+    // =========================
+    private void showLocationError(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Location Info");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     // =========================
     // MAP PANEL
     // =========================
-
     private StackPane createMapPanel() {
-
-        StackPane mapPanel =
-                new StackPane();
+        StackPane mapPanel = new StackPane();
 
         try {
-
-            Image mapImage =
-                    new Image(
-                            getClass()
-                                    .getResource(
-                                            "/assets/images/map img.jpg"
-                                    )
-                                    .toExternalForm()
-                    );
-
-            ImageView mapView =
-                    new ImageView(
-                            mapImage
-                    );
-
-            mapView.setFitWidth(
-                    440
+            Image mapImage = new Image(
+                    getClass().getResource("/assets/images/map img.jpg").toExternalForm()
             );
 
-            mapView.setFitHeight(
-                    335
-            );
+            ImageView mapView = new ImageView(mapImage);
+            mapView.setFitWidth(440);
+            mapView.setFitHeight(335);
+            mapView.setPreserveRatio(false);
+            mapView.setSmooth(true);
 
-            mapView.setPreserveRatio(
-                    false
-            );
-
-            mapView.setSmooth(
-                    true
-            );
-
-            mapPanel.getChildren().add(
-                    mapView
-            );
+            mapPanel.getChildren().add(mapView);
 
         } catch (Exception ex) {
-
-            Label mapLabel =
-                    label(
-                            "Map Preview",
-                            18,
-                            FontWeight.BOLD,
-                            GREY
-                    );
-
-            mapPanel.getChildren().add(
-                    mapLabel
-            );
+            Label mapLabel = label("Map Preview", 18, FontWeight.BOLD, GREY);
+            mapPanel.getChildren().add(mapLabel);
         }
 
-        mapPanel.setPrefSize(
-                520,
-                360
-        );
-
-        mapPanel.setMinSize(
-                520,
-                360
-        );
-
+        mapPanel.setPrefSize(520, 360);
+        mapPanel.setMinSize(520, 360);
         mapPanel.setStyle(
                 "-fx-background-color:#DCE2E8;" +
                 "-fx-background-radius:6;" +
@@ -875,103 +433,41 @@ public class LocationC {
     // =========================
     // SIDEBAR ITEM
     // =========================
-
-    private HBox sidebarItem(
-            String icon,
-            String text,
-            boolean active
-    ) {
-
-        HBox item =
-                new HBox(12);
-
-        item.setPrefHeight(
-                44
-        );
-
-        item.setMinHeight(
-                44
-        );
-
-        item.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        item.setPadding(
-                new Insets(
-                        0,
-                        18,
-                        0,
-                        25
-                )
-        );
-
+    private HBox sidebarItem(String icon, String text, boolean active) {
+        HBox item = new HBox(12);
+        item.setPrefHeight(44);
+        item.setMinHeight(44);
+        item.setAlignment(Pos.CENTER_LEFT);
+        item.setPadding(new Insets(0, 18, 0, 25));
         item.setStyle(
                 active
                         ? "-fx-background-color:" + BLUE + ";" +
                           "-fx-border-color:#9DD8FF;" +
                           "-fx-border-width:0 0 0 3;"
-
                         : "-fx-background-color:transparent;"
         );
 
         item.getChildren().addAll(
-                label(
-                        icon,
-                        16,
-                        FontWeight.NORMAL,
-                        "white"
-                ),
-                label(
-                        text,
-                        11,
-                        FontWeight.BOLD,
-                        active
-                                ? "white"
-                                : "#B7C4D8"
-                )
+                label(icon, 16, FontWeight.NORMAL, "white"),
+                label(text, 11, FontWeight.BOLD, active ? "white" : "#B7C4D8")
         );
-
         return item;
     }
 
     // =========================
     // FORM FIELD
     // =========================
-
-    private VBox formField(
-            String name,
-            Control control
-    ) {
-
-        VBox box =
-                new VBox(5);
-
-        box.getChildren().addAll(
-                label(
-                        name,
-                        10,
-                        FontWeight.NORMAL,
-                        TEXT
-                ),
-                control
-        );
-
+    private VBox formField(String name, Control control) {
+        VBox box = new VBox(5);
+        box.getChildren().addAll(label(name, 10, FontWeight.NORMAL, TEXT), control);
         return box;
     }
 
     // =========================
     // TEXT FIELD STYLE
     // =========================
-
-    private void styleField(
-            TextField field
-    ) {
-
-        field.setPrefHeight(
-                31
-        );
-
+    private void styleField(TextField field) {
+        field.setPrefHeight(31);
         field.setStyle(
                 "-fx-background-color:white;" +
                 "-fx-border-color:" + BORDER + ";" +
@@ -985,15 +481,8 @@ public class LocationC {
     // =========================
     // COMBO STYLE
     // =========================
-
-    private void styleCombo(
-            ComboBox<String> combo
-    ) {
-
-        combo.setPrefHeight(
-                31
-        );
-
+    private void styleCombo(ComboBox<String> combo) {
+        combo.setPrefHeight(31);
         combo.setStyle(
                 "-fx-background-color:white;" +
                 "-fx-border-color:" + BORDER + ";" +
@@ -1006,29 +495,10 @@ public class LocationC {
     // =========================
     // LABEL
     // =========================
-
-    private Label label(
-            String text,
-            double size,
-            FontWeight weight,
-            String color
-    ) {
-
-        Label l =
-                new Label(text);
-
-        l.setFont(
-                Font.font(
-                        "Arial",
-                        weight,
-                        size
-                )
-        );
-
-        l.setTextFill(
-                Color.web(color)
-        );
-
+    private Label label(String text, double size, FontWeight weight, String color) {
+        Label l = new Label(text);
+        l.setFont(Font.font("Arial", weight, size));
+        l.setTextFill(Color.web(color));
         return l;
     }
 }
