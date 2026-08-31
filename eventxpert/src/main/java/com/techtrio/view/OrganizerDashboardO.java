@@ -28,7 +28,7 @@ public class OrganizerDashboardO {
     private String uid;
     private String idToken;
 
-    // COLOR PALETTE (EXACT ORGANIZER PORTAL THEME)
+    // COLOR PALETTE
     private static final String NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
     private static final String BRIGHT_BLUE = "#2563C7";
@@ -104,9 +104,9 @@ public class OrganizerDashboardO {
         return organizerDashboardScene;
     }
 
-    // ==========================================
+    // =========================================================================
     // DYNAMIC FIRESTORE DATA LOADER
-    // ==========================================
+    // =========================================================================
     private void loadOrganizerDashboardDataAsync() {
         if (uid == null || uid.isBlank()) return;
 
@@ -128,69 +128,66 @@ public class OrganizerDashboardO {
                     }
                 });
 
-                // 2. Fetch Events Assigned specifically to this Organizer UID from Firestore
+                // 2. Fetch Events Assigned specifically to this Organizer
                 EventService eventService = new EventService();
                 List<Event> assignedEvents = eventService.getEventsByOrganizerId(uid);
 
+                // 3. Fetch All Pending Customer Event Requests from Firestore
+                List<Event> pendingIncomingRequests = controller.getPendingEventRequests();
+
                 Platform.runLater(() -> {
-                    if (assignedEvents == null || assignedEvents.isEmpty()) {
-                        activeEventsValLabel.setText("00");
-                        pendingRequestsValLabel.setText("00");
-                        upcomingEventsValLabel.setText("00");
-                        tasksDueValLabel.setText("00");
+                    int activeCount = 0;
+                    int upcomingCount = 0;
+                    int pendingCount = (pendingIncomingRequests != null) ? pendingIncomingRequests.size() : 0;
 
-                        renderEmptyEventsState();
-                        renderEmptyTasksState();
-                    } else {
-                        int activeCount = 0;
-                        int pendingCount = 0;
-                        int upcomingCount = 0;
+                    if (upcomingEventsTableBox != null) {
+                        upcomingEventsTableBox.getChildren().clear();
+                        upcomingEventsTableBox.getChildren().add(createTableHeaderRow());
+                    }
 
-                        if (upcomingEventsTableBox != null) {
-                            upcomingEventsTableBox.getChildren().clear();
-                            upcomingEventsTableBox.getChildren().add(createTableHeaderRow());
-                        }
+                    boolean hasConfirmedEvents = false;
 
+                    if (assignedEvents != null && !assignedEvents.isEmpty()) {
                         for (Event ev : assignedEvents) {
-                            String oStatus = ev.getOrganizerStatus() != null ? ev.getOrganizerStatus().toUpperCase() : "PENDING";
-                            String evStatus = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "ASSIGNED";
+                            String oStatus = ev.getOrganizerStatus() != null ? ev.getOrganizerStatus().toUpperCase() : "";
+                            String evStatus = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "";
 
-                            if ("PENDING".equals(oStatus) || "ASSIGNED".equals(evStatus)) {
-                                pendingCount++;
-                            }
+                            // FAKTA ACCEPTED / CONFIRMED ZALELICH EVENTS UPCOMING MADHYE DAKHVA
                             if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(evStatus)) {
                                 activeCount++;
                                 upcomingCount++;
-                            }
+                                hasConfirmedEvents = true;
 
-                            // Render row in upcoming events table
-                            if (upcomingEventsTableBox != null) {
-                                String dateLoc = (ev.getEventDate() != null ? ev.getEventDate() : "TBD") +
-                                        "\n" + (ev.getCity() != null ? ev.getCity() : "India");
+                                if (upcomingEventsTableBox != null) {
+                                    String dateLoc = (ev.getEventDate() != null ? ev.getEventDate() : "TBD") +
+                                            "\n" + (ev.getCity() != null ? ev.getCity() : "India");
 
-                                String statusText = "ACCEPTED".equals(oStatus) || "CONFIRMED".equals(evStatus) ? "In Planning" : "Pending Review";
-
-                                upcomingEventsTableBox.getChildren().add(
-                                        createEventRow(
-                                                ev.getEventId(),
-                                                ev.getEventName() != null ? ev.getEventName() : "Unnamed Event",
-                                                dateLoc,
-                                                String.valueOf(ev.getGuests()),
-                                                statusText,
-                                                LIGHT_BLUE,
-                                                PRIMARY_BLUE
-                                        )
-                                );
+                                    upcomingEventsTableBox.getChildren().add(
+                                            createEventRow(
+                                                    ev.getEventId(),
+                                                    ev.getEventName() != null ? ev.getEventName() : "Unnamed Event",
+                                                    dateLoc,
+                                                    String.valueOf(ev.getGuests()),
+                                                    "In Planning",
+                                                    LIGHT_BLUE,
+                                                    PRIMARY_BLUE
+                                            )
+                                    );
+                                }
                             }
                         }
-
-                        activeEventsValLabel.setText(String.format("%02d", activeCount));
-                        pendingRequestsValLabel.setText(String.format("%02d", pendingCount));
-                        upcomingEventsValLabel.setText(String.format("%02d", upcomingCount));
-                        tasksDueValLabel.setText("00"); // 00 until task backend collection exists
-
-                        renderEmptyTasksState();
                     }
+
+                    if (!hasConfirmedEvents) {
+                        renderEmptyEventsState();
+                    }
+
+                    activeEventsValLabel.setText(String.format("%02d", activeCount));
+                    pendingRequestsValLabel.setText(String.format("%02d", pendingCount));
+                    upcomingEventsValLabel.setText(String.format("%02d", upcomingCount));
+                    tasksDueValLabel.setText("00");
+
+                    renderEmptyTasksState();
                 });
 
                 return null;
@@ -211,9 +208,9 @@ public class OrganizerDashboardO {
         emptyBox.setPadding(new Insets(30));
 
         Label icon = new Label("📅"); icon.setStyle("-fx-font-size: 28px;");
-        Label title = new Label("No upcoming events assigned");
+        Label title = new Label("No active events in planning");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
-        Label sub = new Label("Events assigned to you by the Admin will appear here.");
+        Label sub = new Label("Accept new requests from 'Event Requests' to start planning.");
         sub.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         emptyBox.getChildren().addAll(icon, title, sub);

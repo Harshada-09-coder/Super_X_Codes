@@ -40,9 +40,22 @@ public class OrganizerController {
         return service.markOrganizerAsExisting(uid);
     }
 
-    // --- ORGANIZER EVENT ASSIGNMENT LOGIC ---
+    // --- FETCH NEW INCOMING EVENT REQUESTS FOR ORGANIZER ---
+    public List<Event> getPendingEventRequests() {
+        return eventService.getPendingEventRequests();
+    }
+
+    public List<Event> getNewRequestsByCity(String city) {
+        return eventService.getAvailableEventsForCity(city);
+    }
+
+    // --- ASSIGNED EVENTS ---
     public List<Event> getAssignedEvents(String organizerId) {
         return eventService.getEventsByOrganizerId(organizerId);
+    }
+
+    public boolean acceptEventAssignment(String eventId, String organizerId, String organizerName) {
+        return eventService.acceptEventAssignment(eventId, organizerId, organizerName);
     }
 
     public boolean acceptEventAssignment(String eventId) {

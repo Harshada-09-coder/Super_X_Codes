@@ -25,15 +25,19 @@ public class EventService {
         return FirebaseConfig.getFirestore();
     }
 
-    // --- CREATE EVENT (CUSTOMER SIDE) ---
+    // --- CREATE EVENT (CUSTOMER SIDE WITH FULL AI DATA) ---
     public boolean createEvent(Event event) {
         if (event == null || event.getEventId() == null || event.getEventId().isBlank()) {
+            System.err.println("❌ CreateEvent Error: Event or EventId is null/blank!");
             return false;
         }
 
         try {
             Firestore db = getDb();
-            if (db == null) return false;
+            if (db == null) {
+                System.err.println("❌ Firestore Database instance is NULL. Check Firebase initialization!");
+                return false;
+            }
 
             if (event.getStatus() == null || event.getStatus().isBlank()) {
                 event.setStatus("PENDING");
@@ -46,18 +50,80 @@ public class EventService {
             if (event.getCreatedAt() == null) event.setCreatedAt(now);
             event.setUpdatedAt(now);
 
+            System.out.println("⏳ Saving Event to Firestore: " + event.getEventId() + " (" + event.getEventName() + ")");
+
             ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME)
                     .document(event.getEventId().trim())
                     .set(event);
 
-            future.get();
-            System.out.println("Event document [" + event.getEventId() + "] created in Firestore 'events' collection.");
+            WriteResult result = future.get();
+            System.out.println("✅ Event document [" + event.getEventId() + "] successfully saved in Firestore at " + result.getUpdateTime());
             return true;
 
         } catch (Exception e) {
+            System.err.println("❌ Error saving event to Firestore: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
+    }
+
+    // --- ORGANIZER SIDE: FETCH ALL PENDING / NEW REQUESTS ---
+    public List<Event> getPendingEventRequests() {
+        List<Event> list = new ArrayList<>();
+        try {
+            Firestore db = getDb();
+            if (db == null) return list;
+
+            // Fetch events waiting for an organizer (PENDING or NOT_ASSIGNED)
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME)
+                    .whereEqualTo("status", "PENDING")
+                    .get();
+
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+            for (DocumentSnapshot doc : documents) {
+                Event ev = doc.toObject(Event.class);
+                if (ev != null) {
+                    if (ev.getEventId() == null || ev.getEventId().isBlank()) {
+                        ev.setEventId(doc.getId());
+                    }
+                    list.add(ev);
+                }
+            }
+            System.out.println(" Fetched " + list.size() + " pending event requests for organizers.");
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching pending events: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Event> getAvailableEventsForCity(String city) {
+        List<Event> list = new ArrayList<>();
+        if (city == null || city.isBlank()) return getPendingEventRequests();
+
+        try {
+            Firestore db = getDb();
+            if (db == null) return list;
+
+            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME)
+                    .whereEqualTo("status", "PENDING")
+                    .whereEqualTo("city", city.trim())
+                    .get();
+
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+            for (DocumentSnapshot doc : documents) {
+                Event ev = doc.toObject(Event.class);
+                if (ev != null) {
+                    if (ev.getEventId() == null || ev.getEventId().isBlank()) {
+                        ev.setEventId(doc.getId());
+                    }
+                    list.add(ev);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     public List<Event> getAllEvents() {
@@ -227,7 +293,7 @@ public class EventService {
         return assignOrganizerToEvent(eventId, organizerId, organizerName, null, null);
     }
 
-    public boolean acceptEventAssignment(String eventId) {
+    public boolean acceptEventAssignment(String eventId, String organizerId, String organizerName) {
         if (eventId == null || eventId.isBlank()) return false;
 
         try {
@@ -236,6 +302,8 @@ public class EventService {
 
             String now = Instant.now().toString();
             Map<String, Object> updates = new HashMap<>();
+            updates.put("organizerId", organizerId);
+            updates.put("organizerName", organizerName != null ? organizerName : "Organizer");
             updates.put("organizerStatus", "ACCEPTED");
             updates.put("status", "CONFIRMED");
             updates.put("acceptedAt", now);
@@ -251,6 +319,10 @@ public class EventService {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public boolean acceptEventAssignment(String eventId) {
+        return acceptEventAssignment(eventId, "", "");
     }
 
     public boolean rejectEventAssignment(String eventId) {

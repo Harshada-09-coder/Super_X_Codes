@@ -1,6 +1,9 @@
 package com.techtrio.view;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.techtrio.context.AdminContext;
 import com.techtrio.controller.OrganizerController;
@@ -111,59 +114,109 @@ public class EventRequestsO {
             @Override
             protected List<Event> call() {
                 OrganizerController controller = new OrganizerController();
-                return controller.getAssignedEvents(uid);
+                // 1. Fetch pending unassigned customer requests
+                List<Event> pendingRequests = controller.getPendingEventRequests();
+                // 2. Fetch assigned requests specifically to this organizer
+                List<Event> assignedRequests = controller.getAssignedEvents(uid);
+
+                List<Event> combined = new ArrayList<>();
+                Set<String> addedIds = new HashSet<>();
+
+                if (pendingRequests != null) {
+                    for (Event ev : pendingRequests) {
+                        if (ev != null && ev.getEventId() != null && !addedIds.contains(ev.getEventId())) {
+                            combined.add(ev);
+                            addedIds.add(ev.getEventId());
+                        }
+                    }
+                }
+
+                if (assignedRequests != null) {
+                    for (Event ev : assignedRequests) {
+                        if (ev != null && ev.getEventId() != null && !addedIds.contains(ev.getEventId())) {
+                            combined.add(ev);
+                            addedIds.add(ev.getEventId());
+                        }
+                    }
+                }
+
+                return combined;
             }
         };
 
         task.setOnSucceeded(evt -> {
-            List<Event> assignedList = task.getValue();
-            if (assignedList != null) {
-                Platform.runLater(() -> {
-                    if (rowsContainer != null) rowsContainer.getChildren().clear();
+            List<Event> allList = task.getValue();
+            Platform.runLater(() -> {
+                if (rowsContainer != null) rowsContainer.getChildren().clear();
 
-                    int newCount = 0;
-                    int pendingCount = 0;
-                    int acceptedCount = 0;
-                    int rejectedCount = 0;
+                int newCount = 0;
+                int pendingCount = 0;
+                int acceptedCount = 0;
+                int rejectedCount = 0;
 
-                    for (Event ev : assignedList) {
+                if (allList != null && !allList.isEmpty()) {
+                    for (Event ev : allList) {
                         String oStatus = ev.getOrganizerStatus() != null ? ev.getOrganizerStatus().toUpperCase() : "PENDING";
-                        if ("PENDING".equals(oStatus)) {
+                        String evStatus = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "PENDING";
+
+                        if ("PENDING".equals(oStatus) || "PENDING".equals(evStatus) || "NOT_ASSIGNED".equals(oStatus)) {
                             newCount++;
                             pendingCount++;
-                        } else if ("ACCEPTED".equals(oStatus)) {
+                        } else if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(evStatus)) {
                             acceptedCount++;
                         } else if ("REJECTED".equals(oStatus)) {
                             rejectedCount++;
                         }
 
-                        if (rowsContainer != null) {
-                            String detailsStr = "📅 " + (ev.getEventDate() != null ? ev.getEventDate() : "TBD") +
-                                    "   👥 " + ev.getGuests() + " Guests" +
-                                    "   💳 " + (ev.getBudget() != null ? ev.getBudget() : "N/A");
+                        // Only show Pending / Not Assigned requests in this review table
+                        if ("PENDING".equals(oStatus) || "NOT_ASSIGNED".equals(oStatus) || "PENDING".equals(evStatus)) {
+                            if (rowsContainer != null) {
+                                String detailsStr = "📅 " + (ev.getEventDate() != null ? ev.getEventDate() : "TBD") +
+                                        "   👥 " + ev.getGuests() + " Guests" +
+                                        "   💳 " + (ev.getBudget() != null ? ev.getBudget() : "N/A");
 
-                            rowsContainer.getChildren().add(createRequestRow(
-                                    ev.getEventId(),
-                                    ev.getEventName() != null ? ev.getEventName() : "Unnamed Event",
-                                    ev.getEventType() != null ? ev.getEventType() : "General",
-                                    detailsStr,
-                                    "High", HIGH_BG, HIGH_TEXT,
-                                    ev.getStatus() != null ? ev.getStatus() : "ASSIGNED", LIGHT_BLUE, PRIMARY_BLUE
-                            ));
+                                rowsContainer.getChildren().add(createRequestRow(
+                                        ev.getEventId(),
+                                        ev.getEventName() != null ? ev.getEventName() : "Unnamed Event",
+                                        ev.getEventType() != null ? ev.getEventType() : "General",
+                                        detailsStr,
+                                        "High", HIGH_BG, HIGH_TEXT,
+                                        "Pending Review", LIGHT_BLUE, PRIMARY_BLUE
+                                ));
+                            }
                         }
                     }
+                }
 
-                    if (newReqValLbl != null) newReqValLbl.setText(String.format("%02d", newCount));
-                    if (pendingValLbl != null) pendingValLbl.setText(String.format("%02d", pendingCount));
-                    if (acceptedValLbl != null) acceptedValLbl.setText(String.format("%02d", acceptedCount));
-                    if (rejectedValLbl != null) rejectedValLbl.setText(String.format("%02d", rejectedCount));
-                });
-            }
+                if (rowsContainer != null && rowsContainer.getChildren().isEmpty()) {
+                    renderEmptyRequestsState();
+                }
+
+                if (newReqValLbl != null) newReqValLbl.setText(String.format("%02d", newCount));
+                if (pendingValLbl != null) pendingValLbl.setText(String.format("%02d", pendingCount));
+                if (acceptedValLbl != null) acceptedValLbl.setText(String.format("%02d", acceptedCount));
+                if (rejectedValLbl != null) rejectedValLbl.setText(String.format("%02d", rejectedCount));
+            });
         });
 
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
+    }
+
+    private void renderEmptyRequestsState() {
+        VBox emptyBox = new VBox(8);
+        emptyBox.setAlignment(Pos.CENTER);
+        emptyBox.setPadding(new Insets(35));
+
+        Label icon = new Label("📫"); icon.setStyle("-fx-font-size: 28px;");
+        Label title = new Label("No new pending requests");
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+        Label sub = new Label("When customers create new events, their requests will appear here for your review.");
+        sub.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        emptyBox.getChildren().addAll(icon, title, sub);
+        rowsContainer.getChildren().add(emptyBox);
     }
 
     private HBox createMetricCardsRow() {
