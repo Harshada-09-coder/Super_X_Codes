@@ -1,5 +1,7 @@
 package com.techtrio.view;
 
+import com.techtrio.controller.CustomerController;
+import com.techtrio.controller.CustomerState;
 import com.techtrio.session.UserSession;
 
 import javafx.geometry.Insets;
@@ -25,1067 +27,298 @@ public class CreateEventC {
     private static final String GREY = "#667085";
 
     public CreateEventC(String uid, String idToken) {
-        this.uid = (uid != null && !uid.isBlank())
-                ? uid
-                : UserSession.getUid();
-
-        this.idToken = (idToken != null && !idToken.isBlank())
-                ? idToken
-                : UserSession.getIdToken();
-
-        UserSession.setSession(
-                this.uid,
-                this.idToken,
-                null,
-                "Customer"
-        );
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+        UserSession.setSession(this.uid, this.idToken, null, "Customer");
     }
-
-    // ---------------------------------------------------------
-    // DEFAULT SCENE
-    // ---------------------------------------------------------
 
     public Scene getCreateEventScene() {
         return getCreateEventScene(null);
     }
 
-    // ---------------------------------------------------------
-    // SCENE WITH BACK ACTION
-    // ---------------------------------------------------------
-
     public Scene getCreateEventScene(Runnable backAction) {
 
         BorderPane root = new BorderPane();
-        root.setStyle(
-                "-fx-background-color:" + BG + ";"
-        );
+        root.setStyle("-fx-background-color:" + BG + ";");
 
-        // =====================================================
         // SIDEBAR
-        // =====================================================
-
         VBox sidebar = new VBox();
-
         sidebar.setPrefWidth(245);
         sidebar.setMinWidth(245);
         sidebar.setMaxWidth(245);
         sidebar.setFillWidth(true);
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        sidebar.setStyle(
-                "-fx-background-color:" + NAVY + ";"
-        );
+        Label logo = label("EventXpert", 22, FontWeight.BOLD, "white");
+        Label logoSub = label("EVENT MANAGEMENT", 11, FontWeight.NORMAL, "#BDE3FF");
+        VBox brand = new VBox(3, logo, logoSub);
+        brand.setPadding(new Insets(24, 20, 28, 25));
 
-        Label logo = label(
-                "EventXpert",
-                22,
-                FontWeight.BOLD,
-                "white"
-        );
-
-        Label logoSub = label(
-                "EVENT MANAGEMENT",
-                11,
-                FontWeight.NORMAL,
-                "#BDE3FF"
-        );
-
-        VBox brand = new VBox(
-                3,
-                logo,
-                logoSub
-        );
-
-        brand.setPadding(
-                new Insets(24, 20, 28, 25)
-        );
-
-        Label createTitle = label(
-                "Create Event",
-                20,
-                FontWeight.BOLD,
-                "white"
-        );
-
-        Label step = label(
-                "Step-by-step setup",
-                12,
-                FontWeight.NORMAL,
-                "#BDE3FF"
-        );
-
-        VBox titleBox = new VBox(
-                2,
-                createTitle,
-                step
-        );
-
-        titleBox.setPadding(
-                new Insets(0, 20, 20, 25)
-        );
+        Label createTitle = label("Create Event", 20, FontWeight.BOLD, "white");
+        Label step = label("Step-by-step setup", 12, FontWeight.NORMAL, "#BDE3FF");
+        VBox titleBox = new VBox(2, createTitle, step);
+        titleBox.setPadding(new Insets(0, 20, 20, 25));
 
         VBox menu = new VBox();
-
         menu.getChildren().addAll(
-
-                sidebarItem(
-                        "ⓘ",
-                        "Event Details",
-                        true
-                ),
-
-                sidebarItem(
-                        "▣",
-                        "Requirements",
-                        false
-                ),
-
-                sidebarItem(
-                        "⌖",
-                        "Location",
-                        false
-                ),
-
-                sidebarItem(
-                        "▣",
-                        "Budget",
-                        false
-                ),
-
-                sidebarItem(
-                        "✦",
-                        "AI Planning",
-                        false
-                ),
-
-                sidebarItem(
-                        "▤",
-                        "Review",
-                        false
-                )
+                sidebarItem("ⓘ", "Event Details", true),
+                sidebarItem("▣", "Requirements", false),
+                sidebarItem("⌖", "Location", false),
+                sidebarItem("▣", "Budget", false),
+                sidebarItem("✦", "AI Planning", false),
+                sidebarItem("▤", "Review", false)
         );
 
-        sidebar.getChildren().addAll(
-                brand,
-                titleBox,
-                menu
-        );
+        sidebar.getChildren().addAll(brand, titleBox, menu);
 
-        // =====================================================
         // TOP BAR
-        // =====================================================
-
         HBox topBar = new HBox();
-
         topBar.setPrefHeight(60);
         topBar.setMinHeight(60);
-
-        topBar.setAlignment(
-                Pos.CENTER_RIGHT
-        );
-
-        topBar.setPadding(
-                new Insets(0, 30, 0, 30)
-        );
-
-        topBar.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:#E4E7EC;" +
-                "-fx-border-width:0 0 1 0;"
-        );
+        topBar.setAlignment(Pos.CENTER_RIGHT);
+        topBar.setPadding(new Insets(0, 30, 0, 30));
+        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:0 0 1 0;");
 
         Region topSpace = new Region();
+        HBox.setHgrow(topSpace, Priority.ALWAYS);
 
-        HBox.setHgrow(
-                topSpace,
-                Priority.ALWAYS
-        );
+        Label notification = label("♧", 20, FontWeight.NORMAL, NAVY);
+        Label help = label("?", 13, FontWeight.BOLD, NAVY);
+        help.setMinSize(28, 28);
+        help.setAlignment(Pos.CENTER);
+        help.setStyle("-fx-border-color:" + NAVY + ";-fx-border-radius:50;-fx-background-radius:50;");
 
-        Label notification = label(
-                "♧",
-                20,
-                FontWeight.NORMAL,
-                NAVY
-        );
+        topBar.getChildren().addAll(topSpace, notification, help);
 
-        Label help = label(
-                "?",
-                13,
-                FontWeight.BOLD,
-                NAVY
-        );
-
-        help.setMinSize(
-                28,
-                28
-        );
-
-        help.setAlignment(
-                Pos.CENTER
-        );
-
-        help.setStyle(
-                "-fx-border-color:" + NAVY + ";" +
-                "-fx-border-radius:50;" +
-                "-fx-background-radius:50;"
-        );
-
-        topBar.getChildren().addAll(
-                topSpace,
-                notification,
-                help
-        );
-
-        // =====================================================
         // CONTENT
-        // =====================================================
-
         VBox content = new VBox(12);
+        content.setPadding(new Insets(22, 45, 18, 45));
+        content.setStyle("-fx-background-color:" + BG + ";");
 
-        content.setPadding(
-                new Insets(22, 45, 18, 45)
-        );
-
-        content.setStyle(
-                "-fx-background-color:" + BG + ";"
-        );
-
-        Label heading = label(
-                "Create Your Event",
-                26,
-                FontWeight.NORMAL,
-                NAVY
-        );
-
-        Label subtitle = label(
-                "Tell us a little about the event you are planning.",
-                14,
-                FontWeight.NORMAL,
-                GREY
-        );
-
-        // =====================================================
-        // EVENT CARD
-        // =====================================================
+        Label heading = label("Create Your Event", 26, FontWeight.NORMAL, NAVY);
+        Label subtitle = label("Tell us a little about the event you are planning.", 14, FontWeight.NORMAL, GREY);
 
         VBox card = new VBox(15);
+        card.setPadding(new Insets(18));
+        card.setStyle("-fx-background-color:white;-fx-background-radius:9;-fx-border-color:" + BORDER + ";-fx-border-radius:9;");
 
-        card.setPadding(
-                new Insets(18)
-        );
-
-        card.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-background-radius:9;" +
-                "-fx-border-color:" + BORDER + ";" +
-                "-fx-border-radius:9;"
-        );
-
-        Label categoryTitle = label(
-                "Event Category",
-                16,
-                FontWeight.BOLD,
-                TEXT
-        );
-
+        Label categoryTitle = label("Event Category", 16, FontWeight.BOLD, TEXT);
         ToggleGroup group = new ToggleGroup();
 
-        boolean isInformal =
-                "Informal".equalsIgnoreCase(
-                        ReviewPageC.EventData.category
-                );
+        boolean isInformal = "Informal".equalsIgnoreCase(ReviewPageC.EventData.category);
+        ToggleButton formal = categoryCard("▣", "Formal", "Conferences, Corporate, Galas", !isInformal, group);
+        ToggleButton informal = categoryCard("♨", "Informal", "Parties, Retreats, Socials", isInformal, group);
 
-        ToggleButton formal = categoryCard(
-                "▣",
-                "Formal",
-                "Conferences, Corporate, Galas",
-                !isInformal,
-                group
-        );
-
-        ToggleButton informal = categoryCard(
-                "♨",
-                "Informal",
-                "Parties, Retreats, Socials",
-                isInformal,
-                group
-        );
-
-        HBox categories = new HBox(
-                14,
-                formal,
-                informal
-        );
-
-        HBox.setHgrow(
-                formal,
-                Priority.ALWAYS
-        );
-
-        HBox.setHgrow(
-                informal,
-                Priority.ALWAYS
-        );
+        HBox categories = new HBox(14, formal, informal);
+        HBox.setHgrow(formal, Priority.ALWAYS);
+        HBox.setHgrow(informal, Priority.ALWAYS);
 
         Separator separator = new Separator();
 
-        // =====================================================
-        // EVENT NAME
-        // =====================================================
-
-        TextField eventName = new TextField(
-                ReviewPageC.EventData.eventName != null
-                        ? ReviewPageC.EventData.eventName
-                        : ""
-        );
-
-        eventName.setPromptText(
-                "e.g., Annual Tech Summit 2024"
-        );
-
+        TextField eventName = new TextField(ReviewPageC.EventData.eventName != null ? ReviewPageC.EventData.eventName : "");
+        eventName.setPromptText("e.g., Annual Tech Summit 2024");
         styleField(eventName);
 
-        // =====================================================
-        // EVENT TYPE
-        // =====================================================
+        ComboBox<String> eventType = new ComboBox<>();
+        eventType.getItems().addAll("Conference", "Corporate Event", "Birthday", "Family Event", "Educational Event", "Other");
 
-        ComboBox<String> eventType =
-                new ComboBox<>();
-
-        eventType.getItems().addAll(
-                "Conference",
-                "Corporate Event",
-                "Birthday",
-                "Family Event",
-                "Educational Event",
-                "Other"
-        );
-
-        if (ReviewPageC.EventData.eventType != null
-                && !ReviewPageC.EventData.eventType.isBlank()) {
-
-            eventType.setValue(
-                    ReviewPageC.EventData.eventType
-            );
-
+        if (ReviewPageC.EventData.eventType != null && !ReviewPageC.EventData.eventType.isBlank()) {
+            eventType.setValue(ReviewPageC.EventData.eventType);
         } else {
-
-            eventType.setPromptText(
-                    "Select a type..."
-            );
+            eventType.setPromptText("Select a type...");
         }
-
-        eventType.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
+        eventType.setMaxWidth(Double.MAX_VALUE);
         styleControl(eventType);
 
-        // =====================================================
-        // GUESTS
-        // =====================================================
-
-        TextField guests = new TextField(
-                ReviewPageC.EventData.guests > 0
-                        ? String.valueOf(
-                                ReviewPageC.EventData.guests
-                        )
-                        : "0"
-        );
-
-        guests.setPromptText(
-                "e.g., 100"
-        );
-
+        TextField guests = new TextField(ReviewPageC.EventData.guests > 0 ? String.valueOf(ReviewPageC.EventData.guests) : "0");
+        guests.setPromptText("e.g., 100");
         styleField(guests);
 
-        HBox row1 = new HBox(
-                17,
-                formField(
-                        "Event Type",
-                        eventType
-                ),
-                formField(
-                        "Expected Guests",
-                        guests
-                )
-        );
+        HBox row1 = new HBox(17, formField("Event Type", eventType), formField("Expected Guests", guests));
+        HBox.setHgrow(row1.getChildren().get(0), Priority.ALWAYS);
+        HBox.setHgrow(row1.getChildren().get(1), Priority.ALWAYS);
 
-        HBox.setHgrow(
-                row1.getChildren().get(0),
-                Priority.ALWAYS
-        );
-
-        HBox.setHgrow(
-                row1.getChildren().get(1),
-                Priority.ALWAYS
-        );
-
-        // =====================================================
-        // DATE
-        // =====================================================
-
-        DatePicker date =
-                new DatePicker();
-
-        date.setPromptText(
-                "dd-mm-yyyy"
-        );
-
-        if (ReviewPageC.EventData.eventDate != null
-                && !ReviewPageC.EventData.eventDate.isBlank()) {
-
+        DatePicker date = new DatePicker();
+        date.setPromptText("dd-mm-yyyy");
+        if (ReviewPageC.EventData.eventDate != null && !ReviewPageC.EventData.eventDate.isBlank()) {
             try {
-
-                date.setValue(
-                        java.time.LocalDate.parse(
-                                ReviewPageC.EventData.eventDate
-                        )
-                );
-
-            } catch (Exception ignored) {
-            }
+                date.setValue(java.time.LocalDate.parse(ReviewPageC.EventData.eventDate));
+            } catch (Exception ignored) {}
         }
-
-        date.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
+        date.setMaxWidth(Double.MAX_VALUE);
         styleControl(date);
 
-        // =====================================================
-        // TIME
-        // =====================================================
-
-        TextField time = new TextField(
-                ReviewPageC.EventData.time != null
-                        ? ReviewPageC.EventData.time
-                        : ""
-        );
-
-        time.setPromptText(
-                "e.g., 10:00 AM"
-        );
-
+        TextField time = new TextField(ReviewPageC.EventData.time != null ? ReviewPageC.EventData.time : "");
+        time.setPromptText("e.g., 10:00 AM");
         styleField(time);
 
-        HBox row2 = new HBox(
-                17,
-                formField(
-                        "Date",
-                        date
-                ),
-                formField(
-                        "Time",
-                        time
-                )
-        );
+        HBox row2 = new HBox(17, formField("Date", date), formField("Time", time));
+        HBox.setHgrow(row2.getChildren().get(0), Priority.ALWAYS);
+        HBox.setHgrow(row2.getChildren().get(1), Priority.ALWAYS);
 
-        HBox.setHgrow(
-                row2.getChildren().get(0),
-                Priority.ALWAYS
-        );
+        card.getChildren().addAll(categoryTitle, categories, separator, formField("Event Name", eventName), row1, row2);
+        content.getChildren().addAll(heading, subtitle, card);
 
-        HBox.setHgrow(
-                row2.getChildren().get(1),
-                Priority.ALWAYS
-        );
-
-        card.getChildren().addAll(
-                categoryTitle,
-                categories,
-                separator,
-                formField(
-                        "Event Name",
-                        eventName
-                ),
-                row1,
-                row2
-        );
-
-        content.getChildren().addAll(
-                heading,
-                subtitle,
-                card
-        );
-
-        // =====================================================
         // FOOTER
-        // =====================================================
-
         HBox footer = new HBox(15);
-
         footer.setPrefHeight(60);
         footer.setMinHeight(60);
+        footer.setAlignment(Pos.CENTER_RIGHT);
+        footer.setPadding(new Insets(0, 35, 0, 35));
+        footer.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:1 0 0 0;");
 
-        footer.setAlignment(
-                Pos.CENTER_RIGHT
-        );
-
-        footer.setPadding(
-                new Insets(0, 35, 0, 35)
-        );
-
-        footer.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:#E4E7EC;" +
-                "-fx-border-width:1 0 0 0;"
-        );
-
-        Label copyright = label(
-                "© 2026 EventXpert",
-                14,
-                FontWeight.NORMAL,
-                GREY
-        );
-
+        Label copyright = label("© 2026 EventXpert", 14, FontWeight.NORMAL, GREY);
         Region footerSpace = new Region();
+        HBox.setHgrow(footerSpace, Priority.ALWAYS);
 
-        HBox.setHgrow(
-                footerSpace,
-                Priority.ALWAYS
-        );
-
-        // =====================================================
-        // BACK BUTTON
-        // =====================================================
-
-        Button back = new Button(
-                "← Back"
-        );
-
-        back.setPrefSize(
-                82,
-                38
-        );
-
-        back.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-text-fill:" + BLUE + ";" +
-                "-fx-border-color:" + BLUE + ";" +
-                "-fx-border-radius:7;" +
-                "-fx-background-radius:7;" +
-                "-fx-font-weight:bold;" +
-                "-fx-cursor:hand;"
-        );
+        Button back = new Button("← Back");
+        back.setPrefSize(82, 38);
+        back.setStyle("-fx-background-color:white;-fx-text-fill:" + BLUE + ";-fx-border-color:" + BLUE + ";-fx-border-radius:7;-fx-background-radius:7;-fx-font-weight:bold;-fx-cursor:hand;");
 
         back.setOnAction(e -> {
-
             if (backAction != null) {
-
                 backAction.run();
-
             } else {
-
-                System.out.println(
-                        "Back to Dashboard"
-                );
-
-                try {
-
-                    NewCustomerDashboard dash =
-                            new NewCustomerDashboard(
-                                    uid,
-                                    idToken
-                            );
-
-                    LandingPage.landingPageStage.setScene(
-                            dash.getnewCustomerScene(null)
-                    );
-
-                } catch (Exception ex) {
-
-                    ex.printStackTrace();
-
+                CustomerController controller = new CustomerController();
+                CustomerState state = controller.getCustomerState(uid, idToken);
+                if (state != null && state.hasCreatedEvent()) {
+                    ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(uid, idToken);
+                    LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
+                } else {
+                    NewCustomerDashboard dash = new NewCustomerDashboard(uid, idToken);
+                    LandingPage.landingPageStage.setScene(dash.getnewCustomerScene(null));
                 }
             }
         });
 
-        // =====================================================
-        // NEXT BUTTON
-        // =====================================================
-
-        Button next = new Button(
-                "Next"
-        );
-
-        next.setPrefSize(
-                82,
-                38
-        );
-
-        next.setStyle(
-                "-fx-background-color:" + BLUE + ";" +
-                "-fx-text-fill:white;" +
-                "-fx-background-radius:7;" +
-                "-fx-font-weight:bold;" +
-                "-fx-cursor:hand;"
-        );
+        Button next = new Button("Next");
+        next.setPrefSize(82, 38);
+        next.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-weight:bold;-fx-cursor:hand;");
 
         next.setOnAction(e -> {
-
-            // -------------------------------------------------
-            // VALIDATE EVENT NAME
-            // -------------------------------------------------
-
-            if (eventName.getText()
-                    .trim()
-                    .isEmpty()) {
-
-                Alert alert =
-                        new Alert(
-                                Alert.AlertType.WARNING
-                        );
-
-                alert.setTitle(
-                        "EventXpert"
-                );
-
-                alert.setHeaderText(
-                        "Event Name Required"
-                );
-
-                alert.setContentText(
-                        "Please enter an Event Name."
-                );
-
+            if (eventName.getText().trim().isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("EventXpert");
+                alert.setHeaderText("Event Name Required");
+                alert.setContentText("Please enter an Event Name.");
                 alert.showAndWait();
-
                 return;
             }
 
-            // -------------------------------------------------
-            // SAVE EVENT DATA
-            // -------------------------------------------------
-
-            ReviewPageC.EventData.category =
-                    formal.isSelected()
-                            ? "Formal"
-                            : "Informal";
-
-            ReviewPageC.EventData.eventName =
-                    eventName.getText().trim();
-
-            ReviewPageC.EventData.eventType =
-                    eventType.getValue() != null
-                            ? eventType.getValue()
-                            : "Other";
-
+            ReviewPageC.EventData.category = formal.isSelected() ? "Formal" : "Informal";
+            ReviewPageC.EventData.eventName = eventName.getText().trim();
+            ReviewPageC.EventData.eventType = eventType.getValue() != null ? eventType.getValue() : "Other";
             try {
-
-                ReviewPageC.EventData.guests =
-                        Integer.parseInt(
-                                guests.getText().trim()
-                        );
-
+                ReviewPageC.EventData.guests = Integer.parseInt(guests.getText().trim());
             } catch (Exception ex) {
-
                 ReviewPageC.EventData.guests = 0;
             }
+            ReviewPageC.EventData.eventDate = date.getValue() != null ? date.getValue().toString() : "";
+            ReviewPageC.EventData.time = time.getText().trim();
 
-            ReviewPageC.EventData.eventDate =
-                    date.getValue() != null
-                            ? date.getValue().toString()
-                            : "";
-
-            ReviewPageC.EventData.time =
-                    time.getText().trim();
-
-            // -------------------------------------------------
-            // OPEN REQUIREMENTS PAGE
-            // -------------------------------------------------
-
-            RequirementsC reqView =
-                    new RequirementsC(
-                            uid,
-                            idToken
-                    );
-
-            LandingPage.landingPageStage.setScene(
-                    reqView.getRequirementsScene()
-            );
+            RequirementsC reqView = new RequirementsC(uid, idToken);
+            LandingPage.landingPageStage.setScene(reqView.getRequirementsScene());
         });
 
-        footer.getChildren().addAll(
-                copyright,
-                footerSpace,
-                back,
-                next
-        );
-
-        // =====================================================
-        // RIGHT SIDE
-        // =====================================================
+        footer.getChildren().addAll(copyright, footerSpace, back, next);
 
         VBox rightSide = new VBox();
-
         rightSide.setFillWidth(true);
-
-        rightSide.getChildren().addAll(
-                topBar,
-                content,
-                footer
-        );
-
-        VBox.setVgrow(
-                content,
-                Priority.ALWAYS
-        );
-
-        // =====================================================
-        // FULL PAGE
-        // =====================================================
+        rightSide.getChildren().addAll(topBar, content, footer);
+        VBox.setVgrow(content, Priority.ALWAYS);
 
         HBox fullPage = new HBox();
-
         fullPage.setFillHeight(true);
+        fullPage.getChildren().addAll(sidebar, rightSide);
+        HBox.setHgrow(rightSide, Priority.ALWAYS);
 
-        fullPage.getChildren().addAll(
-                sidebar,
-                rightSide
-        );
-
-        HBox.setHgrow(
-                rightSide,
-                Priority.ALWAYS
-        );
-
-        root.setCenter(
-                fullPage
-        );
-
-        scene = new Scene(
-                root,
-                1365,
-                850
-        );
-
+        root.setCenter(fullPage);
+        scene = new Scene(root, 1365, 850);
         return scene;
     }
 
-    // =========================================================
-    // SIDEBAR ITEM
-    // =========================================================
-
-    private HBox sidebarItem(
-            String icon,
-            String text,
-            boolean active
-    ) {
-
-        HBox item = new HBox(
-                12
-        );
-
-        item.setPrefHeight(
-                44
-        );
-
-        item.setMinHeight(
-                44
-        );
-
-        item.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        item.setPadding(
-                new Insets(
-                        0,
-                        18,
-                        0,
-                        25
-                )
-        );
-
-        item.setStyle(
-                active
-                        ? "-fx-background-color:" + BLUE + ";" +
-                          "-fx-border-color:#9DD8FF;" +
-                          "-fx-border-width:0 0 0 3;"
-                        : "-fx-background-color:transparent;"
-        );
+    private HBox sidebarItem(String icon, String text, boolean active) {
+        HBox item = new HBox(12);
+        item.setPrefHeight(44);
+        item.setMinHeight(44);
+        item.setAlignment(Pos.CENTER_LEFT);
+        item.setPadding(new Insets(0, 18, 0, 25));
+        item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
 
         item.getChildren().addAll(
-
-                label(
-                        icon,
-                        18,
-                        FontWeight.NORMAL,
-                        "white"
-                ),
-
-                label(
-                        text,
-                        14,
-                        FontWeight.BOLD,
-                        active
-                                ? "white"
-                                : "#B7C4D8"
-                )
+                label(icon, 18, FontWeight.NORMAL, "white"),
+                label(text, 14, FontWeight.BOLD, active ? "white" : "#B7C4D8")
         );
-
         return item;
     }
 
-    // =========================================================
-    // CATEGORY CARD
-    // =========================================================
+    private ToggleButton categoryCard(String icon, String title, String description, boolean selected, ToggleGroup group) {
+        ToggleButton button = new ToggleButton();
+        button.setToggleGroup(group);
+        button.setSelected(selected);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setPrefHeight(130);
+        button.setMinHeight(130);
 
-    private ToggleButton categoryCard(
-            String icon,
-            String title,
-            String description,
-            boolean selected,
-            ToggleGroup group
-    ) {
+        VBox box = new VBox(6);
+        box.setAlignment(Pos.CENTER);
 
-        ToggleButton button =
-                new ToggleButton();
+        Label iconLabel = label(icon, 22, FontWeight.NORMAL, BLUE);
+        Label titleLabel = label(title, 14, FontWeight.BOLD, BLUE);
+        Label descriptionLabel = label(description, 12, FontWeight.NORMAL, TEXT);
+        descriptionLabel.setWrapText(true);
+        descriptionLabel.setAlignment(Pos.CENTER);
 
-        button.setToggleGroup(
-                group
-        );
+        Label selectedLabel = label("Selected", 11, FontWeight.BOLD, BLUE);
+        selectedLabel.setStyle("-fx-background-color:#C6E9FF;-fx-background-radius:12;-fx-padding:4 8;");
 
-        button.setSelected(
-                selected
-        );
-
-        button.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        button.setPrefHeight(
-                130
-        );
-
-        button.setMinHeight(
-                130
-        );
-
-        VBox box = new VBox(
-                6
-        );
-
-        box.setAlignment(
-                Pos.CENTER
-        );
-
-        Label iconLabel = label(
-                icon,
-                22,
-                FontWeight.NORMAL,
-                BLUE
-        );
-
-        Label titleLabel = label(
-                title,
-                14,
-                FontWeight.BOLD,
-                BLUE
-        );
-
-        Label descriptionLabel = label(
-                description,
-                12,
-                FontWeight.NORMAL,
-                TEXT
-        );
-
-        descriptionLabel.setWrapText(
-                true
-        );
-
-        descriptionLabel.setAlignment(
-                Pos.CENTER
-        );
-
-        Label selectedLabel = label(
-                "Selected",
-                11,
-                FontWeight.BOLD,
-                BLUE
-        );
-
-        selectedLabel.setStyle(
-                "-fx-background-color:#C6E9FF;" +
-                "-fx-background-radius:12;" +
-                "-fx-padding:4 8;"
-        );
-
-        box.getChildren().addAll(
-                iconLabel,
-                titleLabel,
-                descriptionLabel
-        );
-
+        box.getChildren().addAll(iconLabel, titleLabel, descriptionLabel);
         if (selected) {
-
-            box.getChildren().add(
-                    selectedLabel
-            );
+            box.getChildren().add(selectedLabel);
         }
 
-        button.setGraphic(
-                box
-        );
+        button.setGraphic(box);
+        updateCategory(button, selected);
 
-        updateCategory(
-                button,
-                selected
-        );
-
-        button.selectedProperty()
-                .addListener(
-                        (obs, oldValue, newValue) -> {
-
-                            updateCategory(
-                                    button,
-                                    newValue
-                            );
-
-                            if (newValue) {
-
-                                if (!box.getChildren()
-                                        .contains(
-                                                selectedLabel
-                                        )) {
-
-                                    box.getChildren()
-                                            .add(
-                                                    selectedLabel
-                                            );
-                                }
-
-                            } else {
-
-                                box.getChildren()
-                                        .remove(
-                                                selectedLabel
-                                        );
-                            }
-                        }
-                );
+        button.selectedProperty().addListener((obs, oldValue, newValue) -> {
+            updateCategory(button, newValue);
+            if (newValue) {
+                if (!box.getChildren().contains(selectedLabel)) {
+                    box.getChildren().add(selectedLabel);
+                }
+            } else {
+                box.getChildren().remove(selectedLabel);
+            }
+        });
 
         return button;
     }
 
-    // =========================================================
-    // CATEGORY STYLE
-    // =========================================================
-
-    private void updateCategory(
-            ToggleButton button,
-            boolean selected
-    ) {
-
-        button.setStyle(
-                selected
-                        ? "-fx-background-color:#F8FAFC;" +
-                          "-fx-border-color:" + BLUE + ";" +
-                          "-fx-border-width:1.5;" +
-                          "-fx-border-radius:7;" +
-                          "-fx-background-radius:7;"
-                        : "-fx-background-color:white;" +
-                          "-fx-border-color:" + BORDER + ";" +
-                          "-fx-border-width:1;" +
-                          "-fx-border-radius:7;" +
-                          "-fx-background-radius:7;"
-        );
+    private void updateCategory(ToggleButton button, boolean selected) {
+        button.setStyle(selected
+                ? "-fx-background-color:#F8FAFC;-fx-border-color:" + BLUE + ";-fx-border-width:1.5;-fx-border-radius:7;-fx-background-radius:7;"
+                : "-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-width:1;-fx-border-radius:7;-fx-background-radius:7;");
     }
 
-    // =========================================================
-    // FORM FIELD
-    // =========================================================
-
-    private VBox formField(
-            String name,
-            Control control
-    ) {
-
-        VBox box = new VBox(
-                5
-        );
-
-        box.getChildren().addAll(
-
-                label(
-                        name,
-                        12,
-                        FontWeight.NORMAL,
-                        TEXT
-                ),
-
-                control
-        );
-
+    private VBox formField(String name, Control control) {
+        VBox box = new VBox(5);
+        box.getChildren().addAll(label(name, 12, FontWeight.NORMAL, TEXT), control);
         return box;
     }
 
-    // =========================================================
-    // TEXT FIELD STYLE
-    // =========================================================
-
-    private void styleField(
-            TextField field
-    ) {
-
-        field.setPrefHeight(
-                36
-        );
-
-        field.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:" + BORDER + ";" +
-                "-fx-border-radius:6;" +
-                "-fx-background-radius:6;" +
-                "-fx-padding:0 12;" +
-                "-fx-font-size:11px;"
-        );
+    private void styleField(TextField field) {
+        field.setPrefHeight(36);
+        field.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-padding:0 12;-fx-font-size:11px;");
     }
 
-    // =========================================================
-    // CONTROL STYLE
-    // =========================================================
-
-    private void styleControl(
-            Control control
-    ) {
-
-        control.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:" + BORDER + ";" +
-                "-fx-border-radius:6;" +
-                "-fx-background-radius:6;" +
-                "-fx-font-size:11px;"
-        );
+    private void styleControl(Control control) {
+        control.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-font-size:11px;");
     }
 
-    // =========================================================
-    // LABEL
-    // =========================================================
-
-    private Label label(
-            String text,
-            double size,
-            FontWeight weight,
-            String color
-    ) {
-
-        Label label =
-                new Label(text);
-
-        label.setFont(
-                Font.font(
-                        "Arial",
-                        weight,
-                        size
-                )
-        );
-
-        label.setTextFill(
-                Color.web(color)
-        );
-
+    private Label label(String text, double size, FontWeight weight, String color) {
+        Label label = new Label(text);
+        label.setFont(Font.font("Arial", weight, size));
+        label.setTextFill(Color.web(color));
         return label;
     }
 }

@@ -1,6 +1,5 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -8,27 +7,28 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class GuestManagementO extends Application {
+import com.techtrio.session.UserSession;
 
-    // Color Palette
+public class GuestManagementO {
+
+    // COLOR PALETTE CONSTANTS
     private static final String NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
     private static final String BRIGHT_BLUE = "#2563C7";
     private static final String LIGHT_BLUE = "#EAF3FF";
-    private static final String BACKGROUND = "#F7FAFE";
+    private static final String BACKGROUND = "#F8FAFC";
     private static final String WHITE = "#FFFFFF";
     private static final String TEXT_MAIN = "#102A43";
     private static final String SECONDARY_TEXT = "#52677D";
     private static final String BORDER_COLOR = "#DCE5F0";
 
-    // Badges & Alerts
+    // Status Badges & Callout Colors
     private static final String GREEN_BG = "#E6F4EA";
     private static final String GREEN_TEXT = "#137333";
     private static final String YELLOW_BG = "#FEF7E0";
@@ -38,7 +38,11 @@ public class GuestManagementO extends Application {
     private static final String PURPLE_BG = "#F3E8FF";
     private static final String PURPLE_TEXT = "#6B21A8";
 
-    // Dynamic UI Stats Labels
+    private String uid;
+    private String idToken;
+    private Runnable backAction;
+
+    // Dynamic UI Stats
     private Label lblTotalGuests;
     private Label lblConfirmed;
     private Label lblPending;
@@ -48,22 +52,19 @@ public class GuestManagementO extends Application {
     private Label lblRsvpPercent;
     private VBox rosterTableContainer;
 
-    // Guest Data Model
     private static class GuestItem {
         String initials;
         String name;
         String email;
-        String company;
         String type; // VIP, Speaker, Employee, Partner
         String rsvpStatus; // Confirmed, Pending, Declined
         String qrStatus; // Generated, Pending RSVP
         boolean isCheckedIn;
 
-        GuestItem(String initials, String name, String email, String company, String type, String rsvpStatus, String qrStatus, boolean isCheckedIn) {
+        GuestItem(String initials, String name, String email, String type, String rsvpStatus, String qrStatus, boolean isCheckedIn) {
             this.initials = initials;
             this.name = name;
             this.email = email;
-            this.company = company;
             this.type = type;
             this.rsvpStatus = rsvpStatus;
             this.qrStatus = qrStatus;
@@ -73,45 +74,42 @@ public class GuestManagementO extends Application {
 
     private final List<GuestItem> guestList = new ArrayList<>();
 
-    @Override
-    public void start(Stage primaryStage) {
-        // Sample Guest Data
-        guestList.add(new GuestItem("RS", "Rahul Sharma", "rahul.s@techcorp.com", "TechVision Solutions", "VIP", "Confirmed", "Generated", true));
-        guestList.add(new GuestItem("PD", "Priya Deshmukh", "priya.d@innovate.io", "GreenTech Pvt Ltd", "Speaker", "Confirmed", "Generated", false));
-        guestList.add(new GuestItem("AP", "Amit Patil", "amit.p@techvision.com", "TechVision Solutions", "Employee", "Pending", "Pending RSVP", false));
-        guestList.add(new GuestItem("NK", "Neha Kulkarni", "neha.k@startup.connect", "Startup Connect", "Partner", "Confirmed", "Generated", true));
-        guestList.add(new GuestItem("VJ", "Vikram Joshi", "vikram.j@globaltech.org", "GlobalTech", "VIP", "Declined", "N/A", false));
+    public GuestManagementO() {
+        this(UserSession.getUid(), UserSession.getIdToken());
+    }
+
+    public GuestManagementO(String uid, String idToken) {
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+        if (guestList.isEmpty()) {
+            guestList.add(new GuestItem("RS", "Rahul Sharma", "rahul.s@techcorp.com", "VIP", "Confirmed", "Generated", false));
+            guestList.add(new GuestItem("PD", "Priya Deshmukh", "priya.d@innovate.io", "Speaker", "Confirmed", "Generated", false));
+            guestList.add(new GuestItem("AP", "Amit Patil", "amit.p@techvision.com", "Employee", "Pending", "Pending RSVP", false));
+        }
+    }
+
+    public Scene getScene(Stage stage, Runnable backAction) {
+        this.backAction = backAction;
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;");
+        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
 
-        // Top Navigation Bar
         root.setTop(createTopBar());
+        root.setLeft(createSidebar(stage));
 
-        // Sidebar Navigation
-        root.setLeft(createSidebar());
-
-        // Main Content Area
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
 
-        VBox mainContent = createMainContent();
+        VBox mainContent = createMainContent(stage);
         scrollPane.setContent(mainContent);
 
         root.setCenter(scrollPane);
 
-        Scene scene = new Scene(root, 1440, 900);
-        primaryStage.setTitle("EventXpert - Guest Management & QR Check-In");
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
         recalculateStats();
+        return new Scene(root, 1550, 785);
     }
 
-    // ==========================================
-    // TOP BAR
-    // ==========================================
     private HBox createTopBar() {
         HBox topBar = new HBox();
         topBar.setAlignment(Pos.CENTER_LEFT);
@@ -119,188 +117,97 @@ public class GuestManagementO extends Application {
         topBar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
         topBar.setSpacing(16);
 
-        // Search Bar
-        HBox searchBox = new HBox();
+        HBox searchBox = new HBox(8);
         searchBox.setAlignment(Pos.CENTER_LEFT);
         searchBox.setPadding(new Insets(6, 14, 6, 14));
         searchBox.setMaxWidth(480);
         searchBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 20; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 20;");
         HBox.setHgrow(searchBox, Priority.ALWAYS);
 
-        Label searchIcon = new Label("🔍 ");
-        searchIcon.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 13px;");
+        Label searchIcon = new Label("🔍");
+        TextField searchInput = new TextField();
+        searchInput.setPromptText("Search guests, events, or actions...");
+        searchInput.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 12px;");
+        HBox.setHgrow(searchInput, Priority.ALWAYS);
 
-        TextField topSearch = new TextField();
-        topSearch.setPromptText("Search guests, events, or actions...");
-        topSearch.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 13px;");
-        HBox.setHgrow(topSearch, Priority.ALWAYS);
-
-        searchBox.getChildren().addAll(searchIcon, topSearch);
+        searchBox.getChildren().addAll(searchIcon, searchInput);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button notifBtn = new Button("🔔");
-        notifBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 16px; -fx-cursor: hand;");
+        Button bellBtn = new Button("🔔");
+        bellBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
 
         Button helpBtn = new Button("❓");
-        helpBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 16px; -fx-cursor: hand;");
+        helpBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
 
-        // Profile Box
-        HBox profileBox = new HBox(10);
-        profileBox.setAlignment(Pos.CENTER);
+        Circle avatar = new Circle(16, Color.web(PRIMARY_BLUE));
 
-        StackPane avatar = new StackPane();
-        Circle circle = new Circle(18, Color.web(PRIMARY_BLUE));
-        Label avatarText = new Label("AS");
-        avatarText.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px;");
-        avatar.getChildren().addAll(circle, avatarText);
-
-        VBox userInfo = new VBox(1);
-        Label userName = new Label("Alex Sterling");
-        userName.setStyle("-fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 12px;");
-        Label userRole = new Label("Lead Planner");
-        userRole.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 11px;");
-        userInfo.getChildren().addAll(userName, userRole);
-
-        profileBox.getChildren().addAll(avatar, userInfo);
-
-        topBar.getChildren().addAll(searchBox, spacer, notifBtn, helpBtn, profileBox);
+        topBar.getChildren().addAll(searchBox, spacer, bellBtn, helpBtn, avatar);
         return topBar;
     }
 
-    // ==========================================
-    // SIDEBAR
-    // ==========================================
-    private VBox createSidebar() {
-        VBox sidebar = new VBox();
+    private VBox createSidebar(Stage stage) {
+        VBox sidebar = new VBox(10);
         sidebar.setPrefWidth(240);
-        sidebar.setMinWidth(240);
-        sidebar.setPadding(new Insets(18, 14, 18, 14));
-        sidebar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 1 0 0;");
-        sidebar.setSpacing(6);
+        sidebar.setStyle("-fx-background-color: " + NAVY + ";");
+        sidebar.setPadding(new Insets(20, 12, 20, 12));
 
-        // Logo
-        HBox brand = new HBox(10);
-        brand.setAlignment(Pos.CENTER_LEFT);
-        brand.setPadding(new Insets(0, 0, 10, 6));
+        Label brand = new Label("EventXpert");
+        brand.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        StackPane logoBg = new StackPane();
-        Rectangle rect = new Rectangle(34, 34);
-        rect.setArcWidth(8);
-        rect.setArcHeight(8);
-        rect.setFill(Color.web(PRIMARY_BLUE));
-        Label logoText = new Label("EX");
-        logoText.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
-        logoBg.getChildren().addAll(rect, logoText);
-
-        VBox brandTitles = new VBox(1);
-        Label brandName = new Label("EventXpert");
-        brandName.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: " + NAVY + ";");
-        Label brandSub = new Label("Corporate Suite");
-        brandSub.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        brandTitles.getChildren().addAll(brandName, brandSub);
-
-        brand.getChildren().addAll(logoBg, brandTitles);
-        sidebar.getChildren().addAll(brand, new Separator());
-
-        // Nav Menu
-        sidebar.getChildren().addAll(
-            createNavHeader("EVENT MANAGEMENT"),
-            createNavItem("Dashboard", false),
-            createNavItem("Event Requests", false),
-            createNavItem("My Events", false),
-
-            createNavHeader("EVENT PLANNING"),
-            createNavItem("AI Planner", false),
-            createNavItem("Budget", false),
-            createNavItem("Venue", false),
-            createNavItem("Vendors", false),
-            createNavItem("Schedule", false),
-
-            createNavHeader("EVENT EXECUTION"),
-            createNavItem("Guest Management", true), // Active
-            createNavItem("QR Check-In", false),
-            createNavItem("Live Event", false)
-        );
+        VBox menu = new VBox(6);
+        menu.getChildren().add(createNavBtn("Dashboard", false, () -> goDashboard(stage)));
+        menu.getChildren().add(createNavBtn("Event Requests", false, () -> {
+            EventRequestsO view = new EventRequestsO(uid, idToken);
+            LandingPage.landingPageStage.setScene(view.geteventRequestsOScene(() -> goDashboard(stage)));
+        }));
+        menu.getChildren().add(createNavBtn("My Events", false, () -> {
+            MyEventsO view = new MyEventsO(uid, idToken);
+            LandingPage.landingPageStage.setScene(view.getMyEventsOScene(() -> goDashboard(stage)));
+        }));
+        menu.getChildren().add(createNavBtn("Guest Management", true, () -> {}));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        VBox bottomMenu = new VBox(4);
-        bottomMenu.getChildren().addAll(
-            new Separator(),
-            createNavItem("Settings", false),
-            createNavItem("Support", false)
-        );
+        VBox bottom = new VBox(6);
+        bottom.getChildren().add(createNavBtn("Notifications", false, () -> {
+            NotificationsO view = new NotificationsO(uid, idToken);
+            LandingPage.landingPageStage.setScene(view.getNotificationScene());
+        }));
+        bottom.getChildren().add(createNavBtn("Settings", false, () -> {
+            SettingsO view = new SettingsO(uid, idToken);
+            LandingPage.landingPageStage.setScene(view.getSettingScene(() -> goDashboard(stage)));
+        }));
+        bottom.getChildren().add(createNavBtn("Profile", false, () -> {
+            ProfileO view = new ProfileO(uid, idToken);
+            LandingPage.landingPageStage.setScene(view.getProfileScene());
+        }));
 
-        sidebar.getChildren().addAll(spacer, bottomMenu);
+        sidebar.getChildren().addAll(brand, new Separator(), menu, spacer, bottom);
         return sidebar;
     }
 
-    private Label createNavHeader(String title) {
-        Label header = new Label(title);
-        header.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-padding: 8 0 2 6;");
-        return header;
+    private Button createNavBtn(String title, boolean active, Runnable action) {
+        Button b = new Button(title);
+        b.setMaxWidth(Double.MAX_VALUE);
+        b.setAlignment(Pos.CENTER_LEFT);
+        b.setStyle(active ? "-fx-background-color: #EAF3FF; -fx-text-fill: #0B4EA2; -fx-font-weight: bold; -fx-padding: 8 12; -fx-background-radius: 6px;"
+                : "-fx-background-color: transparent; -fx-text-fill: white; -fx-padding: 8 12; -fx-cursor: hand;");
+        if (action != null) b.setOnAction(e -> action.run());
+        return b;
     }
 
-    private Button createNavItem(String text, boolean isActive) {
-        Button btn = new Button(text);
-        btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setAlignment(Pos.CENTER_LEFT);
-        btn.setPadding(new Insets(7, 10, 7, 10));
-
-        if (isActive) {
-            btn.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;");
-        } else {
-            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + TEXT_MAIN + "; -fx-background-radius: 6; -fx-cursor: hand;");
-            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-background-radius: 6; -fx-cursor: hand;"));
-            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + TEXT_MAIN + "; -fx-background-radius: 6; -fx-cursor: hand;"));
-        }
-
-        btn.setOnAction(e -> {
-            if (!isActive) {
-                showInfoAlert("Navigation", "Navigating to " + text + "...");
-            }
-        });
-
-        return btn;
-    }
-
-    // ==========================================
-    // MAIN CONTENT
-    // ==========================================
-    private VBox createMainContent() {
+    private VBox createMainContent(Stage stage) {
         VBox mainBox = new VBox(20);
         mainBox.setPadding(new Insets(24, 30, 30, 30));
 
-        // Breadcrumbs
-        HBox breadcrumbs = new HBox(8);
-        breadcrumbs.setAlignment(Pos.CENTER_LEFT);
-
-        Label bc1 = new Label("My Events");
-        bc1.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 13px; -fx-cursor: hand;");
-        bc1.setOnMouseClicked(e -> showInfoAlert("Navigation", "Navigating to My Events..."));
-
-        Label bcSep1 = new Label(">");
-        bcSep1.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 12px;");
-
-        Label bc2 = new Label("TechVision Annual Summit");
-        bc2.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 13px;");
-
-        Label bcSep2 = new Label(">");
-        bcSep2.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 12px;");
-
-        Label bc3 = new Label("Guest Management");
-        bc3.setStyle("-fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-font-size: 13px;");
-
-        breadcrumbs.getChildren().addAll(bc1, bcSep1, bc2, bcSep2, bc3);
-
-        // Header Title Row
-        HBox headerRow = new HBox(12);
-        headerRow.setAlignment(Pos.CENTER_LEFT);
-
+        // Breadcrumbs & Title Row
         VBox titleBox = new VBox(4);
+        Label breadcrumb = new Label("My Events  >  TechVision Annual Summit  >  Guest Management");
+        breadcrumb.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
         HBox tRow = new HBox(10);
         tRow.setAlignment(Pos.CENTER_LEFT);
 
@@ -308,31 +215,27 @@ public class GuestManagementO extends Application {
         title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Label statusBadge = new Label("In Planning");
-        statusBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + BRIGHT_BLUE + "; -fx-font-size: 11px; -fx-padding: 3 8 3 8; -fx-background-radius: 12;");
-
-        tRow.getChildren().addAll(title, statusBadge);
-
-        Label subtitle = new Label("Manage guest attendance, invitations and seamless QR-based event check-in for the TechVision Annual Summit.");
-        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        titleBox.getChildren().addAll(tRow, subtitle);
+        statusBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + BRIGHT_BLUE + "; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 12px;");
 
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
         Button exportBtn = new Button("📥  Export List");
-        exportBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-padding: 8 16 8 16; -fx-background-radius: 6; -fx-border-radius: 6; -fx-cursor: hand;");
-        exportBtn.setOnAction(e -> showInfoAlert("Export", "Exporting guest list to CSV/Excel..."));
+        exportBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 6px; -fx-cursor: hand;");
 
         Button addGuestBtn = new Button("+ Add Guest");
-        addGuestBtn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16 8 16; -fx-background-radius: 6; -fx-cursor: hand;");
+        addGuestBtn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 6px; -fx-cursor: hand;");
         addGuestBtn.setOnAction(e -> handleAddGuestDialog());
 
-        headerRow.getChildren().addAll(titleBox, headerSpacer, exportBtn, addGuestBtn);
+        tRow.getChildren().addAll(title, statusBadge, headerSpacer, exportBtn, addGuestBtn);
 
-        // Summary Cards Row (5 Cards)
+        Label subtitle = new Label("Manage guest attendance, invitations and seamless QR-based event check-in for the TechVision Annual Summit.");
+        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        titleBox.getChildren().addAll(breadcrumb, tRow, subtitle);
+
+        // Top 5 Metric Cards Row
         HBox summaryRow = new HBox(14);
-
         lblTotalGuests = new Label("250");
         lblConfirmed = new Label("180");
         lblPending = new Label("45");
@@ -347,19 +250,18 @@ public class GuestManagementO extends Application {
             createStatCard("CHECKED IN 🎟️", lblCheckedIn, PRIMARY_BLUE)
         );
 
-        // 2-Column Main Layout
+        // Main 2-Column Split Grid
         HBox bodyGrid = new HBox(20);
 
-        // Left Column: Guest Roster Table
+        // Left Column: Guest Roster Card
         VBox leftCol = new VBox(16);
         HBox.setHgrow(leftCol, Priority.ALWAYS);
-
         leftCol.getChildren().add(createGuestRosterCard());
 
         // Right Column: Side Widgets
         VBox rightCol = new VBox(16);
-        rightCol.setPrefWidth(320);
-        rightCol.setMinWidth(300);
+        rightCol.setPrefWidth(330);
+        rightCol.setMinWidth(310);
 
         rightCol.getChildren().addAll(
             createRsvpRateCard(),
@@ -370,17 +272,14 @@ public class GuestManagementO extends Application {
 
         bodyGrid.getChildren().addAll(leftCol, rightCol);
 
-        mainBox.getChildren().addAll(breadcrumbs, headerRow, summaryRow, bodyGrid);
+        mainBox.getChildren().addAll(titleBox, summaryRow, bodyGrid);
         return mainBox;
     }
 
-    // ==========================================
-    // STATS CARDS
-    // ==========================================
     private VBox createStatCard(String title, Label valLabel, String valColor) {
         VBox card = new VBox(6);
         card.setPadding(new Insets(14, 16, 14, 16));
-        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10; -fx-background-radius: 10;");
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
         HBox.setHgrow(card, Priority.ALWAYS);
 
         Label t = new Label(title);
@@ -392,13 +291,10 @@ public class GuestManagementO extends Application {
         return card;
     }
 
-    // ==========================================
-    // GUEST ROSTER TABLE CARD
-    // ==========================================
     private VBox createGuestRosterCard() {
         VBox card = new VBox(14);
         card.setPadding(new Insets(18));
-        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10; -fx-background-radius: 10;");
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
         HBox topHeader = new HBox();
         topHeader.setAlignment(Pos.CENTER_LEFT);
@@ -412,22 +308,19 @@ public class GuestManagementO extends Application {
         HBox searchBox = new HBox(6);
         searchBox.setAlignment(Pos.CENTER_LEFT);
         searchBox.setPadding(new Insets(6, 12, 6, 12));
-        searchBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6; -fx-background-radius: 6;");
+        searchBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px;");
 
         TextField filterInput = new TextField();
         filterInput.setPromptText("Search guest by name...");
         filterInput.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 12px; -fx-pref-width: 180px;");
         searchBox.getChildren().addAll(new Label("🔍"), filterInput);
 
-        Button filterBtn = new Button("🎛️");
-        filterBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6; -fx-cursor: hand;");
-
-        topHeader.getChildren().addAll(title, spacer, searchBox, filterBtn);
+        topHeader.getChildren().addAll(title, spacer, searchBox);
 
         // Table Header Row
         GridPane tableHeader = new GridPane();
         tableHeader.setPadding(new Insets(8, 12, 8, 12));
-        tableHeader.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 6;");
+        tableHeader.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 6px;");
 
         tableHeader.add(createHeaderLabel("GUEST"), 0, 0);
         tableHeader.add(createHeaderLabel("TYPE"), 1, 0);
@@ -440,12 +333,12 @@ public class GuestManagementO extends Application {
         rosterTableContainer = new VBox(2);
         renderRosterRows();
 
-        // Table Pagination Footer
+        // Footer Pagination
         HBox footer = new HBox();
         footer.setAlignment(Pos.CENTER_LEFT);
         footer.setPadding(new Insets(10, 0, 0, 0));
 
-        Label pageInfo = new Label("Showing 1 to 5 of 250 entries");
+        Label pageInfo = new Label("Showing 1 to 3 of 250 entries");
         pageInfo.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         Region footerSpacer = new Region();
@@ -478,7 +371,7 @@ public class GuestManagementO extends Application {
         for (int i = 0; i < guestList.size(); i++) {
             GuestItem item = guestList.get(i);
             GridPane row = new GridPane();
-            row.setPadding(new Insets(12, 12, 12, 12));
+            row.setPadding(new Insets(12));
             row.setStyle("-fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
 
             // Guest Name + Avatar
@@ -504,11 +397,11 @@ public class GuestManagementO extends Application {
             // Type Badge
             Label typeBadge = new Label(item.type);
             if (item.type.equalsIgnoreCase("VIP")) {
-                typeBadge.setStyle("-fx-background-color: " + YELLOW_BG + "; -fx-text-fill: " + YELLOW_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8 2 8; -fx-background-radius: 4;");
+                typeBadge.setStyle("-fx-background-color: " + YELLOW_BG + "; -fx-text-fill: " + YELLOW_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
             } else if (item.type.equalsIgnoreCase("Speaker")) {
-                typeBadge.setStyle("-fx-background-color: " + PURPLE_BG + "; -fx-text-fill: " + PURPLE_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8 2 8; -fx-background-radius: 4;");
+                typeBadge.setStyle("-fx-background-color: " + PURPLE_BG + "; -fx-text-fill: " + PURPLE_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
             } else {
-                typeBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8 2 8; -fx-background-radius: 4;");
+                typeBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
             }
             row.add(typeBadge, 1, 0);
 
@@ -516,10 +409,8 @@ public class GuestManagementO extends Application {
             Label rsvpBadge = new Label("● " + item.rsvpStatus);
             if (item.rsvpStatus.equalsIgnoreCase("Confirmed")) {
                 rsvpBadge.setStyle("-fx-text-fill: " + GREEN_TEXT + "; -fx-font-size: 11px; -fx-font-weight: bold;");
-            } else if (item.rsvpStatus.equalsIgnoreCase("Pending")) {
-                rsvpBadge.setStyle("-fx-text-fill: " + YELLOW_TEXT + "; -fx-font-size: 11px; -fx-font-weight: bold;");
             } else {
-                rsvpBadge.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-font-size: 11px; -fx-font-weight: bold;");
+                rsvpBadge.setStyle("-fx-text-fill: " + YELLOW_TEXT + "; -fx-font-size: 11px; -fx-font-weight: bold;");
             }
             row.add(rsvpBadge, 2, 0);
 
@@ -528,22 +419,10 @@ public class GuestManagementO extends Application {
             qrLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
             row.add(qrLbl, 3, 0);
 
-            // Check-In Toggle Action Button
-            int index = i;
-            Button checkInBtn = new Button(item.isCheckedIn ? "✓ Checked In" : "Check In");
-            if (item.isCheckedIn) {
-                checkInBtn.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-radius: 4; -fx-cursor: hand;");
-            } else {
-                checkInBtn.setStyle("-fx-background-color: white; -fx-border-color: " + PRIMARY_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-radius: 4; -fx-border-radius: 4; -fx-cursor: hand;");
-            }
-
-            checkInBtn.setOnAction(e -> {
-                item.isCheckedIn = !item.isCheckedIn;
-                renderRosterRows();
-                recalculateStats();
-            });
-
-            row.add(checkInBtn, 4, 0);
+            // Check-In Status
+            Label checkInLbl = new Label(item.isCheckedIn ? "✓ Checked In" : "Not Checked In");
+            checkInLbl.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + (item.isCheckedIn ? GREEN_TEXT : SECONDARY_TEXT) + ";");
+            row.add(checkInLbl, 4, 0);
 
             setGridConstraints(row);
             rosterTableContainer.getChildren().add(row);
@@ -551,37 +430,28 @@ public class GuestManagementO extends Application {
     }
 
     private void setGridConstraints(GridPane grid) {
-        ColumnConstraints c1 = new ColumnConstraints();
-        c1.setPercentWidth(35);
-        ColumnConstraints c2 = new ColumnConstraints();
-        c2.setPercentWidth(15);
-        ColumnConstraints c3 = new ColumnConstraints();
-        c3.setPercentWidth(18);
-        ColumnConstraints c4 = new ColumnConstraints();
-        c4.setPercentWidth(18);
-        ColumnConstraints c5 = new ColumnConstraints();
-        c5.setPercentWidth(14);
-
+        ColumnConstraints c1 = new ColumnConstraints(); c1.setPercentWidth(35);
+        ColumnConstraints c2 = new ColumnConstraints(); c2.setPercentWidth(15);
+        ColumnConstraints c3 = new ColumnConstraints(); c3.setPercentWidth(18);
+        ColumnConstraints c4 = new ColumnConstraints(); c4.setPercentWidth(18);
+        ColumnConstraints c5 = new ColumnConstraints(); c5.setPercentWidth(14);
         grid.getColumnConstraints().addAll(c1, c2, c3, c4, c5);
     }
 
     private Button createPageBtn(String text, boolean active) {
         Button btn = new Button(text);
-        if (active) {
-            btn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-radius: 4;");
-        } else {
-            btn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 11px; -fx-border-radius: 4; -fx-background-radius: 4; -fx-cursor: hand;");
-        }
+        btn.setStyle(active ? "-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-radius: 4px;"
+                : "-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 11px; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-cursor: hand;");
         return btn;
     }
 
     // ==========================================
-    // RIGHT COLUMN WIDGETS
+    // RIGHT COLUMN SIDE WIDGETS
     // ==========================================
     private VBox createRsvpRateCard() {
         VBox card = new VBox(10);
         card.setPadding(new Insets(16));
-        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10; -fx-background-radius: 10;");
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
         Label title = new Label("RSVP Confirmation Rate");
         title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
@@ -605,7 +475,7 @@ public class GuestManagementO extends Application {
 
         pbRsvpRate = new ProgressBar(0.72);
         pbRsvpRate.setMaxWidth(Double.MAX_VALUE);
-        pbRsvpRate.setStyle("-fx-accent: " + PRIMARY_BLUE + "; -fx-control-inner-background: " + LIGHT_BLUE + "; -fx-pref-height: 8;");
+        pbRsvpRate.setStyle("-fx-accent: " + PRIMARY_BLUE + "; -fx-pref-height: 8;");
 
         card.getChildren().addAll(title, subtitle, rateRow, pbRsvpRate);
         return card;
@@ -614,7 +484,7 @@ public class GuestManagementO extends Application {
     private VBox createAttentionNeededCard() {
         VBox card = new VBox(8);
         card.setPadding(new Insets(14));
-        card.setStyle("-fx-background-color: " + YELLOW_BG + "; -fx-border-color: " + YELLOW_TEXT + "; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8;");
+        card.setStyle("-fx-background-color: " + YELLOW_BG + "; -fx-border-color: #FCD34D; -fx-border-radius: 8px; -fx-background-radius: 8px;");
 
         Label header = new Label("⚠️ Attention Needed");
         header.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + YELLOW_TEXT + ";");
@@ -625,9 +495,8 @@ public class GuestManagementO extends Application {
         Label l2 = new Label("• 70 confirmed guests are missing QR Codes.");
         l2.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
 
-        Button reminderBtn = new Button("Send Reminders →");
+        Button reminderBtn = new Button("Send Reminders");
         reminderBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + YELLOW_TEXT + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-cursor: hand; -fx-padding: 4 0 0 0;");
-        reminderBtn.setOnAction(e -> showInfoAlert("Reminders Sent", "Follow-up RSVP reminders emailed to 45 guests."));
 
         card.getChildren().addAll(header, l1, l2, reminderBtn);
         return card;
@@ -636,24 +505,20 @@ public class GuestManagementO extends Application {
     private VBox createQrProvisioningCard() {
         VBox card = new VBox(10);
         card.setPadding(new Insets(16));
-        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10; -fx-background-radius: 10;");
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
         Label title = new Label("🏁 QR Provisioning");
         title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         HBox pRow = new HBox();
-        Label pLabel = new Label("Generated:");
-        pLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label pVal = new Label("180 / 180 (Confirmed)");
-        pVal.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
+        Label pLabel = new Label("Generated:"); pLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label pVal = new Label("180 / 180 (Confirmed)"); pVal.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
         pRow.getChildren().addAll(pLabel, spacer, pVal);
 
         Button genBtn = new Button("🔄 Generate Missing Codes");
         genBtn.setMaxWidth(Double.MAX_VALUE);
-        genBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8; -fx-cursor: hand;");
-        genBtn.setOnAction(e -> showInfoAlert("QR Provisioning", "All confirmed guest QR passes generated."));
+        genBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 8; -fx-cursor: hand;");
 
         card.getChildren().addAll(title, pRow, genBtn);
         return card;
@@ -662,29 +527,19 @@ public class GuestManagementO extends Application {
     private VBox createLiveScannerCard() {
         VBox card = new VBox(10);
         card.setPadding(new Insets(16));
-        card.setStyle("-fx-background-color: " + NAVY + "; -fx-background-radius: 10;");
+        card.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-border-color: " + BRIGHT_BLUE + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
         HBox header = new HBox();
-        Label title = new Label("((•)) Live QR Scanner");
-        title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: white;");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label liveDot = new Label("●");
-        liveDot.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-font-size: 12px;");
+        Label title = new Label("((•)) Live Scanner");
+        title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label liveDot = new Label("●"); liveDot.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-font-size: 12px;");
         header.getChildren().addAll(title, spacer, liveDot);
 
-        Button scanBtn = new Button("Start Scanner / Simulate Scan");
-        scanBtn.setMaxWidth(Double.MAX_VALUE);
-        scanBtn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 8; -fx-background-radius: 6; -fx-cursor: hand;");
-        scanBtn.setOnAction(e -> handleSimulateScan());
-
-        card.getChildren().addAll(header, scanBtn);
+        card.getChildren().addAll(header);
         return card;
     }
 
-    // ==========================================
-    // ACTION HANDLERS
-    // ==========================================
     private void recalculateStats() {
         int total = guestList.size();
         int confirmed = 0;
@@ -700,15 +555,15 @@ public class GuestManagementO extends Application {
             if (item.isCheckedIn) checkedIn++;
         }
 
-        lblTotalGuests.setText(String.valueOf(total));
-        lblConfirmed.setText(String.valueOf(confirmed));
-        lblPending.setText(String.valueOf(pending));
-        lblDeclined.setText(String.valueOf(declined));
-        lblCheckedIn.setText(checkedIn + "/" + total);
+        if (lblTotalGuests != null) lblTotalGuests.setText(String.valueOf(total));
+        if (lblConfirmed != null) lblConfirmed.setText(String.valueOf(confirmed));
+        if (lblPending != null) lblPending.setText(String.valueOf(pending));
+        if (lblDeclined != null) lblDeclined.setText(String.valueOf(declined));
+        if (lblCheckedIn != null) lblCheckedIn.setText(checkedIn + "/" + total);
 
         double rate = total > 0 ? ((double) confirmed / total) : 0;
-        lblRsvpPercent.setText(String.format("%.0f%%", rate * 100));
-        pbRsvpRate.setProgress(rate);
+        if (lblRsvpPercent != null) lblRsvpPercent.setText(String.format("%.0f%%", rate * 100));
+        if (pbRsvpRate != null) pbRsvpRate.setProgress(rate);
     }
 
     private void handleAddGuestDialog() {
@@ -720,31 +575,19 @@ public class GuestManagementO extends Application {
         dialog.getDialogPane().getButtonTypes().addAll(addBtnType, ButtonType.CANCEL);
 
         GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        grid.setHgap(10); grid.setVgap(10);
+        grid.setPadding(new Insets(20, 100, 10, 10));
 
-        TextField nameInput = new TextField();
-        nameInput.setPromptText("Full Name");
-
-        TextField emailInput = new TextField();
-        emailInput.setPromptText("Email Address");
-
-        TextField companyInput = new TextField();
-        companyInput.setPromptText("Organization / Company");
+        TextField nameInput = new TextField(); nameInput.setPromptText("Full Name");
+        TextField emailInput = new TextField(); emailInput.setPromptText("Email Address");
 
         ComboBox<String> typeCombo = new ComboBox<>();
         typeCombo.getItems().addAll("VIP", "Speaker", "Employee", "Partner");
         typeCombo.setValue("Employee");
 
-        grid.add(new Label("Full Name:"), 0, 0);
-        grid.add(nameInput, 1, 0);
-        grid.add(new Label("Email:"), 0, 1);
-        grid.add(emailInput, 1, 1);
-        grid.add(new Label("Company:"), 0, 2);
-        grid.add(companyInput, 1, 2);
-        grid.add(new Label("Guest Type:"), 0, 3);
-        grid.add(typeCombo, 1, 3);
+        grid.add(new Label("Full Name:"), 0, 0); grid.add(nameInput, 1, 0);
+        grid.add(new Label("Email:"), 0, 1); grid.add(emailInput, 1, 1);
+        grid.add(new Label("Guest Type:"), 0, 2); grid.add(typeCombo, 1, 2);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -754,16 +597,7 @@ public class GuestManagementO extends Application {
                 String[] parts = n.split(" ");
                 String init = parts.length > 1 ? (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase() : "G";
 
-                return new GuestItem(
-                    init,
-                    n,
-                    emailInput.getText().trim(),
-                    companyInput.getText().trim(),
-                    typeCombo.getValue(),
-                    "Confirmed",
-                    "Generated",
-                    false
-                );
+                return new GuestItem(init, n, emailInput.getText().trim(), typeCombo.getValue(), "Confirmed", "Generated", false);
             }
             return null;
         });
@@ -773,28 +607,20 @@ public class GuestManagementO extends Application {
             guestList.add(guest);
             renderRosterRows();
             recalculateStats();
-            showInfoAlert("Success", "Guest added successfully!");
         });
     }
 
-    private void handleSimulateScan() {
-        for (GuestItem item : guestList) {
-            if (!item.isCheckedIn && item.rsvpStatus.equalsIgnoreCase("Confirmed")) {
-                item.isCheckedIn = true;
-                renderRosterRows();
-                recalculateStats();
-                showInfoAlert("✓ Check-In Successful", "Simulated QR Scan Match:\n\nGuest: " + item.name + "\nType: " + item.type + "\nStatus: Checked In Successfully!");
-                return;
-            }
+    private void handleBack(Stage stage) {
+        if (backAction != null) {
+            backAction.run();
+        } else {
+            ViewEventO view = new ViewEventO(uid, idToken);
+            LandingPage.landingPageStage.setScene(view.getScene(stage, () -> goDashboard(stage)));
         }
-        showInfoAlert("QR Scanner", "All confirmed guests are already checked in.");
     }
 
-    private void showInfoAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+    private void goDashboard(Stage stage) {
+        OrganizerDashboardO dash = new OrganizerDashboardO(uid, idToken);
+        LandingPage.landingPageStage.setScene(dash.getorganizerDashboardScene(null));
     }
 }

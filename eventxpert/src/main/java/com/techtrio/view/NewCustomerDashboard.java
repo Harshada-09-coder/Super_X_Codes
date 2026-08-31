@@ -23,7 +23,6 @@ public class NewCustomerDashboard {
     private final String LIGHT = "#F5F8FC";
     private final String TEXT = "#082E6B";
     private final String GRAY = "#526071";
-    private Scene dashboardScene;
 
     public NewCustomerDashboard() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -65,134 +64,39 @@ public class NewCustomerDashboard {
 
         sidebar.getChildren().add(brand);
 
+        HBox dashNav = navItem("▦", "Dashboard", true, () -> {});
+        HBox createEventNav = navItem("⊕", "Create Event", false, this::openCreateEvent);
+        HBox myEventsNav = navItem("□", "My Events", false, this::openCreateEvent);
+        HBox calendarNav = navItem("□", "Calendar", false, () -> {});
+        HBox notificationsNav = navItem("♧", "Notifications", false, this::openNotifications);
+
         sidebar.getChildren().addAll(
-                navItem("▦", "Dashboard", true),
-                navItem("⊕", "Create Event", false, this::openCreateEvent),
-                navItem("□", "My Events", false),
-                navItem("□", "Calendar", false),
-                navItem("♧", "Notifications", false)
+                dashNav,
+                createEventNav,
+                myEventsNav,
+                calendarNav,
+                notificationsNav
         );
-HBox createEventNav = navItem("⊕", "Create Event", false);
-
-createEventNav.setOnMouseClicked(e -> {
-
-    NoEventC noEventPage = new NoEventC();
-
-    LandingPage.landingPageStage.setScene(
-            noEventPage.getNoEventScene(
-
-                    // BACK → NEW CUSTOMER DASHBOARD
-                    () -> {
-
-                        NewCustomerDashboard dashboardPage =
-                                new NewCustomerDashboard();
-
-                        LandingPage.landingPageStage.setScene(
-                                dashboardPage.getnewCustomerScene(null)
-                        );
-
-                    }
-            )
-    );
-});
-
-HBox notificationsNav = navItem("♧", "Notifications", false); 
-
-    
-   notificationsNav.setOnMouseClicked(e -> {
-
-    Notification notificationPage =
-            new Notification();
-
-    LandingPage.landingPageStage.setScene(
-            notificationPage.getNotificationScene()
-    );
-}); 
-
-  
-
-
-sidebar.getChildren().addAll(
-        navItem("▦", "Dashboard", true),
-        createEventNav,
-        notificationsNav
-);
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
 
+        HBox profileNav = navItem("♙", "Profile", false, this::openProfile);
+        HBox settingsNav = navItem("⚙", "Settings", false, this::openSettings);
+        HBox supportNav = navItem("?", "Support", false, () -> {});
 
-        HBox profileNav = navItem(
-        "♙",
-        "Profile",
-        false
-);
-
-profileNav.setOnMouseClicked(e -> {
-
-    ProfilePageC profilePage =
-            new ProfilePageC();
-
-    LandingPage.landingPageStage.setScene(
-            profilePage.getProfileScene(
-
-                    // BACK → NEW CUSTOMER DASHBOARD
-                    () -> {
-
-                        NewCustomerDashboard dashboardPage =
-                                new NewCustomerDashboard();
-
-                        LandingPage.landingPageStage.setScene(
-                                dashboardPage.getnewCustomerScene(
-                                        null
-                                )
-                        );
-
-                    }
-            )
-    );
-});
-         HBox settingsNav = navItem(
-        "⚙",
-        "Settings",
-        false
-);
-
-settingsNav.setOnMouseClicked(e -> {
-
-    SettingC settingPage = new SettingC();
-
-    LandingPage.landingPageStage.setScene(
-            settingPage.getSettingScene(
-                    // BACK → NEW CUSTOMER DASHBOARD
-                    () -> {
-                        NewCustomerDashboard dashboardPage =
-                                new NewCustomerDashboard();
-
-                        LandingPage.landingPageStage.setScene(
-                                dashboardPage.getnewCustomerScene(null)
-                        );
-                    }
-            )
-    );
-});
-
-sidebar.getChildren().addAll(
-        sideSpace,
-        profileNav,
-        settingsNav,
-        navItem("?", "Support", false)
-);
+        sidebar.getChildren().addAll(
+                sideSpace,
+                profileNav,
+                settingsNav,
+                supportNav
+        );
 
         HBox topBar = new HBox(18);
         topBar.setAlignment(Pos.CENTER_RIGHT);
         topBar.setPadding(new Insets(14, 25, 14, 25));
         topBar.setPrefHeight(72);
-        topBar.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:#E0E5EC;" +
-                "-fx-border-width:0 0 1 0;"
-        );
+        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E0E5EC;-fx-border-width:0 0 1 0;");
 
         Region topSpace = new Region();
         HBox.setHgrow(topSpace, Priority.ALWAYS);
@@ -201,32 +105,18 @@ sidebar.getChildren().addAll(
         search.setPromptText("Search events...");
         search.setPrefWidth(325);
         search.setPrefHeight(42);
-        search.setStyle(
-                "-fx-background-color:#F8FAFD;" +
-                "-fx-border-color:#C8D2DF;" +
-                "-fx-border-radius:8;" +
-                "-fx-background-radius:8;" +
-                "-fx-padding:0 15;" +
-                "-fx-font-size:14;"
-        );
+        search.setStyle("-fx-background-color:#F8FAFD;-fx-border-color:#C8D2DF;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:0 15;-fx-font-size:14;");
 
         Label notification = new Label("♧");
         notification.setFont(Font.font("Arial", 22));
         notification.setTextFill(Color.web(GRAY));
+        notification.setStyle("-fx-cursor:hand;");
+        notification.setOnMouseClicked(e -> openNotifications());
 
         Button createTop = new Button("Create Event");
         createTop.setPrefHeight(42);
-        createTop.setStyle(
-                "-fx-background-color:" + NAVY + ";" +
-                "-fx-text-fill:white;" +
-                "-fx-font-weight:bold;" +
-                "-fx-font-size:15;" +
-                "-fx-background-radius:8;" +
-                "-fx-padding:0 22;" +
-                "-fx-cursor:hand;"
-        );
+        createTop.setStyle("-fx-background-color:" + NAVY + ";-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:15;-fx-background-radius:8;-fx-padding:0 22;-fx-cursor:hand;");
         createTop.setOnAction(e -> openCreateEvent());
-
 
         Circle topProfile = new Circle(20);
         topProfile.setFill(Color.web("#D7EAF8"));
@@ -236,8 +126,10 @@ sidebar.getChildren().addAll(
         topInitial.setTextFill(Color.web(NAVY));
 
         StackPane topUser = new StackPane(topProfile, topInitial);
+        topUser.setStyle("-fx-cursor:hand;");
+        topUser.setOnMouseClicked(e -> openProfile());
 
-        topBar.getChildren().addAll(topSpace, search, notification,  topUser);
+        topBar.getChildren().addAll(topSpace, search, notification, createTop, topUser);
 
         VBox content = new VBox(18);
         content.setPadding(new Insets(22, 32, 35, 32));
@@ -274,26 +166,8 @@ sidebar.getChildren().addAll(
         firstButton.setStyle(buttonStyle());
         firstButton.setOnAction(e -> openCreateEvent());
 
+        // Added ONCE to prevent duplicate-children exception
         firstEvent.getChildren().addAll(firstTitle, firstDescription, firstButton);
-      firstButton.setOnAction(e -> {
-
-    NoEventC noEventPage = new NoEventC();
-
-    LandingPage.landingPageStage.setScene(
-        noEventPage.getNoEventScene(
-            () -> LandingPage.landingPageStage.setScene(
-                getnewCustomerScene(null)
-            )
-        )
-    );
-
-});
-
-        firstEvent.getChildren().addAll(
-                firstTitle,
-                firstDescription,
-                firstButton
-        );
 
         VBox aiCard = new VBox(12);
         aiCard.setPadding(new Insets(20));
@@ -319,14 +193,7 @@ sidebar.getChildren().addAll(
         Button aiButton = new Button("Try AI Event Planner  →");
         aiButton.setMaxWidth(Double.MAX_VALUE);
         aiButton.setPrefHeight(40);
-        aiButton.setStyle(
-                "-fx-background-color:#BFE0FA;" +
-                "-fx-text-fill:#082E6B;" +
-                "-fx-font-weight:bold;" +
-                "-fx-font-size:14;" +
-                "-fx-background-radius:7;" +
-                "-fx-cursor:hand;"
-        );
+        aiButton.setStyle("-fx-background-color:#BFE0FA;-fx-text-fill:#082E6B;-fx-font-weight:bold;-fx-font-size:14;-fx-background-radius:7;-fx-cursor:hand;");
         aiButton.setOnAction(e -> openCreateEvent());
 
         aiCard.getChildren().addAll(aiIcon, aiTitle, aiText, aiButton);
@@ -354,24 +221,14 @@ sidebar.getChildren().addAll(
 
         HBox row1 = new HBox(15);
         row1.getChildren().addAll(
-                eventCard("▣", "Birthday Celebration",
-                        "Plan a memorable birthday with venue, catering, entertainment and more.",
-                        "Plan Birthday  →", this::openCreateEvent),
-
-                eventCard("▣", "Corporate Event",
-                        "Organize a professional seminar, conference, meeting or corporate gathering.",
-                        "Plan Corporate Event  →", this::openCreateEvent)
+                eventCard("▣", "Birthday Celebration", "Plan a memorable birthday with venue, catering, entertainment and more.", "Plan Birthday  →", this::openCreateEvent),
+                eventCard("▣", "Corporate Event", "Organize a professional seminar, conference, meeting or corporate gathering.", "Plan Corporate Event  →", this::openCreateEvent)
         );
 
         HBox row2 = new HBox(15);
         row2.getChildren().addAll(
-                eventCard("◇", "Educational Event",
-                        "Plan seminars, workshops, conferences, training sessions and educational programs.",
-                        "Plan Educational Event  →", this::openCreateEvent),
-
-                eventCard("♧", "Family Event",
-                        "Create memorable family gatherings, reunions, celebrations and special occasions.",
-                        "Plan Family Event  →", this::openCreateEvent)
+                eventCard("◇", "Educational Event", "Plan seminars, workshops, conferences, training sessions and educational programs.", "Plan Educational Event  →", this::openCreateEvent),
+                eventCard("♧", "Family Event", "Create memorable family gatherings, reunions, celebrations and special occasions.", "Plan Family Event  →", this::openCreateEvent)
         );
 
         content.getChildren().addAll(heading, topCards, stats, exploreHeading, row1, row2);
@@ -391,7 +248,35 @@ sidebar.getChildren().addAll(
     private void openCreateEvent() {
         CreateEventC createEventView = new CreateEventC(uid, idToken);
         if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(createEventView.getCreateEventScene());
+            LandingPage.landingPageStage.setScene(createEventView.getCreateEventScene(this::returnToDashboard));
+        }
+    }
+
+    private void openProfile() {
+        ProfilePageC profilePage = new ProfilePageC();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(profilePage.getProfileScene(this::returnToDashboard));
+        }
+    }
+
+    private void openSettings() {
+        SettingC settingPage = new SettingC();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(settingPage.getSettingScene(this::returnToDashboard));
+        }
+    }
+
+    private void openNotifications() {
+        Notification notificationPage = new Notification();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(notificationPage.getNotificationScene());
+        }
+    }
+
+    private void returnToDashboard() {
+        NewCustomerDashboard dash = new NewCustomerDashboard(uid, idToken);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(dash.getnewCustomerScene(null));
         }
     }
 

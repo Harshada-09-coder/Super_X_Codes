@@ -16,6 +16,8 @@ public class VendorProfile {
     private String gstNumber;
     private String availability;
     private String bio;
+    private String createdAt;
+    private String updatedAt;
 
     // Vendor Onboarding & State fields (Firestore)
     private boolean profileCompleted;
@@ -147,6 +149,22 @@ public class VendorProfile {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(String updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public boolean isProfileCompleted() {

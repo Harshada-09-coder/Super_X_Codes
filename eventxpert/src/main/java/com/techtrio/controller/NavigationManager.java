@@ -128,9 +128,7 @@ public class NavigationManager {
                 break;
 
             case "Profile":
-                stage.setScene(
-                        new ProfileA(
-                         currentAdminId).getprofileScene());
+                stage.setScene(new ProfileA(currentAdminId).getprofileScene());
                 break;
 
             case "Support":

@@ -1,7 +1,9 @@
 package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
+import com.techtrio.controller.OrganizerController;
 import com.techtrio.controller.SignUpResult;
+import com.techtrio.model.OrganizerProfile;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -310,29 +312,37 @@ public class OrganizerRegistration{
         btnRegister.setPrefHeight(44);
         btnRegister.setOnAction(e -> {
               handleRegistration();
-             SignUpResult result = controller.signUp(
-             txtFullName.getText().trim(),
-             txtEmail.getText().trim(),
-             txtPhone.getText().trim(),
-             txtPassword.getText(),
-             "organizer"
-            );
+            SignUpResult result = controller.signUp(
+        txtFullName.getText().trim(),
+        txtEmail.getText().trim(),
+        txtPhone.getText().trim(),
+        txtPassword.getText(),
+        "organizer"
+);
 
-    if (result != null) {
+if (result != null) {
+    String uid = result.getUid();
+    String idToken = result.getIdToken();
 
-        System.out.println("Registration successful");
-         InactiveOrgDash organizerDashboardO = new InactiveOrgDash();
-         Runnable callBackAction = new Runnable() {
-          public void run(){
-            backToOrganizerRegistration();
-          }
-        };
+    OrganizerProfile profile = new OrganizerProfile(
+            uid,
+            txtFullName.getText().trim(),
+            txtEmail.getText().trim(),
+            txtPhone.getText().trim(),
+            txtOrganizationName.getText().trim(),
+            cbBusinessType.getValue() != null ? cbBusinessType.getValue() : "Event Management Company",
+            txtAddress.getText().trim(),
+            txtGstNumber.getText().trim()
+    );
 
-        LandingPage.landingPageStage.setScene(organizerDashboardO.getinactiveOrganizerScene());
-     
-    } else {
-        System.out.println("Registration Failed");
-    }
+    OrganizerController organizerController = new OrganizerController();
+    organizerController.createOrganizerProfile(profile);
+
+    InactiveOrgDash inactiveDash = new InactiveOrgDash(uid, idToken);
+    LandingPage.landingPageStage.setScene(inactiveDash.getinactiveOrganizerScene());
+} else {
+    showStatusBanner("Registration failed. Please try again.", "#DC2626", "#FEE2E2");
+}
 
          });
        
