@@ -1,6 +1,7 @@
 package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
+import com.techtrio.controller.NavigationManager;
 import com.techtrio.controller.CustomerController;
 import com.techtrio.controller.CustomerState;
 import com.techtrio.controller.OrganizerController;

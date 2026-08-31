@@ -6,6 +6,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -23,6 +24,14 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import java.util.List;
+
+import com.techtrio.context.AdminContext;
+import com.techtrio.controller.AdminController;
+import com.techtrio.model.Event;
+import com.techtrio.model.ConflictResult;
+import com.techtrio.model.Conflict;
+import com.techtrio.model.Conflict;
 
 
 public class ConflictDetectionA{
@@ -33,6 +42,19 @@ public class ConflictDetectionA{
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6",LIGHT="#C2E0F4", BG="#F6F9FC";
 
     TableView<Conflict> table=new TableView<>();
+   
+   /* ObservableList<Conflict> data =
+        FXCollections.observableArrayList();
+        */
+
+private final AdminController adminController =
+        new AdminController();
+        private final ObservableList<Conflict> conflictData =
+        FXCollections.observableArrayList();
+        private Label totalConflictsValue;
+private Label criticalConflictsValue;
+private Label pendingResolutionValue;
+private Label resolvedValue;
     TextField search=new TextField();
 
     Label label(String text,int size,boolean bold){
@@ -149,23 +171,57 @@ s.setOnMouseClicked(e -> {
     /* ================= STAT CARD ================= */
 
     VBox stat(String title,String value,String sub){
-        VBox v=card();
-        v.setPrefHeight(120);
-        v.getChildren().addAll(
-                label(title,14,true),
-                label(value,34,true),
-                label(sub,13,false)
-        );
-        return v;
+
+    VBox v = card();
+
+    v.setPrefHeight(120);
+
+    Label valueLabel = label(value,34,true);
+
+    if (title.equals("TOTAL CONFLICTS")) {
+        totalConflictsValue = valueLabel;
     }
+
+    else if (title.equals("CRITICAL CONFLICTS")) {
+        criticalConflictsValue = valueLabel;
+    }
+
+    else if (title.equals("PENDING RESOLUTION")) {
+        pendingResolutionValue = valueLabel;
+    }
+
+    else if (title.equals("RESOLVED")) {
+        resolvedValue = valueLabel;
+    }
+
+    v.getChildren().addAll(
+            label(title,14,true),
+            valueLabel,
+            label(sub,13,false)
+    );
+
+    return v;
+}
 
     /* ================= TABLE ================= */
 
+
+
+    
+   
+
+
     void createTable(){
 
-        TableColumn<Conflict,String> c1=col("Conflict",Conflict::getConflict);
+        TableColumn<Conflict,String> c1 =
+        col("Conflict", Conflict::getType);
+
         TableColumn<Conflict,String> c2=col("Type",Conflict::getType);
-        TableColumn<Conflict,String> c3=col("Events",Conflict::getEvents);
+      TableColumn<Conflict,String> c3 =
+        col("Events", conflict ->
+                conflict.getEventId()
+                        + " / "
+                        + conflict.getConflictingEventId());
         TableColumn<Conflict,String> c4=col("Date",Conflict::getDate);
         TableColumn<Conflict,String> c5=col("Resource",Conflict::getResource);
         TableColumn<Conflict,String> c6=col("Severity",Conflict::getSeverity);
@@ -176,16 +232,38 @@ s.setOnMouseClicked(e -> {
         action.setCellFactory(c->new TableCell<>(){
 
             Button review=button("Review");
+{
+            review.setOnAction(e -> {
 
-            {
-                review.setOnAction(e -> {
+    Conflict selected =
+            getTableView()
+                    .getItems()
+                    .get(getIndex());
 
-                    Stage stage = (Stage) review.getScene().getWindow();
+    
+    if (selected == null ||
+    selected.getConflictId() == null ||
+    selected.getConflictId().isBlank()) {
 
-                    NavigationManager.navigate("Conflict Detection Review", stage);
+    return;
+}
+    AdminContext.setSelectedEventId(
+            selected.getEventId()
+    );
 
-    });
-            }
+    AdminContext.setSelectedConflictId(
+        selected.getConflictId()
+);
+
+    Stage stage =
+            (Stage) review.getScene().getWindow();
+
+    NavigationManager.navigate(
+            "Conflict Detection Review",
+            stage
+    );
+});
+}
 
             @Override
             protected void updateItem(String x,boolean empty){
@@ -195,10 +273,128 @@ s.setOnMouseClicked(e -> {
         });
 
         table.getColumns().addAll(c1,c2,c3,c4,c5,c6,c7,action);
-        table.setItems(data);
+        table.setItems(conflictData);
         table.setPrefHeight(300);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
+
+
+    private void loadConflicts() {
+
+    Thread thread = new Thread(() -> {
+
+        try {
+
+            List<Conflict> conflicts =
+                    adminController.getAllConflicts();
+
+            javafx.application.Platform.runLater(() -> {
+
+                conflictData.clear();
+
+                if (conflicts != null) {
+                    conflictData.addAll(conflicts);
+                }
+                  updateStatistics(conflicts);
+
+            });
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            javafx.application.Platform.runLater(() -> {
+
+                javafx.scene.control.Alert alert =
+                        new javafx.scene.control.Alert(
+                                javafx.scene.control.Alert.AlertType.ERROR
+                        );
+
+                alert.setTitle("Conflict Detection");
+                alert.setHeaderText("Unable to load conflicts");
+                alert.setContentText(
+                        "Could not load conflict data."
+                );
+
+                alert.showAndWait();
+            });
+        }
+
+    });
+
+    thread.setDaemon(true);
+    thread.start();
+}
+
+private void updateStatistics(
+        List<Conflict> conflicts) {
+
+    int total = 0;
+    int critical = 0;
+    int pending = 0;
+    int resolved = 0;
+
+    if (conflicts != null) {
+
+        total = conflicts.size();
+
+        for (Conflict conflict : conflicts) {
+
+            if (conflict == null) {
+                continue;
+            }
+
+            String severity =
+                    conflict.getSeverity();
+
+            String status =
+                    conflict.getStatus();
+
+            if (severity != null
+                    && severity.equalsIgnoreCase("Critical")) {
+
+                critical++;
+            }
+
+            if (status != null
+                    && status.equalsIgnoreCase("Resolved")) {
+
+                resolved++;
+
+            } else {
+
+                pending++;
+            }
+        }
+    }
+
+    if (totalConflictsValue != null) {
+        totalConflictsValue.setText(
+                String.valueOf(total)
+        );
+    }
+
+    if (criticalConflictsValue != null) {
+        criticalConflictsValue.setText(
+                String.valueOf(critical)
+        );
+    }
+
+    if (pendingResolutionValue != null) {
+        pendingResolutionValue.setText(
+                String.valueOf(pending)
+        );
+    }
+
+    if (resolvedValue != null) {
+        resolvedValue.setText(
+                String.valueOf(resolved)
+        );
+    }
+}
+
+
+
 
     TableColumn<Conflict,String> col(String title,
             java.util.function.Function<Conflict,String> f){
@@ -211,18 +407,40 @@ s.setOnMouseClicked(e -> {
     }
 
     /* ================= SEARCH ================= */
+   void searchData() {
 
-    void searchData(){
+    String q = search.getText()
+            .toLowerCase()
+            .trim();
 
-        String q=search.getText().toLowerCase().trim();
-
-        table.setItems(data.filtered(x->
-                q.isEmpty() ||
-                x.getConflict().toLowerCase().contains(q) ||
-                x.getType().toLowerCase().contains(q) ||
-                x.getResource().toLowerCase().contains(q)));
-    }
-
+    table.setItems(
+            conflictData.filtered(x ->
+                    q.isEmpty()
+                    ||
+                    (x.getType() != null
+                            && x.getType()
+                                    .toLowerCase()
+                                    .contains(q))
+                    ||
+                    (x.getResource() != null
+                            && x.getResource()
+                                    .toLowerCase()
+                                    .contains(q))
+                    ||
+                    (x.getEventId() != null
+                            && x.getEventId()
+                                    .toLowerCase()
+                                    .contains(q))
+                    ||
+                    (x.getConflictingEventId() != null
+                            && x.getConflictingEventId()
+                                    .toLowerCase()
+                                    .contains(q))
+            )
+    );
+}
+    
+/* 
     ObservableList<Conflict> data=FXCollections.observableArrayList(
         new Conflict("Organizer double booking","Organizer",
                 "Corporate Seminar\nCorporate Workshop",
@@ -240,8 +458,10 @@ s.setOnMouseClicked(e -> {
                 "College Seminar\nAnnual Business Meet",
                 "27 Aug 2026","10 AM - 12 PM","Medium","Open")
     );
+    */
 
     /* ================= MAIN ================= */
+    
 
    public Scene getconflictDetectionScene(){
 
@@ -295,7 +515,7 @@ s.setOnMouseClicked(e -> {
             type.setValue("All Types");
             severity.setValue("All Severity");
             status.setValue("All Status");
-            table.setItems(data);
+            table.setItems(conflictData);
         });
 
         HBox filters=new HBox(
@@ -317,7 +537,13 @@ s.setOnMouseClicked(e -> {
 
         heading2.getChildren().addAll(all,space);
 
+
+
+        
+
         createTable();
+
+        loadConflicts();
 
         HBox footer=new HBox();
        
@@ -353,15 +579,31 @@ s.setOnMouseClicked(e -> {
         return conflictDetectionScene;
     }
 
-    static class Conflict{
+   
 
-        String conflict,type,events,date,resource,severity,status;
+    /*  static class Conflict{
 
-        Conflict(String c,String t,String e,String d,
-                 String r,String s,String st){
-            conflict=c; type=t; events=e; date=d;
-            resource=r; severity=s; status=st;
-        }
+    String eventId;
+    String conflict,type,events,date,resource,severity,status;
+
+      Conflict(String id,
+            String c,
+            String t,
+            String e,
+            String d,
+            String r,
+            String s,
+            String st) {
+
+        eventId = id;
+        conflict = c;
+        type = t;
+        events = e;
+        date = d;
+        resource = r;
+        severity = s;
+        status = st;
+    }
 
         String getConflict(){return conflict;}
         String getType(){return type;}
@@ -370,7 +612,9 @@ s.setOnMouseClicked(e -> {
         String getResource(){return resource;}
         String getSeverity(){return severity;}
         String getStatus(){return status;}
+        String getEventId(){return eventId;}
     }
+        */
 
    
 }

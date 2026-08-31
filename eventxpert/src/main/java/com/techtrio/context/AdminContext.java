@@ -43,6 +43,16 @@ public class AdminContext {
         }
     }
 
+    private static String selectedConflictId;
+
+public static void setSelectedConflictId(String conflictId) {
+    selectedConflictId = conflictId;
+}
+
+public static String getSelectedConflictId() {
+    return selectedConflictId;
+}
+
     public static synchronized String getSelectedVendorId() {
         return selectedVendorId;
     }

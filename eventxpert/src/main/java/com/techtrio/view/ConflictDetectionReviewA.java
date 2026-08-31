@@ -10,12 +10,41 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import com.techtrio.controller.AdminController;
+import com.techtrio.context.AdminContext;
+import com.techtrio.model.Conflict;
+import com.techtrio.model.Event;
+import com.techtrio.model.Event;
 
   
 
 public class ConflictDetectionReviewA {
 
+private Label typeValueLabel;
+private Label severityValueLabel;
+private Label statusValueLabel;
+private Label detectedValueLabel;
+
+private Label resourceLabel;
+private Label resourceDetailsLabel;
+private Label conflictNoteLabel;
+private Label eventNameLabel;
+private Label conflictingEventNameLabel;
+
+
+
+
     private Scene conflictDetectionReviewScene;
+   
+    private Conflict selectedConflict;
+    private Event selectedEvent;
+    private VBox activityLog;
+
+
+private HBox eventsContainer;
+    private Event event;
+private Event conflictingEvent;
+private AdminController adminController = new AdminController();
 
     final String NAVY = "#002A60";
     final String BLUE = "#1976B8";
@@ -146,14 +175,39 @@ public class ConflictDetectionReviewA {
 
         VBox overview = card();
         overview.getChildren().add(sectionTitle("Conflict Overview"));
+        
+        typeValueLabel = new Label();
+severityValueLabel = new Label();
+statusValueLabel = new Label();
+detectedValueLabel = new Label();
 
-        HBox info = new HBox(35);
-        info.getChildren().addAll(
-            infoBox("TYPE", "Organizer\nDouble Booking"),
-            infoBox("SEVERITY", "⚠ Critical"),
-            infoBox("STATUS", "Open"),
-            infoBox("DETECTED", "Aug 14, 2026,\n10:20 AM")
-        );
+HBox info = new HBox(35);
+
+info.getChildren().addAll(
+    infoBox(
+        "TYPE",
+        "Loading...",
+        typeValueLabel
+    ),
+
+    infoBox(
+        "SEVERITY",
+        "Loading...",
+        severityValueLabel
+    ),
+
+    infoBox(
+        "STATUS",
+        "Loading...",
+        statusValueLabel
+    ),
+
+    infoBox(
+        "DETECTED",
+        "Loading...",
+        detectedValueLabel
+    )
+);
 
         VBox resource = new VBox(7);
         resource.setPadding(new Insets(14));
@@ -164,27 +218,28 @@ public class ConflictDetectionReviewA {
             "-fx-background-radius:8;"
         );
 
-        Label rt = new Label("♟  Conflicting Resource: Elite Event Planners");
-        rt.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-        rt.setTextFill(Color.web("#C62828"));
+       resourceLabel = new Label(
+        "♟  Conflicting Resource: Loading..."
+);
+        resourceLabel.setTextFill(Color.web("#C62828"));
 
-        Label rd = new Label(
-            "Type: Organizer   |   Availability: Already assigned   |   Workload: 2 Active Events"
-        );
-        rd.setFont(Font.font("Arial", 14));
+       resourceDetailsLabel = new Label(
+        "Loading resource details..."
+);
+        resourceDetailsLabel.setFont(Font.font("Arial", 14));
 
-        Label note = new Label(
-            "Conflict Note: Elite Event Planners cannot manage two major corporate events simultaneously in different cities."
-        );
-        note.setWrapText(true);
-        note.setPadding(new Insets(10));
-        note.setStyle(
+       conflictNoteLabel = new Label(
+        "Conflict Note: Loading..."
+);
+        conflictNoteLabel.setWrapText(true);
+        conflictNoteLabel.setPadding(new Insets(10));
+        conflictNoteLabel.setStyle(
             "-fx-border-color:#FFCCCC;" +
             "-fx-background-color:white;" +
             "-fx-border-radius:6;"
         );
 
-        resource.getChildren().addAll(rt, rd, note);
+        resource.getChildren().addAll(resourceDetailsLabel, resourceLabel, conflictNoteLabel);
         overview.getChildren().addAll(info, resource);
 
         /* Suggested Resolution */
@@ -234,31 +289,13 @@ public class ConflictDetectionReviewA {
 
         Label involved = sectionTitle("Involved Events");
 
-        HBox events = new HBox(18);
-        events.setMaxWidth(Double.MAX_VALUE);
+        eventsContainer = new HBox(18);
+eventsContainer.setMaxWidth(Double.MAX_VALUE);
 
-        VBox event1 = eventCard(
-            "Corporate\nSeminar",
-            "18 Aug 2026",
-            "10:00 AM – 02:00 PM",
-            "Pune",
-            "Incubators Pvt."
-        );
 
-        VBox event2 = eventCard(
-            "Corporate\nWorkshop",
-            "18 Aug 2026",
-            "10:00 AM – 01:00 PM",
-            "Mumbai",
-            "ABC Corporation"
-        );
-
-        HBox.setHgrow(event1, Priority.ALWAYS);
-        HBox.setHgrow(event2, Priority.ALWAYS);
-
-        events.getChildren().addAll(event1, event2);
-        events.setCursor(javafx.scene.Cursor.HAND);
-
+eventsContainer.setCursor(
+    javafx.scene.Cursor.HAND
+);
 
         VBox impact = card();
         impact.getChildren().add(sectionTitle("⌁  Potential Impact"));
@@ -271,19 +308,9 @@ public class ConflictDetectionReviewA {
 
         /* Activity Log */
 
-        VBox activity = card();
-        activity.getChildren().add(sectionTitle("Activity Log"));
-
-        activity.getChildren().addAll(
-            activityItem("Just Now", "Review Started",
-                "Admin User opened conflict details."),
-            activityItem("Aug 14, 2026, 10:20 AM",
-                "Conflict Detected",
-                "System identified schedule and location overlap during event creation."),
-            activityItem("Aug 14, 2026, 10:35 AM",
-                "Resolution Pending",
-                "Waiting for admin action.")
-        );
+        activityLog = card();
+        activityLog.getChildren();
+       // activity.getChildren().add(sectionTitle("Activity Log"));
 
         GridPane lowerGrid = new GridPane();
         lowerGrid.setHgap(22);
@@ -297,7 +324,7 @@ public class ConflictDetectionReviewA {
 
         lowerGrid.getColumnConstraints().addAll(lc1, lc2);
 
-        lowerGrid.add(events, 0, 0);
+         lowerGrid.add(eventsContainer, 0, 0);
         lowerGrid.add(impact, 1, 0);
 
         /* Take Action */
@@ -343,12 +370,70 @@ public class ConflictDetectionReviewA {
             "-fx-font-size:14;"
         );
 
+        backBtn.setOnAction(e -> {
+
+    Stage stage =
+            (Stage) backBtn.getScene().getWindow();
+
+    NavigationManager.navigate(
+            "Conflict Detection",
+            stage
+    );
+});
+
         resolveBtn.setStyle(
             "-fx-background-color:" + NAVY + ";" +
             "-fx-text-fill:white;" +
             "-fx-background-radius:6;" +
             "-fx-font-size:14;"
         );
+        resolveBtn.setOnAction(e -> {
+
+    String conflictId =
+            AdminContext.getSelectedConflictId();
+
+    if (conflictId == null
+            || conflictId.isBlank()) {
+
+        System.out.println(
+                "No conflict selected."
+        );
+
+        return;
+    }
+
+    String resolutionNotes =
+            notes.getText();
+
+    boolean success =
+            adminController.resolveConflict(
+                    conflictId,
+                    resolutionNotes
+            );
+
+    if (success) {
+
+    System.out.println(
+            "Conflict resolved successfully."
+    );
+
+    javafx.application.Platform.runLater(() -> {
+
+        statusValueLabel.setText("Resolved");
+
+        notes.clear();
+
+    });
+
+} else {
+
+    System.out.println(
+            "Failed to resolve conflict."
+    );
+}
+});
+
+        
 
         buttons.getChildren().addAll(backBtn, resolveBtn);
 
@@ -372,7 +457,7 @@ public class ConflictDetectionReviewA {
         finalGrid.getColumnConstraints().addAll(fc1, fc2);
 
         finalGrid.add(action, 0, 0);
-        finalGrid.add(activity, 1, 0);
+        finalGrid.add(activityLog, 1, 0);
 
         content.getChildren().addAll(
             backRow,
@@ -394,9 +479,13 @@ public class ConflictDetectionReviewA {
         root.setLeft(sidebar);
         root.setCenter(scroll);
 
+        loadConflict();
+
         Scene scene = new Scene(root, 1550, 750);
         conflictDetectionReviewScene = scene;
         return conflictDetectionReviewScene;
+
+        
 
        
     }
@@ -468,32 +557,37 @@ public class ConflictDetectionReviewA {
 
         return l;
     }
+private VBox infoBox(
+        String title,
+        String value,
+        Label valueLabel) {
 
-    private VBox infoBox(String title, String value) {
+    VBox v = new VBox(5);
 
-        VBox v = new VBox(5);
+    Label t = new Label(title);
+    t.setFont(Font.font("Arial", 12));
 
-        Label t = new Label(title);
-        t.setFont(Font.font("Arial", 12));
+    valueLabel.setText(value);
+    valueLabel.setFont(
+            Font.font("Arial", FontWeight.BOLD, 14)
+    );
+    valueLabel.setWrapText(true);
 
-        Label val = new Label(value);
-        val.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        val.setWrapText(true);
+    v.getChildren().addAll(t, valueLabel);
 
-        v.getChildren().addAll(t, val);
-
-        return v;
-    }
+    return v;
+}
 
     /* ================= EVENT CARD ================= */
 
-    private VBox eventCard(
-        String name,
-        String date,
-        String time,
-        String location,
-        String customer
-    ) {
+   private VBox eventCard(
+    String name,
+    String date,
+    String time,
+    String location,
+    String organizer,
+    String eventType
+){
 
         VBox box = new VBox(13);
         box.setPadding(new Insets(18));
@@ -514,7 +608,7 @@ public class ConflictDetectionReviewA {
         title.setFont(Font.font("Arial", FontWeight.NORMAL, 20));
         title.setTextFill(Color.web(NAVY));
 
-        Label type = new Label("Corporate");
+        Label type = new Label(eventType);
         type.setPadding(new Insets(5, 8, 5, 8));
         type.setStyle(
             "-fx-background-color:#E8EDF1;" +
@@ -529,7 +623,9 @@ public class ConflictDetectionReviewA {
         Label d = new Label("▣  " + date);
         Label t = new Label("◷  " + time);
         Label loc = new Label("⌖  " + location);
-        Label cus = new Label("▦  " + customer);
+Label cus = new Label(
+    "♙  " + organizer
+);
 
         t.setTextFill(Color.RED);
 
@@ -583,6 +679,326 @@ public class ConflictDetectionReviewA {
 
         return v;
     } 
+
+    private void loadConflict() {
+
+    String conflictId =
+            AdminContext.getSelectedConflictId();
+
+    if (conflictId == null || conflictId.isBlank()) {
+
+        System.out.println(
+                "No conflict selected for review."
+        );
+
+        return;
+    }
+
+    Thread thread = new Thread(() -> {
+
+        try {
+
+            Conflict conflict =
+                    adminController.getConflictById(
+                            conflictId
+                    );
+
+                    if (conflict == null) {
+    javafx.application.Platform.runLater(() -> {
+        System.out.println(
+                "Conflict not found: " + conflictId
+        );
+    });
+    return;
+}
+
+Event loadedEvent =
+        adminController.getEventById(
+                conflict.getEventId()
+        );
+
+Event loadedConflictingEvent =
+        adminController.getEventById(
+                conflict.getConflictingEventId()
+        );
+
+javafx.application.Platform.runLater(() -> {
+
+    selectedConflict = conflict;
+
+    event = loadedEvent;
+    conflictingEvent = loadedConflictingEvent;
+
+    populateConflictData(conflict);
+
+    populateEventData(
+            event,
+            conflictingEvent
+    );
+
+    populateActivityLog(conflict);
+});
+
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+
+    });
+
+    thread.setDaemon(true);
+    thread.start();
+}
+
+private void populateConflictData(
+        Conflict conflict) {
+
+    if (conflict == null) {
+        return;
+    }
+
+    System.out.println(
+            "Loaded Conflict: "
+            + conflict.getConflictId()
+    );
+
+    System.out.println(
+            "Type: "
+            + conflict.getType()
+    );
+
+    System.out.println(
+            "Event ID: "
+            + conflict.getEventId()
+    );
+
+    System.out.println(
+            "Conflicting Event ID: "
+            + conflict.getConflictingEventId()
+    );
+
+    System.out.println(
+            "Date: "
+            + conflict.getDate()
+    );
+
+    System.out.println(
+            "Resource: "
+            + conflict.getResource()
+    );
+
+    System.out.println(
+            "Severity: "
+            + conflict.getSeverity()
+    );
+
+    System.out.println(
+            "Status: "
+            + conflict.getStatus()
+    );
+
+    typeValueLabel.setText(
+            safeValue(conflict.getType())
+    );
+
+    severityValueLabel.setText(
+            safeValue(conflict.getSeverity())
+    );
+
+    statusValueLabel.setText(
+            safeValue(conflict.getStatus())
+    );
+
+    detectedValueLabel.setText(
+            safeValue(conflict.getDate())
+    );
+
+    resourceLabel.setText(
+        "♟  Conflicting Resource: "
+        + safeValue(conflict.getResource())
+);
+
+resourceDetailsLabel.setText(
+        "Type: "
+        + safeValue(conflict.getType())
+        + "   |   Status: "
+        + safeValue(conflict.getStatus())
+);
+conflictNoteLabel.setText(
+        "Conflict Note: "
+        + safeValue(conflict.getDescription())
+);
+
+// ===== UPDATE REVIEW UI =====
+
+typeValueLabel.setText(
+        safeValue(conflict.getType())
+);
+
+severityValueLabel.setText(
+        safeValue(conflict.getSeverity())
+);
+
+statusValueLabel.setText(
+        safeValue(conflict.getStatus())
+);
+
+detectedValueLabel.setText(
+        safeValue(conflict.getDate())
+);
+
+
+
+
+}
+
+private void populateEventCards(
+        Event event,
+        Event conflictingEvent) {
+
+    if (eventsContainer == null) {
+        return;
+    }
+
+    eventsContainer.getChildren().clear();
+
+    if (event != null) {
+
+        VBox event1 = eventCard(
+                safeValue(event.getEventName()),
+                safeValue(event.getEventDate()),
+                safeValue(event.getTime()),
+                safeValue(event.getCity()),
+                safeValue(event.getOrganizerName()),
+                safeValue(event.getEventType())
+        );
+
+        HBox.setHgrow(
+                event1,
+                Priority.ALWAYS
+        );
+
+        eventsContainer.getChildren().add(
+                event1
+        );
+    }
+
+    if (conflictingEvent != null) {
+
+        VBox event2 = eventCard(
+                safeValue(
+                        conflictingEvent.getEventName()
+                ),
+                safeValue(
+                        conflictingEvent.getEventDate()
+                ),
+                safeValue(
+                        conflictingEvent.getTime()
+                ),
+                safeValue(
+                        conflictingEvent.getCity()
+                ),
+                safeValue(
+                        conflictingEvent.getOrganizerName()
+                ),
+                safeValue(
+                        conflictingEvent.getEventType()
+                )
+        );
+
+        HBox.setHgrow(
+                event2,
+                Priority.ALWAYS
+        );
+
+        eventsContainer.getChildren().add(
+                event2
+        );
+    }
+}
+
+private void populateEventData(
+        Event event,
+        Event conflictingEvent) {
+
+    if (event != null) {
+
+        System.out.println(
+                "Event loaded: "
+                + event
+        );
+    }
+
+    if (conflictingEvent != null) {
+
+        System.out.println(
+                "Conflicting Event loaded: "
+                + conflictingEvent
+        );
+    }
+}
+
+private String safeValue(String value) {
+
+    if (value == null || value.isBlank()) {
+        return "N/A";
+    }
+
+    return value;
+
+
+}
+
+private void populateActivityLog(
+        Conflict conflict) {
+
+    if (conflict == null) {
+        return;
+    }
+
+    activityLog.getChildren().clear();
+    activityLog.getChildren().add(
+        activityItem(
+            "Detected",
+            "Conflict Detected",
+            "System detected this conflict."
+        )
+    );
+
+    if ("Resolved".equalsIgnoreCase(
+            conflict.getStatus())) {
+
+        String notes =
+                conflict.getResolutionNotes();
+
+        if (notes == null ||
+                notes.isBlank()) {
+
+            notes = "Conflict resolved by admin.";
+        }
+
+        activityLog.getChildren().add(
+            activityItem(
+                "Resolved",
+                "Conflict Resolved",
+                notes
+            )
+        );
+
+    } else {
+
+        activityLog.getChildren().add(
+            activityItem(
+                "Pending",
+                "Resolution Pending",
+                "Waiting for admin action."
+            )
+        );
+    }
+}
+
+
 }
 
     

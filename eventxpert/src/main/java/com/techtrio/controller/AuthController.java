@@ -163,7 +163,61 @@ public class AuthController {
         return null;
     }
 
-    public String getUserRole(String uid, String idToken) {
+
+
+public boolean changePassword(
+        String idToken,
+        String newPassword) {
+
+    try {
+
+        JSONObject payload = new JSONObject()
+                .put("idToken", idToken)
+                .put("password", newPassword)
+                .put("returnSecureToken", true);
+
+        HttpClient client = HttpClient.newHttpClient();
+
+        URI uri = URI.create(
+                "https://identitytoolkit.googleapis.com/v1/accounts:update?key="
+                        + API_KEY
+        );
+
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(uri)
+                        .header("Content-Type", "application/json")
+                        .POST(
+                                HttpRequest.BodyPublishers
+                                        .ofString(payload.toString())
+                        )
+                        .build();
+
+        HttpResponse<String> response =
+                client.send(
+                        request,
+                        HttpResponse.BodyHandlers.ofString()
+                );
+
+        System.out.println(
+                "Password update status: "
+                        + response.statusCode()
+        );
+
+        System.out.println(response.body());
+
+        return response.statusCode() == 200;
+
+    } catch (Exception e) {
+
+        e.printStackTrace();
+        return false;
+    }
+}
+
+
+
+public String getUserRole(String uid, String idToken) {
         try {
             String projectId = "eventxpert-6f453";
             String[] collections = {"Admin", "Customers", "Organizers", "Vendors"};
@@ -203,3 +257,5 @@ public class AuthController {
         return null;
     }
 }
+
+

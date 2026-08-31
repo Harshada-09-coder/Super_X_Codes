@@ -2,6 +2,7 @@ package com.techtrio.view;
 
 import java.util.List;
 import java.util.Optional;
+import com.techtrio.model.ConflictResult;
 
 import com.techtrio.context.AdminContext;
 import com.techtrio.controller.AdminController;
@@ -241,7 +242,34 @@ public class EventRequesReviewA {
             });
         });
 
-        VBox rb = new VBox(7, lbl("Request Status", 12, true), statusCombo, lbl("Review Notes (Internal)", 12, true), notesArea, assign, reject);
+        Button checkConflict = btn("🔍 Check Conflict", true);
+        checkConflict.setOnAction(
+        e -> checkEventConflict()
+);
+
+     
+
+        Button assignButton = btn("Assign Organizer", true);
+        assign.setOnAction(e -> handleAssignOrganizerModal());
+
+        Button approve =
+        btn("Approve Event", true);
+
+approve.setOnAction(
+        e -> handleApproveEvent()
+);
+
+        VBox rb = new VBox(
+        7,
+        lbl("Request Status", 12, true),
+        statusCombo,
+        lbl("Review Notes (Internal)", 12, true),
+        notesArea,
+        checkConflict,
+        approve,
+        assignButton,
+        reject
+);
         rb.setPadding(new Insets(0, 20, 15, 20));
         reviewCard.getChildren().add(rb);
         reviewCard.setStyle("-fx-background-color:white;-fx-border-color:#CBD5E1;-fx-border-radius:9;-fx-background-radius:9;");
@@ -360,6 +388,84 @@ public class EventRequesReviewA {
         t.start();
     }
 
+    private void checkEventConflict() {
+
+    String selectedEvtId = AdminContext.getSelectedEventId();
+
+    if (selectedEvtId == null || selectedEvtId.isBlank()) {
+
+        Alert alert = new Alert(
+                Alert.AlertType.WARNING,
+                "No event selected for conflict checking."
+        );
+
+        alert.setTitle("Conflict Detection");
+        alert.showAndWait();
+
+        return;
+    }
+
+    AdminController controller = new AdminController();
+
+    Event event = controller.getEventById(selectedEvtId);
+
+    if (event == null) {
+
+        Alert alert = new Alert(
+                Alert.AlertType.ERROR,
+                "Event details could not be loaded."
+        );
+
+        alert.setTitle("Conflict Detection");
+        alert.showAndWait();
+
+        return;
+    }
+
+    /*
+     * Conflict Detection
+     *
+     * Event:
+     * - Venue
+     * - Date
+     * - Time
+     */
+
+
+    ConflictResult result = controller.checkEventConflict(event);
+
+boolean conflict = result.isConflict();
+
+    if (conflict) {
+
+        Alert alert = new Alert(
+                Alert.AlertType.WARNING,
+                "⚠ CONFLICT DETECTED!\n\n"
+                + "Another event is already scheduled "
+                + "at the same venue/date/time."
+        );
+
+        alert.setTitle("Conflict Detection");
+        alert.setHeaderText("Event Scheduling Conflict");
+
+        alert.showAndWait();
+
+    } else {
+
+        Alert alert = new Alert(
+                Alert.AlertType.INFORMATION,
+                "✅ No Conflict Found!\n\n"
+                + "This event can be scheduled without "
+                + "a detected venue/time conflict."
+        );
+
+        alert.setTitle("Conflict Detection");
+        alert.setHeaderText("No Conflict");
+
+        alert.showAndWait();
+    }
+}
+
     private VBox summaryItem(String t, Label valLabel) {
         Label a = lbl(t, 11, true);
         a.setTextFill(Color.web("#596273"));
@@ -369,4 +475,106 @@ public class EventRequesReviewA {
         HBox.setHgrow(x, Priority.ALWAYS);
         return x;
     }
+
+    private void handleApproveEvent() {
+
+    String selectedEvtId =
+            AdminContext.getSelectedEventId();
+
+    if (selectedEvtId == null ||
+        selectedEvtId.isBlank()) {
+
+        Alert alert = new Alert(
+                Alert.AlertType.WARNING,
+                "No event selected."
+        );
+
+        alert.setTitle("Approve Event");
+        alert.showAndWait();
+
+        return;
+    }
+
+    AdminController controller =
+            new AdminController();
+
+    Event event =
+            controller.getEventById(selectedEvtId);
+
+    if (event == null) {
+
+        Alert alert = new Alert(
+                Alert.AlertType.ERROR,
+                "Event details could not be loaded."
+        );
+
+        alert.setTitle("Approve Event");
+        alert.showAndWait();
+
+        return;
+    }
+
+    // =====================================
+    // CHECK CONFLICT BEFORE APPROVAL
+    // =====================================
+
+    ConflictResult result =
+            controller.checkEventConflict(event);
+
+    if (result != null &&
+        result.isConflict()) {
+
+        Alert alert = new Alert(
+                Alert.AlertType.WARNING
+        );
+
+        alert.setTitle("Conflict Detected");
+
+        alert.setHeaderText(
+                "⚠ Event cannot be approved"
+        );
+
+        alert.setContentText(
+                "Another event already exists with "
+                + "the same venue, date and overlapping time."
+        );
+
+        alert.showAndWait();
+
+        return;
+    }
+
+    // =====================================
+    // NO CONFLICT → APPROVE EVENT
+    // =====================================
+
+    boolean updated =
+            controller.updateEventStatus(
+                    selectedEvtId,
+                    "APPROVED"
+            );
+
+    if (updated) {
+
+        Alert alert = new Alert(
+                Alert.AlertType.INFORMATION,
+                "Event approved successfully."
+        );
+
+        alert.setTitle("Event Approval");
+        alert.showAndWait();
+
+    } else {
+
+        Alert alert = new Alert(
+                Alert.AlertType.ERROR,
+                "Failed to approve event."
+        );
+
+        alert.setTitle("Event Approval");
+        alert.showAndWait();
+    }
+}
+
+
 }

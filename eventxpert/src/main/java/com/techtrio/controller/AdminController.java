@@ -12,14 +12,60 @@ import com.techtrio.services.CustomerProfileService;
 import com.techtrio.services.EventService;
 import com.techtrio.services.OrganizerProfileService;
 import com.techtrio.services.VendorProfileService;
+import com.techtrio.model.ConflictResult;
+import com.techtrio.model.Event;
+import com.techtrio.services.ConflictDetectionService;
+import com.techtrio.services.ConflictService;
+import java.util.List;
+import com.techtrio.services.ConflictDetectionService;
+import com.techtrio.model.Conflict;
 
 public class AdminController {
 
     private final AdminProfileService service = new AdminProfileService();
+   
     private final CustomerProfileService customerService = new CustomerProfileService();
     private final EventService eventService = new EventService();
     private final OrganizerProfileService organizerService = new OrganizerProfileService();
     private final VendorProfileService vendorService = new VendorProfileService();
+    
+
+    private final ConflictDetectionService conflictDetectionService =
+        new ConflictDetectionService();
+
+private final ConflictService conflictService =
+        new ConflictService();
+
+   public ConflictResult checkEventConflict(Event event) {
+
+    return conflictDetectionService.checkAllConflicts(event);
+}
+public List<Conflict> getAllConflicts() {
+    return conflictService.getAllConflicts();
+}
+
+public Conflict getConflictById(String conflictId) {
+    return conflictService.getConflictById(conflictId);
+}
+
+public void updateConflict(Conflict conflict) {
+    conflictService.updateConflict(conflict);
+}
+
+public void updateConflictStatus(
+        String conflictId,
+        String status) {
+
+     conflictService.updateStatus(
+            conflictId,
+            status
+    );
+}
+
+public void deleteConflict(String conflictId) {
+    conflictService.deleteConflict(conflictId);
+}
+
 
     // CREATE
     public boolean createAdminProfile(AdminProfile admin) {
@@ -53,8 +99,7 @@ public class AdminController {
         return service.deleteAdminProfile(adminId);
     }
 
-    public boolean updateTwoFactorStatus(
-            String adminId,
+    public boolean updateTwoFactorStatus( String adminId,
             boolean enabled) {
 
         return service.updateTwoFactorStatus(
@@ -118,4 +163,14 @@ public class AdminController {
     public boolean updateEventStatus(String eventId, String status) {
         return eventService.updateEventStatus(eventId, status);
     }
+
+    public boolean resolveConflict(
+        String conflictId,
+        String resolutionNotes) {
+
+    return conflictService.resolveConflict(
+            conflictId,
+            resolutionNotes
+    );
+}
 }

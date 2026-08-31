@@ -24,7 +24,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class CustomerA {
-
     private Scene customerScene;
 
     final String PRIMARY = "#002A60", SECONDARY = "#8CAFC6", LIGHT = "#C2E0F4", BG = "#F6F9FC";
@@ -173,8 +172,7 @@ public class CustomerA {
                         String registeredText = cp.getCreatedAt() != null ? cp.getCreatedAt().substring(0, Math.min(10, cp.getCreatedAt().length())) : "Registered";
                         String statusText = cp.getOnboardingStatus() != null ? cp.getOnboardingStatus() : "Active";
 
-                        data.add(new CustomerData(
-                                cp.getCustomerId(),
+                        data.add(new CustomerData(cp.getCustomerId(),
                                 cp.getName() != null && !cp.getName().isBlank() ? cp.getName() : "Customer",
                                 cp.getEmail() != null ? cp.getEmail() : "N/A",
                                 cp.getMobileNo() != null ? cp.getMobileNo() : "N/A",
