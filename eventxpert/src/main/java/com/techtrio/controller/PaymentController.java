@@ -73,6 +73,10 @@ public class PaymentController {
     public List<Payment> getAllPayments() {
         return paymentService.getAllPayments();
     }
+
+    public double getTotalPlatformRevenue() {
+    return paymentService.getTotalPlatformRevenue();
+}
 }
     
 

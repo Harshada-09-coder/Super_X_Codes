@@ -158,4 +158,13 @@ public class PaymentService {
         }
         return list;
     }
+
+     public double getTotalPlatformRevenue() {
+        double total = 0.0;
+        List<Payment> payments = getAllPayments();
+        for (Payment p : payments) {
+            total += p.getPlatformFee();
+        }
+        return total;
+    }
 }

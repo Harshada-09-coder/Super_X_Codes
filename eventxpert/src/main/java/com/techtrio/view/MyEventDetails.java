@@ -15,6 +15,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Stage;
 
 public class MyEventDetails {
 
@@ -220,12 +221,17 @@ public class MyEventDetails {
         Region titleSpacer = new Region();
         HBox.setHgrow(titleSpacer, Priority.ALWAYS);
 
+        // Status Badge Styling
         String badgeBg = PLANNING_BG;
         String badgeTxt = ACCENT_BLUE;
-        if ("COMPLETED".equals(status)) {
+        if ("COMPLETED".equals(status) || "PAID".equals(status) || "CONFIRMED".equals(status)) {
             badgeBg = "#DCFCE7"; badgeTxt = "#16A34A";
         } else if ("UPCOMING".equals(status)) {
             badgeBg = "#EEF2FF"; badgeTxt = "#4F46E5";
+        } else if ("APPROVED".equals(status)) {
+            badgeBg = "#DBEAFE"; badgeTxt = "#1E40AF";
+        } else if ("REJECTED".equals(status)) {
+            badgeBg = "#FEE2E2"; badgeTxt = "#991B1B";
         } else if ("PENDING".equals(status)) {
             badgeBg = "#FEF3C7"; badgeTxt = "#D97706";
         }
@@ -237,9 +243,32 @@ public class MyEventDetails {
         backBtn.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: " + CARD_BORDER + "; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + "; -fx-padding: 6 14; -fx-cursor: hand;");
         backBtn.setOnAction(e -> navigateBack());
 
-        HBox titleRight = new HBox(12, planningBadge, backBtn);
+        HBox titleRight = new HBox(12);
         titleRight.setAlignment(Pos.CENTER);
+        titleRight.getChildren().add(planningBadge);
 
+        // 💳 PAY NOW BUTTON - ONLY FOR APPROVED EVENTS
+        if ("APPROVED".equalsIgnoreCase(status)) {
+            Button payNowBtn = new Button("💳 Pay Now");
+            payNowBtn.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 6 14; -fx-background-radius: 8; -fx-cursor: hand;");
+            
+            payNowBtn.setOnAction(e -> {
+                Stage stage = (Stage) payNowBtn.getScene().getWindow();
+                PaymentView paymentView = new PaymentView();
+                
+                // Open Payment Window
+                paymentView.openPaymentWindow(stage, event, 2500.0, () -> {
+                    // Success Callback: Status PAID करा आणि Pay बटण काढा
+                    if (event != null) event.setStatus("PAID");
+                    planningBadge.setText("●  PAID & CONFIRMED");
+                    planningBadge.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 6 12; -fx-background-radius: 20;");
+                    titleRight.getChildren().remove(payNowBtn);
+                });
+            });
+            titleRight.getChildren().add(payNowBtn);
+        }
+
+        titleRight.getChildren().add(backBtn);
         titleBar.getChildren().addAll(titleLeft, titleSpacer, titleRight);
         body.getChildren().add(titleBar);
 
@@ -284,7 +313,6 @@ public class MyEventDetails {
         Task<Map<String, String>> task = new Task<>() {
             @Override
             protected Map<String, String> call() {
-                // 🎯 CustomerEventController चा वापर
                 CustomerEventController controller = new CustomerEventController();
                 String eventId = (event != null) ? event.getEventId() : null;
                 return controller.getOrganizerDetailsForEvent(eventId);
@@ -383,7 +411,7 @@ public class MyEventDetails {
         String percentStr = "65%";
         int activeStep = 5;
 
-        if ("COMPLETED".equals(status)) {
+        if ("COMPLETED".equals(status) || "PAID".equals(status) || "CONFIRMED".equals(status)) {
             progressVal = 1.0; percentStr = "100%"; activeStep = 6;
         } else if ("UPCOMING".equals(status)) {
             progressVal = 0.85; percentStr = "85%"; activeStep = 5;

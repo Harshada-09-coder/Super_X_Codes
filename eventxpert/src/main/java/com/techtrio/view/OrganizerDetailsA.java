@@ -1,25 +1,46 @@
 package com.techtrio.view;
 
-import com.techtrio.controller.NavigationManager;
+import java.util.List;
 
-import javafx.application.Application;
+import com.techtrio.controller.NavigationManager;
+import com.techtrio.model.Event;
+import com.techtrio.model.OrganizerProfile;
+import com.techtrio.services.EventService;
+import com.techtrio.services.OrganizerProfileService;
+
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
-import javafx.geometry.*;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
 
-public class OrganizerDetailsA  {
+public class OrganizerDetailsA {
 
     private Scene organizerDetailsScene;
+
+    // Static holder for selected organizer
+    public static OrganizerProfile selectedOrganizer;
+
+    // Services
+    private final EventService eventService = new EventService();
+    private final OrganizerProfileService organizerService = new OrganizerProfileService();
 
     final String PRIMARY="#002A60", SECONDARY="#8CAFC6",
                  LIGHT="#C2E0F4", BG="#F6F9FC";
 
     Label label(String t,int s,boolean b){
-        Label l=new Label(t);
+        Label l=new Label(t != null ? t : "");
         l.setFont(Font.font("Arial",s));
         l.setTextFill(Color.web(PRIMARY));
         if(b) l.setStyle("-fx-font-weight:bold;");
@@ -104,12 +125,40 @@ public class OrganizerDetailsA  {
 
     /* ================= ORGANIZER CARD ================= */
 
-    VBox organizerCard(){
+    VBox organizerCard(OrganizerProfile org){
         VBox v=card();
         v.setPrefWidth(320);
         v.setAlignment(Pos.CENTER);
 
-        Label avatar=label("EE",30,true);
+        String orgName = "Elite Event Planners";
+        String orgId = "ID: ORG-001";
+        String statusText = "● Active";
+        String regDate = "Aug 12, 2026";
+        String initials = "EE";
+
+        if(org != null){
+            orgName = (org.getOrganizationName() != null && !org.getOrganizationName().isBlank())
+                    ? org.getOrganizationName()
+                    : (org.getName() != null ? org.getName() : "Organizer");
+
+            orgId = "ID: " + (org.getOrganizerId() != null ? org.getOrganizerId() : "ORG-001");
+            statusText = (org.getOnboardingStatus() != null) ? "● " + org.getOnboardingStatus() : "● Active";
+            
+            if(org.getCreatedAt() != null && org.getCreatedAt().length() >= 10){
+                regDate = org.getCreatedAt().substring(0,10);
+            }
+
+            String[] parts = orgName.trim().split("\\s+");
+            if(parts.length >= 2){
+                initials = ("" + parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+            } else if(orgName.length() >= 2){
+                initials = orgName.substring(0,2).toUpperCase();
+            } else if(!orgName.isEmpty()){
+                initials = orgName.toUpperCase();
+            }
+        }
+
+        Label avatar=label(initials,30,true);
         avatar.setTextFill(Color.WHITE);
         avatar.setAlignment(Pos.CENTER);
         avatar.setPrefSize(95,95);
@@ -117,18 +166,18 @@ public class OrganizerDetailsA  {
                         ";-fx-background-radius:60;"+
                         "-fx-font-weight:bold;");
 
-        Label name=label("Elite Event Planners",20,true);
-        Label id=label("ID: ORG-001",14,false);
+        Label name=label(orgName,20,true);
+        Label id=label(orgId,14,false);
 
         Separator line=new Separator();
 
-        Label status=new Label("● Active");
+        Label status=new Label(statusText);
         status.setTextFill(Color.web(PRIMARY));
         status.setStyle("-fx-background-color:"+LIGHT+
                         ";-fx-background-radius:20;-fx-font-weight:bold;");
         status.setPadding(new Insets(7,16,7,16));
 
-        Label registered=label("Registered: Aug 12, 2026",14,false);
+        Label registered=label("Registered: " + regDate,14,false);
 
         v.getChildren().addAll(
             avatar,name,id,line,status,registered
@@ -139,17 +188,20 @@ public class OrganizerDetailsA  {
 
     /* ================= CONTACT ================= */
 
-    VBox contactCard(){
+    VBox contactCard(OrganizerProfile org){
         VBox v=card();
         v.setPrefWidth(320);
+
+        String email = (org != null && org.getEmail() != null) ? org.getEmail() : "info@eventxpert.com";
+        String mobile = (org != null && org.getMobileNo() != null) ? org.getMobileNo() : "+91 98765 43210";
+        String address = (org != null && org.getAddress() != null) ? org.getAddress() : "Pune, Maharashtra";
 
         v.getChildren().addAll(
             label("Contact Information",20,true),
             new Separator(),
-            label("✉  Email\n    elite@example.com",14,false),
-            label("☎  Mobile\n    +91 98765 43210",14,false),
-            label("⌖  Address\n    Pune, Maharashtra",14,false)
-           
+            label("✉  Email\n    " + email,14,false),
+            label("☎  Mobile\n    " + mobile,14,false),
+            label("⌖  Address\n    " + address,14,false)
         );
 
         return v;
@@ -183,8 +235,10 @@ public class OrganizerDetailsA  {
 
     /* ================= EXPERIENCE ================= */
 
-    VBox experience(){
+    VBox experience(OrganizerProfile org){
         VBox v=card();
+
+        String businessType = (org != null && org.getBusinessType() != null) ? org.getBusinessType() : "Corporate";
 
         v.getChildren().addAll(
             label("Experience & Performance",20,true),
@@ -195,9 +249,13 @@ public class OrganizerDetailsA  {
         );
 
         HBox tags=new HBox(6);
+        String[] tagItems = businessType.split("[,/]");
+        if(tagItems.length == 0 || (tagItems.length == 1 && tagItems[0].isBlank())){
+            tagItems = new String[]{"Corporate","Educational","Birthday"};
+        }
 
-        for(String s:new String[]{"Corporate","Educational","Birthday"}){
-            Label l=new Label(s);
+        for(String s: tagItems){
+            Label l=new Label(s.trim());
             l.setPadding(new Insets(5,9,5,9));
             l.setStyle("-fx-background-color:#E2E6EA;"+
                        "-fx-background-radius:15;");
@@ -210,15 +268,17 @@ public class OrganizerDetailsA  {
 
     /* ================= AVAILABILITY ================= */
 
-    VBox availability(){
+    VBox availability(OrganizerProfile org, int upcomingCount){
         VBox v=card();
+
+        String currentStatus = (org != null && org.getOnboardingStatus() != null) ? "● " + org.getOnboardingStatus() : "● Available";
 
         v.getChildren().addAll(
             label("Availability & Workload",20,true),
             new Separator(),
-            info("Current Status","● Available"),
-            info("Workload","2 Active Events"),
-            info("Upcoming Assignments","1"),
+            info("Current Status", currentStatus),
+            info("Workload", upcomingCount + " Active Events"),
+            info("Upcoming Assignments", String.valueOf(upcomingCount)),
             new Separator(),
             info("Next Available","Aug 30, 2026")
         );
@@ -240,7 +300,7 @@ public class OrganizerDetailsA  {
 
     /* ================= EVENT HISTORY ================= */
 
-    VBox eventHistory(){
+    VBox eventHistory(List<Event> orgEvents){
         VBox v=card();
 
         v.getChildren().add(label("Event History",20,true));
@@ -257,26 +317,35 @@ public class OrganizerDetailsA  {
         for(int i=0;i<h.length;i++)
             g.add(label(h[i],12,true),i,0);
 
-        g.add(label("Coporate\nSeminar",14,false),0,1);
-        g.add(label("Coporate",14,false),1,1);
-        g.add(label("Aug 18,\n2026",14,false),2,1);
-        g.add(label("INCUBATORS",14,false),3,1);
-        g.add(label("Pune",14,false),4,1);
-        g.add(status("Upcoming",true),5,1);
+        if(orgEvents != null && !orgEvents.isEmpty()){
+            int row = 1;
+            for(Event ev : orgEvents){
+                String name = ev.getEventName() != null ? ev.getEventName() : (ev.getEventType() != null ? ev.getEventType() : "Event");
+                String type = ev.getEventType() != null ? ev.getEventType() : "General";
+                String date = ev.getEventDate() != null ? ev.getEventDate() : "TBD";
+                String cust = ev.getCustomerId() != null ? ev.getCustomerId() : "Customer";
+                String loc = ev.getCity() != null ? ev.getCity() : "Pune";
+                String st = ev.getStatus() != null ? ev.getStatus() : "Upcoming";
 
-        g.add(label("College\nWorkshop",14,false),0,2);
-        g.add(label("Educational",14,false),1,2);
-        g.add(label("Aug 25,\n2026",14,false),2,2);
-        g.add(label("SKNSCOE\nEcell",14,false),3,2);
-        g.add(label("Mumbai",14,false),4,2);
-        g.add(status("Upcoming",true),5,2);
+                boolean isUpcoming = !"COMPLETED".equalsIgnoreCase(st) && !"REJECTED".equalsIgnoreCase(st);
 
-        g.add(label("Birthday\nCelebration",14,false),0,3);
-        g.add(label("Birthday",14,false),1,3);
-        g.add(label("Jul 27,\n2026",14,false),2,3);
-        g.add(label("Rahul K.",14,false),3,3);
-        g.add(label("Nashik",14,false),4,3);
-        g.add(status("Completed",false),5,3);
+                g.add(label(name,14,false),0,row);
+                g.add(label(type,14,false),1,row);
+                g.add(label(date,14,false),2,row);
+                g.add(label(cust,14,false),3,row);
+                g.add(label(loc,14,false),4,row);
+                g.add(status(st, isUpcoming),5,row);
+                row++;
+                if(row > 4) break;
+            }
+        } else {
+            g.add(label("Corporate\nSeminar",14,false),0,1);
+            g.add(label("Corporate",14,false),1,1);
+            g.add(label("Aug 18,\n2026",14,false),2,1);
+            g.add(label("INCUBATORS",14,false),3,1);
+            g.add(label("Pune",14,false),4,1);
+            g.add(status("Upcoming",true),5,1);
+        }
 
         v.getChildren().add(g);
         return v;
@@ -284,15 +353,16 @@ public class OrganizerDetailsA  {
 
     /* ================= ACTIVITY ================= */
 
-    VBox activity(){
+    VBox activity(OrganizerProfile org){
         VBox v=card();
+
+        String name = (org != null && org.getOrganizationName() != null) ? org.getOrganizationName() : "Organizer";
 
         v.getChildren().addAll(
             label("Recent Activity",20,true),
             new Separator(),
-            label("•  Assigned to \"Coporate Seminar\"\n    2 days ago",14,false),
-            label("•  Completed \"Birthday Celebration\"\n    Jul 28, 2026",14,false),
-            label("•  Updated availability status\n    Jul 20, 2026",14,false)
+            label("•  Assigned to active events\n    Recently",14,false),
+            label("•  Profile verified for " + name + "\n    Active",14,false)
         );
 
         return v;
@@ -302,7 +372,44 @@ public class OrganizerDetailsA  {
 
     public Scene getorganizerDetailsScene(){
 
-          BorderPane root=new BorderPane();
+        OrganizerProfile org = selectedOrganizer;
+
+        // जर आधीपासून ऑर्गनायझर सिलेक्ट नसेल, तर डेटाबेसमधून पहिला ऑर्गनायझर फेच करा
+        if(org == null){
+            List<OrganizerProfile> all = organizerService.getAllOrganizers();
+            if(all != null && !all.isEmpty()){
+                org = all.get(0);
+                selectedOrganizer = org;
+            }
+        }
+
+        List<Event> orgEvents = null;
+        if(org != null && org.getOrganizerId() != null){
+            orgEvents = eventService.getEventsByOrganizerId(org.getOrganizerId());
+        }
+
+        int totalCount = (orgEvents != null) ? orgEvents.size() : 2;
+        int completedCount = 0;
+        int upcomingCount = 0;
+        int cancelledCount = 0;
+
+        if(orgEvents != null && !orgEvents.isEmpty()){
+            for(Event ev : orgEvents){
+                String s = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "";
+                if("COMPLETED".equals(s) || "CONFIRMED".equals(s)){
+                    completedCount++;
+                } else if("REJECTED".equals(s) || "CANCELLED".equals(s)){
+                    cancelledCount++;
+                } else {
+                    upcomingCount++;
+                }
+            }
+        } else {
+            completedCount = 1;
+            upcomingCount = 1;
+        }
+
+        BorderPane root=new BorderPane();
         root.setStyle("-fx-background-color:"+BG+";");
         root.setLeft(sidebar());
 
@@ -312,7 +419,6 @@ public class OrganizerDetailsA  {
         Button back=button("←  Back to Organizers");
         back.setOnAction(e -> {
             Stage stage = (Stage) back.getScene().getWindow();
-
             NavigationManager.navigate("Organizers", stage);
         });
 
@@ -325,16 +431,16 @@ public class OrganizerDetailsA  {
         VBox heading=new VBox(8,back,title,sub);
 
         VBox left=new VBox(
-            16,organizerCard(),contactCard()
+            16,organizerCard(org),contactCard(org)
         );
         left.setPrefWidth(320);
 
         HBox stats=new HBox(
             14,
-            stat("Total Events","45"),
-            stat("Completed","38"),
-            stat("Upcoming","5"),
-            stat("Cancelled","2")
+            stat("Total Events", String.valueOf(totalCount)),
+            stat("Completed", String.valueOf(completedCount)),
+            stat("Upcoming", String.valueOf(upcomingCount)),
+            stat("Cancelled", String.valueOf(cancelledCount))
         );
         stats.setCursor(javafx.scene.Cursor.HAND);
 
@@ -342,11 +448,11 @@ public class OrganizerDetailsA  {
             HBox.setHgrow(n,Priority.ALWAYS);
 
         HBox details=new HBox(
-            16,experience(),availability()
+            16,experience(org),availability(org, upcomingCount)
         );
 
         VBox right=new VBox(
-            16,stats,details,eventHistory(),activity()
+            16,stats,details,eventHistory(orgEvents),activity(org)
         );
 
         HBox.setHgrow(right,Priority.ALWAYS);
@@ -371,17 +477,5 @@ public class OrganizerDetailsA  {
         Scene scene=new Scene(root,1550,750);
         organizerDetailsScene = scene;
         return organizerDetailsScene;
-
     }
-
 }
-
-
-    
-
-   
-
-      
-    
-
-      

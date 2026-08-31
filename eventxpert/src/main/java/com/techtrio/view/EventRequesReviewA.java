@@ -247,10 +247,19 @@ public class EventRequesReviewA {
         e -> checkEventConflict()
 );
 
-     
+      Button assignButton = btn("Assign Organizer", true);
+        assignButton.setOnAction(e -> {
+            Stage stage = (Stage) assignButton.getScene().getWindow();
+            if (stage == null) {
+                stage = LandingPage.landingPageStage;
+            }
+            
+            // Organizer Assign Screen उघडा
+            OrganizerAssignA assignPage = new OrganizerAssignA();
+            stage.setScene(assignPage.getorganizerAssignScene());
+        });
 
-        Button assignButton = btn("Assign Organizer", true);
-        assign.setOnAction(e -> handleAssignOrganizerModal());
+       
 
         Button approve =
         btn("Approve Event", true);
