@@ -5,6 +5,7 @@ import com.techtrio.controller.AdminController;
 import com.techtrio.controller.OrganizerController;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
+import com.techtrio.model.OrganizerProfile;
 import com.techtrio.session.UserSession;
 
 import javafx.application.Platform;
@@ -72,8 +73,8 @@ public class EventDetailsO {
     }
 
     public EventDetailsO(String uid, String idToken) {
-        this.uid = uid;
-        this.idToken = idToken;
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
     }
 
     public Scene getScene(Stage stage, Runnable backAction) {
@@ -111,7 +112,12 @@ public class EventDetailsO {
                 currentEvent = ev;
 
                 if (ev != null) {
-                    CustomerProfile cust = adminController.getCustomerProfile(ev.getCustomerId());
+                    CustomerProfile cust = null;
+                    if (ev.getCustomerId() != null && !ev.getCustomerId().isBlank()) {
+                        cust = adminController.getCustomerProfile(ev.getCustomerId());
+                    }
+
+                    final CustomerProfile finalCust = cust;
 
                     Platform.runLater(() -> {
                         String name = ev.getEventName() != null ? ev.getEventName() : "Event Request";
@@ -133,13 +139,16 @@ public class EventDetailsO {
                         if (locationLabel != null) locationLabel.setText("📍 " + loc);
 
                         // CUSTOMER DATA
-                        if (cust != null) {
-                            String cName = cust.getName() != null && !cust.getName().isBlank() ? cust.getName() : "Customer";
-                            String cEmail = cust.getEmail() != null ? cust.getEmail() : "N/A";
-                            String cPhone = cust.getMobileNo() != null ? cust.getMobileNo() : "N/A";
+                        if (finalCust != null) {
+                            String cName = finalCust.getName() != null && !finalCust.getName().isBlank() ? finalCust.getName() : "Customer";
+                            String cEmail = finalCust.getEmail() != null ? finalCust.getEmail() : "N/A";
+                            String cPhone = finalCust.getMobileNo() != null ? finalCust.getMobileNo() : "N/A";
 
                             if (customerNameLabel != null) customerNameLabel.setText(cName);
                             if (customerContactLabel != null) customerContactLabel.setText("Contact: " + cName + " (" + cEmail + " | " + cPhone + ")");
+                        } else {
+                            if (customerNameLabel != null) customerNameLabel.setText("Event Customer");
+                            if (customerContactLabel != null) customerContactLabel.setText("Contact: Registered User");
                         }
 
                         // REAL-TIME CUSTOMER REQUIREMENTS CHIPS
@@ -157,17 +166,17 @@ public class EventDetailsO {
                                 }
                             } else {
                                 requirementsChipsPane.getChildren().addAll(
-                                        createRequirementChip("🏛️ Auditorium"),
-                                        createRequirementChip("🎭 Stage"),
-                                        createRequirementChip("🔊 Sound"),
+                                        createRequirementChip("🏛️ Venue Setup"),
+                                        createRequirementChip("🎭 Decoration"),
+                                        createRequirementChip("🔊 Sound System"),
                                         createRequirementChip("🍽️ Catering")
                                 );
                             }
                         }
 
-                        // REAL-TIME NOTES
+                        // REAL-TIME NOTES & AI PLANNING
                         if (notesTextContent != null) {
-                            String notes = ev.getNotes() != null && !ev.getNotes().isBlank() ? ev.getNotes() : "No special notes provided by customer.";
+                            String notes = ev.getNotes() != null && !ev.getNotes().isBlank() ? ev.getNotes() : "Standard customer event requirements with AI optimization.";
                             notesTextContent.setText(notes);
                         }
 
@@ -422,12 +431,9 @@ public class EventDetailsO {
         return card;
     }
 
-    // ==========================================
-    // REAL-TIME EVENT REQUIREMENTS CARD
-    // ==========================================
     private VBox createEventRequirementsCard() {
         VBox card = createCardContainer();
-        Label cardTitle = new Label("☑ Event Requirements");
+        Label cardTitle = new Label("☑ Event Requirements & AI Notes");
         cardTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         requirementsChipsPane = new FlowPane();
@@ -435,14 +441,14 @@ public class EventDetailsO {
         requirementsChipsPane.setVgap(8);
         requirementsChipsPane.setPadding(new Insets(8, 0, 12, 0));
 
-        Label addReqLabel = new Label("Additional Requirements");
+        Label addReqLabel = new Label("Additional Customer & AI Specifications");
         addReqLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-padding: 6 0 2 0;");
 
         VBox addReqBox = new VBox();
         addReqBox.setPadding(new Insets(12));
         addReqBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px;");
 
-        notesTextContent = new Text("Loading customer notes...");
+        notesTextContent = new Text("Loading notes...");
         notesTextContent.setStyle("-fx-fill: " + TEXT_MAIN + "; -fx-font-size: 12px;");
         notesTextContent.setWrappingWidth(580);
 
@@ -461,10 +467,10 @@ public class EventDetailsO {
         insightsGrid.setHgap(12); insightsGrid.setVgap(12);
         insightsGrid.setPadding(new Insets(8, 0, 0, 0));
 
-        insightsGrid.add(createInsightBox("🌧️ Weather Forecast", "Rain expected. Ensure indoor contingencies.", "#E0E0E0", WHITE), 0, 0);
-        insightsGrid.add(createInsightBox("📅 Schedule Conflict", "Clear. No overlapping major events.", "#C8E6C9", "#E8F5E9"), 1, 0);
-        insightsGrid.add(createInsightBox("📊 Budget Analysis", "Estimated costs within requested limits.", "#C8E6C9", "#E8F5E9"), 0, 1);
-        insightsGrid.add(createInsightBox("📍 Venue Availability", "Multiple suitable alternatives available in Pune.", "#FFE0B2", "#FFF3E0"), 1, 1);
+        insightsGrid.add(createInsightBox("🌧️ Weather Forecast", "Clear weather expected. Ideal for indoor & outdoor setup.", "#C8E6C9", "#E8F5E9"), 0, 0);
+        insightsGrid.add(createInsightBox("📅 Schedule Conflict", "Clear. No overlapping major events on this date.", "#C8E6C9", "#E8F5E9"), 1, 0);
+        insightsGrid.add(createInsightBox("📊 Budget Feasibility", "Requested parameters align with estimated allocation.", "#C8E6C9", "#E8F5E9"), 0, 1);
+        insightsGrid.add(createInsightBox("📍 Venue Availability", "Top banquet venues ready in selected locality.", "#FFE0B2", "#FFF3E0"), 1, 1);
 
         ColumnConstraints col1 = new ColumnConstraints(); col1.setPercentWidth(50);
         ColumnConstraints col2 = new ColumnConstraints(); col2.setPercentWidth(50);
@@ -552,8 +558,8 @@ public class EventDetailsO {
                 ? currentEvent.getOrganizerStatus().toUpperCase() : "PENDING";
 
         timelineContainer.getChildren().addAll(
-            createTimelineItem("Assigned by Admin", "Current Event", true),
-            createTimelineItem("Organizer Decision", oStatus, !"PENDING".equalsIgnoreCase(oStatus))
+            createTimelineItem("Created by Customer", "Request Received", true),
+            createTimelineItem("Organizer Decision", oStatus, !"PENDING".equalsIgnoreCase(oStatus) && !"NOT_ASSIGNED".equalsIgnoreCase(oStatus))
         );
     }
 
@@ -569,8 +575,10 @@ public class EventDetailsO {
 
         String oStatus = (currentEvent != null && currentEvent.getOrganizerStatus() != null)
                 ? currentEvent.getOrganizerStatus().toUpperCase() : "PENDING";
+        String evStatus = (currentEvent != null && currentEvent.getStatus() != null)
+                ? currentEvent.getStatus().toUpperCase() : "PENDING";
 
-        if ("PENDING".equalsIgnoreCase(oStatus) || "NOT_ASSIGNED".equalsIgnoreCase(oStatus)) {
+        if ("PENDING".equalsIgnoreCase(oStatus) || "NOT_ASSIGNED".equalsIgnoreCase(oStatus) || "PENDING".equalsIgnoreCase(evStatus)) {
             Label actionTitle = new Label("Ready to take this event?");
             actionTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
@@ -592,7 +600,7 @@ public class EventDetailsO {
             btnBox.getChildren().addAll(rejectBtn, acceptBtn);
             actionAreaContainer.getChildren().addAll(actionTitle, btnBox);
 
-        } else if ("ACCEPTED".equalsIgnoreCase(oStatus)) {
+        } else if ("ACCEPTED".equalsIgnoreCase(oStatus) || "CONFIRMED".equalsIgnoreCase(evStatus)) {
             VBox approvedBox = new VBox(8);
             approvedBox.setAlignment(Pos.CENTER);
 
@@ -626,9 +634,15 @@ public class EventDetailsO {
         if (currentEvent == null || currentEvent.getEventId() == null) return;
 
         OrganizerController controller = new OrganizerController();
-        boolean success = controller.acceptEventAssignment(currentEvent.getEventId());
+        OrganizerProfile profile = controller.getOrganizerProfile(uid);
+        String orgName = (profile != null && profile.getName() != null && !profile.getName().isBlank())
+                ? profile.getName() : "Organizer";
+
+        boolean success = controller.acceptEventAssignment(currentEvent.getEventId(), uid, orgName);
 
         if (success) {
+            currentEvent.setOrganizerId(uid);
+            currentEvent.setOrganizerName(orgName);
             currentEvent.setOrganizerStatus("ACCEPTED");
             currentEvent.setStatus("CONFIRMED");
 
@@ -640,10 +654,11 @@ public class EventDetailsO {
             renderActionBox(stage);
             renderTimeline();
 
-            Alert a = new Alert(Alert.AlertType.INFORMATION, "Event assignment accepted! Status updated to CONFIRMED in Firestore.");
+            Alert a = new Alert(Alert.AlertType.INFORMATION, "Event Request Accepted! This event is now CONFIRMED and moved to your 'My Events' and Planning list.");
+            a.setHeaderText("Request Accepted");
             a.showAndWait();
         } else {
-            Alert a = new Alert(Alert.AlertType.ERROR, "Failed to update event status in Firestore.");
+            Alert a = new Alert(Alert.AlertType.ERROR, "Failed to update event status in database. Please check connection.");
             a.showAndWait();
         }
     }
@@ -666,7 +681,8 @@ public class EventDetailsO {
             renderActionBox(stage);
             renderTimeline();
 
-            Alert a = new Alert(Alert.AlertType.INFORMATION, "Event assignment rejected.");
+            Alert a = new Alert(Alert.AlertType.INFORMATION, "Event request has been rejected.");
+            a.setHeaderText("Request Rejected");
             a.showAndWait();
         }
     }

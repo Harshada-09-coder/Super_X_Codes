@@ -8,6 +8,7 @@ import com.techtrio.context.AdminContext;
 import com.techtrio.controller.AdminController;
 import com.techtrio.controller.OrganizerController;
 import com.techtrio.controller.VendorController;
+import com.techtrio.model.AiEventPlan;
 import com.techtrio.model.Event;
 import com.techtrio.model.OrganizerProfile;
 import com.techtrio.model.VendorBooking;
@@ -268,12 +269,11 @@ public class FindVendorsO {
         requestQuoteBtn.setMaxWidth(Double.MAX_VALUE);
 
         // =========================================================================
-        // CONDITIONAL ASSIGNMENT & DYNAMIC ORGANIZER + EVENT FIRESTORE LINKAGE
+        // DYNAMIC CATEGORY-SPECIFIC BUDGET ALLOCATION & BOOKING CREATION
         // =========================================================================
         requestQuoteBtn.setOnAction(e -> {
             String selectedEvtId = AdminContext.getSelectedEventId();
 
-            // 1. CONDITION: IF ORGANIZER IS IN DIRECT VENDOR MANAGEMENT (NO EVENT SELECTED)
             if (selectedEvtId == null || selectedEvtId.isBlank() || "EVT_DEFAULT".equalsIgnoreCase(selectedEvtId)) {
                 Alert alert = new Alert(Alert.AlertType.WARNING);
                 alert.setTitle("Event Not Selected");
@@ -283,7 +283,6 @@ public class FindVendorsO {
                 return;
             }
 
-            // 2. CONDITION MET: FETCH ACTUAL EVENT & ORGANIZER DETAILS FROM FIRESTORE
             EventService eventService = new EventService();
             Event event = eventService.getEventById(selectedEvtId);
 
@@ -307,9 +306,18 @@ public class FindVendorsO {
             String evtDate = event.getEventDate() != null ? event.getEventDate() : "TBD";
             int evtGuests = event.getGuests() > 0 ? event.getGuests() : 200;
             String evtLoc = event.getCity() != null ? event.getCity() : (event.getLocality() != null ? event.getLocality() : "Pune");
-            String estAmount = event.getBudget() != null && !event.getBudget().isBlank() ? event.getBudget() : "₹75,000";
 
-            // 3. CREATE DYNAMIC VENDOR BOOKING
+            // --- CALCULATE EXACT CATEGORY-SPECIFIC ALLOCATED BUDGET FROM AI PLAN ---
+            double totalBudget = 45000.0;
+            try {
+                String clean = event.getBudget() != null ? event.getBudget().replaceAll("[^0-9]", "") : "45000";
+                if (!clean.isEmpty()) totalBudget = Double.parseDouble(clean);
+            } catch (Exception ignored) {}
+
+            double allocatedCategoryBudget = calculateCategoryAllocatedBudget(event, cat, totalBudget);
+            String estAmount = "₹ " + String.format("%,.0f", allocatedCategoryBudget);
+
+            // CREATE DYNAMIC VENDOR BOOKING WITH EXACT CATEGORY BUDGET
             VendorBooking booking = new VendorBooking(
                     "BKG_" + System.currentTimeMillis(),
                     selectedEvtId,
@@ -325,7 +333,6 @@ public class FindVendorsO {
                     evtLoc
             );
 
-            // Set Customer/Organizer contact info for the Vendor to see
             booking.setCustomerName(organizerName);
             booking.setCustomerPhone(orgPhone);
             booking.setCustomerEmail(orgEmail);
@@ -334,7 +341,8 @@ public class FindVendorsO {
             boolean success = vendorController.requestVendorBooking(booking);
 
             if (success) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Booking request for event [" + evtName + "] sent to Vendor [" + bName + "] in Firestore!");
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Booking request for event [" + evtName + "] (" + cat + ": " + estAmount + ") sent to Vendor [" + bName + "]!");
+                alert.setHeaderText("Request Sent Successfully");
                 alert.showAndWait();
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to send booking request to Vendor.");
@@ -344,6 +352,37 @@ public class FindVendorsO {
 
         card.getChildren().addAll(name, categoryLbl, contactLbl, new Separator(), requestQuoteBtn);
         return card;
+    }
+
+    // =========================================================================
+    // HELPER: CALCULATES EXACT BUDGET FOR SPECIFIC CATEGORY FROM AI PLAN
+    // =========================================================================
+    private double calculateCategoryAllocatedBudget(Event event, String category, double totalBudget) {
+        if (category == null) return totalBudget * 0.20;
+        String catLower = category.toLowerCase().trim();
+
+        // 1. Try to find from AI Plan stored in event
+        if (event != null && event.getAiPlanJson() != null && !event.getAiPlanJson().isBlank()) {
+            AiEventPlan plan = AiEventPlan.fromJson(event.getAiPlanJson());
+            if (plan != null && plan.getBudgetBreakdown() != null) {
+                for (AiEventPlan.BudgetItem bi : plan.getBudgetBreakdown()) {
+                    if (bi.getCategory() != null) {
+                        String bCat = bi.getCategory().toLowerCase().trim();
+                        if (bCat.contains(catLower) || catLower.contains(bCat)) {
+                            return (bi.getPercentage() / 100.0) * totalBudget;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Default standard AI proportions if category not explicitly matched
+        if (catLower.contains("venue") || catLower.contains("hall")) return totalBudget * 0.33;
+        if (catLower.contains("cater") || catLower.contains("food")) return totalBudget * 0.33;
+        if (catLower.contains("decor") || catLower.contains("stage")) return totalBudget * 0.22;
+        if (catLower.contains("sound") || catLower.contains("photo") || catLower.contains("audio") || catLower.contains("av")) return totalBudget * 0.11;
+
+        return totalBudget * 0.15;
     }
 
     private void handleBack(Stage stage) {

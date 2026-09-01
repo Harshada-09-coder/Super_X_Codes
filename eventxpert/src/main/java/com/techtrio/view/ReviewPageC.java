@@ -1,8 +1,13 @@
 package com.techtrio.view;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.techtrio.controller.CustomerController;
 import com.techtrio.model.Event;
+import com.techtrio.model.Guest;
 import com.techtrio.session.UserSession;
+import com.techtrio.util.QRCodeUtil;
 
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -38,7 +43,7 @@ public class ReviewPageC {
         public static String category = "Formal";
         public static String eventName = "";
         public static String eventType = "";
-        public static int guests = 0;
+        public static int guests;
         public static String eventDate = "";
         public static String time = "";
         public static String requirements = "";
@@ -47,7 +52,11 @@ public class ReviewPageC {
         public static String area = "";
         public static String venue = "";
         public static String budget = "₹ 8,45,000";
+        public static String guestMode = "MANUAL"; // "MANUAL" or "QR_ONLY"
+        public static List<GuestManagementC.GuestRow> guestList = new ArrayList<>();
         public static boolean aiEnabled = true;
+        public static String aiPlanJson = "";
+        public static String theme = "Classic Elegance";
 
         // Shared with Organizer and Vendor
         public static String confirmedVenueName = "Grand Convention Center";
@@ -66,7 +75,11 @@ public class ReviewPageC {
             area = "";
             venue = "";
             budget = "₹ 8,45,000";
+            guestMode = "MANUAL";
+            guestList = new ArrayList<>();
             aiEnabled = true;
+            aiPlanJson = "";
+            theme = "Classic Elegance";
 
             confirmedVenueName = "Grand Convention Center";
             confirmedVenueAddress = "Senapati Bapat Road, Pune";
@@ -106,6 +119,7 @@ public class ReviewPageC {
                 sidebarItem("▣", "Requirements", false),
                 sidebarItem("⌖", "Location", false),
                 sidebarItem("▣", "Budget", false),
+                sidebarItem("👥", "Guest Management", false),
                 sidebarItem("✦", "AI Planning", false),
                 sidebarItem("✓", "Review", true)
         );
@@ -145,6 +159,7 @@ public class ReviewPageC {
         Label subtitle = label("Please double-check your event setup and AI recommendations before final submission.", 13, FontWeight.NORMAL, MUTED_TEXT);
         VBox titleBoxPage = new VBox(3, title, subtitle);
 
+        // 50%-50% BALANCED 2-COLUMN GRID
         GridPane grid = new GridPane();
         grid.setHgap(16);
         grid.setVgap(16);
@@ -203,10 +218,9 @@ public class ReviewPageC {
                 return;
             }
 
-            if (EventData.eventName == null || EventData.eventName.isBlank()) {
-                Alert alert = new Alert(Alert.AlertType.WARNING, "Event Name is missing. Please enter an Event Name.");
-                alert.showAndWait();
-                return;
+            String evName = EventData.eventName;
+            if (evName == null || evName.isBlank()) {
+                evName = (EventData.eventType.isBlank() ? "Event" : EventData.eventType) + " Celebration";
             }
 
             submitBtn.setDisable(true);
@@ -218,9 +232,9 @@ public class ReviewPageC {
             Event event = new Event();
             event.setEventId("EVT_" + System.currentTimeMillis());
             event.setCustomerId(finalUid);
-            event.setEventName(EventData.eventName);
+            event.setEventName(evName);
             event.setEventType(EventData.eventType.isBlank() ? "Wedding" : EventData.eventType);
-            event.setCategory(EventData.category);
+            event.setCategory(EventData.category.isBlank() ? "Formal" : EventData.category);
             event.setGuests(EventData.guests > 0 ? EventData.guests : 250);
             event.setEventDate(EventData.eventDate.isBlank() ? "18 May 2024" : EventData.eventDate);
             event.setTime(EventData.time.isBlank() ? "10:00 AM" : EventData.time);
@@ -232,6 +246,40 @@ public class ReviewPageC {
             event.setBudget(EventData.budget.isBlank() ? "₹ 8,45,000" : EventData.budget);
             event.setAiEnabled(true);
             event.setStatus("PENDING");
+            event.setOrganizerStatus("NOT_ASSIGNED");
+
+            // ATTACH COMPLETE DYNAMIC AI PLAN TO FIRESTORE EVENT DOCUMENT
+            event.setAiPlanJson(EventData.aiPlanJson);
+            event.setTheme(EventData.theme);
+
+            // ================= ATTACH GUEST MANAGEMENT DATA =================
+            String selectedMode = (EventData.guestMode != null && !EventData.guestMode.isBlank())
+                    ? EventData.guestMode
+                    : "MANUAL";
+
+            event.setGuestMode(selectedMode);
+            event.setCheckedInCount(0);
+            event.setQrToken(QRCodeUtil.generateSecureQrToken());
+
+            if ("QR_ONLY".equalsIgnoreCase(selectedMode)) {
+                int limit = EventData.guests > 0 ? EventData.guests : 250;
+                event.setGuestLimit(limit);
+                event.setGuestList(new ArrayList<>());
+            } else {
+                List<Guest> convertedGuests = new ArrayList<>();
+                if (EventData.guestList != null && !EventData.guestList.isEmpty()) {
+                    for (GuestManagementC.GuestRow row : EventData.guestList) {
+                        convertedGuests.add(new Guest(
+                                row.getName(),
+                                row.getMobile(),
+                                row.getEmail(),
+                                row.getType()
+                        ));
+                    }
+                }
+                event.setGuestList(convertedGuests);
+                event.setGuestLimit(convertedGuests.size() > 0 ? convertedGuests.size() : (EventData.guests > 0 ? EventData.guests : 250));
+            }
 
             Task<Boolean> saveTask = new Task<>() {
                 @Override
@@ -248,14 +296,21 @@ public class ReviewPageC {
             saveTask.setOnSucceeded(evt -> {
                 submitBtn.setDisable(false);
                 submitBtn.setText("Submit Plan ✓");
-                EventData.reset();
 
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Event & AI Plan Submitted Successfully! Your event is now PENDING organizer assignment.");
-                alert.setHeaderText("Submission Successful");
-                alert.showAndWait();
+                boolean isSaved = saveTask.getValue();
+                if (isSaved) {
+                    EventData.reset();
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Event & AI Plan Submitted Successfully! Your request has been sent to Admin for Organizer assignment.");
+                    alert.setHeaderText("Submission Successful");
+                    alert.showAndWait();
 
-                ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
-                LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
+                    ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
+                    LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save event. Please check Firestore connection.");
+                    alert.setHeaderText("Submission Failed");
+                    alert.showAndWait();
+                }
             });
 
             saveTask.setOnFailed(evt -> {
@@ -279,7 +334,7 @@ public class ReviewPageC {
         HBox.setHgrow(rightSide, Priority.ALWAYS);
         root.setCenter(fullPage);
 
-        scene = new Scene(root, 1365, 850);
+        scene = new Scene(root, 1550, 750);
         return scene;
     }
 
@@ -300,7 +355,7 @@ public class ReviewPageC {
         addDetail(card, "City", EventData.city.isBlank() ? "Pune" : EventData.city);
         addDetail(card, "Area / Locality", EventData.area.isBlank() ? "Baner, Maharashtra" : EventData.area);
         addDetail(card, "Venue Preference", EventData.venue.isBlank() ? "Banquet Hall" : EventData.venue);
-        addDetail(card, "Venue Setup", "Standard Air Conditioned Setup");
+        addDetail(card, "Venue Setup", "Standard AC Setup");
         addDetail(card, "Accessibility", "Guest Parking & Elevators");
         return card;
     }
@@ -314,7 +369,7 @@ public class ReviewPageC {
         String customText = (EventData.notes != null && !EventData.notes.isBlank())
                 ? EventData.notes
                 : "Standard premium service setup tailored for your guest count and location.";
-        
+
         Label notesVal = label(customText, 11, FontWeight.NORMAL, DARK_TEXT);
         notesVal.setWrapText(true);
         notesVal.setStyle("-fx-text-fill:" + DARK_TEXT + ";-fx-line-spacing:2px;");
@@ -363,7 +418,7 @@ public class ReviewPageC {
         topTitle.setAlignment(Pos.CENTER_LEFT);
         Label icon = label("✨", 18, FontWeight.NORMAL, BLUE);
         Label title = label("AI Planning & Optimization Summary", 15, FontWeight.BOLD, MAIN_BLUE);
-        
+
         Region badgeSpace = new Region();
         HBox.setHgrow(badgeSpace, Priority.ALWAYS);
 
@@ -437,7 +492,7 @@ public class ReviewPageC {
 
         Region space = new Region();
         HBox.setHgrow(space, Priority.ALWAYS);
-        
+
         HBox row = new HBox(6, label, space, value);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setPadding(new Insets(1, 0, 1, 0));

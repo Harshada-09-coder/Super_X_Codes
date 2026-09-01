@@ -13,7 +13,6 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import org.json.JSONObject;
 
 public class AiPlanningC {
 
@@ -22,11 +21,8 @@ public class AiPlanningC {
     private String idToken;
 
     // High Contrast Brand Colors
-    // SIDEBAR COLORS — KEPT UNCHANGED
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
-
-    // Main Content Colors — High-contrast visibility palette
     private static final String MAIN_BLUE = "#002A60";
     private static final String MAIN_STRONG_BLUE = "#0D3979";
     private static final String BG = "#F4F7FC";
@@ -54,7 +50,9 @@ public class AiPlanningC {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
-        // SIDEBAR
+        // =========================================================
+        // 1. SIDEBAR (Guest Management Step Added)
+        // =========================================================
         VBox sidebar = new VBox();
         sidebar.setPrefWidth(245);
         sidebar.setMinWidth(245);
@@ -78,7 +76,8 @@ public class AiPlanningC {
                 sidebarItem("▣", "Requirements", false),
                 sidebarItem("⌖", "Location", false),
                 sidebarItem("▣", "Budget", false),
-                sidebarItem("✦", "AI Planning", true),
+                sidebarItem("👥", "Guest Management", false), // <-- GUEST MANAGEMENT
+                sidebarItem("✦", "AI Planning", true),          // ACTIVE
                 sidebarItem("▤", "Review", false)
         );
 
@@ -86,7 +85,9 @@ public class AiPlanningC {
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
         sidebar.getChildren().addAll(brand, titleBox, menu, sideSpace);
 
-        // TOP BAR
+        // =========================================================
+        // 2. TOP BAR
+        // =========================================================
         HBox topBar = new HBox();
         topBar.setPrefHeight(60);
         topBar.setMinHeight(60);
@@ -103,7 +104,9 @@ public class AiPlanningC {
         help.setStyle("-fx-border-color:" + MAIN_BLUE + ";-fx-border-radius:50;-fx-background-radius:50;-fx-text-fill:" + MAIN_BLUE + ";");
         topBar.getChildren().addAll(topSpace, notification, help);
 
-        // SCROLLABLE BODY
+        // =========================================================
+        // 3. SCROLLABLE BODY
+        // =========================================================
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
@@ -111,7 +114,7 @@ public class AiPlanningC {
         VBox content = new VBox(18);
         content.setPadding(new Insets(20, 40, 25, 40));
 
-        // 1. HEADER SECTION
+        // HEADER SECTION
         Label mainHeading = label("AI Event Planning", 26, FontWeight.BOLD, MAIN_BLUE);
         Label mainSubtitle = label("Get a smart, personalized plan for your event in seconds.", 13, FontWeight.NORMAL, MUTED_TEXT);
         VBox headerBox = new VBox(4, mainHeading, mainSubtitle);
@@ -149,15 +152,15 @@ public class AiPlanningC {
             popularSearches.getChildren().add(tagBtn);
         }
 
-        // 2. FEATURE BANNER
+        // FEATURE BANNER
         HBox featureBanner = createFeatureBanner();
 
-        // 3. AI PLAN RESULT CARD
+        // AI PLAN RESULT CARD
         VBox planResultCard = new VBox(16);
         planResultCard.setPadding(new Insets(22));
         planResultCard.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
 
-        // Plan Header with Regenerate & Edit Inputs
+        // Plan Header
         HBox planHeader = new HBox(12);
         planHeader.setAlignment(Pos.CENTER_LEFT);
 
@@ -183,7 +186,7 @@ public class AiPlanningC {
 
         planHeader.getChildren().addAll(planTitle, draftBadge, phSpace, regenBtn, editInputsBtn);
 
-        // Stats Summary Pills Row
+        // Stats Summary Row
         HBox statsRow = new HBox(12);
         statsRow.setFillHeight(true);
 
@@ -243,7 +246,9 @@ public class AiPlanningC {
         content.getChildren().addAll(headerBox, searchBar, popularSearches, featureBanner, planResultCard);
         scrollPane.setContent(content);
 
-        // FOOTER
+        // =========================================================
+        // 4. FOOTER (Back goes to GuestManagementC)
+        // =========================================================
         HBox footer = new HBox(14);
         footer.setPrefHeight(65);
         footer.setAlignment(Pos.CENTER_RIGHT);
@@ -254,9 +259,11 @@ public class AiPlanningC {
         backBtn.setPrefSize(90, 38);
         backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 12));
         backBtn.setStyle("-fx-background-color:white;-fx-text-fill:" + MAIN_BLUE + ";-fx-border-color:" + MAIN_BLUE + ";-fx-border-radius:6;-fx-background-radius:6;-fx-cursor:hand;");
+        
+        // BACK ACTION: Navigates back to GuestManagementC
         backBtn.setOnAction(e -> {
-            BudgetC budgetView = new BudgetC(uid, idToken);
-            LandingPage.landingPageStage.setScene(budgetView.getBudgetScene());
+            GuestManagementC guestView = new GuestManagementC(uid, idToken);
+            LandingPage.landingPageStage.setScene(guestView.getGuestManagementScene());
         });
 
         Button saveDraftBtn = new Button("💾 Save Draft");
@@ -292,7 +299,7 @@ public class AiPlanningC {
         HBox.setHgrow(rightSide, Priority.ALWAYS);
         root.setCenter(fullPage);
 
-        scene = new Scene(root, 1365, 850);
+        scene = new Scene(root, 1550, 750);
 
         Platform.runLater(() -> triggerPlanGeneration(""));
 
@@ -352,7 +359,6 @@ public class AiPlanningC {
     }
 
     private void renderOverviewTab() {
-        // Event Summary Box
         VBox summaryBox = new VBox(10);
         summaryBox.setPadding(new Insets(16));
         summaryBox.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
@@ -371,10 +377,8 @@ public class AiPlanningC {
 
         summaryBox.getChildren().addAll(sumTitle, sumText, statsChips);
 
-        // Lower split row: Vendors preview + Budget Overview
         HBox splitRow = new HBox(18);
 
-        // Vendors Preview Box
         VBox vendorsBox = new VBox(10);
         vendorsBox.setPadding(new Insets(16));
         vendorsBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
@@ -402,7 +406,6 @@ public class AiPlanningC {
             vendorsBox.getChildren().add(vrRow);
         }
 
-        // Budget Overview Box
         VBox budgetBox = new VBox(10);
         budgetBox.setPadding(new Insets(16));
         budgetBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
@@ -509,12 +512,8 @@ public class AiPlanningC {
 
     private void savePlanToMemory() {
         if (currentPlan != null) {
-            JSONObject obj = new JSONObject();
-            obj.put("summary", currentPlan.getSummary());
-            obj.put("theme", currentPlan.getTheme());
-            obj.put("duration", currentPlan.getDuration());
-            obj.put("estimatedTasks", currentPlan.getEstimatedTasks());
-            obj.put("recommendedVendorsCount", currentPlan.getRecommendedVendorsCount());
+            ReviewPageC.EventData.aiPlanJson = currentPlan.toJson();
+            ReviewPageC.EventData.theme = currentPlan.getTheme();
             ReviewPageC.EventData.notes = currentPlan.getSummary();
         }
     }

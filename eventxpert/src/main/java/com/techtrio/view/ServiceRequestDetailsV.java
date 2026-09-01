@@ -106,7 +106,7 @@ public class ServiceRequestDetailsV {
     public Scene getserviceRequestDetailsScene(Stage primaryStage, Runnable callBackAction) {
         this.callBackAction = callBackAction;
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BACKGROUND + ";");
+        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
 
         VBox sidebar = createSidebar(primaryStage);
         root.setLeft(sidebar);
@@ -166,8 +166,8 @@ public class ServiceRequestDetailsV {
                     // Header Card
                     if (statusBadgeHeader != null) {
                         statusBadgeHeader.setText(isAccepted ? "ACCEPTED" : (isPending ? "NEW REQUEST" : status));
-                        statusBadgeHeader.setStyle(isAccepted ? "-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 3 10; -fx-background-radius: 12px;"
-                                : "-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 3 10; -fx-background-radius: 12px;");
+                        statusBadgeHeader.setStyle(isAccepted ? "-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 4 12; -fx-background-radius: 12px;"
+                                : "-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 4 12; -fx-background-radius: 12px;");
                     }
 
                     if (metaInfoLabel != null) {
@@ -215,13 +215,13 @@ public class ServiceRequestDetailsV {
                     // Payment Card
                     String amt = booking.getAmount() != null ? booking.getAmount() : "₹85,000";
                     if (payRequestedBudget != null) payRequestedBudget.setText(amt);
-                    if (payAdvanceAmount != null) payAdvanceAmount.setText("Advance: Included");
-                    if (payPostEventAmount != null) payPostEventAmount.setText("Balance: On Completion");
+                    if (payAdvanceAmount != null) payAdvanceAmount.setText("Advance: Released Upon Acceptance");
+                    if (payPostEventAmount != null) payPostEventAmount.setText("Balance: Upon Completion");
 
                     // Right Summary Card
                     if (summaryStatusLabel != null) {
                         summaryStatusLabel.setText("Status: " + status);
-                        summaryStatusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + (isAccepted ? GREEN_TEXT : PRIMARY_BLUE) + ";");
+                        summaryStatusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + (isAccepted ? GREEN_TEXT : PRIMARY_BLUE) + ";");
                     }
 
                     if (summaryGridContainer != null) {
@@ -230,7 +230,7 @@ public class ServiceRequestDetailsV {
                                 createBulletLabel("• Event: " + booking.getEventName()),
                                 createBulletLabel("• Date: " + booking.getEventDate()),
                                 createBulletLabel("• Service: " + booking.getServiceCategory()),
-                                createBulletLabel("• Guests: " + booking.getGuests() + " Pax"),
+                                createBulletLabel("• Guests: " + booking.getGuests() + " Guests"),
                                 createBulletLabel("• Budget: " + booking.getAmount())
                         );
                     }
@@ -242,7 +242,7 @@ public class ServiceRequestDetailsV {
                     if (orgCardEmail != null) orgCardEmail.setText("✉ Email: " + (orgProfile != null && orgProfile.getEmail() != null ? orgProfile.getEmail() : (booking.getCustomerEmail() != null ? booking.getCustomerEmail() : "N/A")));
 
                     // =========================================================================
-                    // CONDITION: HIDE ACCEPT / REJECT BUTTONS IF ALREADY ACCEPTED / CONFIRMED
+                    // HIDE BUTTONS IF ALREADY ACCEPTED / CONFIRMED
                     // =========================================================================
                     if (!isPending) {
                         if (topAcceptBtn != null) {
@@ -273,7 +273,9 @@ public class ServiceRequestDetailsV {
 
     private Label createBulletLabel(String text) {
         Label l = new Label(text);
-        l.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
+        l.setWrapText(true);
+        l.setMaxWidth(Double.MAX_VALUE);
+        l.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + "; -fx-padding: 1 0;");
         return l;
     }
 
@@ -507,10 +509,14 @@ public class ServiceRequestDetailsV {
         return alertBox;
     }
 
+    // =========================================================================
+    // TWO-COLUMN MAIN LAYOUT (WITH FIXED 360px RIGHT COLUMN TO PREVENT SQUISHING)
+    // =========================================================================
     private HBox createTwoColumnMainLayout(Stage stage) {
-        HBox layout = new HBox(20);
+        HBox layout = new HBox(22);
 
         VBox leftCol = new VBox(20);
+        leftCol.setMinWidth(0);
         HBox.setHgrow(leftCol, Priority.ALWAYS);
 
         leftCol.getChildren().addAll(
@@ -522,7 +528,9 @@ public class ServiceRequestDetailsV {
         );
 
         VBox rightCol = new VBox(20);
-        rightCol.setPrefWidth(380);
+        rightCol.setMinWidth(360);
+        rightCol.setPrefWidth(360);
+        rightCol.setMaxWidth(380);
 
         rightCol.getChildren().addAll(
                 createRightSummaryCard(stage),
@@ -666,23 +674,28 @@ public class ServiceRequestDetailsV {
         return r;
     }
 
+    // ==========================================
+    // 5. RIGHT SUMMARY CARD (FIXED WIDTH & FULL READABLE TEXT)
+    // ==========================================
     private VBox createRightSummaryCard(Stage stage) {
         VBox card = createCardContainer();
         Label title = new Label("Request Summary");
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         HBox statusRow = new HBox();
-        summaryStatusLabel = new Label("Status: NEW");
-        summaryStatusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        statusRow.setAlignment(Pos.CENTER_LEFT);
+        summaryStatusLabel = new Label("Status: PENDING");
+        summaryStatusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + PRIMARY_BLUE + ";");
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
         summaryPrioLabel = new Label("Important");
-        summaryPrioLabel.setStyle("-fx-background-color: " + WARNING_BG + "; -fx-text-fill: " + WARNING_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 6; -fx-background-radius: 8px;");
+        summaryPrioLabel.setStyle("-fx-background-color: " + WARNING_BG + "; -fx-text-fill: " + WARNING_TEXT + "; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 8px;");
         statusRow.getChildren().addAll(summaryStatusLabel, sp, summaryPrioLabel);
 
-        summaryGridContainer = new VBox(6);
+        summaryGridContainer = new VBox(8);
+        summaryGridContainer.setPadding(new Insets(6, 0, 6, 0));
         summaryGridContainer.getChildren().addAll(
-                new Label("• Event: Loading..."),
-                new Label("• Date: Loading...")
+                createBulletLabel("• Event: Loading..."),
+                createBulletLabel("• Date: Loading...")
         );
 
         rightAcceptBtn = createPrimaryButton("Accept Request");
@@ -691,28 +704,36 @@ public class ServiceRequestDetailsV {
 
         rightRejectBtn = createSecondaryButton("Reject Request");
         rightRejectBtn.setMaxWidth(Double.MAX_VALUE);
-        rightRejectBtn.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-border-color: " + BORDER_COLOR + ";");
+        rightRejectBtn.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-padding: 8 16; -fx-font-weight: bold; -fx-cursor: hand;");
         rightRejectBtn.setOnAction(e -> openRejectModal(stage));
 
         card.getChildren().addAll(title, statusRow, new Separator(), summaryGridContainer, new Separator(), rightAcceptBtn, rightRejectBtn);
         return card;
     }
 
+    // ==========================================
+    // 6. ORGANIZER INFORMATION CARD (FIXED WIDTH & CLEAN DETAILS)
+    // ==========================================
     private VBox createOrganizerCard(Stage stage) {
         VBox card = createCardContainer();
         Label title = new Label("Organizer Information");
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         orgCardName = new Label("Organizer: Loading...");
-        orgCardName.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        orgCardName.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + PRIMARY_BLUE + ";");
 
-        orgCardRole = new Label("👤 Role: Corporate Event Organizer");
+        orgCardRole = new Label("👤 Role: Event Organizer");
         orgCardPhone = new Label("📞 Phone: Loading...");
         orgCardEmail = new Label("✉ Email: Loading...");
         Label orgRating = new Label("⭐ Rating: 4.8 / 5.0 (Active Organizer)");
 
-        VBox details = new VBox(4, orgCardRole, orgCardPhone, orgCardEmail, orgRating);
-        details.getChildren().forEach(n -> n.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";"));
+        orgCardRole.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        orgCardPhone.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        orgCardEmail.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        orgRating.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #92400E;");
+
+        VBox details = new VBox(6, orgCardRole, orgCardPhone, orgCardEmail, orgRating);
+        details.setPadding(new Insets(4, 0, 4, 0));
 
         Button contactBtn = createSecondaryButton("Contact Organizer");
         contactBtn.setMaxWidth(Double.MAX_VALUE);

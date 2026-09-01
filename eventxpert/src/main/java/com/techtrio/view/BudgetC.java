@@ -116,6 +116,7 @@ public class BudgetC {
                 navItem("▤", "Requirements", false),
                 navItem("⌖", "Location", false),
                 navItem("▣", "Budget", true),
+                 navItem("👥", "Guest Management", false),
                 navItem("✦", "AI Planning", false),
                 navItem("▤", "Review", false)
         );
@@ -579,25 +580,19 @@ public class BudgetC {
         // NEXT BUTTON
         // =========================================================
 
-        next.setOnAction(e -> {
+       next.setOnAction(e -> {
 
-            ReviewPageC.EventData.budget =
-                    amount.getText().trim();
+    ReviewPageC.EventData.budget = amount.getText().trim();
 
-            if (nextAction != null) {
+    if (nextAction != null) {
+        nextAction.run();
+    } else {
+        GuestManagementC guestPage = new GuestManagementC(uid, idToken);
 
-                nextAction.run();
-
-            } else {
-
-                AiPlanningC aiPlanningPage =
-                        new AiPlanningC(uid, idToken);
-
-                LandingPage.landingPageStage.setScene(
-                        aiPlanningPage.getAiPlanningScene()
-                );
-            }
-        });
+        LandingPage.landingPageStage.setScene( guestPage.getGuestManagementScene()
+        );
+    }
+});
 
         HBox buttons = new HBox(
                 10,
@@ -672,8 +667,8 @@ public class BudgetC {
 
         scene = new Scene(
                 root,
-                1365,
-                850
+                1550,
+                750
         );
 
         return scene;

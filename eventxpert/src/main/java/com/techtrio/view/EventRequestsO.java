@@ -36,8 +36,6 @@ public class EventRequestsO {
 
     private static final String HIGH_BG = "#FCE8E6";
     private static final String HIGH_TEXT = "#C5221F";
-    private static final String MEDIUM_BG = "#EAF3FF";
-    private static final String MEDIUM_TEXT = "#2563C7";
 
     private VBox rowsContainer;
     private Label newReqValLbl;
@@ -73,7 +71,7 @@ public class EventRequestsO {
         VBox titleBox = new VBox(4);
         Label title = new Label("Event Requests");
         title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
-        Label subtitle = new Label("Review incoming event requests and decide which events you want to manage.");
+        Label subtitle = new Label("Review event requests assigned to you by the Admin and confirm your decision.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         titleBox.getChildren().addAll(title, subtitle);
 
@@ -111,59 +109,81 @@ public class EventRequestsO {
             @Override
             protected List<Event> call() {
                 OrganizerController controller = new OrganizerController();
+                // FETCH ONLY EVENTS ASSIGNED SPECIFICALLY TO THIS ORGANIZER UID
                 return controller.getAssignedEvents(uid);
             }
         };
 
         task.setOnSucceeded(evt -> {
             List<Event> assignedList = task.getValue();
-            if (assignedList != null) {
-                Platform.runLater(() -> {
-                    if (rowsContainer != null) rowsContainer.getChildren().clear();
+            Platform.runLater(() -> {
+                if (rowsContainer != null) rowsContainer.getChildren().clear();
 
-                    int newCount = 0;
-                    int pendingCount = 0;
-                    int acceptedCount = 0;
-                    int rejectedCount = 0;
+                int newCount = 0;
+                int pendingCount = 0;
+                int acceptedCount = 0;
+                int rejectedCount = 0;
 
+                if (assignedList != null && !assignedList.isEmpty()) {
                     for (Event ev : assignedList) {
                         String oStatus = ev.getOrganizerStatus() != null ? ev.getOrganizerStatus().toUpperCase() : "PENDING";
+
                         if ("PENDING".equals(oStatus)) {
                             newCount++;
                             pendingCount++;
+
+                            // Render pending request for organizer decision
+                            if (rowsContainer != null) {
+                                String detailsStr = "📅 " + (ev.getEventDate() != null ? ev.getEventDate() : "TBD") +
+                                        "   👥 " + ev.getGuests() + " Guests" +
+                                        "   💳 " + (ev.getBudget() != null ? ev.getBudget() : "N/A");
+
+                                rowsContainer.getChildren().add(createRequestRow(
+                                        ev.getEventId(),
+                                        ev.getEventName() != null ? ev.getEventName() : "Unnamed Event",
+                                        ev.getEventType() != null ? ev.getEventType() : "General",
+                                        detailsStr,
+                                        "High", HIGH_BG, HIGH_TEXT,
+                                        "Assigned by Admin", LIGHT_BLUE, PRIMARY_BLUE
+                                ));
+                            }
                         } else if ("ACCEPTED".equals(oStatus)) {
                             acceptedCount++;
                         } else if ("REJECTED".equals(oStatus)) {
                             rejectedCount++;
                         }
-
-                        if (rowsContainer != null) {
-                            String detailsStr = "📅 " + (ev.getEventDate() != null ? ev.getEventDate() : "TBD") +
-                                    "   👥 " + ev.getGuests() + " Guests" +
-                                    "   💳 " + (ev.getBudget() != null ? ev.getBudget() : "N/A");
-
-                            rowsContainer.getChildren().add(createRequestRow(
-                                    ev.getEventId(),
-                                    ev.getEventName() != null ? ev.getEventName() : "Unnamed Event",
-                                    ev.getEventType() != null ? ev.getEventType() : "General",
-                                    detailsStr,
-                                    "High", HIGH_BG, HIGH_TEXT,
-                                    ev.getStatus() != null ? ev.getStatus() : "ASSIGNED", LIGHT_BLUE, PRIMARY_BLUE
-                            ));
-                        }
                     }
+                }
 
-                    if (newReqValLbl != null) newReqValLbl.setText(String.format("%02d", newCount));
-                    if (pendingValLbl != null) pendingValLbl.setText(String.format("%02d", pendingCount));
-                    if (acceptedValLbl != null) acceptedValLbl.setText(String.format("%02d", acceptedCount));
-                    if (rejectedValLbl != null) rejectedValLbl.setText(String.format("%02d", rejectedCount));
-                });
-            }
+                if (rowsContainer != null && rowsContainer.getChildren().isEmpty()) {
+                    renderEmptyRequestsState();
+                }
+
+                if (newReqValLbl != null) newReqValLbl.setText(String.format("%02d", newCount));
+                if (pendingValLbl != null) pendingValLbl.setText(String.format("%02d", pendingCount));
+                if (acceptedValLbl != null) acceptedValLbl.setText(String.format("%02d", acceptedCount));
+                if (rejectedValLbl != null) rejectedValLbl.setText(String.format("%02d", rejectedCount));
+            });
         });
 
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
+    }
+
+    private void renderEmptyRequestsState() {
+        VBox emptyBox = new VBox(8);
+        emptyBox.setAlignment(Pos.CENTER);
+        emptyBox.setPadding(new Insets(35));
+
+        Label icon = new Label("📫"); icon.setStyle("-fx-font-size: 28px;");
+        Label title = new Label("No new requests assigned");
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+        Label sub = new Label("When the Admin assigns an event request to you, it will appear here.");
+        sub.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        emptyBox.getChildren().addAll(icon, title, sub);
+        rowsContainer.getChildren().add(emptyBox);
     }
 
     private HBox createMetricCardsRow() {
@@ -241,7 +261,7 @@ public class EventRequestsO {
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
-        Label cardTitle = new Label("Incoming Event Requests");
+        Label cardTitle = new Label("Assigned Event Requests");
         cardTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
         HBox tableHeader = new HBox();
@@ -324,7 +344,7 @@ public class EventRequestsO {
         cardTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         VBox itemsBox = new VBox(14);
-        itemsBox.getChildren().add(createInsightItem("⚠️ Requests Assigned", "Review your pending requests to keep customer SLAs on track."));
+        itemsBox.getChildren().add(createInsightItem("⚠️ Assigned Requests", "Review your pending requests assigned by Admin."));
         itemsBox.getChildren().add(createInsightItem("❗ Action Required", "Accept or reject requests to confirm event schedule."));
 
         card.getChildren().addAll(cardTitle, itemsBox);

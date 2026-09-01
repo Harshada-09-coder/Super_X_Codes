@@ -133,7 +133,7 @@ public class Notification {
         root.setLeft(sidebar);
         root.setCenter(rightArea);
 
-        return new Scene(root, 1365, 800);
+        return new Scene(root, 1550, 750);
     }
 
     private void returnToDashboard() {

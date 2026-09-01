@@ -65,6 +65,7 @@ public class CreateEventC {
                 sidebarItem("▣", "Requirements", false),
                 sidebarItem("⌖", "Location", false),
                 sidebarItem("▣", "Budget", false),
+                sidebarItem("👥", "Guest", false),
                 sidebarItem("✦", "AI Planning", false),
                 sidebarItem("▤", "Review", false)
         );
@@ -233,7 +234,7 @@ public class CreateEventC {
         HBox.setHgrow(rightSide, Priority.ALWAYS);
 
         root.setCenter(fullPage);
-        scene = new Scene(root, 1365, 850);
+        scene = new Scene(root, 1550, 750);
         return scene;
     }
 

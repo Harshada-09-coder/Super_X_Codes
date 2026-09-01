@@ -1,5 +1,8 @@
 package com.techtrio.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.google.cloud.firestore.annotation.IgnoreExtraProperties;
 
 @IgnoreExtraProperties
@@ -10,7 +13,7 @@ public class Event {
     private String eventName;
     private String eventType;
     private String category;
-    private int guests;
+    private int guests; // Guest Count
     private String eventDate;
     private String time;
     private String requirements;
@@ -37,6 +40,13 @@ public class Event {
     private String acceptedAt;
     private String rejectedAt;
     private String adminReviewNotes;
+
+    // --- GUEST MANAGEMENT & QR EXTENSIONS ---
+    private String guestMode; // "MANUAL" or "QR_ONLY"
+    private int guestLimit;
+    private int checkedInCount = 0;
+    private String qrToken;
+    private List<Guest> guestList = new ArrayList<>(); // Renamed from guests to avoid duplicate name
 
     public Event() {
     }
@@ -264,5 +274,46 @@ public class Event {
 
     public void setAdminReviewNotes(String adminReviewNotes) {
         this.adminReviewNotes = adminReviewNotes;
+    }
+
+    // --- GUEST MANAGEMENT GETTERS & SETTERS ---
+    public String getGuestMode() {
+        return guestMode;
+    }
+
+    public void setGuestMode(String guestMode) {
+        this.guestMode = guestMode;
+    }
+
+    public int getGuestLimit() {
+        return guestLimit;
+    }
+
+    public void setGuestLimit(int guestLimit) {
+        this.guestLimit = guestLimit;
+    }
+
+    public int getCheckedInCount() {
+        return checkedInCount;
+    }
+
+    public void setCheckedInCount(int checkedInCount) {
+        this.checkedInCount = checkedInCount;
+    }
+
+    public String getQrToken() {
+        return qrToken;
+    }
+
+    public void setQrToken(String qrToken) {
+        this.qrToken = qrToken;
+    }
+
+    public List<Guest> getGuestList() {
+        return guestList;
+    }
+
+    public void setGuestList(List<Guest> guestList) {
+        this.guestList = guestList;
     }
 }

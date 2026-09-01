@@ -40,9 +40,13 @@ public class OrganizerController {
         return service.markOrganizerAsExisting(uid);
     }
 
-    // --- ORGANIZER EVENT ASSIGNMENT LOGIC ---
+    // --- FETCH ONLY EVENTS ASSIGNED BY ADMIN TO THIS SPECIFIC ORGANIZER ---
     public List<Event> getAssignedEvents(String organizerId) {
         return eventService.getEventsByOrganizerId(organizerId);
+    }
+
+    public boolean acceptEventAssignment(String eventId, String organizerId, String organizerName) {
+        return eventService.acceptEventAssignment(eventId, organizerId, organizerName);
     }
 
     public boolean acceptEventAssignment(String eventId) {

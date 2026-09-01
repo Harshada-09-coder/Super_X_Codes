@@ -15,6 +15,10 @@ public class FirebaseConfig {
     private static Firestore firestore;
 
     public static synchronized void initializeFirebase() {
+        // 1. PREVENT SSL HANDSHAKE TIMEOUT ON WINDOWS (FORCE IPv4)
+        System.setProperty("java.net.preferIPv4Stack", "true");
+        System.setProperty("io.grpc.internal.DnsNameResolverProvider.enable_grpclb", "true");
+
         if (!FirebaseApp.getApps().isEmpty()) {
             if (firestore == null) {
                 firestore = FirestoreClient.getFirestore();
@@ -22,7 +26,6 @@ public class FirebaseConfig {
             return;
         }
 
-        
         try {
             InputStream serviceAccount = null;
             File keyFile = new File("serviceAccountKey.json");
@@ -35,7 +38,7 @@ public class FirebaseConfig {
             }
 
             if (serviceAccount == null) {
-                System.err.println("WARNING: serviceAccountKey.json not found. Attempting Default Credentials.");
+                System.err.println("⚠️ WARNING: serviceAccountKey.json not found. Attempting Default Credentials.");
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.getApplicationDefault())
                         .build();
@@ -49,10 +52,10 @@ public class FirebaseConfig {
             }
 
             firestore = FirestoreClient.getFirestore();
-            System.out.println("Firebase initialized successfully!");
+            System.out.println("✅ Firebase & Firestore initialized successfully with IPv4 support!");
 
         } catch (Exception e) {
-            System.err.println("Failed to initialize Firebase: " + e.getMessage());
+            System.err.println("❌ Failed to initialize Firebase: " + e.getMessage());
             e.printStackTrace();
         }
     }
