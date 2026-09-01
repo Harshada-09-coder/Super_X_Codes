@@ -48,7 +48,6 @@ public class ViewEventO {
 
     private Label custClientLabel;
     private Label custEmailLabel;
-    private Label checklistValLabel;
 
     public ViewEventO() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -534,9 +533,13 @@ public class ViewEventO {
         LandingPage.landingPageStage.setScene(view.getScene(stage, () -> LandingPage.landingPageStage.setScene(getScene(stage, backAction))));
     }
 
+    // ==========================================
+    // OPEN GUEST MANAGEMENT WITH DYNAMIC EVENT ID
+    // ==========================================
     private void openGuests(Stage stage) {
-        GuestManagementO view = new GuestManagementO();
-        LandingPage.landingPageStage.setScene(view.getScene(stage, () -> LandingPage.landingPageStage.setScene(getScene(stage, backAction))));
+        String selectedEvtId = AdminContext.getSelectedEventId();
+        GuestManagementO view = new GuestManagementO(uid, idToken);
+        LandingPage.landingPageStage.setScene(view.getScene(stage, selectedEvtId, () -> LandingPage.landingPageStage.setScene(getScene(stage, backAction))));
     }
 
     private void openLiveEvent(Stage stage) {

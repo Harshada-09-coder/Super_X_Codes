@@ -1,8 +1,13 @@
 package com.techtrio.view;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.techtrio.controller.CustomerController;
 import com.techtrio.model.Event;
+import com.techtrio.model.Guest;
 import com.techtrio.session.UserSession;
+import com.techtrio.util.QRCodeUtil;
 
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -38,7 +43,7 @@ public class ReviewPageC {
         public static String category = "Formal";
         public static String eventName = "";
         public static String eventType = "";
-        public static int guests = 0;
+        public static int guests;
         public static String eventDate = "";
         public static String time = "";
         public static String requirements = "";
@@ -47,6 +52,8 @@ public class ReviewPageC {
         public static String area = "";
         public static String venue = "";
         public static String budget = "₹ 8,45,000";
+        public static String guestMode = "MANUAL"; // "MANUAL" or "QR_ONLY"
+        public static List<GuestManagementC.GuestRow> guestList = new ArrayList<>();
         public static boolean aiEnabled = true;
         public static String aiPlanJson = "";
         public static String theme = "Classic Elegance";
@@ -68,6 +75,8 @@ public class ReviewPageC {
             area = "";
             venue = "";
             budget = "₹ 8,45,000";
+            guestMode = "MANUAL";
+            guestList = new ArrayList<>();
             aiEnabled = true;
             aiPlanJson = "";
             theme = "Classic Elegance";
@@ -110,6 +119,7 @@ public class ReviewPageC {
                 sidebarItem("▣", "Requirements", false),
                 sidebarItem("⌖", "Location", false),
                 sidebarItem("▣", "Budget", false),
+                sidebarItem("👥", "Guest Management", false),
                 sidebarItem("✦", "AI Planning", false),
                 sidebarItem("✓", "Review", true)
         );
@@ -242,6 +252,35 @@ public class ReviewPageC {
             event.setAiPlanJson(EventData.aiPlanJson);
             event.setTheme(EventData.theme);
 
+            // ================= ATTACH GUEST MANAGEMENT DATA =================
+            String selectedMode = (EventData.guestMode != null && !EventData.guestMode.isBlank())
+                    ? EventData.guestMode
+                    : "MANUAL";
+
+            event.setGuestMode(selectedMode);
+            event.setCheckedInCount(0);
+            event.setQrToken(QRCodeUtil.generateSecureQrToken());
+
+            if ("QR_ONLY".equalsIgnoreCase(selectedMode)) {
+                int limit = EventData.guests > 0 ? EventData.guests : 250;
+                event.setGuestLimit(limit);
+                event.setGuestList(new ArrayList<>());
+            } else {
+                List<Guest> convertedGuests = new ArrayList<>();
+                if (EventData.guestList != null && !EventData.guestList.isEmpty()) {
+                    for (GuestManagementC.GuestRow row : EventData.guestList) {
+                        convertedGuests.add(new Guest(
+                                row.getName(),
+                                row.getMobile(),
+                                row.getEmail(),
+                                row.getType()
+                        ));
+                    }
+                }
+                event.setGuestList(convertedGuests);
+                event.setGuestLimit(convertedGuests.size() > 0 ? convertedGuests.size() : (EventData.guests > 0 ? EventData.guests : 250));
+            }
+
             Task<Boolean> saveTask = new Task<>() {
                 @Override
                 protected Boolean call() {
@@ -257,7 +296,7 @@ public class ReviewPageC {
             saveTask.setOnSucceeded(evt -> {
                 submitBtn.setDisable(false);
                 submitBtn.setText("Submit Plan ✓");
-                
+
                 boolean isSaved = saveTask.getValue();
                 if (isSaved) {
                     EventData.reset();
@@ -330,7 +369,7 @@ public class ReviewPageC {
         String customText = (EventData.notes != null && !EventData.notes.isBlank())
                 ? EventData.notes
                 : "Standard premium service setup tailored for your guest count and location.";
-        
+
         Label notesVal = label(customText, 11, FontWeight.NORMAL, DARK_TEXT);
         notesVal.setWrapText(true);
         notesVal.setStyle("-fx-text-fill:" + DARK_TEXT + ";-fx-line-spacing:2px;");
@@ -379,7 +418,7 @@ public class ReviewPageC {
         topTitle.setAlignment(Pos.CENTER_LEFT);
         Label icon = label("✨", 18, FontWeight.NORMAL, BLUE);
         Label title = label("AI Planning & Optimization Summary", 15, FontWeight.BOLD, MAIN_BLUE);
-        
+
         Region badgeSpace = new Region();
         HBox.setHgrow(badgeSpace, Priority.ALWAYS);
 
@@ -453,7 +492,7 @@ public class ReviewPageC {
 
         Region space = new Region();
         HBox.setHgrow(space, Priority.ALWAYS);
-        
+
         HBox row = new HBox(6, label, space, value);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setPadding(new Insets(1, 0, 1, 0));

@@ -40,8 +40,12 @@ public class EventService {
                 if (db == null) return false;
 
                 // Event goes to ADMIN first
-                event.setStatus("PENDING");
-                event.setOrganizerStatus("NOT_ASSIGNED");
+                if (event.getStatus() == null || event.getStatus().isBlank()) {
+                    event.setStatus("PENDING");
+                }
+                if (event.getOrganizerStatus() == null || event.getOrganizerStatus().isBlank()) {
+                    event.setOrganizerStatus("NOT_ASSIGNED");
+                }
                 event.setOrganizerId(null);
 
                 String now = Instant.now().toString();
@@ -215,6 +219,32 @@ public class EventService {
             updates.put("organizerStatus", "REJECTED");
             updates.put("status", "REJECTED");
             updates.put("rejectedAt", now);
+            updates.put("updatedAt", now);
+
+            ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME)
+                    .document(eventId.trim())
+                    .update(updates);
+
+            future.get(15, TimeUnit.SECONDS);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // --- 6. UPDATE EVENT STATUS (RESOLVES CUSTOMER CONTROLLER ERROR) ---
+    public boolean updateEventStatus(String eventId, String status) {
+        if (eventId == null || eventId.isBlank() || status == null || status.isBlank()) {
+            return false;
+        }
+        try {
+            Firestore db = getDb();
+            if (db == null) return false;
+
+            String now = Instant.now().toString();
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("status", status.trim());
             updates.put("updatedAt", now);
 
             ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME)

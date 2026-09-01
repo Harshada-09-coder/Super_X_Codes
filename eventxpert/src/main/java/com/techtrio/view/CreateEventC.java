@@ -65,6 +65,7 @@ public class CreateEventC {
                 sidebarItem("▣", "Requirements", false),
                 sidebarItem("⌖", "Location", false),
                 sidebarItem("▣", "Budget", false),
+                sidebarItem("👥", "Guest", false),
                 sidebarItem("✦", "AI Planning", false),
                 sidebarItem("▤", "Review", false)
         );

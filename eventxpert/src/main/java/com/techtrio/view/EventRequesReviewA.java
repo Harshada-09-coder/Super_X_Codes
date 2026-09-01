@@ -22,6 +22,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 public class EventRequesReviewA {
 
@@ -243,33 +244,22 @@ public class EventRequesReviewA {
         });
 
         Button checkConflict = btn("🔍 Check Conflict", true);
-        checkConflict.setOnAction(
-        e -> checkEventConflict()
-);
+        checkConflict.setOnAction(e -> checkEventConflict());
 
-     
-
-        Button assignButton = btn("Assign Organizer", true);
-        assign.setOnAction(e -> handleAssignOrganizerModal());
-
-        Button approve =
-        btn("Approve Event", true);
-
-approve.setOnAction(
-        e -> handleApproveEvent()
-);
+        Button approve = btn("Approve Event", true);
+        approve.setOnAction(e -> handleApproveEvent());
 
         VBox rb = new VBox(
-        7,
-        lbl("Request Status", 12, true),
-        statusCombo,
-        lbl("Review Notes (Internal)", 12, true),
-        notesArea,
-        checkConflict,
-        approve,
-        assignButton,
-        reject
-);
+                7,
+                lbl("Request Status", 12, true),
+                statusCombo,
+                lbl("Review Notes (Internal)", 12, true),
+                notesArea,
+                checkConflict,
+                approve,
+                assign,
+                reject
+        );
         rb.setPadding(new Insets(0, 20, 15, 20));
         reviewCard.getChildren().add(rb);
         reviewCard.setStyle("-fx-background-color:white;-fx-border-color:#CBD5E1;-fx-border-radius:9;-fx-background-radius:9;");
@@ -290,6 +280,9 @@ approve.setOnAction(
         return eventRequestReviewScene;
     }
 
+    // ==========================================
+    // ASSIGN ORGANIZER MODAL (Organization Name Display)
+    // ==========================================
     private void handleAssignOrganizerModal() {
         String selectedEvtId = AdminContext.getSelectedEventId();
         if (selectedEvtId == null || selectedEvtId.isBlank()) {
@@ -301,20 +294,56 @@ approve.setOnAction(
         AdminController controller = new AdminController();
         List<OrganizerProfile> activeOrganizers = controller.getAllActiveOrganizers();
 
-        if (activeOrganizers.isEmpty()) {
-            Alert a = new Alert(Alert.AlertType.WARNING, "No active organizers found in Firestore to assign.");
+        if (activeOrganizers == null || activeOrganizers.isEmpty()) {
+            Alert a = new Alert(Alert.AlertType.WARNING, "No active organizers found in Firestore collection 'Organizers'.");
             a.showAndWait();
             return;
         }
 
-        ChoiceDialog<OrganizerProfile> dialog = new ChoiceDialog<>(activeOrganizers.get(0), activeOrganizers);
-        dialog.setTitle("Assign Organizer");
-        dialog.setHeaderText("Select an Active Organizer from Firestore");
-        dialog.setContentText("Organizer:");
+        // Custom Dialog for Beautiful Organization Selection
+        Dialog<OrganizerProfile> dialog = new Dialog<>();
+        dialog.setTitle("Assign Event to Organizer");
+        dialog.setHeaderText("Select an Organization to assign this event:");
+
+        ButtonType assignBtnType = new ButtonType("Assign Organizer", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(assignBtnType, ButtonType.CANCEL);
+
+        VBox contentPane = new VBox(12);
+        contentPane.setPadding(new Insets(16, 24, 16, 24));
+
+        Label chooseLbl = new Label("Choose Organization:");
+        chooseLbl.setStyle("-fx-font-weight: bold; -fx-text-fill: " + PRIMARY + ";");
+
+        ComboBox<OrganizerProfile> orgComboBox = new ComboBox<>(FXCollections.observableArrayList(activeOrganizers));
+        orgComboBox.setMaxWidth(Double.MAX_VALUE);
+        orgComboBox.setPrefHeight(40);
+        orgComboBox.setValue(activeOrganizers.get(0));
+
+        // Display Organization Name instead of ID
+        orgComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(OrganizerProfile org) {
+                if (org == null) return "";
+                String orgName = (org.getOrganizationName() != null && !org.getOrganizationName().isBlank())
+                        ? org.getOrganizationName()
+                        : (org.getName() != null ? org.getName() : "Organizer");
+
+                String contact = org.getEmail() != null ? " (" + org.getEmail() + ")" : "";
+                return "🏢 " + orgName + contact;
+            }
+
+            @Override
+            public OrganizerProfile fromString(String string) {
+                return null;
+            }
+        });
+
+        contentPane.getChildren().addAll(chooseLbl, orgComboBox);
+        dialog.getDialogPane().setContent(contentPane);
 
         dialog.setResultConverter(buttonType -> {
-            if (buttonType == ButtonType.OK) {
-                return dialog.getSelectedItem();
+            if (buttonType == assignBtnType) {
+                return orgComboBox.getValue();
             }
             return null;
         });
@@ -322,7 +351,7 @@ approve.setOnAction(
         Optional<OrganizerProfile> result = dialog.showAndWait();
         result.ifPresent(selectedOrganizer -> {
             String orgUid = selectedOrganizer.getOrganizerId();
-            String orgName = selectedOrganizer.getOrganizationName() != null && !selectedOrganizer.getOrganizationName().isBlank()
+            String orgName = (selectedOrganizer.getOrganizationName() != null && !selectedOrganizer.getOrganizationName().isBlank())
                     ? selectedOrganizer.getOrganizationName()
                     : selectedOrganizer.getName();
 
@@ -330,7 +359,8 @@ approve.setOnAction(
 
             boolean updated = controller.assignOrganizerToEvent(selectedEvtId, orgUid, orgName, "ADMIN_UID", notes);
             if (updated) {
-                Alert a = new Alert(Alert.AlertType.INFORMATION, "Organizer [" + orgName + "] successfully assigned to Event in Firestore!");
+                Alert a = new Alert(Alert.AlertType.INFORMATION, "Event successfully assigned to Organization [" + orgName + "] in Firestore!");
+                a.setHeaderText("Assignment Successful");
                 a.showAndWait();
 
                 EventRequestA requestsView = new EventRequestA();
@@ -389,82 +419,38 @@ approve.setOnAction(
     }
 
     private void checkEventConflict() {
+        String selectedEvtId = AdminContext.getSelectedEventId();
+        if (selectedEvtId == null || selectedEvtId.isBlank()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "No event selected for conflict checking.");
+            alert.setTitle("Conflict Detection");
+            alert.showAndWait();
+            return;
+        }
 
-    String selectedEvtId = AdminContext.getSelectedEventId();
+        AdminController controller = new AdminController();
+        Event event = controller.getEventById(selectedEvtId);
+        if (event == null) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Event details could not be loaded.");
+            alert.setTitle("Conflict Detection");
+            alert.showAndWait();
+            return;
+        }
 
-    if (selectedEvtId == null || selectedEvtId.isBlank()) {
+        ConflictResult result = controller.checkEventConflict(event);
+        boolean conflict = result.isConflict();
 
-        Alert alert = new Alert(
-                Alert.AlertType.WARNING,
-                "No event selected for conflict checking."
-        );
-
-        alert.setTitle("Conflict Detection");
-        alert.showAndWait();
-
-        return;
+        if (conflict) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "⚠ CONFLICT DETECTED!\n\nAnother event is already scheduled at the same venue/date/time.");
+            alert.setTitle("Conflict Detection");
+            alert.setHeaderText("Event Scheduling Conflict");
+            alert.showAndWait();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "✅ No Conflict Found!\n\nThis event can be scheduled without a detected venue/time conflict.");
+            alert.setTitle("Conflict Detection");
+            alert.setHeaderText("No Conflict");
+            alert.showAndWait();
+        }
     }
-
-    AdminController controller = new AdminController();
-
-    Event event = controller.getEventById(selectedEvtId);
-
-    if (event == null) {
-
-        Alert alert = new Alert(
-                Alert.AlertType.ERROR,
-                "Event details could not be loaded."
-        );
-
-        alert.setTitle("Conflict Detection");
-        alert.showAndWait();
-
-        return;
-    }
-
-    /*
-     * Conflict Detection
-     *
-     * Event:
-     * - Venue
-     * - Date
-     * - Time
-     */
-
-
-    ConflictResult result = controller.checkEventConflict(event);
-
-boolean conflict = result.isConflict();
-
-    if (conflict) {
-
-        Alert alert = new Alert(
-                Alert.AlertType.WARNING,
-                "⚠ CONFLICT DETECTED!\n\n"
-                + "Another event is already scheduled "
-                + "at the same venue/date/time."
-        );
-
-        alert.setTitle("Conflict Detection");
-        alert.setHeaderText("Event Scheduling Conflict");
-
-        alert.showAndWait();
-
-    } else {
-
-        Alert alert = new Alert(
-                Alert.AlertType.INFORMATION,
-                "✅ No Conflict Found!\n\n"
-                + "This event can be scheduled without "
-                + "a detected venue/time conflict."
-        );
-
-        alert.setTitle("Conflict Detection");
-        alert.setHeaderText("No Conflict");
-
-        alert.showAndWait();
-    }
-}
 
     private VBox summaryItem(String t, Label valLabel) {
         Label a = lbl(t, 11, true);
@@ -477,104 +463,42 @@ boolean conflict = result.isConflict();
     }
 
     private void handleApproveEvent() {
+        String selectedEvtId = AdminContext.getSelectedEventId();
+        if (selectedEvtId == null || selectedEvtId.isBlank()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "No event selected.");
+            alert.setTitle("Approve Event");
+            alert.showAndWait();
+            return;
+        }
 
-    String selectedEvtId =
-            AdminContext.getSelectedEventId();
+        AdminController controller = new AdminController();
+        Event event = controller.getEventById(selectedEvtId);
+        if (event == null) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Event details could not be loaded.");
+            alert.setTitle("Approve Event");
+            alert.showAndWait();
+            return;
+        }
 
-    if (selectedEvtId == null ||
-        selectedEvtId.isBlank()) {
+        ConflictResult result = controller.checkEventConflict(event);
+        if (result != null && result.isConflict()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Conflict Detected");
+            alert.setHeaderText("⚠ Event cannot be approved");
+            alert.setContentText("Another event already exists with the same venue, date and overlapping time.");
+            alert.showAndWait();
+            return;
+        }
 
-        Alert alert = new Alert(
-                Alert.AlertType.WARNING,
-                "No event selected."
-        );
-
-        alert.setTitle("Approve Event");
-        alert.showAndWait();
-
-        return;
+        boolean updated = controller.updateEventStatus(selectedEvtId, "APPROVED");
+        if (updated) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Event approved successfully.");
+            alert.setTitle("Event Approval");
+            alert.showAndWait();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to approve event.");
+            alert.setTitle("Event Approval");
+            alert.showAndWait();
+        }
     }
-
-    AdminController controller =
-            new AdminController();
-
-    Event event =
-            controller.getEventById(selectedEvtId);
-
-    if (event == null) {
-
-        Alert alert = new Alert(
-                Alert.AlertType.ERROR,
-                "Event details could not be loaded."
-        );
-
-        alert.setTitle("Approve Event");
-        alert.showAndWait();
-
-        return;
-    }
-
-    // =====================================
-    // CHECK CONFLICT BEFORE APPROVAL
-    // =====================================
-
-    ConflictResult result =
-            controller.checkEventConflict(event);
-
-    if (result != null &&
-        result.isConflict()) {
-
-        Alert alert = new Alert(
-                Alert.AlertType.WARNING
-        );
-
-        alert.setTitle("Conflict Detected");
-
-        alert.setHeaderText(
-                "⚠ Event cannot be approved"
-        );
-
-        alert.setContentText(
-                "Another event already exists with "
-                + "the same venue, date and overlapping time."
-        );
-
-        alert.showAndWait();
-
-        return;
-    }
-
-    // =====================================
-    // NO CONFLICT → APPROVE EVENT
-    // =====================================
-
-    boolean updated =
-            controller.updateEventStatus(
-                    selectedEvtId,
-                    "APPROVED"
-            );
-
-    if (updated) {
-
-        Alert alert = new Alert(
-                Alert.AlertType.INFORMATION,
-                "Event approved successfully."
-        );
-
-        alert.setTitle("Event Approval");
-        alert.showAndWait();
-
-    } else {
-
-        Alert alert = new Alert(
-                Alert.AlertType.ERROR,
-                "Failed to approve event."
-        );
-
-        alert.setTitle("Event Approval");
-        alert.showAndWait();
-    }
-}
-
-
 }
