@@ -487,7 +487,7 @@ public class GuestManagementC {
         HBox.setHgrow(rightSide, Priority.ALWAYS);
         root.setCenter(fullPage);
 
-        scene = new Scene(root, 1365, 850);
+        scene = new Scene(root, 1550, 750);
         return scene;
     }
 

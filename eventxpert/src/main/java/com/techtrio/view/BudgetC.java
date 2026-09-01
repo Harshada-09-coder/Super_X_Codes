@@ -667,8 +667,8 @@ public class BudgetC {
 
         scene = new Scene(
                 root,
-                1365,
-                850
+                1550,
+                750
         );
 
         return scene;

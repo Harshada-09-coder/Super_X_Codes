@@ -212,7 +212,7 @@ public class SettingC {
 
         Thread thread = new Thread(task); thread.setDaemon(true); thread.start();
 
-        Scene scene = new Scene(root, 1500, 900);
+        Scene scene = new Scene(root, 1550, 750);
         return scene;
     }
 

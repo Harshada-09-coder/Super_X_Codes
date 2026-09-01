@@ -240,7 +240,7 @@ public class NewCustomerDashboard {
         HBox root = new HBox(sidebar, mainArea);
         HBox.setHgrow(mainArea, Priority.ALWAYS);
 
-        Scene scene = new Scene(root, 1500, 900);
+        Scene scene = new Scene(root, 1550, 750);
         newCustomerScene = scene;
         return newCustomerScene;
     }

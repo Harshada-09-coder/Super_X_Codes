@@ -71,7 +71,7 @@ public class MyEvents {
         // सर्व UI तयार झाल्यावर डेटाबेस कॉलिंग
         loadDynamicEventsFromDatabase();
 
-        myEventsScene = new Scene(root, 1550, 785);
+        myEventsScene = new Scene(root, 1550, 750);
         return myEventsScene;
     }
 

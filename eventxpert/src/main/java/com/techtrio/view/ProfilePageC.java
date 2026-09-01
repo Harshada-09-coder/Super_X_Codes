@@ -99,7 +99,7 @@ public class ProfilePageC {
 
         loadCustomerProfileAsync();
 
-        Scene scene = new Scene(root, 1400, 850);
+        Scene scene = new Scene(root, 1550, 750);
         return scene;
     }
 

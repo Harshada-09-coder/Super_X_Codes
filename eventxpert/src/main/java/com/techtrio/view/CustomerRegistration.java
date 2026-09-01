@@ -406,7 +406,7 @@ public class CustomerRegistration{
 
             root.getChildren().addAll(leftSide,rightSide);
 
-            Scene scene = new Scene(root,1550,785);
+            Scene scene = new Scene(root,1550,750);
             CustomerRegistrationScene = scene;
             return CustomerRegistrationScene;
 

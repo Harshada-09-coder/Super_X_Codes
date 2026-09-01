@@ -93,7 +93,7 @@ public class MyEventDetails {
         // 🎯 डेटाबेसमधून Organizer ची माहिती लोड करणे
         loadDynamicOrganizerFromDatabase();
 
-        return new Scene(root, 1550, 785);
+        return new Scene(root, 1550, 750);
     }
 
     // ================= 1. SIDEBAR =================

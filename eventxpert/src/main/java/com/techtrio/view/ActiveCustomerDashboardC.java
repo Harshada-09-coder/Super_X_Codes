@@ -269,7 +269,7 @@ public class ActiveCustomerDashboardC {
 
         loadCustomerEventsAsync();
 
-        activeCustomerScene = new Scene(root, 1550, 785);
+        activeCustomerScene = new Scene(root, 1550, 750);
         return activeCustomerScene;
     }
 

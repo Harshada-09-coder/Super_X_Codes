@@ -106,7 +106,7 @@ public class EventDetailsC {
         right.setBottom(footer);
 
         root.getChildren().addAll(sidebar, right);
-        return new Scene(root, 1365, 850);
+        return new Scene(root, 1550, 750);
     }
 
     /**

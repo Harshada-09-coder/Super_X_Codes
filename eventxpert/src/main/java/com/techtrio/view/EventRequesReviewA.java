@@ -262,9 +262,9 @@ public class EventRequesReviewA {
 
        
 
-        Button approve = btn("Approve Event", true);
+        Button approve1 = btn("Approve Event", true);
 
-approve.setOnAction(
+approve1.setOnAction(
         e -> handleApproveEvent()
 );
 
