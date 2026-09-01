@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.techtrio.controller.AdminController;
 import com.techtrio.controller.NavigationManager;
+import com.techtrio.controller.PaymentController;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
 import com.techtrio.model.OrganizerProfile;
@@ -35,6 +36,7 @@ public class AdminDashboardA {
     private Label totalVendorsVal;
     private Label activeEventsVal;
     private Label pendingRequestsVal;
+    private Label totalRevenueVal; // 🎯 LIVE REVENUE LABEL
     private TableView<String[]> table;
 
     public Scene getadminDashboardScene() {
@@ -140,22 +142,24 @@ public class AdminDashboardA {
         HBox titleRow = new HBox(15, titleBox, titleSpace);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        // KPI CARDS
-        HBox cards = new HBox(12);
+        // 🎯 KPI CARDS ROW (With LIVE REVENUE CARD)
+        HBox cards = new HBox(10);
 
         totalCustomersVal = new Label("0");
         totalOrganizersVal = new Label("0");
         totalVendorsVal = new Label("0");
         activeEventsVal = new Label("0");
         pendingRequestsVal = new Label("0");
+        totalRevenueVal = new Label("₹0.00"); // Live Revenue
 
         VBox customerCard = createCard("Total Customers", totalCustomersVal, "Registered");
         VBox organizerCard = createCard("Total Organizers", totalOrganizersVal, "Active");
         VBox vendorCard = createCard("Total Vendors", totalVendorsVal, "Active");
         VBox activeEventsCard = createCard("Active Events", activeEventsVal, "Planning");
         VBox pendingRequestsCard = createCard("Pending Requests", pendingRequestsVal, "Need review");
+        VBox revenueCard = createCard("Platform Revenue", totalRevenueVal, "5% Net Commission"); // 💰 Revenue Card
 
-        cards.getChildren().addAll(customerCard, organizerCard, vendorCard, activeEventsCard, pendingRequestsCard);
+        cards.getChildren().addAll(customerCard, organizerCard, vendorCard, activeEventsCard, pendingRequestsCard, revenueCard);
 
         customerCard.setOnMouseClicked(e -> {
             Stage stage = (Stage) customerCard.getScene().getWindow();
@@ -180,6 +184,11 @@ public class AdminDashboardA {
         pendingRequestsCard.setOnMouseClicked(e -> {
             Stage stage = (Stage) pendingRequestsCard.getScene().getWindow();
             NavigationManager.navigate("Event Requests", stage);
+        });
+
+        revenueCard.setOnMouseClicked(e -> {
+            Stage stage = (Stage) revenueCard.getScene().getWindow();
+            NavigationManager.navigate("Reports & Analytics", stage);
         });
 
         // PENDING EVENT REQUESTS
@@ -313,15 +322,19 @@ public class AdminDashboardA {
             @Override
             protected Void call() {
                 AdminController controller = new AdminController();
+                PaymentController paymentController = new PaymentController(); // 🎯 Payment Controller
+
                 List<CustomerProfile> customers = controller.getAllCustomerProfiles();
                 List<Event> events = controller.getAllEvents();
                 List<OrganizerProfile> organizers = controller.getAllOrganizers();
                 List<VendorProfile> vendors = controller.getAllVendors();
+                double totalPlatformRevenue = paymentController.getTotalPlatformRevenue(); // 🎯 Live 5% Revenue
 
                 Platform.runLater(() -> {
                     totalCustomersVal.setText(String.valueOf(customers.size()));
                     totalOrganizersVal.setText(String.valueOf(organizers.size()));
                     totalVendorsVal.setText(String.valueOf(vendors.size()));
+                    totalRevenueVal.setText("₹" + String.format("%.2f", totalPlatformRevenue)); // 💰 Update Live Revenue
 
                     int pendingCount = 0;
                     int activeCount = 0;
@@ -364,11 +377,11 @@ public class AdminDashboardA {
     private VBox createCard(String title, Label valueLabel, String sub) {
         VBox card = new VBox(6);
         card.setCursor(javafx.scene.Cursor.HAND);
-        card.setPrefWidth(220); card.setPrefHeight(105); card.setPadding(new Insets(14));
+        card.setPrefWidth(185); card.setPrefHeight(105); card.setPadding(new Insets(14));
         card.setStyle("-fx-background-color:white;-fx-border-color:#C8D2DC;-fx-border-radius:10;-fx-background-radius:10;");
 
         Label titleLabel = new Label(title); titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 23)); valueLabel.setTextFill(Color.web(PRIMARY));
+        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 21)); valueLabel.setTextFill(Color.web(PRIMARY));
         Label subLabel = new Label(sub); subLabel.setTextFill(Color.web(SECONDARY)); subLabel.setFont(Font.font("Arial", 11));
 
         card.getChildren().addAll(titleLabel, valueLabel, subLabel);

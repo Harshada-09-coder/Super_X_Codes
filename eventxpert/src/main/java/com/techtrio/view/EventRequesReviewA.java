@@ -248,6 +248,25 @@ public class EventRequesReviewA {
 
         Button approve = btn("Approve Event", true);
         approve.setOnAction(e -> handleApproveEvent());
+      Button assignButton = btn("Assign Organizer", true);
+        assignButton.setOnAction(e -> {
+            Stage stage = (Stage) assignButton.getScene().getWindow();
+            if (stage == null) {
+                stage = LandingPage.landingPageStage;
+            }
+            
+            // Organizer Assign Screen उघडा
+            OrganizerAssignA assignPage = new OrganizerAssignA();
+            stage.setScene(assignPage.getorganizerAssignScene());
+        });
+
+       
+
+        Button approve = btn("Approve Event", true);
+
+approve.setOnAction(
+        e -> handleApproveEvent()
+);
 
         VBox rb = new VBox(
                 7,
@@ -256,7 +275,7 @@ public class EventRequesReviewA {
                 lbl("Review Notes (Internal)", 12, true),
                 notesArea,
                 checkConflict,
-                approve,
+                approve1,
                 assign,
                 reject
         );
