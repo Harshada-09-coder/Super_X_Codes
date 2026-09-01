@@ -23,6 +23,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Stage;
 
 public class ReviewPageC {
 
@@ -30,7 +31,7 @@ public class ReviewPageC {
     private String uid;
     private String idToken;
 
-    // High Contrast Theme Colors
+    // High Contrast Theme Colors (Unchanged)
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
     private static final String MAIN_BLUE = "#002A60";
@@ -203,8 +204,9 @@ public class ReviewPageC {
         Region fSpacer = new Region();
         HBox.setHgrow(fSpacer, Priority.ALWAYS);
 
-        Button submitBtn = new Button("Submit Plan ✓");
-        submitBtn.setPrefSize(145, 40);
+        // 💳 SUBMIT & PAY BUTTON (Razorpay Integration)
+        Button submitBtn = new Button("Proceed to Pay & Submit ✓");
+        submitBtn.setPrefSize(200, 40);
         submitBtn.setFont(Font.font("Arial", FontWeight.BOLD, 12));
         submitBtn.setStyle("-fx-background-color:" + NAVY + ";-fx-text-fill:white;-fx-background-radius:6;-fx-cursor:hand;");
 
@@ -222,9 +224,6 @@ public class ReviewPageC {
             if (evName == null || evName.isBlank()) {
                 evName = (EventData.eventType.isBlank() ? "Event" : EventData.eventType) + " Celebration";
             }
-
-            submitBtn.setDisable(true);
-            submitBtn.setText("Submitting...");
 
             final String finalUid = customerUid;
             final String finalToken = customerToken;
@@ -245,7 +244,7 @@ public class ReviewPageC {
             event.setVenueType(EventData.venue.isBlank() ? "Banquet Hall" : EventData.venue);
             event.setBudget(EventData.budget.isBlank() ? "₹ 8,45,000" : EventData.budget);
             event.setAiEnabled(true);
-            event.setStatus("PENDING");
+            event.setStatus("PAID"); // पेमेंट पूर्ण झाल्यावर PAID स्टेटस
             event.setOrganizerStatus("NOT_ASSIGNED");
 
             // ATTACH COMPLETE DYNAMIC AI PLAN TO FIRESTORE EVENT DOCUMENT
@@ -281,48 +280,68 @@ public class ReviewPageC {
                 event.setGuestLimit(convertedGuests.size() > 0 ? convertedGuests.size() : (EventData.guests > 0 ? EventData.guests : 250));
             }
 
-            Task<Boolean> saveTask = new Task<>() {
-                @Override
-                protected Boolean call() {
-                    CustomerController controller = new CustomerController();
-                    boolean saved = controller.createEvent(event);
-                    if (saved) {
-                        controller.markCustomerAsExisting(finalUid);
+            // बजेटमधून रक्कम काढणे (उदा. ₹ 8,45,000 -> 845000.0)
+            double amountToPay = 5000.0;
+            try {
+                String cleanBudget = EventData.budget.replaceAll("[^0-9.]", "");
+                if (!cleanBudget.isEmpty()) {
+                    amountToPay = Double.parseDouble(cleanBudget);
+                }
+            } catch (Exception ignored) {}
+
+            // 🎯 RAZORPAY PAYMENT DIALOG उघडणे
+            Stage currentStage = (Stage) submitBtn.getScene().getWindow();
+            PaymentView paymentView = new PaymentView();
+
+            final double finalAmount = amountToPay;
+            paymentView.openPaymentWindow(currentStage, event, finalAmount, () -> {
+                // पेमेंट यशस्वी झाल्यानंतर Firebase मध्ये सेव्ह करणे
+                submitBtn.setDisable(true);
+                submitBtn.setText("Saving Event...");
+
+                Task<Boolean> saveTask = new Task<>() {
+                    @Override
+                    protected Boolean call() {
+                        CustomerController controller = new CustomerController();
+                        boolean saved = controller.createEvent(event);
+                        if (saved) {
+                            controller.markCustomerAsExisting(finalUid);
+                        }
+                        return saved;
                     }
-                    return saved;
-                }
-            };
+                };
 
-            saveTask.setOnSucceeded(evt -> {
-                submitBtn.setDisable(false);
-                submitBtn.setText("Submit Plan ✓");
+                saveTask.setOnSucceeded(evt -> {
+                    submitBtn.setDisable(false);
+                    submitBtn.setText("Proceed to Pay & Submit ✓");
 
-                boolean isSaved = saveTask.getValue();
-                if (isSaved) {
-                    EventData.reset();
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Event & AI Plan Submitted Successfully! Your request has been sent to Admin for Organizer assignment.");
-                    alert.setHeaderText("Submission Successful");
+                    boolean isSaved = saveTask.getValue();
+                    if (isSaved) {
+                        EventData.reset();
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Payment of ₹" + String.format("%.2f", finalAmount) + " Received!\nYour event has been successfully booked and sent to Admin.");
+                        alert.setHeaderText("Booking Confirmed!");
+                        alert.showAndWait();
+
+                        ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
+                        LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
+                    } else {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Payment was successful, but failed to save event. Please contact Admin.");
+                        alert.setHeaderText("Save Failed");
+                        alert.showAndWait();
+                    }
+                });
+
+                saveTask.setOnFailed(evt -> {
+                    submitBtn.setDisable(false);
+                    submitBtn.setText("Proceed to Pay & Submit ✓");
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred while saving the event.");
                     alert.showAndWait();
+                });
 
-                    ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
-                    LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
-                } else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save event. Please check Firestore connection.");
-                    alert.setHeaderText("Submission Failed");
-                    alert.showAndWait();
-                }
+                Thread thread = new Thread(saveTask);
+                thread.setDaemon(true);
+                thread.start();
             });
-
-            saveTask.setOnFailed(evt -> {
-                submitBtn.setDisable(false);
-                submitBtn.setText("Submit Plan ✓");
-                Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred while saving the event. Please check your connection.");
-                alert.showAndWait();
-            });
-
-            Thread thread = new Thread(saveTask);
-            thread.setDaemon(true);
-            thread.start();
         });
 
         footer.getChildren().addAll(back, fSpacer, submitBtn);
