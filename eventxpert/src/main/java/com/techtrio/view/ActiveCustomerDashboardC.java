@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.techtrio.controller.CustomerController;
+import com.techtrio.controller.VendorController;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
+import com.techtrio.model.VendorBooking;
 import com.techtrio.model.WeatherData;
 import com.techtrio.services.WeatherService;
 import com.techtrio.session.UserSession;
@@ -73,7 +75,7 @@ public class ActiveCustomerDashboardC {
     private Label weatherAlertTextLabel;
 
     // Calendar Navigation
-    private YearMonth currentCalendarMonth = YearMonth.of(2024, 5);
+    private YearMonth currentCalendarMonth = YearMonth.now();
     private Label calendarMonthLabel;
     private GridPane calendarGrid;
 
@@ -91,10 +93,8 @@ public class ActiveCustomerDashboardC {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        // 1. Sidebar on Left
         root.setLeft(createSidebar());
 
-        // 2. Main Scrollable Dashboard Content (Top bar removed)
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
@@ -182,9 +182,9 @@ public class ActiveCustomerDashboardC {
         headerRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox titleBox = new VBox(3);
-        welcomeHeadingLabel = new Label("Welcome Message! 👋");
+        welcomeHeadingLabel = new Label("Welcome back! 👋");
         welcomeHeadingLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
-        Label subtitle = new Label("Let’s plan your next event.");
+        Label subtitle = new Label("Let’s plan and manage your events.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill:" + TEXT_MUTED + ";");
         titleBox.getChildren().addAll(welcomeHeadingLabel, subtitle);
 
@@ -232,13 +232,13 @@ public class ActiveCustomerDashboardC {
         totalEventsValLabel = new Label("0");
         upcomingEventsValLabel = new Label("0");
         completedEventsValLabel = new Label("0");
-        totalSpentValLabel = new Label("₹0");
+        totalSpentValLabel = new Label("₹ 0");
 
         row.getChildren().addAll(
                 createKpiCard("My Events", totalEventsValLabel, "Total events", "fas-calendar-alt", "#0284C7"),
                 createKpiCard("Upcoming", upcomingEventsValLabel, "Next 30 days", "fas-calendar-check", "#4F46E5"),
                 createKpiCard("Completed", completedEventsValLabel, "Events done", "fas-check-circle", "#16A34A"),
-                createKpiCard("Total spent", totalSpentValLabel, "All events", "fas-wallet", "#0D3979")
+                createKpiCard("Total Budget", totalSpentValLabel, "All events", "fas-wallet", "#0D3979")
         );
         return row;
     }
@@ -315,26 +315,26 @@ public class ActiveCustomerDashboardC {
         VBox detailsCol = new VBox(5);
         HBox.setHgrow(detailsCol, Priority.ALWAYS);
 
-        upcomingEventNameLabel = new Label("Loading latest event...");
+        upcomingEventNameLabel = new Label("No active events");
         upcomingEventNameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
 
         upcomingEventDateLabel = new Label("📅 Date TBD");
         upcomingEventDateLabel.setStyle("-fx-font-size: 12px; -fx-text-fill:" + TEXT_MUTED + ";");
 
-        upcomingEventTimeLabel = new Label("🕒 10:00 AM");
+        upcomingEventTimeLabel = new Label("🕒 Time TBD");
         upcomingEventTimeLabel.setStyle("-fx-font-size: 12px; -fx-text-fill:" + TEXT_MUTED + ";");
 
-        upcomingEventLocationLabel = new Label("📍 Pune, Maharashtra");
+        upcomingEventLocationLabel = new Label("📍 Location TBD");
         upcomingEventLocationLabel.setStyle("-fx-font-size: 12px; -fx-text-fill:" + TEXT_MUTED + ";");
 
-        upcomingEventGuestsLabel = new Label("👥 100 Guests");
+        upcomingEventGuestsLabel = new Label("👥 0 Guests");
         upcomingEventGuestsLabel.setStyle("-fx-font-size: 12px; -fx-text-fill:" + TEXT_MUTED + ";");
 
         HBox actionRow = new HBox(12);
         actionRow.setAlignment(Pos.CENTER_LEFT);
         actionRow.setPadding(new Insets(4, 0, 0, 0));
 
-        upcomingEventStatusBadge = new Label("Status : Planning");
+        upcomingEventStatusBadge = new Label("Status : PLANNING");
         upcomingEventStatusBadge.setStyle("-fx-background-color: #E0F2FE; -fx-text-fill: #0284C7; -fx-padding: 4 10; -fx-background-radius: 6px; -fx-font-size: 11px; -fx-font-weight: bold;");
 
         Region actSpace = new Region();
@@ -393,7 +393,7 @@ public class ActiveCustomerDashboardC {
             renderCalendarTable();
         });
 
-        calendarMonthLabel = new Label("May 2024");
+        calendarMonthLabel = new Label("");
         calendarMonthLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
 
         Label next = new Label("›");
@@ -467,10 +467,8 @@ public class ActiveCustomerDashboardC {
         }
 
         for (int d = 1; d <= daysInMonth; d++) {
-            boolean isHighlighted = (d == 15);
-            boolean isDot = (d == 22);
-
-            VBox box = createDateCell(String.valueOf(d), false, isHighlighted, isDot);
+            boolean isHighlighted = (d == LocalDate.now().getDayOfMonth() && currentCalendarMonth.getMonth() == LocalDate.now().getMonth());
+            VBox box = createDateCell(String.valueOf(d), false, isHighlighted, false);
             calendarGrid.add(box, cell++, row);
 
             if (cell == 7) {
@@ -547,19 +545,19 @@ public class ActiveCustomerDashboardC {
         VBox totalBox = new VBox(1);
         Label curBudgetLbl = new Label("Current Event Budget");
         curBudgetLbl.setStyle("-fx-font-size: 11px; -fx-text-fill:" + TEXT_MUTED + ";");
-        budgetOverviewAmountLabel = new Label("₹50,000");
+        budgetOverviewAmountLabel = new Label("₹ 0");
         budgetOverviewAmountLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
         totalBox.getChildren().addAll(curBudgetLbl, budgetOverviewAmountLabel);
 
         HBox progressRow = new HBox(8);
         progressRow.setAlignment(Pos.CENTER_LEFT);
-        budgetOverviewProgressBar = new ProgressBar(0.84);
+        budgetOverviewProgressBar = new ProgressBar(0.0);
         budgetOverviewProgressBar.setMaxWidth(Double.MAX_VALUE);
         budgetOverviewProgressBar.setPrefHeight(8);
         budgetOverviewProgressBar.setStyle("-fx-accent: " + PRIMARY_BLUE + ";");
         HBox.setHgrow(budgetOverviewProgressBar, Priority.ALWAYS);
 
-        budgetOverviewProgressPercent = new Label("84%");
+        budgetOverviewProgressPercent = new Label("0%");
         budgetOverviewProgressPercent.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill:" + PRIMARY_BLUE + ";");
         progressRow.getChildren().addAll(budgetOverviewProgressBar, budgetOverviewProgressPercent);
 
@@ -575,7 +573,7 @@ public class ActiveCustomerDashboardC {
         VBox allocText = new VBox(1);
         Label allocTitle = new Label("Allocated");
         allocTitle.setStyle("-fx-font-size: 10px; -fx-text-fill:" + TEXT_MUTED + ";");
-        budgetAllocatedValLabel = new Label("₹42,000");
+        budgetAllocatedValLabel = new Label("₹ 0");
         budgetAllocatedValLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
         allocText.getChildren().addAll(allocTitle, budgetAllocatedValLabel);
         allocPill.getChildren().addAll(coinsIcon, allocText);
@@ -588,7 +586,7 @@ public class ActiveCustomerDashboardC {
         VBox remText = new VBox(1);
         Label remTitle = new Label("Remaining");
         remTitle.setStyle("-fx-font-size: 10px; -fx-text-fill:" + TEXT_MUTED + ";");
-        budgetRemainingValLabel = new Label("₹8,000");
+        budgetRemainingValLabel = new Label("₹ 0");
         budgetRemainingValLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
         remText.getChildren().addAll(remTitle, budgetRemainingValLabel);
         remPill.getChildren().addAll(walletIcon, remText);
@@ -717,7 +715,7 @@ public class ActiveCustomerDashboardC {
             totalEventsValLabel.setText("0");
             upcomingEventsValLabel.setText("0");
             completedEventsValLabel.setText("0");
-            totalSpentValLabel.setText("₹0");
+            totalSpentValLabel.setText("₹ 0");
             upcomingEventNameLabel.setText("No active events");
             upcomingEventDateLabel.setText("Click '+ Create Event' to begin");
             return;
@@ -736,7 +734,7 @@ public class ActiveCustomerDashboardC {
 
         int upcomingCount = 0;
         int completedCount = 0;
-        double totalSpent = 0;
+        double sumAllBudgets = 0.0;
 
         for (Event ev : events) {
             String st = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "PLANNING";
@@ -751,19 +749,19 @@ public class ActiveCustomerDashboardC {
                 String clean = ev.getBudget() != null ? ev.getBudget().replaceAll("[^0-9.]", "") : "0";
                 if (!clean.isEmpty()) budgetAmt = Double.parseDouble(clean);
             } catch (Exception ignored) {}
-            totalSpent += budgetAmt;
+            sumAllBudgets += budgetAmt;
         }
 
         upcomingEventsValLabel.setText(String.valueOf(upcomingCount));
         completedEventsValLabel.setText(String.valueOf(completedCount));
-        totalSpentValLabel.setText("₹" + String.format("%,.0f", totalSpent));
+        totalSpentValLabel.setText("₹ " + String.format("%,.0f", sumAllBudgets));
 
         if (latestUpcomingEvent != null) {
-            String name = latestUpcomingEvent.getEventName() != null ? latestUpcomingEvent.getEventName() : "College Seminar";
-            String date = latestUpcomingEvent.getEventDate() != null ? latestUpcomingEvent.getEventDate() : "15 May 2024";
+            String name = latestUpcomingEvent.getEventName() != null ? latestUpcomingEvent.getEventName() : "Upcoming Event";
+            String date = latestUpcomingEvent.getEventDate() != null ? latestUpcomingEvent.getEventDate() : "Date TBD";
             String time = latestUpcomingEvent.getTime() != null ? latestUpcomingEvent.getTime() : "10:00 AM";
             String loc = latestUpcomingEvent.getCity() != null ? latestUpcomingEvent.getCity() + ", Maharashtra" : "Pune, Maharashtra";
-            int guests = latestUpcomingEvent.getGuests() > 0 ? latestUpcomingEvent.getGuests() : 100;
+            int guests = latestUpcomingEvent.getGuests() > 0 ? latestUpcomingEvent.getGuests() : 0;
             String status = latestUpcomingEvent.getStatus() != null ? latestUpcomingEvent.getStatus().toUpperCase() : "PLANNING";
 
             upcomingEventNameLabel.setText(name);
@@ -773,10 +771,10 @@ public class ActiveCustomerDashboardC {
             upcomingEventGuestsLabel.setText("👥 " + guests + " Guests");
             upcomingEventStatusBadge.setText("Status : " + status);
 
-            // Live Real-Time Budget Overview Binding with Organizer's Saved Breakdown
-            double eventBudget = 5000.0;
+            // Live Real-Time Budget Overview Binding
+            double eventBudget = 0.0;
             try {
-                String clean = latestUpcomingEvent.getBudget() != null ? latestUpcomingEvent.getBudget().replaceAll("[^0-9.]", "") : "5000";
+                String clean = latestUpcomingEvent.getBudget() != null ? latestUpcomingEvent.getBudget().replaceAll("[^0-9.]", "") : "0";
                 if (!clean.isEmpty()) eventBudget = Double.parseDouble(clean);
             } catch (Exception ignored) {}
 
@@ -787,8 +785,6 @@ public class ActiveCustomerDashboardC {
                 }
             } else if (latestUpcomingEvent.getAllocatedBudget() > 0) {
                 allocated = latestUpcomingEvent.getAllocatedBudget();
-            } else {
-                allocated = eventBudget * 0.97;
             }
 
             double remaining = Math.max(0, eventBudget - allocated);

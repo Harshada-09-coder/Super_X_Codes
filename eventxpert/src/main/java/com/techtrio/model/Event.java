@@ -58,6 +58,21 @@ public class Event {
     private String qrToken;
     private List<Guest> guestList = new ArrayList<>();
 
+    // --- BUDGET & EXPENSE EXTENSIONS ---
+    private double allocatedBudget;
+    private Map<String, Object> budgetRecommendation;
+    private String budgetOptimizationStatus;
+
+    // --- VENUE MANAGEMENT EXTENSIONS ---
+    private String venueStatus; // PENDING_SUGGESTION, SUGGESTED, CONFIRMED, CHANGE_REQUESTED
+    private String confirmedVenueName;
+    private String confirmedVenueAddress;
+    private String confirmedVenueCost;
+    private String venueConfirmationDate;
+    private String venueConfirmedBy;
+    private String venueChangeNotes;
+    private List<VenueModel> suggestedVenues = new ArrayList<>();
+
     public Event() {
     }
 
@@ -221,12 +236,33 @@ public class Event {
         this.locality = locality;
     }
 
+    // Area mapping for compatibility with LocationC & ReviewPageC
+    public String getArea() {
+        return locality != null ? locality : "";
+    }
+
+    public void setArea(String area) {
+        this.locality = area;
+    }
+
     public String getVenueType() {
         return venueType;
     }
 
     public void setVenueType(String venueType) {
         this.venueType = venueType;
+    }
+
+    // Venue alias mapping
+    public String getVenue() {
+        if (confirmedVenueName != null && !confirmedVenueName.isBlank()) {
+            return confirmedVenueName;
+        }
+        return venueType != null ? venueType : "";
+    }
+
+    public void setVenue(String venue) {
+        this.venueType = venue;
     }
 
     public String getBudget() {
@@ -391,10 +427,7 @@ public class Event {
         this.guestList = guestList;
     }
 
-    private double allocatedBudget;
-    private Map<String, Object> budgetRecommendation;
-    private String budgetOptimizationStatus;
-
+    // --- BUDGET & EXPENSE GETTERS & SETTERS ---
     public double getAllocatedBudget() {
         return allocatedBudget;
     }
@@ -417,5 +450,70 @@ public class Event {
 
     public void setBudgetOptimizationStatus(String budgetOptimizationStatus) {
         this.budgetOptimizationStatus = budgetOptimizationStatus;
+    }
+
+    // --- VENUE MANAGEMENT GETTERS & SETTERS ---
+    public String getVenueStatus() {
+        return venueStatus != null ? venueStatus : "PENDING_SUGGESTION";
+    }
+
+    public void setVenueStatus(String venueStatus) {
+        this.venueStatus = venueStatus;
+    }
+
+    public String getConfirmedVenueName() {
+        return confirmedVenueName;
+    }
+
+    public void setConfirmedVenueName(String confirmedVenueName) {
+        this.confirmedVenueName = confirmedVenueName;
+    }
+
+    public String getConfirmedVenueAddress() {
+        return confirmedVenueAddress;
+    }
+
+    public void setConfirmedVenueAddress(String confirmedVenueAddress) {
+        this.confirmedVenueAddress = confirmedVenueAddress;
+    }
+
+    public String getConfirmedVenueCost() {
+        return confirmedVenueCost;
+    }
+
+    public void setConfirmedVenueCost(String confirmedVenueCost) {
+        this.confirmedVenueCost = confirmedVenueCost;
+    }
+
+    public String getVenueConfirmationDate() {
+        return venueConfirmationDate;
+    }
+
+    public void setVenueConfirmationDate(String venueConfirmationDate) {
+        this.venueConfirmationDate = venueConfirmationDate;
+    }
+
+    public String getVenueConfirmedBy() {
+        return venueConfirmedBy;
+    }
+
+    public void setVenueConfirmedBy(String venueConfirmedBy) {
+        this.venueConfirmedBy = venueConfirmedBy;
+    }
+
+    public String getVenueChangeNotes() {
+        return venueChangeNotes;
+    }
+
+    public void setVenueChangeNotes(String venueChangeNotes) {
+        this.venueChangeNotes = venueChangeNotes;
+    }
+
+    public List<VenueModel> getSuggestedVenues() {
+        return suggestedVenues;
+    }
+
+    public void setSuggestedVenues(List<VenueModel> suggestedVenues) {
+        this.suggestedVenues = suggestedVenues;
     }
 }
