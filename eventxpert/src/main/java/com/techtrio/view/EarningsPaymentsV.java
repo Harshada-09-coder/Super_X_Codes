@@ -1,5 +1,10 @@
 package com.techtrio.view;
 
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
+import com.techtrio.session.UserSession;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -17,7 +22,7 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EarningsPaymentsV{
+public class EarningsPaymentsV {
     private Scene earningsPaymentsScene;
     private VendorDashboardV vendorDashboard;
 
@@ -61,6 +66,16 @@ public class EarningsPaymentsV{
 
     private final List<TransactionData> transactions = new ArrayList<>();
     private VBox tableRowsContainer;
+
+    // 🎯 Dynamic UI Labels for Real-Time Payment Updates
+    private Label lblTotalEarningsVal;
+    private Label lblThisMonthVal;
+    private Label lblPendingPaymentsVal;
+    private Label lblReceivedVal;
+    private Label lblGrossVal;
+    private Label lblPlatformFeeVal;
+    private Label lblNetVal;
+    private Label lblModalAvailableBal;
 
     public void setVendorDashboard(VendorDashboardV vendorDashboard) {
         this.vendorDashboard = vendorDashboard;
@@ -106,6 +121,9 @@ public class EarningsPaymentsV{
 
         root.setCenter(mainArea);
 
+        // 🎯 Real-Time Firebase Listener सुरू करणे
+        listenToVendorEarningsRealtime(primaryStage);
+
         // Scene Setup
         Scene scene = new Scene(root, 1550, 785);
         earningsPaymentsScene = scene;
@@ -113,10 +131,103 @@ public class EarningsPaymentsV{
     }
 
     private void initSampleTransactions() {
+        transactions.clear();
         transactions.add(new TransactionData("18 May 2026", "Booking Payment", "TechVision Annual Summit", "₹85,000", "-₹4,250", "₹80,750", "Paid"));
         transactions.add(new TransactionData("22 May 2026", "Booking Payment", "Leadership Summit 2026", "₹45,000", "-₹2,250", "₹42,750", "Paid"));
         transactions.add(new TransactionData("05 Jun 2026", "Booking Payment", "Startup Connect 2026", "₹72,000", "-₹3,600", "₹68,400", "Pending"));
         transactions.add(new TransactionData("12 Jun 2026", "Booking Payment", "Annual Gala Night", "₹60,000", "-₹3,000", "₹57,000", "Paid"));
+    }
+
+    // ==========================================
+    // 🎯 REAL-TIME FIREBASE EARNINGS LISTENER
+    // ==========================================
+    private void listenToVendorEarningsRealtime(Stage stage) {
+        String vendorUid = UserSession.getUid();
+        if (vendorUid == null || vendorUid.isBlank()) {
+            vendorUid = "VEND_MULTIPLE"; // Fallback identifier
+        }
+
+        try {
+            Firestore db = FirestoreClient.getFirestore();
+            final String finalVendorUid = vendorUid;
+
+            db.collection("vendors")
+              .document(finalVendorUid)
+              .collection("earnings")
+              .addSnapshotListener((snapshots, error) -> {
+                  if (error != null) {
+                      System.err.println("Vendor earnings listener error: " + error.getMessage());
+                      return;
+                  }
+
+                  if (snapshots != null && !snapshots.isEmpty()) {
+                      double totalEarned = 0.0;
+                      double pendingAmount = 0.0;
+                      double receivedAmount = 0.0;
+
+                      List<TransactionData> newTransactions = new ArrayList<>();
+
+                      for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                          Double payout = doc.getDouble("payoutAmount");
+                          String status = doc.getString("status");
+                          String eventId = doc.getString("eventId");
+                          String date = doc.getString("timestamp");
+
+                          if (payout != null) {
+                              totalEarned += payout;
+
+                              if ("ESCROW_LOCKED".equalsIgnoreCase(status) || "Pending".equalsIgnoreCase(status)) {
+                                  pendingAmount += payout;
+                              } else {
+                                  receivedAmount += payout;
+                              }
+
+                              double fee = payout * 0.03;
+                              double net = payout - fee;
+
+                              String formattedDate = (date != null && date.length() >= 10) ? date.substring(0, 10) : "Recent";
+                              String evName = (eventId != null) ? eventId : "Event Booking";
+                              String statusText = ("ESCROW_LOCKED".equalsIgnoreCase(status)) ? "Pending" : "Paid";
+
+                              newTransactions.add(new TransactionData(
+                                      formattedDate,
+                                      "Booking Payment",
+                                      evName,
+                                      "₹" + String.format("%,.0f", payout),
+                                      "-₹" + String.format("%,.0f", fee),
+                                      "₹" + String.format("%,.0f", net),
+                                      statusText
+                              ));
+                          }
+                      }
+
+                      final double fTotal = totalEarned;
+                      final double fPending = pendingAmount;
+                      final double fReceived = receivedAmount;
+                      final double fFee = fTotal * 0.03;
+                      final double fNet = fTotal - fFee;
+
+                      Platform.runLater(() -> {
+                          if (lblTotalEarningsVal != null) lblTotalEarningsVal.setText("₹" + String.format("%,.0f", fTotal));
+                          if (lblThisMonthVal != null) lblThisMonthVal.setText("₹" + String.format("%,.0f", fTotal));
+                          if (lblPendingPaymentsVal != null) lblPendingPaymentsVal.setText("₹" + String.format("%,.0f", fPending));
+                          if (lblReceivedVal != null) lblReceivedVal.setText("₹" + String.format("%,.0f", fReceived));
+                          if (lblGrossVal != null) lblGrossVal.setText("₹" + String.format("%,.0f", fTotal));
+                          if (lblPlatformFeeVal != null) lblPlatformFeeVal.setText("-₹" + String.format("%,.0f", fFee));
+                          if (lblNetVal != null) lblNetVal.setText("₹" + String.format("%,.0f", fNet));
+                          if (lblModalAvailableBal != null) lblModalAvailableBal.setText("Available Balance: ₹" + String.format("%,.0f", fNet));
+
+                          if (!newTransactions.isEmpty()) {
+                              transactions.clear();
+                              transactions.addAll(newTransactions);
+                              renderTransactionsTable(stage);
+                          }
+                      });
+                  }
+              });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // ==========================================
@@ -153,8 +264,8 @@ public class EarningsPaymentsV{
 
         // Menu Sections
         sidebar.getChildren().add(createSidebarItem("📊 Dashboard", false, e -> {
-        showToast(stage, "Opening Dashboard...");
-        if (vendorDashboard != null) {
+            showToast(stage, "Opening Dashboard...");
+            if (vendorDashboard != null) {
                 vendorDashboard.backToVendorDashboard();
             } else {
                 VendorDashboardV dashboard = new VendorDashboardV();
@@ -292,22 +403,27 @@ public class EarningsPaymentsV{
     }
 
     // ==========================================
-    // 4. SUMMARY CARDS ROW (MATCHING STITCH)
+    // 4. SUMMARY CARDS ROW (WITH DYNAMIC LABELS)
     // ==========================================
     private HBox createSummaryCardsRow() {
         HBox row = new HBox(14);
 
+        lblTotalEarningsVal = new Label("₹8,42,500");
+        lblThisMonthVal = new Label("₹2,48,500");
+        lblPendingPaymentsVal = new Label("₹42,000");
+        lblReceivedVal = new Label("₹2,06,500");
+
         row.getChildren().addAll(
-                createSummaryCard("TOTAL EARNINGS", "₹8,42,500", "📈 +12.5% vs last year", PRIMARY_BLUE, "💳"),
-                createSummaryCard("THIS MONTH", "₹2,48,500", "📈 +8.2% vs last month", PRIMARY_BLUE, "📅"),
-                createSummaryCard("PENDING PAYMENTS", "₹42,000", "3 invoices pending", WARNING_TEXT, "⏱"),
-                createSummaryCard("RECEIVED", "₹2,06,500", "83% of monthly revenue", GREEN_TEXT, "✓")
+                createSummaryCardWithLabel("TOTAL EARNINGS", lblTotalEarningsVal, "📈 +12.5% vs last year", PRIMARY_BLUE, "💳"),
+                createSummaryCardWithLabel("THIS MONTH", lblThisMonthVal, "📈 +8.2% vs last month", PRIMARY_BLUE, "📅"),
+                createSummaryCardWithLabel("PENDING PAYMENTS", lblPendingPaymentsVal, "Real-time Escrow", WARNING_TEXT, "⏱"),
+                createSummaryCardWithLabel("RECEIVED", lblReceivedVal, "Released Payments", GREEN_TEXT, "✓")
         );
 
         return row;
     }
 
-    private VBox createSummaryCard(String title, String val, String sub, String colorHex, String iconStr) {
+    private VBox createSummaryCardWithLabel(String title, Label valLabel, String sub, String colorHex, String iconStr) {
         VBox card = createCardContainer();
         HBox.setHgrow(card, Priority.ALWAYS);
         card.setPadding(new Insets(14));
@@ -321,8 +437,7 @@ public class EarningsPaymentsV{
         ic.setStyle("-fx-font-size: 14px; -fx-background-color: " + LIGHT_BLUE + "; -fx-padding: 4 8; -fx-background-radius: 50%;");
         top.getChildren().addAll(t, sp, ic);
 
-        Label v = new Label(val);
-        v.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        valLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Label s = new Label(sub);
         if (sub.contains("+")) {
@@ -331,7 +446,7 @@ public class EarningsPaymentsV{
             s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         }
 
-        card.getChildren().addAll(top, v, s);
+        card.getChildren().addAll(top, valLabel, s);
         return card;
     }
 
@@ -382,7 +497,7 @@ public class EarningsPaymentsV{
 
         head.getChildren().addAll(title, sp, filterCB);
 
-        // Custom JavaFX Visual Line Path (Weekly Trend Chart)
+        // Custom JavaFX Visual Line Path
         Pane chartArea = new Pane();
         chartArea.setPrefHeight(160);
         chartArea.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 8px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px;");
@@ -532,7 +647,7 @@ public class EarningsPaymentsV{
         Label title = new Label("Financial Insight"); title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
         head.getChildren().addAll(icon, title);
 
-        Label desc = new Label("Your revenue has grown by 12% compared to last quarter. Focus on collecting the ₹42,000 in pending payments to improve cash flow.");
+        Label desc = new Label("Your revenue has grown by 12% compared to last quarter. Real-time escrow ensures vendor and organizer payouts are secure.");
         desc.setWrapText(true);
         desc.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
 
@@ -546,10 +661,13 @@ public class EarningsPaymentsV{
         Label title = new Label("Monthly Breakdown");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
+        lblGrossVal = new Label("₹2,48,500");
+        lblPlatformFeeVal = new Label("-₹7,455");
+
         VBox grid = new VBox(8);
         grid.getChildren().addAll(
-                createBreakdownRow("Gross Earnings", "₹2,48,500", TEXT_MAIN),
-                createBreakdownRow("Platform Fees (3%)", "-₹7,455", RED_TEXT),
+                createBreakdownRowWithLabel("Gross Earnings", lblGrossVal, TEXT_MAIN),
+                createBreakdownRowWithLabel("Platform Fees (3%)", lblPlatformFeeVal, RED_TEXT),
                 createBreakdownRow("Taxes (TDS)", "Pending", WARNING_TEXT)
         );
 
@@ -558,8 +676,9 @@ public class EarningsPaymentsV{
         netBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 8px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px;");
 
         Label netLbl = new Label("Net Earnings"); netLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Label netVal = new Label("₹2,41,045"); netVal.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: " + PRIMARY_BLUE + ";");
-        netBox.getChildren().addAll(netLbl, netVal);
+        lblNetVal = new Label("₹2,41,045"); 
+        lblNetVal.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        netBox.getChildren().addAll(netLbl, lblNetVal);
 
         Button withdrawBtn = createPrimaryButton("🏦 Withdraw Funds / Request Payout");
         withdrawBtn.setMaxWidth(Double.MAX_VALUE);
@@ -575,6 +694,15 @@ public class EarningsPaymentsV{
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
         Label v = new Label(val); v.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
         r.getChildren().addAll(l, sp, v);
+        return r;
+    }
+
+    private HBox createBreakdownRowWithLabel(String label, Label valLbl, String color) {
+        HBox r = new HBox();
+        Label l = new Label(label); l.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+        valLbl.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
+        r.getChildren().addAll(l, sp, valLbl);
         return r;
     }
 
@@ -639,8 +767,8 @@ public class EarningsPaymentsV{
         Label title = new Label("🏦 Request Payout");
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
-        Label bal = new Label("Available Balance: ₹86,500");
-        bal.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        lblModalAvailableBal = new Label("Available Balance: " + (lblNetVal != null ? lblNetVal.getText() : "₹86,500"));
+        lblModalAvailableBal.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         TextField amountInput = new TextField("42500");
         amountInput.setPromptText("Enter amount in ₹");
@@ -654,7 +782,7 @@ public class EarningsPaymentsV{
             modal.close();
         });
 
-        layout.getChildren().addAll(title, bal, new Label("Withdraw Amount:"), amountInput, dest, new Separator(), submitBtn);
+        layout.getChildren().addAll(title, lblModalAvailableBal, new Label("Withdraw Amount:"), amountInput, dest, new Separator(), submitBtn);
 
         Scene scene = new Scene(layout, 360, 260);
         modal.setScene(scene);

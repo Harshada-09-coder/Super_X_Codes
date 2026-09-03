@@ -204,13 +204,13 @@ public class ReviewPageC {
         Region fSpacer = new Region();
         HBox.setHgrow(fSpacer, Priority.ALWAYS);
 
-        // 💳 SUBMIT & PAY BUTTON (Razorpay Integration)
-        Button submitBtn = new Button("Proceed to Pay & Submit ✓");
-        submitBtn.setPrefSize(200, 40);
-        submitBtn.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        submitBtn.setStyle("-fx-background-color:" + NAVY + ";-fx-text-fill:white;-fx-background-radius:6;-fx-cursor:hand;");
+        // 💳 PAY NOW BUTTON (Integrated with Razorpay, OTP & 3-Way Split)
+        Button payNowBtn = new Button("Pay Now 💳");
+        payNowBtn.setPrefSize(200, 40);
+        payNowBtn.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        payNowBtn.setStyle("-fx-background-color:" + NAVY + ";-fx-text-fill:white;-fx-background-radius:6;-fx-cursor:hand;");
 
-        submitBtn.setOnAction(e -> {
+        payNowBtn.setOnAction(e -> {
             String customerUid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
             String customerToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
 
@@ -228,6 +228,7 @@ public class ReviewPageC {
             final String finalUid = customerUid;
             final String finalToken = customerToken;
 
+            // 1. Event Object तयार करणे
             Event event = new Event();
             event.setEventId("EVT_" + System.currentTimeMillis());
             event.setCustomerId(finalUid);
@@ -244,14 +245,14 @@ public class ReviewPageC {
             event.setVenueType(EventData.venue.isBlank() ? "Banquet Hall" : EventData.venue);
             event.setBudget(EventData.budget.isBlank() ? "₹ 8,45,000" : EventData.budget);
             event.setAiEnabled(true);
-            event.setStatus("PAID"); // पेमेंट पूर्ण झाल्यावर PAID स्टेटस
+            event.setStatus("PAID"); // पेमेंट झाल्यावर आपोआप PAID होईल
             event.setOrganizerStatus("NOT_ASSIGNED");
 
-            // ATTACH COMPLETE DYNAMIC AI PLAN TO FIRESTORE EVENT DOCUMENT
+            // AI Plan & Theme माहिती
             event.setAiPlanJson(EventData.aiPlanJson);
             event.setTheme(EventData.theme);
 
-            // ================= ATTACH GUEST MANAGEMENT DATA =================
+            // Guest Management डेटा
             String selectedMode = (EventData.guestMode != null && !EventData.guestMode.isBlank())
                     ? EventData.guestMode
                     : "MANUAL";
@@ -280,7 +281,7 @@ public class ReviewPageC {
                 event.setGuestLimit(convertedGuests.size() > 0 ? convertedGuests.size() : (EventData.guests > 0 ? EventData.guests : 250));
             }
 
-            // बजेटमधून रक्कम काढणे (उदा. ₹ 8,45,000 -> 845000.0)
+            // 2. बजेटमधून रक्कम काढणे (उदा. ₹ 8,45,000 -> 845000.0)
             double amountToPay = 5000.0;
             try {
                 String cleanBudget = EventData.budget.replaceAll("[^0-9.]", "");
@@ -289,62 +290,82 @@ public class ReviewPageC {
                 }
             } catch (Exception ignored) {}
 
-            // 🎯 RAZORPAY PAYMENT DIALOG उघडणे
-            Stage currentStage = (Stage) submitBtn.getScene().getWindow();
-            PaymentView paymentView = new PaymentView();
-
             final double finalAmount = amountToPay;
-            paymentView.openPaymentWindow(currentStage, event, finalAmount, () -> {
-                // पेमेंट यशस्वी झाल्यानंतर Firebase मध्ये सेव्ह करणे
-                submitBtn.setDisable(true);
-                submitBtn.setText("Saving Event...");
+            double vendorShare = finalAmount * 0.50; // 50% व्हेंडर्ससाठी वाटप
 
-                Task<Boolean> saveTask = new Task<>() {
-                    @Override
-                    protected Boolean call() {
-                        CustomerController controller = new CustomerController();
-                        boolean saved = controller.createEvent(event);
-                        if (saved) {
-                            controller.markCustomerAsExisting(finalUid);
+            // युझरचा ईमेल मिळवणे (UserSession द्वारे)
+            String customerEmail = "customer@eventxpert.com";
+            try {
+                if (UserSession.getEmail() != null && !UserSession.getEmail().isBlank()) {
+                    customerEmail = UserSession.getEmail();
+                }
+            } catch (Exception ignored) {}
+
+            String organizerId = "ORG_PENDING_ASSIGN";
+            String vendorId = "VEND_MULTIPLE";
+
+            // 🎯 3. RAZORPAY + REAL-TIME OTP + 3-WAY SPLIT DIALOG ओपन करणे
+            RazorpayPaymentDialog paymentDialog = new RazorpayPaymentDialog();
+            paymentDialog.showPaymentDialog(
+                event.getEventId(),
+                customerEmail,
+                finalUid,
+                organizerId,
+                vendorId,
+                finalAmount,
+                vendorShare,
+                () -> {
+                    // पेमेंट आणि OTP दोन्ही यशस्वी झाल्यानंतर:
+                    payNowBtn.setDisable(true);
+                    payNowBtn.setText("Confirming Event...");
+
+                    Task<Boolean> saveTask = new Task<>() {
+                        @Override
+                        protected Boolean call() {
+                            CustomerController controller = new CustomerController();
+                            boolean saved = controller.createEvent(event);
+                            if (saved) {
+                                controller.markCustomerAsExisting(finalUid);
+                            }
+                            return saved;
                         }
-                        return saved;
-                    }
-                };
+                    };
 
-                saveTask.setOnSucceeded(evt -> {
-                    submitBtn.setDisable(false);
-                    submitBtn.setText("Proceed to Pay & Submit ✓");
+                    saveTask.setOnSucceeded(evt -> {
+                        payNowBtn.setDisable(false);
+                        payNowBtn.setText("Pay Now 💳");
 
-                    boolean isSaved = saveTask.getValue();
-                    if (isSaved) {
-                        EventData.reset();
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Payment of ₹" + String.format("%.2f", finalAmount) + " Received!\nYour event has been successfully booked and sent to Admin.");
-                        alert.setHeaderText("Booking Confirmed!");
+                        boolean isSaved = saveTask.getValue();
+                        if (isSaved) {
+                            EventData.reset();
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Payment of ₹" + String.format("%.2f", finalAmount) + " Received!\n\nYour event has been booked and funds have been processed successfully.");
+                            alert.setHeaderText("Booking Confirmed!");
+                            alert.showAndWait();
+
+                            ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
+                            LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
+                        } else {
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "Payment was successful, but failed to save event. Please contact Admin.");
+                            alert.setHeaderText("Save Failed");
+                            alert.showAndWait();
+                        }
+                    });
+
+                    saveTask.setOnFailed(evt -> {
+                        payNowBtn.setDisable(false);
+                        payNowBtn.setText("Pay Now 💳");
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred while saving the event.");
                         alert.showAndWait();
+                    });
 
-                        ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
-                        LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
-                    } else {
-                        Alert alert = new Alert(Alert.AlertType.ERROR, "Payment was successful, but failed to save event. Please contact Admin.");
-                        alert.setHeaderText("Save Failed");
-                        alert.showAndWait();
-                    }
-                });
-
-                saveTask.setOnFailed(evt -> {
-                    submitBtn.setDisable(false);
-                    submitBtn.setText("Proceed to Pay & Submit ✓");
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred while saving the event.");
-                    alert.showAndWait();
-                });
-
-                Thread thread = new Thread(saveTask);
-                thread.setDaemon(true);
-                thread.start();
-            });
+                    Thread thread = new Thread(saveTask);
+                    thread.setDaemon(true);
+                    thread.start();
+                }
+            );
         });
 
-        footer.getChildren().addAll(back, fSpacer, submitBtn);
+        footer.getChildren().addAll(back, fSpacer, payNowBtn);
 
         VBox rightSide = new VBox(topBar, scrollPane, footer);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);

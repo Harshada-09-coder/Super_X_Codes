@@ -36,7 +36,7 @@ public class AdminDashboardA {
     private Label totalVendorsVal;
     private Label activeEventsVal;
     private Label pendingRequestsVal;
-    private Label totalRevenueVal;
+    private Label totalRevenueVal; // 🎯 LIVE REVENUE LABEL
     private TableView<String[]> table;
 
     public Scene getadminDashboardScene() {
@@ -142,7 +142,7 @@ public class AdminDashboardA {
         HBox titleRow = new HBox(15, titleBox, titleSpace);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        // 🎯 KPI CARDS ROW
+        // 🎯 KPI CARDS ROW (With LIVE REVENUE CARD)
         HBox cards = new HBox(10);
 
         totalCustomersVal = new Label("0");
@@ -150,14 +150,14 @@ public class AdminDashboardA {
         totalVendorsVal = new Label("0");
         activeEventsVal = new Label("0");
         pendingRequestsVal = new Label("0");
-        totalRevenueVal = new Label("₹0.00");
+        totalRevenueVal = new Label("₹0.00"); // Live Revenue
 
         VBox customerCard = createCard("Total Customers", totalCustomersVal, "Registered");
         VBox organizerCard = createCard("Total Organizers", totalOrganizersVal, "Active");
         VBox vendorCard = createCard("Total Vendors", totalVendorsVal, "Active");
         VBox activeEventsCard = createCard("Active Events", activeEventsVal, "Planning");
         VBox pendingRequestsCard = createCard("Pending Requests", pendingRequestsVal, "Need review");
-        VBox revenueCard = createCard("Platform Revenue", totalRevenueVal, "5% Net Commission");
+        VBox revenueCard = createCard("Platform Revenue", totalRevenueVal, "5% Net Commission"); // 💰 Revenue Card
 
         cards.getChildren().addAll(customerCard, organizerCard, vendorCard, activeEventsCard, pendingRequestsCard, revenueCard);
 
@@ -191,7 +191,7 @@ public class AdminDashboardA {
             NavigationManager.navigate("Reports & Analytics", stage);
         });
 
-        // PENDING EVENT REQUESTS TABLE
+        // PENDING EVENT REQUESTS
         VBox requestBox = new VBox(10);
         requestBox.setPadding(new Insets(16));
         requestBox.setPrefWidth(850);
@@ -322,49 +322,44 @@ public class AdminDashboardA {
             @Override
             protected Void call() {
                 AdminController controller = new AdminController();
-                PaymentController paymentController = new PaymentController();
+                PaymentController paymentController = new PaymentController(); // 🎯 Payment Controller
 
                 List<CustomerProfile> customers = controller.getAllCustomerProfiles();
                 List<Event> events = controller.getAllEvents();
                 List<OrganizerProfile> organizers = controller.getAllOrganizers();
                 List<VendorProfile> vendors = controller.getAllVendors();
-                double totalPlatformRevenue = paymentController.getTotalPlatformRevenue();
+                double totalPlatformRevenue = paymentController.getTotalPlatformRevenue(); // 🎯 Live 5% Revenue
 
                 Platform.runLater(() -> {
-                    totalCustomersVal.setText(String.valueOf(customers != null ? customers.size() : 0));
-                    totalOrganizersVal.setText(String.valueOf(organizers != null ? organizers.size() : 0));
-                    totalVendorsVal.setText(String.valueOf(vendors != null ? vendors.size() : 0));
-                    totalRevenueVal.setText("₹" + String.format("%.2f", totalPlatformRevenue));
+                    totalCustomersVal.setText(String.valueOf(customers.size()));
+                    totalOrganizersVal.setText(String.valueOf(organizers.size()));
+                    totalVendorsVal.setText(String.valueOf(vendors.size()));
+                    totalRevenueVal.setText("₹" + String.format("%.2f", totalPlatformRevenue)); // 💰 Update Live Revenue
 
                     int pendingCount = 0;
                     int activeCount = 0;
 
                     table.getItems().clear();
-                    if (events != null) {
-                        for (Event ev : events) {
-                            if ("PENDING".equalsIgnoreCase(ev.getStatus())) {
-                                pendingCount++;
-                            } else {
-                                activeCount++;
-                            }
-
-                            CustomerProfile cust = (customers != null) ? customers.stream()
-                                    .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
-                                    .findFirst().orElse(null) : null;
-
-                            String custName = cust != null ? cust.getName() : "Customer (" + (ev.getCustomerId() != null && ev.getCustomerId().length() > 6 ? ev.getCustomerId().substring(0, 6) : "N/A") + ")";
-                            
-                            int guestCount = ev.getGuestCount() > 0 ? ev.getGuestCount() : ev.getGuests();
-
-                            table.getItems().add(new String[]{
-                                    custName,
-                                    ev.getEventType() != null ? ev.getEventType() : "General",
-                                    ev.getEventDate() != null ? ev.getEventDate() : "TBD",
-                                    String.valueOf(guestCount),
-                                    ev.getBudget() != null ? ev.getBudget() : "N/A",
-                                    ev.getStatus() != null ? ev.getStatus() : "PENDING"
-                            });
+                    for (Event ev : events) {
+                        if ("PENDING".equalsIgnoreCase(ev.getStatus())) {
+                            pendingCount++;
+                        } else {
+                            activeCount++;
                         }
+
+                        CustomerProfile cust = customers.stream()
+                                .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
+                                .findFirst().orElse(null);
+
+                        String custName = cust != null ? cust.getName() : "Customer (" + (ev.getCustomerId() != null && ev.getCustomerId().length() > 6 ? ev.getCustomerId().substring(0, 6) : "N/A") + ")";
+                        table.getItems().add(new String[]{
+                                custName,
+                                ev.getEventType() != null ? ev.getEventType() : "General",
+                                ev.getEventDate() != null ? ev.getEventDate() : "TBD",
+                                String.valueOf(ev.getGuests()),
+                                ev.getBudget() != null ? ev.getBudget() : "N/A",
+                                ev.getStatus() != null ? ev.getStatus() : "PENDING"
+                        });
                     }
 
                     activeEventsVal.setText(String.valueOf(activeCount));

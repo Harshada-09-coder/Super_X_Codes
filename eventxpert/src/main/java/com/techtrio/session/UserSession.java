@@ -34,6 +34,18 @@ public class UserSession {
         return userEmail;
     }
 
+    // 🎯 Razorpay आणि OTP साठी जोडलेली सुरक्षित मेथड:
+    public static synchronized String getEmail() {
+        return (userEmail != null && !userEmail.isBlank()) ? userEmail : "customer@eventxpert.com";
+    }
+
+    // 🎯 स्वतंत्र ईमेल सेट करण्यासाठी:
+    public static synchronized void setEmail(String email) {
+        if (email != null && !email.isBlank()) {
+            userEmail = email.trim();
+        }
+    }
+
     public static synchronized String getUserRole() {
         return userRole;
     }

@@ -105,4 +105,10 @@ public class EmailService {
             return false;
         }
     }
+
+
+    public void sendEmail(String customerEmail, String emailBody) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'sendEmail'");
+    }
 }

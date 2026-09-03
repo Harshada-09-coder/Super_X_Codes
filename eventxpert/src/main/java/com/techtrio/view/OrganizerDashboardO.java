@@ -4,6 +4,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
 import com.techtrio.context.AdminContext;
 import com.techtrio.controller.OrganizerController;
 import com.techtrio.model.Event;
@@ -74,6 +77,11 @@ public class OrganizerDashboardO {
     private Label wTitle;
     private Label wDesc;
 
+    // 🎯 Real-Time Financial Metric References
+    private Label budgetPercentLbl;
+    private Label budgetSubLbl;
+    private ProgressBar budgetBar;
+
     public OrganizerDashboardO() {
         this(UserSession.getUid(), UserSession.getIdToken());
     }
@@ -106,9 +114,60 @@ public class OrganizerDashboardO {
         root.setCenter(rightContainer);
 
         loadOrganizerDashboardDataAsync();
+        
+        // 🎯 Real-Time Earnings Listener सुरू करणे
+        listenToOrganizerEarningsRealtime();
 
         organizerDashboardScene = new Scene(root, 1550, 785);
         return organizerDashboardScene;
+    }
+
+    // ==========================================
+    // 🎯 REAL-TIME ORGANIZER EARNINGS LISTENER
+    // ==========================================
+    private void listenToOrganizerEarningsRealtime() {
+        if (uid == null || uid.isBlank()) return;
+
+        try {
+            Firestore db = FirestoreClient.getFirestore();
+
+            db.collection("organizers")
+              .document(uid)
+              .collection("earnings")
+              .addSnapshotListener((snapshots, error) -> {
+                  if (error != null) {
+                      System.err.println("Organizer earnings listener error: " + error.getMessage());
+                      return;
+                  }
+
+                  if (snapshots != null && !snapshots.isEmpty()) {
+                      double totalEarnedCommission = 0.0;
+
+                      for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                          Double amt = doc.getDouble("earnedAmount");
+                          if (amt != null) {
+                              totalEarnedCommission += amt;
+                          }
+                      }
+
+                      final double fEarned = totalEarnedCommission;
+
+                      Platform.runLater(() -> {
+                          if (budgetPercentLbl != null) {
+                              budgetPercentLbl.setText("Active");
+                          }
+                          if (budgetSubLbl != null) {
+                              budgetSubLbl.setText("Earned: ₹" + String.format("%,.0f", fEarned));
+                          }
+                          if (budgetBar != null) {
+                              budgetBar.setProgress(0.85);
+                          }
+                      });
+                  }
+              });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // ==========================================
@@ -162,7 +221,7 @@ public class OrganizerDashboardO {
 
                             if ("PENDING".equals(oStatus)) {
                                 pendingCount++;
-                            } else if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(evStatus)) {
+                            } else if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(evStatus) || "PAID".equals(evStatus)) {
                                 activeCount++;
                                 upcomingCount++;
                                 hasConfirmedEvents = true;
@@ -670,7 +729,11 @@ public class OrganizerDashboardO {
 
         HBox metrics = new HBox(20);
 
-        VBox budgetBox = createHealthMetric("Budget Utilization", "0%", "₹0 / ₹0", 0.0, PRIMARY_BLUE);
+        budgetPercentLbl = new Label("0%");
+        budgetSubLbl = new Label("₹0 / ₹0");
+        budgetBar = new ProgressBar(0.0);
+        VBox budgetBox = createHealthMetricContainer("Budget Utilization", budgetPercentLbl, budgetSubLbl, budgetBar, PRIMARY_BLUE);
+
         VBox vendorBox = createHealthMetric("Vendor Status", "0%", "0/0 Confirmed", 0.0, BRIGHT_BLUE);
         VBox guestBox = createHealthMetric("Guest Check-In", "0%", "0/0 Arrived", 0.0, NAVY);
 
@@ -683,7 +746,7 @@ public class OrganizerDashboardO {
         return card;
     }
 
-    private VBox createHealthMetric(String label, String percentStr, String subtext, double progress, String color) {
+    private VBox createHealthMetricContainer(String label, Label percentLbl, Label subLbl, ProgressBar bar, String color) {
         VBox box = new VBox(6);
 
         HBox topRow = new HBox();
@@ -691,19 +754,23 @@ public class OrganizerDashboardO {
         titleLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label percentLbl = new Label(percentStr);
         percentLbl.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
         topRow.getChildren().addAll(titleLbl, spacer, percentLbl);
 
-        ProgressBar bar = new ProgressBar(progress);
         bar.setMaxWidth(Double.MAX_VALUE);
         bar.setStyle("-fx-accent: " + color + "; -fx-control-inner-background: " + BACKGROUND + ";");
 
-        Label subLbl = new Label(subtext);
         subLbl.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         box.getChildren().addAll(topRow, bar, subLbl);
         return box;
+    }
+
+    private VBox createHealthMetric(String label, String percentStr, String subtext, double progress, String color) {
+        ProgressBar bar = new ProgressBar(progress);
+        Label pLbl = new Label(percentStr);
+        Label sLbl = new Label(subtext);
+        return createHealthMetricContainer(label, pLbl, sLbl, bar, color);
     }
 
     private VBox createTasksCard() {

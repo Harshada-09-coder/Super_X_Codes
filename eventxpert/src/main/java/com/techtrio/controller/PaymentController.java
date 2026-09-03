@@ -1,85 +1,79 @@
 package com.techtrio.controller;
 
-import com.google.cloud.firestore.Firestore;
-import com.techtrio.firebase.FirebaseConfig;
+import java.util.List;
 import com.techtrio.model.Payment;
 import com.techtrio.services.RazorpayService;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class PaymentController {
 
-    private final RazorpayService razorpayService;
-    private final Firestore db;
+    private final RazorpayService razorService;
 
     public PaymentController() {
-        this.razorpayService = new RazorpayService();
-        this.db = FirebaseConfig.getFirestore();
+        this.razorService = new RazorpayService();
     }
 
     /**
-     * पेमेंट ऑब्जेक्ट तयार करणे व वाटणीचे प्रमाण ठरवणे
+     * Prepare Payment Breakdown (Split Calculation)
      */
-    public Payment initiatePayment(String eventId, String customerId, double totalAmount, Map<String, Double> vendorAmounts) {
-        double platformFeePercent = 5.0;  // 5% Admin Platform Fee
-        double organizerPercent = 15.0;   // 15% Organizer Commission
-
-        return new Payment(eventId, customerId, totalAmount, platformFeePercent, organizerPercent, vendorAmounts);
+    public Payment preparePaymentSummary(String eventId, String customerId, String customerName,
+                                          String organizerId, double totalAmount, double vendorCost) {
+        return razorService.calculateSplit(eventId, customerId, customerName, organizerId, totalAmount, vendorCost);
     }
 
     /**
-     * पेमेंट यशस्वी झाल्यानंतर Firebase मध्ये रेकॉर्ड आणि Payouts अपडेट करणे
+     * Process & Save Payment
      */
-    public void recordSuccessfulPayment(Payment payment, String razorpayPaymentId) {
-        try {
-            payment.setStatus("SUCCESS");
-            payment.setRazorpayPaymentId(razorpayPaymentId);
-
-            // १. Payments Collection मध्ये सेव्ह करा
-            if (db != null) {
-                db.collection("payments").document(payment.getPaymentId()).set(payment);
-
-                // २. Event Collection चा पेमेंट स्टेटस अपडेट करा
-                Map<String, Object> eventUpdate = new HashMap<>();
-                eventUpdate.put("paymentStatus", "PAID");
-                eventUpdate.put("status", "CONFIRMED");
-                db.collection("events").document(payment.getEventId()).update(eventUpdate);
-
-                // ३. Organizer चे Pending Payout नोंदवा
-                Map<String, Object> orgPayout = new HashMap<>();
-                orgPayout.put("eventId", payment.getEventId());
-                orgPayout.put("amount", payment.getOrganizerAmount());
-                orgPayout.put("status", "PENDING_ADMIN_PAYOUT");
-                orgPayout.put("timestamp", payment.getTimestamp());
-                db.collection("organizer_payouts").document(payment.getEventId()).set(orgPayout);
-
-                // ४. Vendors चे Bookings आणि Payouts नोंदवा
-                if (payment.getVendorAmounts() != null) {
-                    for (Map.Entry<String, Double> entry : payment.getVendorAmounts().entrySet()) {
-                        Map<String, Object> vPayout = new HashMap<>();
-                        vPayout.put("eventId", payment.getEventId());
-                        vPayout.put("vendorId", entry.getKey());
-                        vPayout.put("amount", entry.getValue());
-                        vPayout.put("status", "CONFIRMED");
-                        vPayout.put("timestamp", payment.getTimestamp());
-                        db.collection("vendor_payouts").document(payment.getEventId() + "_" + entry.getKey()).set(vPayout);
-                    }
-                }
-            }
-
-            System.out.println("=== PAYMENT DISTRIBUTION SUCCESSFUL ===");
-            System.out.println("Total Paid by User: ₹" + payment.getTotalAmount());
-            System.out.println("Admin Platform Fee (Net Revenue): ₹" + payment.getPlatformFee());
-            System.out.println("Organizer Share (To be Disbursed): ₹" + payment.getOrganizerAmount());
-            System.out.println("Vendors Total Share: " + payment.getVendorAmounts());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public boolean processPayment(Payment payment, String paymentMethod) {
+        if (payment == null) return false;
+        payment.setPaymentMethod(paymentMethod);
+        return razorService.processPayment(payment); // 👈 दुरुस्त केले (आधी razorpayService typo होता)
     }
 
-    public RazorpayService getRazorpayService() {
-        return razorpayService;
+    /**
+     * Validate UPI ID Format
+     */
+    public boolean validateUpiId(String upiId) {
+        if (upiId == null || upiId.isBlank()) return false;
+        return upiId.matches("^[a-zA-Z0-9.\\-_]{2,256}@[a-zA-Z]{2,64}$");
+    }
+
+    /**
+     * Validate Card Details (16-digit card, MM/YY expiry, 3-digit CVV)
+     */
+    public boolean validateCardDetails(String cardNumber, String expiry, String cvv) {
+        if (cardNumber == null || expiry == null || cvv == null) return false;
+
+        String cleanCard = cardNumber.replaceAll("\\s+", "");
+        boolean cardValid = cleanCard.matches("^\\d{16}$");
+        boolean expiryValid = expiry.matches("^(0[1-9]|1[0-2])/[0-9]{2}$");
+        boolean cvvValid = cvv.matches("^\\d{3}$");
+
+        return cardValid && expiryValid && cvvValid;
+    }
+
+    /**
+     * Verify Demo OTP (Default: 123456 किंवा कोणताही 6-अंकी नंबर)
+     */
+    public boolean verifyOtp(String enteredOtp) {
+        if (enteredOtp == null || enteredOtp.isBlank()) return false;
+        return enteredOtp.trim().equals("123456") || enteredOtp.trim().matches("^\\d{6}$");
+    }
+
+    /**
+     * Fetch Payment by Event ID
+     */
+    public Payment getPaymentByEventId(String eventId) {
+        return razorService.getPaymentByEventId(eventId); // 👈 दुरुस्त केले (आधी paymentService लिहिले होते)
+    }
+
+    /**
+     * Fetch All Payments (Admin Revenue साठी)
+     */
+    public List<Payment> getAllPayments() {
+        return razorService.getAllPayments();
+    }
+
+    public double getTotalPlatformRevenue() {
+        return razorService.getTotalPlatformRevenue();
     }
 }
