@@ -29,7 +29,8 @@ public class AdminDashboardA {
     private final String PRIMARY = "#002A60";
     private final String SECONDARY = "#8CAFC6";
     private final String LIGHT = "#C2E0F4";
-    private final String BACKGROUND = "#F8FAFC";
+    // 🎯 तुम्ही दिलेल्या इमेजसारखा Soft Blue Wave Gradient बॅकग्राउंड:
+    private final String BACKGROUND = "linear-gradient(to bottom right, #EDF4FB 0%, #E2EEF8 45%, #D6E6F5 80%, #E5F0FA 100%)";
 
     private Label totalCustomersVal;
     private Label totalOrganizersVal;
@@ -286,9 +287,13 @@ public class AdminDashboardA {
         activityTitle.setTextFill(Color.web(PRIMARY));
 
         Label activity1 = new Label("●  New Event Created by Customer");
+        activity1.setTextFill(Color.web("#333333"));
         Label activity2 = new Label("●  Event Request Submitted for Review");
+        activity2.setTextFill(Color.web("#333333"));
         Label activity3 = new Label("●  Customer Registration Completed");
+        activity3.setTextFill(Color.web("#333333"));
         Label activity4 = new Label("●  System Audit Log Updated");
+        activity4.setTextFill(Color.web("#333333"));
 
         activityBox.getChildren().addAll(activityTitle, activity1, activity2, activity3, activity4);
 
@@ -301,7 +306,7 @@ public class AdminDashboardA {
         scrollPane.setFitToHeight(false);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scrollPane.setStyle("-fx-background-color:" + BACKGROUND + ";-fx-border-color:transparent;");
+        scrollPane.setStyle("-fx-background-color:" + BACKGROUND + "; -fx-background:" + BACKGROUND + "; -fx-border-color:transparent;");
 
         VBox center = new VBox(header, scrollPane);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
@@ -380,9 +385,16 @@ public class AdminDashboardA {
         card.setPrefWidth(185); card.setPrefHeight(105); card.setPadding(new Insets(14));
         card.setStyle("-fx-background-color:white;-fx-border-color:#C8D2DC;-fx-border-radius:10;-fx-background-radius:10;");
 
-        Label titleLabel = new Label(title); titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 21)); valueLabel.setTextFill(Color.web(PRIMARY));
-        Label subLabel = new Label(sub); subLabel.setTextFill(Color.web(SECONDARY)); subLabel.setFont(Font.font("Arial", 11));
+        Label titleLabel = new Label(title); 
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        titleLabel.setTextFill(Color.web("#333333")); // मूळ टेक्स्ट रंग कायम ठेवला
+        
+        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 21)); 
+        valueLabel.setTextFill(Color.web(PRIMARY));
+        
+        Label subLabel = new Label(sub); 
+        subLabel.setTextFill(Color.web(SECONDARY)); 
+        subLabel.setFont(Font.font("Arial", 11));
 
         card.getChildren().addAll(titleLabel, valueLabel, subLabel);
         return card;
