@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.techtrio.context.AdminContext;
+import com.techtrio.controller.OrganizerController;
 import com.techtrio.model.Event;
+import com.techtrio.model.OrganizerProfile;
 import com.techtrio.model.WeatherData;
 import com.techtrio.services.EventService;
 import com.techtrio.services.WeatherService;
@@ -21,6 +23,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Stage;
 
 public class OrganizerDashboardO {
 
@@ -45,11 +48,6 @@ public class OrganizerDashboardO {
     private VBox weatherBox;
     private Label wTitle;
     private Label wDesc;
-
-    // 🎯 Real-Time Financial Metric References
-    private Label budgetPercentLbl;
-    private Label budgetSubLbl;
-    private ProgressBar budgetBar;
 
     public OrganizerDashboardO() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -78,9 +76,6 @@ public class OrganizerDashboardO {
         root.setCenter(scrollPane);
 
         loadOrganizerDashboardDataAsync();
-        
-        // 🎯 Real-Time Earnings Listener सुरू करणे
-       // listenToOrganizerEarningsRealtime();
 
         organizerDashboardScene = new Scene(root, 1550, 785);
         return organizerDashboardScene;

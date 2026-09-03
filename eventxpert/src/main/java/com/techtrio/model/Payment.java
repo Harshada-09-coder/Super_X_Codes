@@ -1,80 +1,163 @@
 package com.techtrio.model;
 
 public class Payment {
+
     private String paymentId;
-       private String transactionId;
-    private String orderId;
     private String eventId;
-    private String customerId; 
+    private String customerId;
     private String customerName;
-    private String paymentMethod; 
     private double totalAmount;
-    private double platformFee;       // Admin Share
-    private double organizerAmount;   // Organizer Share
-    private double vendorAmount;      // Vendor Share
-    private String status;            // SUCCESS, PENDING, FAILED
-    private String timestamp;
+    
+    // Revenue Distribution (Split) Fields
     private String organizerId;
+    private double organizerAmount;
+    private double vendorAmount;
+    private double platformFee;
+    
+    // Transaction Details
+    private String paymentMethod; // UPI, CARD, NET_BANKING
+    private String paymentStatus; // SUCCESS, FAILED, PENDING
+    private String transactionId;
+    private String paymentDate;
 
-    public Payment() {}
+    // Default Constructor (Firestore साठी अनिवार्य)
+    public Payment() {
+    }
 
-    public Payment(String paymentId, String transactionId, String orderId, String eventId, String customerId, String organizerId, String paymentMethod,
-                   double totalAmount, double platformFee, double organizerAmount, 
-                   double vendorAmount, String status, String timestamp) {
+    // Parameterized Constructor
+    public Payment(String paymentId, String eventId, String customerId, String customerName,
+                   double totalAmount, String organizerId, double organizerAmount,
+                   double vendorAmount, double platformFee, String paymentMethod,
+                   String paymentStatus, String transactionId, String paymentDate) {
         this.paymentId = paymentId;
-        this.orderId = orderId;
         this.eventId = eventId;
         this.customerId = customerId;
+        this.customerName = customerName;
         this.totalAmount = totalAmount;
-        this.platformFee = platformFee;
+        this.organizerId = organizerId;
         this.organizerAmount = organizerAmount;
         this.vendorAmount = vendorAmount;
-        this.status = status;
-        this.timestamp = timestamp;
+        this.platformFee = platformFee;
+        this.paymentMethod = paymentMethod;
+        this.paymentStatus = paymentStatus;
+        this.transactionId = transactionId;
+        this.paymentDate = paymentDate;
     }
 
     // Getters and Setters
-    public String getPaymentId() { return paymentId; }
-    public void setPaymentId(String paymentId) { this.paymentId = paymentId; }
+    public String getPaymentId() {
+        return paymentId;
+    }
 
-    public String getOrderId() { return orderId; }
-    public void setOrderId(String orderId) { this.orderId = orderId; }
+    public void setPaymentId(String paymentId) {
+        this.paymentId = paymentId;
+    }
 
-     public String getTransactionId() { return transactionId != null ? transactionId : paymentId; }
-    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+    public String getEventId() {
+        return eventId;
+    }
 
-    public String getEventId() { return eventId; }
-    public void setEventId(String eventId) { this.eventId = eventId; }
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
+    }
 
-    public String getCustomerId() { return customerId; }
-    public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public String getCustomerId() {
+        return customerId;
+    }
 
-    public String getCustomerName() { return customerName; }
-    public void setCustomerName(String customerName) { this.customerName = customerName; }
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
 
-      public String getOrganizerId() { return organizerId; }
-    public void setOrganizerId(String organizerId) { this.organizerId = organizerId; }
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(double totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public String getOrganizerId() {
+        return organizerId;
+    }
+
+    public void setOrganizerId(String organizerId) {
+        this.organizerId = organizerId;
+    }
+
+    public double getOrganizerAmount() {
+        return organizerAmount;
+    }
+
+    public void setOrganizerAmount(double organizerAmount) {
+        this.organizerAmount = organizerAmount;
+    }
+
+    public double getVendorAmount() {
+        return vendorAmount;
+    }
+
+    public void setVendorAmount(double vendorAmount) {
+        this.vendorAmount = vendorAmount;
+    }
+
+    public double getPlatformFee() {
+        return platformFee;
+    }
+
+    public void setPlatformFee(double platformFee) {
+        this.platformFee = platformFee;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
+    }
+
+    public String getPaymentDate() {
+        return paymentDate;
+    }
+
+    public void setPaymentDate(String paymentDate) {
+        this.paymentDate = paymentDate;
+    }
+
+    public void setId(String id) {
+        this.paymentId = id;
+    }
+
+    public String getId() {
+        return this.paymentId;
+    }
 
 
-    public String getPaymentMethod() { return paymentMethod; }
-    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
-
-    public double getTotalAmount() { return totalAmount; }
-    public void setTotalAmount(double totalAmount) { this.totalAmount = totalAmount; }
-
-    public double getPlatformFee() { return platformFee; }
-    public void setPlatformFee(double platformFee) { this.platformFee = platformFee; }
-
-    
-    public double getOrganizerAmount() { return organizerAmount; }
-    public void setOrganizerAmount(double organizerAmount) { this.organizerAmount = organizerAmount; }
-
-    public double getVendorAmount() { return vendorAmount; }
-    public void setVendorAmount(double vendorAmount) { this.vendorAmount = vendorAmount; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public String getTimestamp() { return timestamp; }
-    public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
 }
+    
+

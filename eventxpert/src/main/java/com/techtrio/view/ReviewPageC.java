@@ -18,17 +18,13 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
-import javafx.stage.Stage;
 
 public class ReviewPageC {
 
@@ -227,10 +223,12 @@ public class ReviewPageC {
                 evName = (EventData.eventType.isBlank() ? "Event" : EventData.eventType) + " Celebration";
             }
 
+            submitBtn.setDisable(true);
+            submitBtn.setText("Submitting...");
+
             final String finalUid = customerUid;
             final String finalToken = customerToken;
 
-            // 1. Event Object तयार करणे
             Event event = new Event();
             event.setEventId("EVT_" + System.currentTimeMillis());
             event.setCustomerId(finalUid);
@@ -256,7 +254,7 @@ public class ReviewPageC {
             event.setVenueType(EventData.venue.isBlank() ? "Banquet Hall" : EventData.venue);
             event.setBudget(EventData.budget.isBlank() ? "₹ 8,45,000" : EventData.budget);
             event.setAiEnabled(true);
-            event.setStatus("PAID"); // पेमेंट झाल्यावर आपोआप PAID होईल
+            event.setStatus("PENDING");
             event.setOrganizerStatus("NOT_ASSIGNED");
 
             event.setAiPlanJson(EventData.aiPlanJson);
@@ -290,88 +288,45 @@ public class ReviewPageC {
                 event.setGuestLimit(convertedGuests.size() > 0 ? convertedGuests.size() : (EventData.guests > 0 ? EventData.guests : 250));
             }
 
-            // 2. बजेटमधून रक्कम काढणे (उदा. ₹ 8,45,000 -> 845000.0)
-            double amountToPay = 5000.0;
-            try {
-                String cleanBudget = EventData.budget.replaceAll("[^0-9.]", "");
-                if (!cleanBudget.isEmpty()) {
-                    amountToPay = Double.parseDouble(cleanBudget);
+            Task<Boolean> saveTask = new Task<>() {
+                @Override
+                protected Boolean call() {
+                    CustomerController controller = new CustomerController();
+                    boolean saved = controller.createEvent(event);
+                    if (saved) {
+                        controller.markCustomerAsExisting(finalUid);
+                    }
+                    return saved;
                 }
-            } catch (Exception ignored) {}
+            };
 
-            final double finalAmount = amountToPay;
-            double vendorShare = finalAmount * 0.50; // 50% व्हेंडर्ससाठी वाटप
+            saveTask.setOnSucceeded(evt -> {
+                submitBtn.setDisable(false);
+                submitBtn.setText("Submit Plan ✓");
 
-            // युझरचा ईमेल मिळवणे (UserSession द्वारे)
-            String customerEmail = "customer@eventxpert.com";
-            try {
-                if (UserSession.getEmail() != null && !UserSession.getEmail().isBlank()) {
-                    customerEmail = UserSession.getEmail();
+                boolean isSaved = saveTask.getValue();
+                if (isSaved) {
+                    EventData.reset();
+                    showSuccessModal(finalUid, finalToken);
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save event. Please check Firestore connection.");
+                    alert.setHeaderText("Submission Failed");
+                    if (LandingPage.landingPageStage != null) alert.initOwner(LandingPage.landingPageStage);
+                    alert.showAndWait();
                 }
-            } catch (Exception ignored) {}
+            });
 
-            String organizerId = "ORG_PENDING_ASSIGN";
-            String vendorId = "VEND_MULTIPLE";
+            saveTask.setOnFailed(evt -> {
+                submitBtn.setDisable(false);
+                submitBtn.setText("Submit Plan ✓");
+                Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred while saving the event. Please check your connection.");
+                if (LandingPage.landingPageStage != null) alert.initOwner(LandingPage.landingPageStage);
+                alert.showAndWait();
+            });
 
-            // 🎯 3. RAZORPAY + REAL-TIME OTP + 3-WAY SPLIT DIALOG ओपन करणे
-            RazorpayPaymentDialog paymentDialog = new RazorpayPaymentDialog();
-            paymentDialog.showPaymentDialog(
-                event.getEventId(),
-                customerEmail,
-                finalUid,
-                organizerId,
-                vendorId,
-                finalAmount,
-                vendorShare,
-                () -> {
-                    // पेमेंट आणि OTP दोन्ही यशस्वी झाल्यानंतर:
-                    submitBtn.setDisable(true);
-                    submitBtn.setText("Confirming Event...");
-
-                    Task<Boolean> saveTask = new Task<>() {
-                        @Override
-                        protected Boolean call() {
-                            CustomerController controller = new CustomerController();
-                            boolean saved = controller.createEvent(event);
-                            if (saved) {
-                                controller.markCustomerAsExisting(finalUid);
-                            }
-                            return saved;
-                        }
-                    };
-
-                    saveTask.setOnSucceeded(evt -> {
-                        submitBtn.setDisable(false);
-                        submitBtn.setText("Submit");
-
-                        boolean isSaved = saveTask.getValue();
-                        if (isSaved) {
-                            EventData.reset();
-                            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Payment of ₹" + String.format("%.2f", finalAmount) + " Received!\n\nYour event has been booked and funds have been processed successfully.");
-                            alert.setHeaderText("Booking Confirmed!");
-                            alert.showAndWait();
-
-                            ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
-                            LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
-                        } else {
-                            Alert alert = new Alert(Alert.AlertType.ERROR, "Payment was successful, but failed to save event. Please contact Admin.");
-                            alert.setHeaderText("Save Failed");
-                            alert.showAndWait();
-                        }
-                    });
-
-                    saveTask.setOnFailed(evt -> {
-                        submitBtn.setDisable(false);
-                        submitBtn.setText("Submit");
-                        Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred while saving the event.");
-                        alert.showAndWait();
-                    });
-
-                    Thread thread = new Thread(saveTask);
-                    thread.setDaemon(true);
-                    thread.start();
-                }
-            );
+            Thread thread = new Thread(saveTask);
+            thread.setDaemon(true);
+            thread.start();
         });
 
         footer.getChildren().addAll(copyright, fSpacer, back, submitBtn);
@@ -385,6 +340,54 @@ public class ReviewPageC {
 
         scene = new Scene(root, 1550, 750);
         return scene;
+    }
+
+    // ⭐ Beautiful In-App Modal Dialog (No extra separate OS Stage)
+    private void showSuccessModal(String customerUid, String customerToken) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Event Submitted");
+        dialog.setHeaderText(null);
+        if (LandingPage.landingPageStage != null) {
+            dialog.initOwner(LandingPage.landingPageStage);
+        }
+
+        VBox content = new VBox(14);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(24, 30, 24, 30));
+        content.setStyle("-fx-background-color: white; -fx-background-radius: 12px;");
+
+        StackPane checkCircle = new StackPane();
+        Circle bgCircle = new Circle(28, Color.web("#DCFCE7"));
+        Label checkIco = new Label("✓");
+        checkIco.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #16A34A;");
+        checkCircle.getChildren().addAll(bgCircle, checkIco);
+
+        Label titleLbl = new Label("Event & Plan Submitted Successfully!");
+        titleLbl.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+
+        Label descLbl = new Label("Your event has been submitted to Admin.\nAn expert Organizer will be assigned shortly to begin curation and venue setup.");
+        descLbl.setWrapText(true);
+        descLbl.setTextAlignment(TextAlignment.CENTER);
+        descLbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748B;");
+
+        Button okBtn = new Button("Go to Dashboard →");
+        okBtn.setStyle("-fx-background-color: " + BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 8 20; -fx-background-radius: 6px; -fx-cursor: hand;");
+        okBtn.setOnAction(e -> {
+            dialog.setResult(null);
+            dialog.close();
+            ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(customerUid, customerToken);
+            LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
+        });
+
+        content.getChildren().addAll(checkCircle, titleLbl, descLbl, okBtn);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        
+        // Hide default dialog close button header
+        dialog.getDialogPane().lookupButton(ButtonType.CLOSE).setVisible(false);
+        dialog.getDialogPane().lookupButton(ButtonType.CLOSE).setManaged(false);
+
+        dialog.showAndWait();
     }
 
     private VBox eventDetailsCard() {
@@ -404,7 +407,7 @@ public class ReviewPageC {
     private VBox locationCard() {
         VBox card = createCard();
         card.getChildren().add(cardTitle("🏢", "Venue & Location"));
-        addDetail(card, "Venue Name", EventData.confirmedVenueName.isBlank() ? "Grand Banquet" : EventData.confirmedVenueName);
+        addDetail(card, "Venue Name", EventData.confirmedVenueName.isBlank() ? "Pending Organizer Suggestion" : EventData.confirmedVenueName);
         addDetail(card, "Venue Preference", EventData.venue.isBlank() ? "Banquet Hall" : EventData.venue);
         addDetail(card, "City", EventData.city.isBlank() ? "Pune" : EventData.city);
         addDetail(card, "Area / Locality", EventData.area.isBlank() ? "Baner, Maharashtra" : EventData.area);

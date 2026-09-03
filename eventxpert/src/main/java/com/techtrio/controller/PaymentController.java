@@ -2,14 +2,14 @@ package com.techtrio.controller;
 
 import java.util.List;
 import com.techtrio.model.Payment;
-import com.techtrio.services.RazorpayService;
+import com.techtrio.services.RazorpayServices;
 
 public class PaymentController {
 
-    private final RazorpayService razorService;
+    private final RazorpayServices paymentService;
 
     public PaymentController() {
-        this.razorService = new RazorpayService();
+        this.paymentService = new RazorpayServices();
     }
 
     /**
@@ -17,7 +17,7 @@ public class PaymentController {
      */
     public Payment preparePaymentSummary(String eventId, String customerId, String customerName,
                                           String organizerId, double totalAmount, double vendorCost) {
-        return razorService.calculateSplit(eventId, customerId, customerName, organizerId, totalAmount, vendorCost);
+        return paymentService.calculateSplit(eventId, customerId, customerName, organizerId, totalAmount, vendorCost);
     }
 
     /**
@@ -26,7 +26,7 @@ public class PaymentController {
     public boolean processPayment(Payment payment, String paymentMethod) {
         if (payment == null) return false;
         payment.setPaymentMethod(paymentMethod);
-        return razorService.processPayment(payment); // 👈 दुरुस्त केले (आधी razorpayService typo होता)
+        return paymentService.processPayment(payment);
     }
 
     /**
@@ -56,6 +56,7 @@ public class PaymentController {
      */
     public boolean verifyOtp(String enteredOtp) {
         if (enteredOtp == null || enteredOtp.isBlank()) return false;
+        // Demo साठी '123456' किंवा कोणताही 6 अंकी OTP चालतो
         return enteredOtp.trim().equals("123456") || enteredOtp.trim().matches("^\\d{6}$");
     }
 
@@ -63,17 +64,19 @@ public class PaymentController {
      * Fetch Payment by Event ID
      */
     public Payment getPaymentByEventId(String eventId) {
-        return razorService.getPaymentByEventId(eventId); // 👈 दुरुस्त केले (आधी paymentService लिहिले होते)
+        return paymentService.getPaymentByEventId(eventId);
     }
 
     /**
      * Fetch All Payments (Admin Revenue साठी)
      */
     public List<Payment> getAllPayments() {
-        return razorService.getAllPayments();
+        return paymentService.getAllPayments();
     }
 
     public double getTotalPlatformRevenue() {
-        return razorService.getTotalPlatformRevenue();
-    }
+    return paymentService.getTotalPlatformRevenue();
 }
+}
+    
+

@@ -1,311 +1,277 @@
 package com.techtrio.view;
 
+import com.google.cloud.firestore.Firestore;
+import com.techtrio.firebase.FirebaseConfig;
 import com.techtrio.model.Event;
+import com.techtrio.services.PaymentService;
+import com.techtrio.services.RazorpayServices;
 import com.techtrio.session.UserSession;
-import org.kordamp.ikonli.javafx.FontIcon;
-
+import com.techtrio.util.OtpHelper;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+
+import java.awt.Desktop;
+import java.io.File;
+import java.io.FileWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Payment {
 
-    private String uid;
-    private String idToken;
+    private String userId;
+    private String eventId;
     private Event event;
-    private Runnable backAction;
 
-    private static final String NAVY = "#061B41";
-    private static final String PRIMARY_BLUE = "#0D3979";
-    private static final String ACTIVE_NAV_BLUE = "#2563EB";
-    private static final String BG = "#F4F7FC";
-    private static final String TEXT_DARK = "#101828";
-    private static final String TEXT_MUTED = "#64748B";
-    private static final String BORDER = "#E2E8F0";
+    private double totalPayable = 0.0;
+    private double totalPaid = 0.0;
+    private double pendingAmount = 0.0;
+    private String eventTitle = "Event";
+
+    private Label lblTotalPayable;
+    private Label lblTotalPaid;
+    private Label lblPendingAmount;
+    private Label lblStatus;
+    private Button btnPendingPayNow;
+    private Button btnDownloadReceipt;
 
     public Payment() {
-        this(UserSession.getUid(), UserSession.getIdToken(), null);
     }
 
-    public Payment(String uid, String idToken, Event event) {
-        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
-        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+    // Constructor required by Budget.java, Guest.java and MyEventDetails.java
+    public Payment(String param1, String param2, Event event) {
+        this.userId = param1;
+        this.eventId = param2;
         this.event = event;
+        if (event != null && event.getEventId() != null) {
+            this.eventId = event.getEventId();
+        }
     }
 
-    public Scene getPaymentScene(Runnable backAction) {
-        this.backAction = backAction;
-
+    public Scene getPaymentScene(Runnable onBack) {
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BG + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
+        root.setPadding(new Insets(25));
+        root.setStyle("-fx-background-color: #f8f9fa;");
 
-        root.setLeft(createCommonSidebar("Payments"));
+        // Top Bar
+        HBox topBar = new HBox(15);
+        topBar.setAlignment(Pos.CENTER_LEFT);
+        Button btnBack = new Button("← Back");
+        btnBack.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;");
+        btnBack.setOnAction(e -> {
+            if (onBack != null) onBack.run();
+        });
 
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
+        Label lblHeader = new Label("Event Payment & Invoicing");
+        lblHeader.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
+        lblHeader.setTextFill(Color.web("#2c3e50"));
+        topBar.getChildren().addAll(btnBack, lblHeader);
+        root.setTop(topBar);
 
-        VBox mainContent = createPaymentContent();
-        scrollPane.setContent(mainContent);
-        root.setCenter(scrollPane);
+        // Center Content Cards
+        VBox contentBox = new VBox(20);
+        contentBox.setPadding(new Insets(25, 0, 0, 0));
+        contentBox.setAlignment(Pos.TOP_CENTER);
 
-        return new Scene(root, 1550, 785);
-    }
+        // Event Info Card
+        VBox infoCard = new VBox(10);
+        infoCard.setPadding(new Insets(15));
+        infoCard.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);");
+        
+        String titleStr = (event != null && event.getEventName() != null) ? event.getEventName() : "Event ID: " + eventId;
+        Label lblEventName = new Label("Event: " + titleStr);
+        lblEventName.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        this.lblStatus = new Label("Status: Loading...");
+        lblStatus.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 14));
+        infoCard.getChildren().addAll(lblEventName, lblStatus);
 
-    private VBox createCommonSidebar(String activeTab) {
-        VBox sidebar = new VBox(6);
-        sidebar.setPrefWidth(240);
-        sidebar.setMinWidth(240);
-        sidebar.setMaxWidth(240);
-        sidebar.setPadding(new Insets(20, 14, 20, 14));
-        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
+        // Financials Grid
+        GridPane grid = new GridPane();
+        grid.setHgap(25);
+        grid.setVgap(15);
+        grid.setPadding(new Insets(20));
+        grid.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);");
 
-        HBox brandBox = new HBox(10);
-        brandBox.setAlignment(Pos.CENTER_LEFT);
-        brandBox.setPadding(new Insets(4, 8, 12, 8));
+        lblTotalPayable = new Label("₹ 0.00");
+        lblTotalPayable.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        lblTotalPayable.setTextFill(Color.web("#2980b9"));
 
-        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
-        logoIcon.setIconSize(20);
-        logoIcon.setIconColor(Color.web("#38BDF8"));
+        lblTotalPaid = new Label("₹ 0.00");
+        lblTotalPaid.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        lblTotalPaid.setTextFill(Color.web("#27ae60"));
 
-        Label brandTitle = new Label("EventXpert");
-        brandTitle.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
-        brandBox.getChildren().addAll(logoIcon, brandTitle);
+        lblPendingAmount = new Label("₹ 0.00");
+        lblPendingAmount.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        lblPendingAmount.setTextFill(Color.web("#c0392b"));
 
-        HBox userBox = new HBox(10);
-        userBox.setAlignment(Pos.CENTER_LEFT);
-        userBox.setPadding(new Insets(6, 8, 14, 8));
+        grid.add(new Label("Total Payable:"), 0, 0);
+        grid.add(lblTotalPayable, 1, 0);
+        grid.add(new Label("Total Amount Paid:"), 0, 1);
+        grid.add(lblTotalPaid, 1, 1);
+        grid.add(new Label("Pending Balance:"), 0, 2);
+        grid.add(lblPendingAmount, 1, 2);
 
-        Circle userAvatar = new Circle(16, Color.web("#DBEAFE"));
-        VBox userDetails = new VBox(1);
-        Label userName = new Label("Priya Sharma");
-        userName.setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;");
-        Label userEmail = new Label("priya.sharma@email.com");
-        userEmail.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 10px;");
-        userDetails.getChildren().addAll(userName, userEmail);
-        userBox.getChildren().addAll(userAvatar, userDetails);
+        // Action Buttons Box
+        HBox buttonBox = new HBox(15);
+        buttonBox.setAlignment(Pos.CENTER);
 
-        VBox mainNav = new VBox(3);
-        mainNav.getChildren().addAll(
-                createNavItem("Dashboard", "fas-tachometer-alt", false, this::goDashboard),
-                createNavItem("Create Event", "fas-plus-circle", false, this::goCreateEvent),
-                createNavItem("My Events", "fas-calendar-check", false, this::handleBack)
-        );
+        btnPendingPayNow = new Button("Pay Remaining Balance");
+        btnPendingPayNow.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12 24; -fx-background-radius: 6; -fx-cursor: hand;");
+        btnPendingPayNow.setVisible(false);
+        btnPendingPayNow.setManaged(false);
+        btnPendingPayNow.setOnAction(e -> handlePendingPayment());
 
-        Label sectionLabel = new Label("EVENT DETAILS");
-        sectionLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 12 8 4 8;");
+        btnDownloadReceipt = new Button("Download Receipt");
+        btnDownloadReceipt.setStyle("-fx-background-color: #34495e; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12 24; -fx-background-radius: 6; -fx-cursor: hand;");
+        btnDownloadReceipt.setDisable(true);
+        btnDownloadReceipt.setOnAction(e -> generateReceipt());
 
-        VBox eventNav = new VBox(3);
-        eventNav.getChildren().addAll(
-                createNavItem("Overview", "fas-th-large", "Overview".equals(activeTab), this::goOverview),
-                createNavItem("Venue", "fas-map-marker-alt", "Venue".equals(activeTab), this::goVenue),
-                createNavItem("Budget", "fas-wallet", "Budget".equals(activeTab), this::goBudget),
-                createNavItem("Guest Management", "fas-users", "Guest Management".equals(activeTab), this::goGuest),
-                createNavItem("Payments", "fas-credit-card", "Payments".equals(activeTab), () -> {}),
-                createNavItem("Requirements", "fas-clipboard-list", "Requirements".equals(activeTab), this::goRequirement)
-        );
+        buttonBox.getChildren().addAll(btnPendingPayNow, btnDownloadReceipt);
+        contentBox.getChildren().addAll(infoCard, grid, buttonBox);
+        root.setCenter(contentBox);
 
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-
-        VBox bottomNav = new VBox(3);
-        bottomNav.getChildren().addAll(
-                createNavItem("Support", "fas-life-ring", false, null),
-                createNavItem("Settings", "fas-cog", false, this::goSettings)
-        );
-
-        sidebar.getChildren().addAll(brandBox, userBox, mainNav, sectionLabel, eventNav, spacer, bottomNav);
-        return sidebar;
-    }
-
-    private Button createNavItem(String title, String iconLit, boolean active, Runnable action) {
-        Button btn = new Button("  " + title);
-        btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setAlignment(Pos.CENTER_LEFT);
-        btn.setPrefHeight(34);
-        btn.setPadding(new Insets(0, 10, 0, 10));
-
-        FontIcon icon = new FontIcon(iconLit);
-        icon.setIconSize(13);
-        icon.setIconColor(active ? Color.WHITE : Color.web("#94A3B8"));
-        btn.setGraphic(icon);
-
-        if (active) {
-            btn.setStyle("-fx-background-color: " + ACTIVE_NAV_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-background-radius: 6px;");
-        } else {
-            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #CBD5E1; -fx-font-size: 12px; -fx-cursor: hand;");
-            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-text-fill: white; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-cursor: hand;"));
-            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #CBD5E1; -fx-font-size: 12px; -fx-cursor: hand;"));
+        // Start Real-time Data Sync with Firestore
+        String effectiveEventId = (eventId != null && !eventId.isBlank()) ? eventId : (event != null ? event.getEventId() : null);
+        if (effectiveEventId != null) {
+            setupRealTimeListener(effectiveEventId);
         }
 
-        if (action != null) btn.setOnAction(e -> action.run());
-        return btn;
+        return new Scene(root, 850, 600);
     }
 
-    private VBox createPaymentContent() {
-        VBox page = new VBox(16);
-        page.setPadding(new Insets(24, 32, 32, 32));
+    private void setupRealTimeListener(String eId) {
+        this.eventId = eId;
+        Firestore db = FirebaseConfig.getFirestore();
+        if (db == null) return;
 
-        Hyperlink backLink = new Hyperlink("← Back to My Events");
-        backLink.setStyle("-fx-text-fill: " + TEXT_MUTED + "; -fx-font-size: 12px; -fx-underline: false;");
-        backLink.setOnAction(e -> handleBack());
+        db.collection("events").document(eId).addSnapshotListener((snapshot, error) -> {
+            if (error != null || snapshot == null || !snapshot.exists()) return;
 
-        VBox titleBox = new VBox(3);
-        Label heading = new Label("Payments");
-        heading.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-        Label sub = new Label("Track payments and due amounts");
-        sub.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MUTED + ";");
-        titleBox.getChildren().addAll(heading, sub);
+            Platform.runLater(() -> {
+                Double budget = snapshot.getDouble("totalBudget");
+                Double paid = snapshot.getDouble("paidAmount");
+                String title = snapshot.getString("eventName");
+                if (title == null) title = snapshot.getString("title");
+                String status = snapshot.getString("status");
 
-        // 3 KPI Cards
-        HBox metricsRow = new HBox(16);
-        metricsRow.getChildren().addAll(
-                createMetricCard("Total Payable", "₹5,00,000", ""),
-                createMetricCard("Paid Amount", "₹2,80,000", "56%"),
-                createMetricCard("Pending Amount", "₹2,20,000", "44%")
-        );
+                this.totalPayable = (budget != null) ? budget : (event != null ? event.getAllocatedBudget() : 0.0);
+                this.totalPaid = (paid != null) ? paid : 0.0;
+                this.pendingAmount = Math.max(0, this.totalPayable - this.totalPaid);
+                if (title != null) this.eventTitle = title;
 
-        // Payment History Card
-        VBox histCard = new VBox(12);
-        histCard.setPadding(new Insets(18));
-        histCard.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+                lblTotalPayable.setText("₹ " + String.format("%.2f", totalPayable));
+                lblTotalPaid.setText("₹ " + String.format("%.2f", totalPaid));
+                lblPendingAmount.setText("₹ " + String.format("%.2f", pendingAmount));
+                lblStatus.setText("Status: " + (status != null ? status : "APPROVED"));
 
-        Label histTitle = new Label("Payment History");
-        histTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
+                // Show Pay Now if Pending > 0
+                if (pendingAmount > 0) {
+                    btnPendingPayNow.setVisible(true);
+                    btnPendingPayNow.setManaged(true);
+                } else {
+                    btnPendingPayNow.setVisible(false);
+                    btnPendingPayNow.setManaged(false);
+                }
 
-        VBox histRows = new VBox(6);
-        histRows.setPadding(new Insets(6, 0, 0, 0));
-        histRows.getChildren().addAll(
-                createPaymentHistoryRow("PAY-001", "Advance Payment", "₹1,00,000", "Paid", "12 Aug 2026", true),
-                createPaymentHistoryRow("PAY-002", "Second Payment", "₹1,80,000", "Paid", "20 Aug 2026", true),
-                createPaymentHistoryRow("PAY-003", "Final Payment", "₹2,20,000", "Pending", "Due on 10 Dec 2026", false)
-        );
-        histCard.getChildren().addAll(histTitle, histRows);
-
-        // Payment Information Card
-        HBox infoCard = new HBox(16);
-        infoCard.setAlignment(Pos.CENTER_LEFT);
-        infoCard.setPadding(new Insets(14, 18, 14, 18));
-        infoCard.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
-
-        VBox infoTexts = new VBox(2);
-        Label infoHead = new Label("Payment Information");
-        infoHead.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-        Label infoDesc = new Label("Make sure to complete the pending payment before the event date.\nContact your organizer for any payment related queries.");
-        infoDesc.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
-        infoTexts.getChildren().addAll(infoHead, infoDesc);
-
-        Region sp = new Region();
-        HBox.setHgrow(sp, Priority.ALWAYS);
-
-        FontIcon cardIcon = new FontIcon("fas-credit-card");
-        cardIcon.setIconSize(36);
-        cardIcon.setIconColor(Color.web(PRIMARY_BLUE));
-
-        infoCard.getChildren().addAll(infoTexts, sp, cardIcon);
-
-        page.getChildren().addAll(backLink, titleBox, metricsRow, histCard, infoCard);
-        return page;
+                // Enable receipt if Paid > 0
+                btnDownloadReceipt.setDisable(totalPaid <= 0);
+            });
+        });
     }
 
-    private VBox createMetricCard(String title, String val, String percent) {
-        VBox card = new VBox(4);
-        card.setPadding(new Insets(14));
-        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
-        HBox.setHgrow(card, Priority.ALWAYS);
+    private void handlePendingPayment() {
+        if (pendingAmount <= 0) return;
 
-        Label t = new Label(title);
-        t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
-
-        HBox valRow = new HBox(8);
-        valRow.setAlignment(Pos.BASELINE_LEFT);
-        Label v = new Label(val);
-        v.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-        valRow.getChildren().add(v);
-
-        if (!percent.isEmpty()) {
-            Label p = new Label(percent);
-            p.setStyle("-fx-font-size: 10px; -fx-text-fill: " + TEXT_MUTED + ";");
-            valRow.getChildren().add(p);
+        String userEmail = UserSession.getUserEmail();
+        if (userEmail == null || userEmail.isBlank()) {
+            userEmail = "customer@eventxpert.com";
         }
 
-        card.getChildren().addAll(t, valRow);
-        return card;
+        boolean verified = OtpHelper.sendAndVerifyOtp(userEmail);
+        if (!verified) return;
+
+        double payNowAmt = pendingAmount;
+        RazorpayServices.startPayment(payNowAmt, userEmail, "9999999999",
+            paymentId -> {
+                try {
+                    // ⭐ FIX: थेट PaymentService द्वारे रेकॉर्ड सेव्ह व वाटप केले
+                    new PaymentService().processPaymentAndDistribute(null, eventId, payNowAmt);
+
+                    Alert success = new Alert(Alert.AlertType.INFORMATION);
+                    success.setTitle("Success");
+                    success.setHeaderText(null);
+                    success.setContentText("Payment Successful!\nTransaction ID: " + paymentId);
+                    success.showAndWait();
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            },
+            err -> {
+                Alert fail = new Alert(Alert.AlertType.ERROR);
+                fail.setTitle("Payment Failed");
+                fail.setContentText("Error: " + err);
+                fail.showAndWait();
+            }
+        );
     }
 
-    private HBox createPaymentHistoryRow(String id, String label, String amount, String status, String date, boolean isPaid) {
-        HBox row = new HBox(12);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(10, 14, 10, 14));
-        row.setStyle("-fx-border-color: " + BORDER + "; -fx-border-width: 0 0 1 0;");
+    // Zero-dependency clean Printable Receipt generator (HTML/Browser Print)
+    private void generateReceipt() {
+        try {
+            String userHome = System.getProperty("user.home");
+            String fileName = "EventXpert_Receipt_" + eventId + ".html";
+            File receiptFile = new File(userHome + "/Downloads/" + fileName);
 
-        FontIcon ico = new FontIcon("fas-receipt");
-        ico.setIconSize(16);
-        ico.setIconColor(Color.web(isPaid ? "#16A34A" : "#F59E0B"));
+            String formattedDate = new SimpleDateFormat("dd MMM yyyy, hh:mm a").format(new Date());
+            String email = UserSession.getUserEmail() != null ? UserSession.getUserEmail() : "Customer";
 
-        VBox desc = new VBox(1);
-        Label t = new Label(label + " (" + id + ")");
-        t.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-        Label d = new Label(date);
-        d.setStyle("-fx-font-size: 10px; -fx-text-fill: " + TEXT_MUTED + ";");
-        desc.getChildren().addAll(t, d);
+            FileWriter writer = new FileWriter(receiptFile);
+            writer.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Payment Receipt</title>"
+                    + "<style>"
+                    + "body { font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f9; padding: 40px; }"
+                    + ".receipt-card { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }"
+                    + ".header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }"
+                    + ".header h1 { color: #0D3979; margin: 0; font-size: 26px; }"
+                    + ".row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }"
+                    + ".total-row { display: flex; justify-content: space-between; padding: 15px 0; font-weight: bold; font-size: 18px; color: #16a34a; }"
+                    + ".footer { text-align: center; margin-top: 25px; color: #64748b; font-size: 13px; }"
+                    + ".btn-print { background: #0D3979; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 15px; }"
+                    + "</style></head><body>"
+                    + "<div class='receipt-card'>"
+                    + "<div class='header'><h1>EventXpert Official Receipt</h1><p>Event Planning & Management Platform</p></div>"
+                    + "<div class='row'><span>Receipt Date:</span><b>" + formattedDate + "</b></div>"
+                    + "<div class='row'><span>Event Name:</span><b>" + eventTitle + "</b></div>"
+                    + "<div class='row'><span>Event ID:</span><b>" + eventId + "</b></div>"
+                    + "<div class='row'><span>Customer Email:</span><b>" + email + "</b></div>"
+                    + "<div class='row'><span>Total Event Budget:</span><b>₹ " + String.format("%.2f", totalPayable) + "</b></div>"
+                    + "<div class='total-row'><span>Total Amount Paid:</span><span>₹ " + String.format("%.2f", totalPaid) + "</span></div>"
+                    + "<div class='row'><span>Pending Balance:</span><b>₹ " + String.format("%.2f", pendingAmount) + "</b></div>"
+                    + "<div class='row'><span>Payment Status:</span><b>" + (pendingAmount <= 0 ? "PAID IN FULL" : "PARTIALLY PAID") + "</b></div>"
+                    + "<div class='footer'><p>Thank you for choosing EventXpert!</p>"
+                    + "<button class='btn-print' onclick='window.print()'>Print / Save as PDF</button></div>"
+                    + "</div></body></html>");
+            writer.close();
 
-        Region sp = new Region();
-        HBox.setHgrow(sp, Priority.ALWAYS);
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Receipt Ready");
+            alert.setHeaderText(null);
+            alert.setContentText("Receipt saved successfully in your Downloads folder!\nOpening receipt...");
+            alert.showAndWait();
 
-        Label amt = new Label(amount);
-        amt.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-
-        Label st = new Label(status);
-        st.setStyle(isPaid ? "-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 4px;"
-                : "-fx-background-color: #FEF3C7; -fx-text-fill: #B45309; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 4px;");
-
-        Button actionBtn = new Button(isPaid ? "Receipt ⬇" : "Pay Now");
-        actionBtn.setStyle(isPaid ? "-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-size: 11px; -fx-cursor: hand;"
-                : "-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 4 10; -fx-background-radius: 4px; -fx-cursor: hand;");
-
-        row.getChildren().addAll(ico, desc, sp, amt, st, actionBtn);
-        return row;
-    }
-
-    private void handleBack() {
-        if (backAction != null) backAction.run();
-        else goOverview();
-    }
-    private void goDashboard() {
-        ActiveCustomerDashboardC dash = new ActiveCustomerDashboardC(uid, idToken);
-        LandingPage.landingPageStage.setScene(dash.getactiveCustomerScene(null));
-    }
-    private void goCreateEvent() {
-        CreateEventC create = new CreateEventC(uid, idToken);
-        LandingPage.landingPageStage.setScene(create.getCreateEventScene(this::goDashboard));
-    }
-    private void goOverview() {
-        MyEventDetails view = new MyEventDetails(uid, idToken, event);
-        LandingPage.landingPageStage.setScene(view.getMyEventDetailsScene(this::handleBack));
-    }
-    private void goVenue() {
-        Venue view = new Venue(uid, idToken, event);
-        LandingPage.landingPageStage.setScene(view.getVenueScene(this::handleBack));
-    }
-    private void goBudget() {
-        Budget view = new Budget(uid, idToken, event);
-        LandingPage.landingPageStage.setScene(view.getBudgetScene(this::handleBack));
-    }
-    private void goGuest() {
-        Guest view = new Guest(uid, idToken, event);
-        LandingPage.landingPageStage.setScene(view.getGuestScene(this::handleBack));
-    }
-    private void goRequirement() {
-        Requirement view = new Requirement(uid, idToken, event);
-        LandingPage.landingPageStage.setScene(view.getRequirementScene(this::handleBack));
-    }
-    private void goSettings() {
-        SettingC s = new SettingC();
-        LandingPage.landingPageStage.setScene(s.getSettingScene(this::handleBack));
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(receiptFile);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 }
