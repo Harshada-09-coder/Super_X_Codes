@@ -1,10 +1,17 @@
 package com.techtrio.view;
 
-import com.techtrio.model.AiEventPlan;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.ListenerRegistration;
+import com.google.firebase.cloud.FirestoreClient;
+import com.techtrio.controller.AdminController;
+import com.techtrio.controller.VendorController;
 import com.techtrio.model.Event;
+import com.techtrio.model.VendorBooking;
 import com.techtrio.session.UserSession;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,7 +20,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
-import java.util.Map;
+import java.util.*;
 
 public class Budget {
 
@@ -23,12 +30,21 @@ public class Budget {
     private Runnable backAction;
 
     private static final String NAVY = "#061B41";
-    private static final String PRIMARY_BLUE = "#0D3979";
     private static final String ACTIVE_NAV_BLUE = "#2563EB";
     private static final String BG = "#F4F7FC";
     private static final String TEXT_DARK = "#101828";
     private static final String TEXT_MUTED = "#64748B";
     private static final String BORDER = "#E2E8F0";
+    private static final String GREEN_BG = "#DCFCE7";
+    private static final String GREEN_TEXT = "#16A34A";
+
+    private Label lblTotalBudget;
+    private Label lblAllocated;
+    private Label lblSpent;
+    private Label lblRemaining;
+    private VBox tableRowsContainer;
+
+    private ListenerRegistration firestoreListener;
 
     public Budget() {
         this(UserSession.getUid(), UserSession.getIdToken(), null);
@@ -56,7 +72,278 @@ public class Budget {
         scrollPane.setContent(mainContent);
         root.setCenter(scrollPane);
 
+        initRealtimeBudgetListener();
+
         return new Scene(root, 1550, 785);
+    }
+
+    private void initRealtimeBudgetListener() {
+        if (event == null || event.getEventId() == null) return;
+
+        new Thread(() -> {
+            try {
+                Firestore db = FirestoreClient.getFirestore();
+                DocumentReference docRef = db.collection("events").document(event.getEventId());
+
+                detachListener();
+
+                firestoreListener = docRef.addSnapshotListener((snapshot, error) -> {
+                    if (error != null || snapshot == null || !snapshot.exists()) return;
+
+                    Event ev = snapshot.toObject(Event.class);
+                    if (ev != null) {
+                        this.event = ev;
+                        loadVendorExpensesAndRender(ev);
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void loadVendorExpensesAndRender(Event ev) {
+        new Thread(() -> {
+            try {
+                VendorController vendorController = new VendorController();
+                List<VendorBooking> bookings = vendorController.getEventVendorBookings(ev.getEventId());
+
+                Platform.runLater(() -> renderDynamicBudgetData(ev, bookings));
+            } catch (Exception e) {
+                Platform.runLater(() -> renderDynamicBudgetData(ev, new ArrayList<>()));
+            }
+        }).start();
+    }
+
+    private void renderDynamicBudgetData(Event ev, List<VendorBooking> bookings) {
+        double totalApproved = 15000.0;
+        try {
+            String clean = ev.getBudget() != null ? ev.getBudget().replaceAll("[^0-9.]", "").trim() : "15000";
+            if (!clean.isEmpty()) totalApproved = Double.parseDouble(clean);
+        } catch (Exception ignored) {}
+
+        Map<String, Double> allocationMap = new LinkedHashMap<>();
+        if (ev.getBudgetRecommendation() != null && !ev.getBudgetRecommendation().isEmpty()) {
+            for (Map.Entry<String, Object> entry : ev.getBudgetRecommendation().entrySet()) {
+                try {
+                    allocationMap.put(entry.getKey(), Double.parseDouble(entry.getValue().toString()));
+                } catch (Exception ignored) {}
+            }
+        } else {
+            allocationMap.put("Decoration", 3100.0);
+            allocationMap.put("Catering", 4700.0);
+            allocationMap.put("Cake & Dessert Services", 800.0);
+            allocationMap.put("Venue", 4700.0);
+            allocationMap.put("Contingency & Other", 1500.0);
+        }
+
+        double totalAllocated = 0.0;
+        for (double val : allocationMap.values()) totalAllocated += val;
+
+        double totalSpent = 0.0;
+
+        // Check for Confirmed Venue Spent
+        boolean isVenueConfirmed = "CONFIRMED".equalsIgnoreCase(ev.getVenueStatus());
+        double venueCost = 0.0;
+        if (isVenueConfirmed) {
+            try {
+                String clean = ev.getConfirmedVenueCost() != null ? ev.getConfirmedVenueCost().replaceAll("[^0-9.]", "").trim() : "0";
+                venueCost = Double.parseDouble(clean);
+            } catch (Exception ignored) {}
+            if (venueCost == 0.0 && allocationMap.containsKey("Venue")) {
+                venueCost = allocationMap.get("Venue");
+            }
+            totalSpent += venueCost;
+        }
+
+        // Add Confirmed Vendor Spent
+        if (bookings != null) {
+            for (VendorBooking vb : bookings) {
+                String st = vb.getStatus() != null ? vb.getStatus().toUpperCase() : "";
+                if ("CONFIRMED".equals(st) || "ACCEPTED".equals(st) || "PAID".equals(st)) {
+                    try {
+                        totalSpent += Double.parseDouble(vb.getAmount().replaceAll("[^0-9.]", "").trim());
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+
+        double remaining = Math.max(0, totalApproved - totalSpent);
+
+        lblTotalBudget.setText("₹ " + String.format("%,.0f", totalApproved));
+        lblAllocated.setText("₹ " + String.format("%,.0f", totalAllocated));
+        lblSpent.setText("₹ " + String.format("%,.0f", totalSpent));
+        lblRemaining.setText("₹ " + String.format("%,.0f", remaining));
+
+        // Render Table Rows
+        tableRowsContainer.getChildren().clear();
+
+        for (Map.Entry<String, Double> entry : allocationMap.entrySet()) {
+            String category = entry.getKey();
+            double allocatedAmt = entry.getValue();
+
+            String assignedName = "Not Assigned";
+            double spentAmt = 0.0;
+            String status = "Allocated";
+            boolean isPaid = false;
+
+            // ⭐ 1. Check if Category is Venue and it is Confirmed
+            if (category.equalsIgnoreCase("Venue") && isVenueConfirmed) {
+                assignedName = ev.getConfirmedVenueName() != null ? ev.getConfirmedVenueName() : "Confirmed Venue";
+                spentAmt = venueCost;
+                status = "Paid / Confirmed";
+                isPaid = true;
+            } else if (bookings != null) {
+                // ⭐ 2. Check if Category matches assigned Vendor
+                for (VendorBooking vb : bookings) {
+                    if (vb.getServiceCategory() != null && vb.getServiceCategory().equalsIgnoreCase(category)) {
+                        String bSt = vb.getStatus() != null ? vb.getStatus().toUpperCase() : "";
+                        if ("CONFIRMED".equals(bSt) || "ACCEPTED".equals(bSt) || "PAID".equals(bSt)) {
+                            assignedName = vb.getVendorName() != null ? vb.getVendorName() : "Vendor Partner";
+                            try { spentAmt = Double.parseDouble(vb.getAmount().replaceAll("[^0-9.]", "").trim()); } catch (Exception ignored) {}
+                            status = "Paid / Confirmed";
+                            isPaid = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            double remCategory = Math.max(0, allocatedAmt - spentAmt);
+
+            GridPane row = new GridPane();
+            row.setPadding(new Insets(12, 14, 12, 14));
+            row.setStyle("-fx-border-color: " + BORDER + "; -fx-border-width: 0 0 1 0;");
+
+            Label catLbl = new Label(category); catLbl.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_DARK + ";");
+            Label allocLbl = new Label("₹ " + String.format("%,.0f", allocatedAmt)); allocLbl.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_DARK + ";");
+            Label assignLbl = new Label(assignedName); assignLbl.setStyle("-fx-font-size: 12px; -fx-text-fill: " + (isPaid ? "#0D3979" : TEXT_MUTED) + "; -fx-font-weight: " + (isPaid ? "bold;" : "normal;"));
+            Label spentLbl = new Label("₹ " + String.format("%,.0f", spentAmt)); spentLbl.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_DARK + ";");
+            Label remLbl = new Label("₹ " + String.format("%,.0f", remCategory)); remLbl.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MUTED + ";");
+
+            Label stBadge = new Label(status);
+            stBadge.setStyle(isPaid
+                    ? "-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-padding: 3 8; -fx-background-radius: 4px; -fx-font-size: 10px; -fx-font-weight: bold;"
+                    : "-fx-background-color: #E0F2FE; -fx-text-fill: #0369A1; -fx-padding: 3 8; -fx-background-radius: 4px; -fx-font-size: 10px; -fx-font-weight: bold;"
+            );
+
+            row.add(catLbl, 0, 0);
+            row.add(allocLbl, 1, 0);
+            row.add(assignLbl, 2, 0);
+            row.add(spentLbl, 3, 0);
+            row.add(remLbl, 4, 0);
+            row.add(stBadge, 5, 0);
+
+            setGridConstraints(row);
+            tableRowsContainer.getChildren().add(row);
+        }
+    }
+
+    private VBox createBudgetContent() {
+        VBox page = new VBox(16);
+        page.setPadding(new Insets(24, 32, 32, 32));
+
+        Hyperlink backLink = new Hyperlink("← Back to My Events");
+        backLink.setStyle("-fx-text-fill: " + TEXT_MUTED + "; -fx-font-size: 12px; -fx-underline: false;");
+        backLink.setOnAction(e -> handleBack());
+
+        VBox titleBox = new VBox(3);
+        Label heading = new Label("Budget");
+        heading.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
+        Label sub = new Label("View real-time budget allocation and vendor expenses synced live with Organizer.");
+        sub.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MUTED + ";");
+        titleBox.getChildren().addAll(heading, sub);
+
+        // 4 Summary Metric Cards
+        HBox cardsRow = new HBox(16);
+        lblTotalBudget = new Label("₹ 15,000");
+        lblAllocated = new Label("₹ 14,800");
+        lblSpent = new Label("₹ 0");
+        lblRemaining = new Label("₹ 15,000");
+
+        cardsRow.getChildren().addAll(
+                createStatCard("Total Budget", lblTotalBudget, TEXT_DARK),
+                createStatCard("Allocated", lblAllocated, TEXT_DARK),
+                createStatCard("Spent (Confirmed)", lblSpent, "#0B4EA2"),
+                createStatCard("Remaining", lblRemaining, TEXT_DARK)
+        );
+
+        // Budget Table Container
+        VBox tableCard = new VBox(12);
+        tableCard.setPadding(new Insets(18));
+        tableCard.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+
+        Label tblTitle = new Label("Budget Allocation & Vendor Sync");
+        tblTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
+
+        GridPane tableHeader = new GridPane();
+        tableHeader.setPadding(new Insets(10, 14, 10, 14));
+        tableHeader.setStyle("-fx-background-color: #F8FAFC; -fx-background-radius: 6px;");
+
+        tableHeader.add(createHeaderLabel("Category / Requirement"), 0, 0);
+        tableHeader.add(createHeaderLabel("Allocated Amount"), 1, 0);
+        tableHeader.add(createHeaderLabel("Assigned Vendor / Venue"), 2, 0);
+        tableHeader.add(createHeaderLabel("Spent / Paid"), 3, 0);
+        tableHeader.add(createHeaderLabel("Remaining"), 4, 0);
+        tableHeader.add(createHeaderLabel("Status"), 5, 0);
+
+        setGridConstraints(tableHeader);
+
+        tableRowsContainer = new VBox(2);
+        tableCard.getChildren().addAll(tblTitle, tableHeader, tableRowsContainer);
+
+        // Live Sync Footer Banner
+        HBox banner = new HBox(10);
+        banner.setAlignment(Pos.CENTER_LEFT);
+        banner.setPadding(new Insets(12, 16, 12, 16));
+        banner.setStyle("-fx-background-color: #EFF6FF; -fx-border-color: #BFDBFE; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+        FontIcon lockIco = new FontIcon("fas-lock");
+        lockIco.setIconSize(13);
+        lockIco.setIconColor(Color.web("#0D3979"));
+        Label bText = new Label("Live budget sync active. Any venue confirmation or vendor assignment is tracked here automatically.");
+        bText.setStyle("-fx-font-size: 11px; -fx-text-fill: #1E293B;");
+        banner.getChildren().addAll(lockIco, bText);
+
+        page.getChildren().addAll(backLink, titleBox, cardsRow, tableCard, banner);
+        return page;
+    }
+
+    private VBox createStatCard(String title, Label valLbl, String colorHex) {
+        VBox card = new VBox(6);
+        card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+        HBox.setHgrow(card, Priority.ALWAYS);
+
+        Label t = new Label(title);
+        t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
+        valLbl.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + colorHex + ";");
+
+        card.getChildren().addAll(t, valLbl);
+        return card;
+    }
+
+    private Label createHeaderLabel(String text) {
+        Label l = new Label(text);
+        l.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MUTED + ";");
+        return l;
+    }
+
+    private void setGridConstraints(GridPane grid) {
+        ColumnConstraints c1 = new ColumnConstraints(); c1.setPercentWidth(24);
+        ColumnConstraints c2 = new ColumnConstraints(); c2.setPercentWidth(16);
+        ColumnConstraints c3 = new ColumnConstraints(); c3.setPercentWidth(20);
+        ColumnConstraints c4 = new ColumnConstraints(); c4.setPercentWidth(14);
+        ColumnConstraints c5 = new ColumnConstraints(); c5.setPercentWidth(13);
+        ColumnConstraints c6 = new ColumnConstraints(); c6.setPercentWidth(13);
+        grid.getColumnConstraints().addAll(c1, c2, c3, c4, c5, c6);
+    }
+
+    private void detachListener() {
+        if (firestoreListener != null) {
+            firestoreListener.remove();
+            firestoreListener = null;
+        }
     }
 
     private VBox createCommonSidebar(String activeTab) {
@@ -78,19 +365,6 @@ public class Budget {
         Label brandTitle = new Label("EventXpert");
         brandTitle.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
         brandBox.getChildren().addAll(logoIcon, brandTitle);
-
-        HBox userBox = new HBox(10);
-        userBox.setAlignment(Pos.CENTER_LEFT);
-        userBox.setPadding(new Insets(6, 8, 14, 8));
-
-        Circle userAvatar = new Circle(16, Color.web("#DBEAFE"));
-        VBox userDetails = new VBox(1);
-        Label userName = new Label("Customer");
-        userName.setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;");
-        Label userEmail = new Label("user@email.com");
-        userEmail.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 10px;");
-        userDetails.getChildren().addAll(userName, userEmail);
-        userBox.getChildren().addAll(userAvatar, userDetails);
 
         VBox mainNav = new VBox(3);
         mainNav.getChildren().addAll(
@@ -121,7 +395,7 @@ public class Budget {
                 createNavItem("Settings", "fas-cog", false, this::goSettings)
         );
 
-        sidebar.getChildren().addAll(brandBox, userBox, mainNav, sectionLabel, eventNav, spacer, bottomNav);
+        sidebar.getChildren().addAll(brandBox, mainNav, sectionLabel, eventNav, spacer, bottomNav);
         return sidebar;
     }
 
@@ -149,240 +423,48 @@ public class Budget {
         return btn;
     }
 
-    private VBox createBudgetContent() {
-        VBox page = new VBox(16);
-        page.setPadding(new Insets(24, 32, 32, 32));
-
-        Hyperlink backLink = new Hyperlink("← Back to My Events");
-        backLink.setStyle("-fx-text-fill: " + TEXT_MUTED + "; -fx-font-size: 12px; -fx-underline: false;");
-        backLink.setOnAction(e -> handleBack());
-
-        VBox titleBox = new VBox(3);
-        Label heading = new Label("Budget");
-        heading.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-        Label sub = new Label("View budget allocation and expenses (Live Synced with Organizer)");
-        sub.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MUTED + ";");
-        titleBox.getChildren().addAll(heading, sub);
-
-        // 🎯 1. Real-Time Math Synchronized with Organizer
-        double totalBudget = 5000.0;
-        if (event != null && event.getBudget() != null && !event.getBudget().isBlank()) {
-            try {
-                String clean = event.getBudget().replaceAll("[^0-9.]", "").trim();
-                if (!clean.isEmpty()) totalBudget = Double.parseDouble(clean);
-            } catch (Exception ignored) {}
-        }
-
-        double calculatedAllocated = 0.0;
-        if (event != null && event.getBudgetRecommendation() != null && !event.getBudgetRecommendation().isEmpty()) {
-            for (Object val : event.getBudgetRecommendation().values()) {
-                try {
-                    calculatedAllocated += Double.parseDouble(val.toString());
-                } catch (Exception ignored) {}
-            }
-        } else if (event != null && event.getAllocatedBudget() > 0) {
-            calculatedAllocated = event.getAllocatedBudget();
-        } else {
-            calculatedAllocated = totalBudget * 0.97;
-        }
-
-        double allocatedPercentage = totalBudget > 0 ? (calculatedAllocated / totalBudget) * 100.0 : 0.0;
-        double remainingBuffer = Math.max(0, totalBudget - calculatedAllocated);
-        double remainingPercentage = totalBudget > 0 ? (remainingBuffer / totalBudget) * 100.0 : 0.0;
-
-        // 4 Accurate KPI Summary Cards
-        HBox metricsRow = new HBox(16);
-        metricsRow.getChildren().addAll(
-                createMetricCard("Total Budget", String.format("₹ %,.0f", totalBudget), ""),
-                createMetricCard("Allocated", String.format("₹ %,.0f", calculatedAllocated), String.format("%.0f%%", allocatedPercentage)),
-                createMetricCard("Spent", "₹ 0", "0%"),
-                createMetricCard("Remaining", String.format("₹ %,.0f", remainingBuffer), String.format("%.0f%%", remainingPercentage))
-        );
-
-        // Real-time Allocation Table
-        VBox tableCard = new VBox(12);
-        tableCard.setPadding(new Insets(18));
-        tableCard.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
-
-        Label tblTitle = new Label("Budget Allocation (Finalized by Organizer)");
-        tblTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-
-        VBox tableRows = new VBox(6);
-        tableRows.setPadding(new Insets(8, 0, 0, 0));
-
-        HBox headerRow = new HBox(10);
-        headerRow.setPadding(new Insets(6, 12, 6, 12));
-        headerRow.setStyle("-fx-background-color: #F8FAFC; -fx-background-radius: 6px;");
-        headerRow.getChildren().addAll(
-                createTableCell("Category", 180, true),
-                createTableCell("Recommended", 140, true),
-                createTableCell("Allocated", 140, true),
-                createTableCell("Spent", 140, true),
-                createTableCell("Remaining", 140, true),
-                createTableCell("Status", 120, true)
-        );
-        tableRows.getChildren().add(headerRow);
-
-        // 🎯 2. Render Live Breakdown from Organizer
-        boolean hasLiveRows = false;
-        if (event != null && event.getBudgetRecommendation() != null && !event.getBudgetRecommendation().isEmpty()) {
-            for (Map.Entry<String, Object> entry : event.getBudgetRecommendation().entrySet()) {
-                double catAlloc = 0.0;
-                try { catAlloc = Double.parseDouble(entry.getValue().toString()); } catch (Exception ignored) {}
-                double catSpent = 0.0;
-                double catRem = catAlloc;
-
-                tableRows.getChildren().add(createBudgetTableRow(
-                        entry.getKey(),
-                        String.format("₹ %,.0f", catAlloc),
-                        String.format("₹ %,.0f", catAlloc),
-                        String.format("₹ %,.0f", catSpent),
-                        String.format("₹ %,.0f", catRem),
-                        "Allocated",
-                        "#16A34A", "#DCFCE7"
-                ));
-                hasLiveRows = true;
-            }
-        }
-
-        // Fallback to Timefold AI Plan if map is empty
-        if (!hasLiveRows && event != null && event.getAiPlanJson() != null && !event.getAiPlanJson().isBlank()) {
-            AiEventPlan plan = AiEventPlan.fromJson(event.getAiPlanJson());
-            if (plan != null && !plan.getBudgetBreakdown().isEmpty()) {
-                for (AiEventPlan.BudgetItem item : plan.getBudgetBreakdown()) {
-                    double catAlloc = totalBudget * (item.getPercentage() / 100.0);
-
-                    tableRows.getChildren().add(createBudgetTableRow(
-                            item.getCategory(),
-                            item.getAmount(),
-                            String.format("₹ %,.0f", catAlloc),
-                            "₹ 0",
-                            String.format("₹ %,.0f", catAlloc),
-                            "Allocated",
-                            "#16A34A", "#DCFCE7"
-                    ));
-                    hasLiveRows = true;
-                }
-            }
-        }
-
-        if (!hasLiveRows) {
-            tableRows.getChildren().addAll(
-                    createBudgetTableRow("Venue", "₹ 2,200", "₹ 2,200", "₹ 0", "₹ 2,200", "Allocated", "#16A34A", "#DCFCE7"),
-                    createBudgetTableRow("Decoration", "₹ 1,550", "₹ 1,550", "₹ 0", "₹ 1,550", "Allocated", "#16A34A", "#DCFCE7"),
-                    createBudgetTableRow("Sound System", "₹ 400", "₹ 400", "₹ 0", "₹ 400", "Allocated", "#16A34A", "#DCFCE7"),
-                    createBudgetTableRow("Contingency & Other", "₹ 700", "₹ 700", "₹ 0", "₹ 700", "Allocated", "#16A34A", "#DCFCE7")
-            );
-        }
-
-        tableCard.getChildren().addAll(tblTitle, tableRows);
-
-        HBox footerNote = new HBox(10);
-        footerNote.setAlignment(Pos.CENTER_LEFT);
-        footerNote.setPadding(new Insets(10, 14, 10, 14));
-        footerNote.setStyle("-fx-background-color: #EFF6FF; -fx-background-radius: 8px;");
-
-        FontIcon pigIcon = new FontIcon("fas-piggy-bank");
-        pigIcon.setIconSize(16);
-        pigIcon.setIconColor(Color.web(PRIMARY_BLUE));
-
-        Label noteTxt = new Label("Live budget sync active. Any adjustments finalized by your organizer are updated in real-time.");
-        noteTxt.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_DARK + ";");
-        footerNote.getChildren().addAll(pigIcon, noteTxt);
-
-        page.getChildren().addAll(backLink, titleBox, metricsRow, tableCard, footerNote);
-        return page;
-    }
-
-    // ⭐ FIXED METHOD PARAMETERS (String title, String val, String percent)
-    private VBox createMetricCard(String title, String val, String percent) {
-        VBox card = new VBox(4);
-        card.setPadding(new Insets(14));
-        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
-        HBox.setHgrow(card, Priority.ALWAYS);
-
-        Label t = new Label(title);
-        t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
-
-        HBox valRow = new HBox(8);
-        valRow.setAlignment(Pos.BASELINE_LEFT);
-        Label v = new Label(val != null ? val : "");
-        v.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-        valRow.getChildren().add(v);
-
-        if (percent != null && !percent.isEmpty()) {
-            Label p = new Label(percent);
-            p.setStyle("-fx-font-size: 10px; -fx-text-fill: " + TEXT_MUTED + ";");
-            valRow.getChildren().add(p);
-        }
-
-        card.getChildren().addAll(t, valRow);
-        return card;
-    }
-
-    private Label createTableCell(String text, double width, boolean isHeader) {
-        Label lbl = new Label(text);
-        lbl.setPrefWidth(width);
-        lbl.setStyle(isHeader ? "-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MUTED + ";" : "-fx-font-size: 12px; -fx-text-fill: " + TEXT_DARK + ";");
-        return lbl;
-    }
-
-    private HBox createBudgetTableRow(String category, String rec, String alloc, String spent, String rem, String status, String stTextHex, String stBgHex) {
-        HBox row = new HBox(10);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(8, 12, 8, 12));
-        row.setStyle("-fx-border-color: " + BORDER + "; -fx-border-width: 0 0 1 0;");
-
-        Label cat = createTableCell(category, 180, false);
-        cat.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_DARK + ";");
-
-        Label badge = new Label(status);
-        badge.setStyle("-fx-background-color: " + stBgHex + "; -fx-text-fill: " + stTextHex + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 4px;");
-
-        row.getChildren().addAll(
-                cat,
-                createTableCell(rec, 140, false),
-                createTableCell(alloc, 140, false),
-                createTableCell(spent, 140, false),
-                createTableCell(rem, 140, false),
-                badge
-        );
-        return row;
-    }
-
     private void handleBack() {
+        detachListener();
         if (backAction != null) backAction.run();
         else goOverview();
     }
     private void goDashboard() {
+        detachListener();
         ActiveCustomerDashboardC dash = new ActiveCustomerDashboardC(uid, idToken);
         LandingPage.landingPageStage.setScene(dash.getactiveCustomerScene(null));
     }
     private void goCreateEvent() {
+        detachListener();
         CreateEventC create = new CreateEventC(uid, idToken);
         LandingPage.landingPageStage.setScene(create.getCreateEventScene(this::goDashboard));
     }
     private void goOverview() {
+        detachListener();
         MyEventDetails view = new MyEventDetails(uid, idToken, event);
         LandingPage.landingPageStage.setScene(view.getMyEventDetailsScene(this::handleBack));
     }
     private void goVenue() {
+        detachListener();
         Venue view = new Venue(uid, idToken, event);
         LandingPage.landingPageStage.setScene(view.getVenueScene(this::handleBack));
     }
     private void goGuest() {
+        detachListener();
         Guest view = new Guest(uid, idToken, event);
         LandingPage.landingPageStage.setScene(view.getGuestScene(this::handleBack));
     }
     private void goPayment() {
+        detachListener();
         Payment view = new Payment(uid, idToken, event);
         LandingPage.landingPageStage.setScene(view.getPaymentScene(this::handleBack));
     }
     private void goRequirement() {
+        detachListener();
         Requirement view = new Requirement(uid, idToken, event);
         LandingPage.landingPageStage.setScene(view.getRequirementScene(this::handleBack));
     }
     private void goSettings() {
+        detachListener();
         SettingC s = new SettingC();
         LandingPage.landingPageStage.setScene(s.getSettingScene(this::handleBack));
     }

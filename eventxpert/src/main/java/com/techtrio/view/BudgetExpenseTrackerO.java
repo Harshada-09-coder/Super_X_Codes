@@ -51,8 +51,8 @@ public class BudgetExpenseTrackerO {
     private static final String PENDING_BG = "#FEF7E0";
     private static final String PENDING_TEXT = "#B06000";
 
-    private double approvedBudget = 500000.0;
-    private double allocatedBudget = 450000.0;
+    private double approvedBudget = 15000.0;
+    private double allocatedBudget = 14800.0;
     
     private Label approvedBudgetValLabel;
     private Label allocatedBudgetValLabel;
@@ -116,10 +116,8 @@ public class BudgetExpenseTrackerO {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
 
-        // 1. Sidebar (Matched with AI Planner and Dashboard)
         root.setLeft(createCommonOrganizerSidebar("My Events"));
 
-        // 2. Main Content inside ScrollPane (Top Bar Removed)
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -172,7 +170,7 @@ public class BudgetExpenseTrackerO {
     }
 
     private void loadAllocationsOrOptimize() {
-        String budgetStr = (currentEvent != null && currentEvent.getBudget() != null) ? currentEvent.getBudget() : "₹ 5,00,000";
+        String budgetStr = (currentEvent != null && currentEvent.getBudget() != null) ? currentEvent.getBudget() : "₹ 15,000";
         try {
             String clean = budgetStr.replaceAll("[^0-9.]", "");
             if (!clean.isEmpty()) approvedBudget = Double.parseDouble(clean);
@@ -183,7 +181,6 @@ public class BudgetExpenseTrackerO {
         if (savedEventAllocationsCache.containsKey(eventId) && !savedEventAllocationsCache.get(eventId).isEmpty()) {
             currentAllocations = new ArrayList<>(savedEventAllocationsCache.get(eventId));
         } else if (currentEvent != null && currentEvent.getBudgetRecommendation() != null && !currentEvent.getBudgetRecommendation().isEmpty()) {
-            // Load live recommendation from Firestore
             currentAllocations.clear();
             for (Map.Entry<String, Object> entry : currentEvent.getBudgetRecommendation().entrySet()) {
                 double amt = 0.0;
@@ -197,7 +194,7 @@ public class BudgetExpenseTrackerO {
     }
 
     private void forceFreshOptimization() {
-        String budgetStr = (currentEvent != null && currentEvent.getBudget() != null) ? currentEvent.getBudget() : "₹ 5,00,000";
+        String budgetStr = (currentEvent != null && currentEvent.getBudget() != null) ? currentEvent.getBudget() : "₹ 15,000";
         try {
             String clean = budgetStr.replaceAll("[^0-9.]", "");
             if (!clean.isEmpty()) approvedBudget = Double.parseDouble(clean);
@@ -208,14 +205,14 @@ public class BudgetExpenseTrackerO {
             selectedReqs.addAll(Arrays.asList(currentEvent.getRequirements().split(",\\s*")));
         }
 
-        int guests = (currentEvent != null && currentEvent.getGuests() > 0) ? currentEvent.getGuests() : 250;
+        int guests = (currentEvent != null && currentEvent.getGuests() > 0) ? currentEvent.getGuests() : 10;
 
         BudgetOptimizationRequest req = new BudgetOptimizationRequest(
                 approvedBudget,
-                currentEvent != null ? currentEvent.getEventType() : "Corporate",
+                currentEvent != null ? currentEvent.getEventType() : "Birthday",
                 guests,
                 selectedReqs,
-                currentEvent != null ? currentEvent.getCity() : "Pune"
+                currentEvent != null ? currentEvent.getCity() : "Surat"
         );
 
         BudgetOptimizationResult optResult = optimizerService.optimizeBudget(req);
@@ -235,6 +232,21 @@ public class BudgetExpenseTrackerO {
             List<VendorBooking> bookings = vendorController.getEventVendorBookings(eventId.trim());
             expenseList.clear();
 
+            // ⭐ 1. Add Confirmed Venue as Expense automatically
+            if (currentEvent != null && "CONFIRMED".equalsIgnoreCase(currentEvent.getVenueStatus())) {
+                double venueCost = 4395.0;
+                try {
+                    String clean = currentEvent.getConfirmedVenueCost() != null ? currentEvent.getConfirmedVenueCost().replaceAll("[^0-9.]", "") : "4395";
+                    if (!clean.isEmpty()) venueCost = Double.parseDouble(clean);
+                } catch (Exception ignored) {}
+
+                String vName = currentEvent.getConfirmedVenueName() != null ? currentEvent.getConfirmedVenueName() : "Confirmed Venue";
+                String dt = currentEvent.getEventDate() != null ? currentEvent.getEventDate() : (currentEvent.getStartDate() != null ? currentEvent.getStartDate() : "Confirmed");
+
+                expenseList.add(new ExpenseItem("Venue", vName, dt, venueCost, "Paid"));
+            }
+
+            // ⭐ 2. Add Confirmed Vendor Bookings
             if (bookings != null && !bookings.isEmpty()) {
                 for (VendorBooking vb : bookings) {
                     double amt = 0.0;
@@ -248,7 +260,7 @@ public class BudgetExpenseTrackerO {
                     String dt = vb.getEventDate() != null ? vb.getEventDate() : "Upcoming";
                     
                     String rawStatus = vb.getStatus() != null ? vb.getStatus().toUpperCase() : "PENDING";
-                    String st = ("CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus)) ? "Paid" : "Pending";
+                    String st = ("CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus) || "PAID".equals(rawStatus)) ? "Paid" : "Pending";
 
                     expenseList.add(new ExpenseItem(cat, vName, dt, amt, st));
                 }
@@ -259,10 +271,12 @@ public class BudgetExpenseTrackerO {
     }
 
     private void renderDynamicBudgetData() {
-        String eventName = (currentEvent != null && currentEvent.getEventName() != null) ? currentEvent.getEventName() : "Annual Event";
-        String eventDate = (currentEvent != null && currentEvent.getEventDate() != null) ? currentEvent.getEventDate() : "18 May 2026";
-        int guests = (currentEvent != null && currentEvent.getGuests() > 0) ? currentEvent.getGuests() : 250;
-        String venue = (currentEvent != null && currentEvent.getVenueType() != null) ? currentEvent.getVenueType() : "Conference Center";
+        String eventName = (currentEvent != null && currentEvent.getEventName() != null) ? currentEvent.getEventName() : "Birthday Party";
+        String eventDate = (currentEvent != null && currentEvent.getEventDate() != null) ? currentEvent.getEventDate() : "2026-09-04";
+        int guests = (currentEvent != null && currentEvent.getGuests() > 0) ? currentEvent.getGuests() : 10;
+        String venue = (currentEvent != null && currentEvent.getConfirmedVenueName() != null && !currentEvent.getConfirmedVenueName().startsWith("Pending"))
+                ? currentEvent.getConfirmedVenueName()
+                : (currentEvent != null && currentEvent.getVenueType() != null ? currentEvent.getVenueType() : "Hotel");
         String budgetStr = "₹ " + String.format("%,.0f", approvedBudget);
 
         allocatedBudget = 0.0;
@@ -395,7 +409,6 @@ public class BudgetExpenseTrackerO {
             budgetItems.add(new AiEventPlan.BudgetItem(a.getCategory(), String.format("₹ %,.0f", a.getRecommendedAmount()), a.getPercentage()));
         }
 
-        // Keep Timefold AI Plan budget in sync
         AiEventPlan aiPlan = (currentEvent.getAiPlanJson() != null && !currentEvent.getAiPlanJson().isBlank())
                 ? AiEventPlan.fromJson(currentEvent.getAiPlanJson()) : new AiEventPlan();
         aiPlan.setBudgetBreakdown(budgetItems);
@@ -607,8 +620,8 @@ public class BudgetExpenseTrackerO {
 
         titleBox.getChildren().addAll(breadcrumbLabel, headerRow, subtitle);
 
-        approvedBudgetValLabel = new Label("₹ 5,00,000");
-        allocatedBudgetValLabel = new Label("₹ 5,00,000");
+        approvedBudgetValLabel = new Label("₹ 15,000");
+        allocatedBudgetValLabel = new Label("₹ 14,800");
 
         HBox summaryRow = new HBox(16);
         summaryRow.getChildren().addAll(
@@ -693,7 +706,7 @@ public class BudgetExpenseTrackerO {
         HBox.setHgrow(card, Priority.ALWAYS);
 
         Label t = new Label("Remaining"); t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        remainingValLabel = new Label("₹ 5,00,000"); remainingValLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        remainingValLabel = new Label("₹ 15,000"); remainingValLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
 
         card.getChildren().addAll(t, remainingValLabel);
         return card;
@@ -723,7 +736,7 @@ public class BudgetExpenseTrackerO {
 
         header.getChildren().addAll(moneyIcon, title, spacer, statusTag);
 
-        budgetOverviewTotalLabel = new Label("₹ 5,00,000");
+        budgetOverviewTotalLabel = new Label("₹ 15,000");
         budgetOverviewTotalLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
 
         budgetOverviewProgressBar = new ProgressBar(0.75);
@@ -774,9 +787,9 @@ public class BudgetExpenseTrackerO {
         Label title = new Label("Event Details");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
-        eventDateDetailLabel = new Label("18 May 2026");
-        eventGuestsDetailLabel = new Label("250 Expected");
-        eventVenueDetailLabel = new Label("Conference Center");
+        eventDateDetailLabel = new Label("2026-09-04");
+        eventGuestsDetailLabel = new Label("10 Expected");
+        eventVenueDetailLabel = new Label("Hotel");
 
         VBox details = new VBox(6);
         details.getChildren().addAll(
@@ -848,7 +861,7 @@ public class BudgetExpenseTrackerO {
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
 
-        Label title = new Label("Recent Expenses (Accepted Vendor Bookings)");
+        Label title = new Label("Recent Expenses (Accepted Vendor & Confirmed Venue)");
         title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Region spacer = new Region();
@@ -861,7 +874,7 @@ public class BudgetExpenseTrackerO {
         tableHeader.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 6px;");
 
         tableHeader.add(createHeaderLabel("Category"), 0, 0);
-        tableHeader.add(createHeaderLabel("Vendor"), 1, 0);
+        tableHeader.add(createHeaderLabel("Vendor / Venue"), 1, 0);
         tableHeader.add(createHeaderLabel("Date"), 2, 0);
         tableHeader.add(createHeaderLabel("Amount"), 3, 0);
         tableHeader.add(createHeaderLabel("Status"), 4, 0);
@@ -889,7 +902,7 @@ public class BudgetExpenseTrackerO {
             VBox empty = new VBox(8);
             empty.setAlignment(Pos.CENTER);
             empty.setPadding(new Insets(24));
-            Label l = new Label("No accepted vendor bookings recorded yet for this event.");
+            Label l = new Label("No accepted vendor bookings or confirmed venues recorded yet.");
             l.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
             empty.getChildren().add(l);
             expensesTableContainer.getChildren().add(empty);

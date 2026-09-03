@@ -18,13 +18,10 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
@@ -310,15 +307,11 @@ public class ReviewPageC {
                 boolean isSaved = saveTask.getValue();
                 if (isSaved) {
                     EventData.reset();
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Event & AI Plan Submitted Successfully! Your request has been sent to Admin for Organizer assignment.");
-                    alert.setHeaderText("Submission Successful");
-                    alert.showAndWait();
-
-                    ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(finalUid, finalToken);
-                    LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
+                    showSuccessModal(finalUid, finalToken);
                 } else {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save event. Please check Firestore connection.");
                     alert.setHeaderText("Submission Failed");
+                    if (LandingPage.landingPageStage != null) alert.initOwner(LandingPage.landingPageStage);
                     alert.showAndWait();
                 }
             });
@@ -327,6 +320,7 @@ public class ReviewPageC {
                 submitBtn.setDisable(false);
                 submitBtn.setText("Submit Plan ✓");
                 Alert alert = new Alert(Alert.AlertType.ERROR, "An error occurred while saving the event. Please check your connection.");
+                if (LandingPage.landingPageStage != null) alert.initOwner(LandingPage.landingPageStage);
                 alert.showAndWait();
             });
 
@@ -348,6 +342,54 @@ public class ReviewPageC {
         return scene;
     }
 
+    // ⭐ Beautiful In-App Modal Dialog (No extra separate OS Stage)
+    private void showSuccessModal(String customerUid, String customerToken) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Event Submitted");
+        dialog.setHeaderText(null);
+        if (LandingPage.landingPageStage != null) {
+            dialog.initOwner(LandingPage.landingPageStage);
+        }
+
+        VBox content = new VBox(14);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(24, 30, 24, 30));
+        content.setStyle("-fx-background-color: white; -fx-background-radius: 12px;");
+
+        StackPane checkCircle = new StackPane();
+        Circle bgCircle = new Circle(28, Color.web("#DCFCE7"));
+        Label checkIco = new Label("✓");
+        checkIco.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #16A34A;");
+        checkCircle.getChildren().addAll(bgCircle, checkIco);
+
+        Label titleLbl = new Label("Event & Plan Submitted Successfully!");
+        titleLbl.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+
+        Label descLbl = new Label("Your event has been submitted to Admin.\nAn expert Organizer will be assigned shortly to begin curation and venue setup.");
+        descLbl.setWrapText(true);
+        descLbl.setTextAlignment(TextAlignment.CENTER);
+        descLbl.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748B;");
+
+        Button okBtn = new Button("Go to Dashboard →");
+        okBtn.setStyle("-fx-background-color: " + BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 8 20; -fx-background-radius: 6px; -fx-cursor: hand;");
+        okBtn.setOnAction(e -> {
+            dialog.setResult(null);
+            dialog.close();
+            ActiveCustomerDashboardC activeDash = new ActiveCustomerDashboardC(customerUid, customerToken);
+            LandingPage.landingPageStage.setScene(activeDash.getactiveCustomerScene(null));
+        });
+
+        content.getChildren().addAll(checkCircle, titleLbl, descLbl, okBtn);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        
+        // Hide default dialog close button header
+        dialog.getDialogPane().lookupButton(ButtonType.CLOSE).setVisible(false);
+        dialog.getDialogPane().lookupButton(ButtonType.CLOSE).setManaged(false);
+
+        dialog.showAndWait();
+    }
+
     private VBox eventDetailsCard() {
         VBox card = createCard();
         card.getChildren().add(cardTitle("ⓘ", "Event Details"));
@@ -365,7 +407,7 @@ public class ReviewPageC {
     private VBox locationCard() {
         VBox card = createCard();
         card.getChildren().add(cardTitle("🏢", "Venue & Location"));
-        addDetail(card, "Venue Name", EventData.confirmedVenueName.isBlank() ? "Grand Banquet" : EventData.confirmedVenueName);
+        addDetail(card, "Venue Name", EventData.confirmedVenueName.isBlank() ? "Pending Organizer Suggestion" : EventData.confirmedVenueName);
         addDetail(card, "Venue Preference", EventData.venue.isBlank() ? "Banquet Hall" : EventData.venue);
         addDetail(card, "City", EventData.city.isBlank() ? "Pune" : EventData.city);
         addDetail(card, "Area / Locality", EventData.area.isBlank() ? "Baner, Maharashtra" : EventData.area);
