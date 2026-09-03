@@ -6,8 +6,13 @@ public class UserSession {
     private static String idToken;
     private static String userEmail;
     private static String userRole;
+    private static String userName; // Added for User Profile Name
 
     public static synchronized void setSession(String u, String token, String email, String role) {
+        setSession(u, token, email, role, null);
+    }
+
+    public static synchronized void setSession(String u, String token, String email, String role, String name) {
         if (u != null && !u.isBlank()) {
             uid = u.trim();
         }
@@ -19,6 +24,9 @@ public class UserSession {
         }
         if (role != null && !role.isBlank()) {
             userRole = role.trim();
+        }
+        if (name != null && !name.isBlank()) {
+            userName = name.trim();
         }
     }
 
@@ -50,6 +58,17 @@ public class UserSession {
         return userRole;
     }
 
+    // Guest.java मधील एरर फिक्स करणारी मेथड
+    public static synchronized String getUserName() {
+        return (userName != null && !userName.isBlank()) ? userName : "Customer";
+    }
+
+    public static synchronized void setUserName(String name) {
+        if (name != null && !name.isBlank()) {
+            userName = name.trim();
+        }
+    }
+
     public static synchronized boolean isAuthenticated() {
         return uid != null && !uid.isBlank();
     }
@@ -59,5 +78,6 @@ public class UserSession {
         idToken = null;
         userEmail = null;
         userRole = null;
+        userName = null;
     }
 }

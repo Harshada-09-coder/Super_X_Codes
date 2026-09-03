@@ -47,10 +47,6 @@ public class CustomerController {
         return customerService.updateCustomerProfileFields(customerId, updates);
     }
 
-    // ==========================================
-    // CUSTOMER PROFILE OPERATIONS
-    // ==========================================
-
     public boolean createCustomerProfile(CustomerProfile profile) {
         return customerService.saveCustomerProfile(profile);
     }
@@ -83,18 +79,28 @@ public class CustomerController {
             data.put("eventType", event.getEventType());
             data.put("category", event.getCategory());
             data.put("guests", event.getGuests());
-            data.put("eventDate", event.getEventDate());
-            data.put("time", event.getTime());
+
+            // ⭐ REAL-TIME COMPLETE DURATION FIELDS
+            data.put("startDate", event.getStartDate());
+            data.put("endDate", event.getEndDate());
+            data.put("startTime", event.getStartTime());
+            data.put("endTime", event.getEndTime());
+
+            // Backward compatibility fields
+            data.put("eventDate", event.getStartDate());
+            data.put("time", event.getStartTime() + (!event.getEndTime().isBlank() ? " - " + event.getEndTime() : ""));
+
             data.put("requirements", event.getRequirements());
             data.put("notes", event.getNotes());
             data.put("city", event.getCity());
             data.put("locality", event.getLocality());
             data.put("venueType", event.getVenueType());
             data.put("budget", event.getBudget());
-            data.put("status", event.getStatus());
-            data.put("organizerStatus", event.getOrganizerStatus());
+            data.put("status", event.getStatus() != null ? event.getStatus() : "PENDING");
+            data.put("organizerStatus", event.getOrganizerStatus() != null ? event.getOrganizerStatus() : "NOT_ASSIGNED");
             data.put("aiPlanJson", event.getAiPlanJson());
             data.put("theme", event.getTheme());
+            data.put("createdAt", java.time.LocalDateTime.now().toString());
 
             // GUEST MANAGEMENT FIRESTORE MAPPING
             data.put("guestMode", event.getGuestMode());
@@ -127,7 +133,7 @@ public class CustomerController {
     }
 
     public boolean saveEvent(Event event) {
-        return eventService.createEvent(event);
+        return createEvent(event);
     }
 
     public Event getEventById(String eventId) {
@@ -144,5 +150,22 @@ public class CustomerController {
 
     public boolean updateEventStatus(String eventId, String status) {
         return eventService.updateEventStatus(eventId, status);
+    }
+
+    public boolean updateEventBudgetAndPlan(String eventId, String budget, String aiPlanJson) {
+        if (eventId == null || eventId.isBlank()) return false;
+        try {
+            Firestore db = FirestoreClient.getFirestore();
+            Map<String, Object> updates = new HashMap<>();
+            if (budget != null && !budget.isBlank()) updates.put("budget", budget);
+            if (aiPlanJson != null && !aiPlanJson.isBlank()) updates.put("aiPlanJson", aiPlanJson);
+            updates.put("updatedAt", java.time.LocalDateTime.now().toString());
+
+            db.collection("events").document(eventId).update(updates).get();
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error updating event budget and plan: " + e.getMessage());
+            return false;
+        }
     }
 }
