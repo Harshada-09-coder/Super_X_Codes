@@ -4,6 +4,11 @@ import com.techtrio.controller.CustomerController;
 import com.techtrio.controller.CustomerState;
 import com.techtrio.session.UserSession;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -50,7 +55,7 @@ public class CreateEventC {
         sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
         Label logo = label("EventXpert", 22, FontWeight.BOLD, "white");
-        Label logoSub = label("EVENT MANAGEMENT", 11, FontWeight.NORMAL, "#BDE3FF");
+        Label logoSub = label("EVENT MANAGEMENT", 10, FontWeight.NORMAL, "#BDE3FF");
         VBox brand = new VBox(3, logo, logoSub);
         brand.setPadding(new Insets(24, 20, 28, 25));
 
@@ -61,16 +66,18 @@ public class CreateEventC {
 
         VBox menu = new VBox();
         menu.getChildren().addAll(
-                sidebarItem("ⓘ", "Event Details", true),
-                sidebarItem("▣", "Requirements", false),
-                sidebarItem("⌖", "Location", false),
-                sidebarItem("▣", "Budget", false),
-                sidebarItem("👥", "Guest", false),
-                sidebarItem("✦", "AI Planning", false),
-                sidebarItem("▤", "Review", false)
+                sidebarItem("[1]", "Event Details", true),
+                sidebarItem("[2]", "Requirements", false),
+                sidebarItem("[3]", "Venue", false),
+                sidebarItem("[4]", "Budget", false),
+                sidebarItem("[5]", "Guest", false),
+                sidebarItem("[6]", "AI Planning", false),
+                sidebarItem("[7]", "Review", false)
         );
 
-        sidebar.getChildren().addAll(brand, titleBox, menu);
+        Region sideSpace = new Region();
+        VBox.setVgrow(sideSpace, Priority.ALWAYS);
+        sidebar.getChildren().addAll(brand, titleBox, menu, sideSpace);
 
         // TOP BAR
         HBox topBar = new HBox();
@@ -80,22 +87,24 @@ public class CreateEventC {
         topBar.setPadding(new Insets(0, 30, 0, 30));
         topBar.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:0 0 1 0;");
 
+        Label topLogo = label("EventXpert", 14, FontWeight.BOLD, NAVY);
         Region topSpace = new Region();
         HBox.setHgrow(topSpace, Priority.ALWAYS);
 
-        Label notification = label("♧", 20, FontWeight.NORMAL, NAVY);
+        Label notification = label("Notifications", 11, FontWeight.NORMAL, NAVY);
         Label help = label("?", 13, FontWeight.BOLD, NAVY);
         help.setMinSize(28, 28);
         help.setAlignment(Pos.CENTER);
         help.setStyle("-fx-border-color:" + NAVY + ";-fx-border-radius:50;-fx-background-radius:50;");
 
-        topBar.getChildren().addAll(topSpace, notification, help);
+        topBar.getChildren().addAll(topLogo, topSpace, notification, help);
 
         // CONTENT
         VBox content = new VBox(12);
         content.setPadding(new Insets(22, 45, 18, 45));
         content.setStyle("-fx-background-color:" + BG + ";");
 
+        Label stepNumber = label("STEP 1 OF 7", 10, FontWeight.BOLD, BLUE);
         Label heading = label("Create Your Event", 26, FontWeight.NORMAL, NAVY);
         Label subtitle = label("Tell us a little about the event you are planning.", 14, FontWeight.NORMAL, GREY);
 
@@ -107,8 +116,8 @@ public class CreateEventC {
         ToggleGroup group = new ToggleGroup();
 
         boolean isInformal = "Informal".equalsIgnoreCase(ReviewPageC.EventData.category);
-        ToggleButton formal = categoryCard("▣", "Formal", "Conferences, Corporate, Galas", !isInformal, group);
-        ToggleButton informal = categoryCard("♨", "Informal", "Parties, Retreats, Socials", isInformal, group);
+        ToggleButton formal = categoryCard("🏢", "Formal", "Conferences, Corporate, Galas", !isInformal, group);
+        ToggleButton informal = categoryCard("🎉", "Informal", "Parties, Retreats, Socials", isInformal, group);
 
         HBox categories = new HBox(14, formal, informal);
         HBox.setHgrow(formal, Priority.ALWAYS);
@@ -139,26 +148,64 @@ public class CreateEventC {
         HBox.setHgrow(row1.getChildren().get(0), Priority.ALWAYS);
         HBox.setHgrow(row1.getChildren().get(1), Priority.ALWAYS);
 
-        DatePicker date = new DatePicker();
-        date.setPromptText("dd-mm-yyyy");
-        if (ReviewPageC.EventData.eventDate != null && !ReviewPageC.EventData.eventDate.isBlank()) {
+        // START DATE
+        DatePicker startDate = new DatePicker();
+        startDate.setPromptText("dd-mm-yyyy");
+
+        if (ReviewPageC.EventData.startDate != null && !ReviewPageC.EventData.startDate.isBlank()) {
             try {
-                date.setValue(java.time.LocalDate.parse(ReviewPageC.EventData.eventDate));
+                startDate.setValue(LocalDate.parse(ReviewPageC.EventData.startDate));
             } catch (Exception ignored) {}
         }
-        date.setMaxWidth(Double.MAX_VALUE);
-        styleControl(date);
+        startDate.setMaxWidth(Double.MAX_VALUE);
+        styleControl(startDate);
 
-        TextField time = new TextField(ReviewPageC.EventData.time != null ? ReviewPageC.EventData.time : "");
-        time.setPromptText("e.g., 10:00 AM");
-        styleField(time);
+        // END DATE
+        DatePicker endDate = new DatePicker();
+        endDate.setPromptText("dd-mm-yyyy");
 
-        HBox row2 = new HBox(17, formField("Date", date), formField("Time", time));
+        if (ReviewPageC.EventData.endDate != null && !ReviewPageC.EventData.endDate.isBlank()) {
+            try {
+                endDate.setValue(LocalDate.parse(ReviewPageC.EventData.endDate));
+            } catch (Exception ignored) {}
+        }
+        endDate.setMaxWidth(Double.MAX_VALUE);
+        styleControl(endDate);
+
+        // START TIME
+        TextField startTime = new TextField(
+                ReviewPageC.EventData.startTime != null ? ReviewPageC.EventData.startTime : ""
+        );
+        startTime.setPromptText("e.g., 10:00 AM");
+        styleField(startTime);
+
+        // END TIME
+        TextField endTime = new TextField(
+                ReviewPageC.EventData.endTime != null ? ReviewPageC.EventData.endTime : ""
+        );
+        endTime.setPromptText("e.g., 06:00 PM");
+        styleField(endTime);
+
+        // DATE ROW
+        HBox row2 = new HBox(
+                17,
+                formField("Start Date", startDate),
+                formField("End Date", endDate)
+        );
         HBox.setHgrow(row2.getChildren().get(0), Priority.ALWAYS);
         HBox.setHgrow(row2.getChildren().get(1), Priority.ALWAYS);
 
-        card.getChildren().addAll(categoryTitle, categories, separator, formField("Event Name", eventName), row1, row2);
-        content.getChildren().addAll(heading, subtitle, card);
+        // TIME ROW
+        HBox row3 = new HBox(
+                17,
+                formField("Start Time", startTime),
+                formField("End Time", endTime)
+        );
+        HBox.setHgrow(row3.getChildren().get(0), Priority.ALWAYS);
+        HBox.setHgrow(row3.getChildren().get(1), Priority.ALWAYS);
+
+        card.getChildren().addAll(categoryTitle, categories, separator, formField("Event Name", eventName), row1, row2, row3);
+        content.getChildren().addAll(stepNumber, heading, subtitle, card);
 
         // FOOTER
         HBox footer = new HBox(15);
@@ -168,11 +215,11 @@ public class CreateEventC {
         footer.setPadding(new Insets(0, 35, 0, 35));
         footer.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:1 0 0 0;");
 
-        Label copyright = label("© 2026 EventXpert", 14, FontWeight.NORMAL, GREY);
+        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.NORMAL, GREY);
         Region footerSpace = new Region();
         HBox.setHgrow(footerSpace, Priority.ALWAYS);
 
-        Button back = new Button("← Back");
+        Button back = new Button("Back");
         back.setPrefSize(82, 38);
         back.setStyle("-fx-background-color:white;-fx-text-fill:" + BLUE + ";-fx-border-color:" + BLUE + ";-fx-border-radius:7;-fx-background-radius:7;-fx-font-weight:bold;-fx-cursor:hand;");
 
@@ -197,13 +244,50 @@ public class CreateEventC {
         next.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-weight:bold;-fx-cursor:hand;");
 
         next.setOnAction(e -> {
+            // 1. Event Name validation
             if (eventName.getText().trim().isEmpty()) {
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("EventXpert");
-                alert.setHeaderText("Event Name Required");
-                alert.setContentText("Please enter an Event Name.");
-                alert.showAndWait();
+                showWarningPopup("Event Name Required", "Please enter an Event Name.");
                 return;
+            }
+
+            // 2. Start Date validation
+            if (startDate.getValue() == null) {
+                showWarningPopup("Start Date Required", "Please select the Start Date.");
+                return;
+            }
+
+            // 3. End Date validation
+            if (endDate.getValue() == null) {
+                showWarningPopup("End Date Required", "Please select the End Date.");
+                return;
+            }
+
+            // 4. Date Range validation
+            if (endDate.getValue().isBefore(startDate.getValue())) {
+                showWarningPopup("Invalid Event Dates", "End Date cannot be before Start Date.");
+                return;
+            }
+
+            // 5. Start Time validation
+            if (startTime.getText().trim().isEmpty()) {
+                showWarningPopup("Start Time Required", "Please enter the Start Time.");
+                return;
+            }
+
+            // 6. End Time validation
+            if (endTime.getText().trim().isEmpty()) {
+                showWarningPopup("End Time Required", "Please enter the End Time.");
+                return;
+            }
+
+            // 7. Same-Day Time Order validation
+            if (startDate.getValue().isEqual(endDate.getValue())) {
+                LocalTime sTime = parseTimeFlexible(startTime.getText().trim());
+                LocalTime eTime = parseTimeFlexible(endTime.getText().trim());
+                if (sTime != null && eTime != null && (eTime.isBefore(sTime) || eTime.equals(sTime))) {
+                    showWarningPopup("Invalid Event Time", "End Time must be after Start Time on the same date.");
+                    return;
+                }
             }
 
             ReviewPageC.EventData.category = formal.isSelected() ? "Formal" : "Informal";
@@ -214,8 +298,12 @@ public class CreateEventC {
             } catch (Exception ex) {
                 ReviewPageC.EventData.guests = 0;
             }
-            ReviewPageC.EventData.eventDate = date.getValue() != null ? date.getValue().toString() : "";
-            ReviewPageC.EventData.time = time.getText().trim();
+
+            // Save event duration details
+            ReviewPageC.EventData.startDate = startDate.getValue().toString();
+            ReviewPageC.EventData.endDate = endDate.getValue().toString();
+            ReviewPageC.EventData.startTime = startTime.getText().trim();
+            ReviewPageC.EventData.endTime = endTime.getText().trim();
 
             RequirementsC reqView = new RequirementsC(uid, idToken);
             LandingPage.landingPageStage.setScene(reqView.getRequirementsScene());
@@ -238,6 +326,30 @@ public class CreateEventC {
         return scene;
     }
 
+    // Modal popup helper attached to main application window (no new stage created)
+    private void showWarningPopup(String header, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("EventXpert");
+        alert.setHeaderText(header);
+        alert.setContentText(message);
+        if (LandingPage.landingPageStage != null) {
+            alert.initOwner(LandingPage.landingPageStage);
+        }
+        alert.showAndWait();
+    }
+
+    private LocalTime parseTimeFlexible(String timeStr) {
+        if (timeStr == null || timeStr.isBlank()) return null;
+        String clean = timeStr.trim().toUpperCase();
+        String[] patterns = {"h:mm a", "hh:mm a", "h:mma", "hh:mma", "H:mm", "HH:mm"};
+        for (String pattern : patterns) {
+            try {
+                return LocalTime.parse(clean, DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH));
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
     private HBox sidebarItem(String icon, String text, boolean active) {
         HBox item = new HBox(12);
         item.setPrefHeight(44);
@@ -247,8 +359,8 @@ public class CreateEventC {
         item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
 
         item.getChildren().addAll(
-                label(icon, 18, FontWeight.NORMAL, "white"),
-                label(text, 14, FontWeight.BOLD, active ? "white" : "#B7C4D8")
+                label(icon, 13, FontWeight.NORMAL, "white"),
+                label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8")
         );
         return item;
     }
@@ -258,8 +370,8 @@ public class CreateEventC {
         button.setToggleGroup(group);
         button.setSelected(selected);
         button.setMaxWidth(Double.MAX_VALUE);
-        button.setPrefHeight(130);
-        button.setMinHeight(130);
+        button.setPrefHeight(120);
+        button.setMinHeight(120);
 
         VBox box = new VBox(6);
         box.setAlignment(Pos.CENTER);

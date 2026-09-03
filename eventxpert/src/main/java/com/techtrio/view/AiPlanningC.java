@@ -1,5 +1,6 @@
 package com.techtrio.view;
 
+import com.techtrio.ai.planning.EventPlanningService;
 import com.techtrio.model.AiEventPlan;
 import com.techtrio.services.GeminiAiService;
 import com.techtrio.session.UserSession;
@@ -20,18 +21,14 @@ public class AiPlanningC {
     private String uid;
     private String idToken;
 
-    // High Contrast Brand Colors
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
-    private static final String MAIN_BLUE = "#002A60";
-    private static final String MAIN_STRONG_BLUE = "#0D3979";
-    private static final String BG = "#F4F7FC";
+    private static final String BG = "#F5F8FC";
     private static final String BORDER = "#CBD5E1";
-    private static final String DARK_TEXT = "#0F172A";
-    private static final String MUTED_TEXT = "#334155";
-    private static final String RATING_TEXT = "#92400E";
 
-    private GeminiAiService aiService = new GeminiAiService();
+    // Primary Timefold Planning Engine + Gemini Fallback
+    private final EventPlanningService planningService = new EventPlanningService();
+    private final GeminiAiService geminiService = new GeminiAiService();
     private AiEventPlan currentPlan;
 
     private StackPane dynamicContentArea;
@@ -50,9 +47,7 @@ public class AiPlanningC {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
-        // =========================================================
-        // 1. SIDEBAR (Guest Management Step Added)
-        // =========================================================
+        // SIDEBAR
         VBox sidebar = new VBox();
         sidebar.setPrefWidth(245);
         sidebar.setMinWidth(245);
@@ -61,7 +56,7 @@ public class AiPlanningC {
         sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
         Label logo = label("EventXpert", 22, FontWeight.BOLD, "#FFFFFF");
-        Label logoSub = label("Plan. Organize. Celebrate.", 11, FontWeight.NORMAL, "#BDE3FF");
+        Label logoSub = label("EVENT MANAGEMENT", 10, FontWeight.NORMAL, "#BDE3FF");
         VBox brand = new VBox(3, logo, logoSub);
         brand.setPadding(new Insets(24, 20, 28, 25));
 
@@ -72,164 +67,151 @@ public class AiPlanningC {
 
         VBox menu = new VBox();
         menu.getChildren().addAll(
-                sidebarItem("ⓘ", "Event Details", false),
-                sidebarItem("▣", "Requirements", false),
-                sidebarItem("⌖", "Location", false),
-                sidebarItem("▣", "Budget", false),
-                sidebarItem("👥", "Guest Management", false), // <-- GUEST MANAGEMENT
-                sidebarItem("✦", "AI Planning", true),          // ACTIVE
-                sidebarItem("▤", "Review", false)
+                sidebarItem("[1]", "Event Details", false),
+                sidebarItem("[2]", "Requirements", false),
+                sidebarItem("[3]", "Venue", false),
+                sidebarItem("[4]", "Budget", false),
+                sidebarItem("[5]", "Guest", false),
+                sidebarItem("[6]", "AI Planning", true),
+                sidebarItem("[7]", "Review", false)
         );
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
         sidebar.getChildren().addAll(brand, titleBox, menu, sideSpace);
 
-        // =========================================================
-        // 2. TOP BAR
-        // =========================================================
+        // TOP BAR
         HBox topBar = new HBox();
         topBar.setPrefHeight(60);
-        topBar.setMinHeight(60);
         topBar.setAlignment(Pos.CENTER_RIGHT);
         topBar.setPadding(new Insets(0, 30, 0, 30));
-        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E2E8F0;-fx-border-width:0 0 1 0;");
+        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:0 0 1 0;");
 
+        Label topLogo = label("EventXpert", 14, FontWeight.BOLD, NAVY);
         Region topSpace = new Region();
         HBox.setHgrow(topSpace, Priority.ALWAYS);
-        Label notification = label("♧", 20, FontWeight.NORMAL, MAIN_BLUE);
-        Label help = label("?", 13, FontWeight.BOLD, MAIN_BLUE);
+        Label notification = label("Notifications", 11, FontWeight.BOLD, NAVY);
+        Label help = label("?", 13, FontWeight.BOLD, NAVY);
         help.setMinSize(28, 28);
         help.setAlignment(Pos.CENTER);
-        help.setStyle("-fx-border-color:" + MAIN_BLUE + ";-fx-border-radius:50;-fx-background-radius:50;-fx-text-fill:" + MAIN_BLUE + ";");
-        topBar.getChildren().addAll(topSpace, notification, help);
+        help.setStyle("-fx-border-color:" + NAVY + ";-fx-border-radius:50;-fx-background-radius:50;-fx-text-fill:" + NAVY + ";");
+        topBar.getChildren().addAll(topLogo, topSpace, notification, help);
 
-        // =========================================================
-        // 3. SCROLLABLE BODY
-        // =========================================================
+        // SCROLLABLE BODY
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
 
-        VBox content = new VBox(18);
-        content.setPadding(new Insets(20, 40, 25, 40));
+        VBox content = new VBox(14);
+        content.setPadding(new Insets(20, 35, 20, 35));
 
-        // HEADER SECTION
-        Label mainHeading = label("AI Event Planning", 26, FontWeight.BOLD, MAIN_BLUE);
-        Label mainSubtitle = label("Get a smart, personalized plan for your event in seconds.", 13, FontWeight.NORMAL, MUTED_TEXT);
-        VBox headerBox = new VBox(4, mainHeading, mainSubtitle);
+        Label stepText = label("STEP 6 OF 7", 11, FontWeight.BOLD, BLUE);
+        Label mainHeading = label("AI Event Planning", 26, FontWeight.BOLD, NAVY);
+        Label mainSubtitle = label("Get a smart, personalized plan for your event in seconds.", 13, FontWeight.BOLD, NAVY);
+        VBox headerBox = new VBox(3, stepText, mainHeading, mainSubtitle);
 
-        // SEARCH BAR
+        // Search Bar
         HBox searchBar = new HBox(10);
         searchBar.setAlignment(Pos.CENTER_LEFT);
-        searchBar.setPadding(new Insets(6, 8, 6, 16));
+        searchBar.setPadding(new Insets(6, 8, 6, 14));
         searchBar.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
 
         searchField = new TextField();
         searchField.setPromptText("Search by event type (e.g. Wedding, Conference, Birthday)...");
-        searchField.setStyle("-fx-background-color:transparent;-fx-border-color:transparent;-fx-font-size:13px;-fx-text-fill:" + DARK_TEXT + ";");
+        searchField.setStyle("-fx-background-color:transparent;-fx-border-color:transparent;-fx-font-size:12px;-fx-text-fill:" + NAVY + ";-fx-font-weight:bold;");
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
         Button searchBtn = new Button("Search →");
-        searchBtn.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        searchBtn.setStyle("-fx-background-color:" + MAIN_BLUE + ";-fx-text-fill:white;-fx-background-radius:6;-fx-padding:8 18;-fx-cursor:hand;");
+        searchBtn.setFont(Font.font("Arial", FontWeight.BOLD, 11));
+        searchBtn.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:6;-fx-padding:6 14;-fx-cursor:hand;");
         searchBtn.setOnAction(e -> triggerPlanGeneration(searchField.getText().trim()));
         searchField.setOnAction(e -> triggerPlanGeneration(searchField.getText().trim()));
 
-        searchBar.getChildren().addAll(label("🔍", 14, FontWeight.NORMAL, MUTED_TEXT), searchField, searchBtn);
+        searchBar.getChildren().addAll(label("🔍", 13, FontWeight.NORMAL, NAVY), searchField, searchBtn);
 
-        // POPULAR SEARCHES
-        HBox popularSearches = new HBox(8);
-        popularSearches.setAlignment(Pos.CENTER_LEFT);
-        popularSearches.getChildren().add(label("Popular searches:", 11, FontWeight.BOLD, MUTED_TEXT));
-        for (String tag : new String[]{"Wedding", "Corporate Event", "Birthday Party", "Exhibition", "Annual Meet"}) {
-            Button tagBtn = new Button(tag);
-            tagBtn.setStyle("-fx-background-color:white;-fx-text-fill:" + DARK_TEXT + ";-fx-border-color:" + BORDER + ";-fx-border-radius:12;-fx-background-radius:12;-fx-font-size:11px;-fx-font-weight:bold;-fx-padding:4 12;-fx-cursor:hand;");
-            tagBtn.setOnAction(e -> {
-                searchField.setText(tag);
-                triggerPlanGeneration(tag);
-            });
-            popularSearches.getChildren().add(tagBtn);
-        }
-
-        // FEATURE BANNER
+        // Feature Banner
         HBox featureBanner = createFeatureBanner();
 
-        // AI PLAN RESULT CARD
-        VBox planResultCard = new VBox(16);
-        planResultCard.setPadding(new Insets(22));
-        planResultCard.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
+        // AI Plan Result Card
+        VBox planResultCard = new VBox(14);
+        planResultCard.setPadding(new Insets(18));
+        planResultCard.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:9;-fx-background-radius:9;");
 
-        // Plan Header
         HBox planHeader = new HBox(12);
         planHeader.setAlignment(Pos.CENTER_LEFT);
 
-        Label planTitle = label("Your AI Generated Plan", 18, FontWeight.BOLD, MAIN_BLUE);
-        Label draftBadge = label("Draft", 10, FontWeight.BOLD, MAIN_STRONG_BLUE);
-        draftBadge.setStyle("-fx-background-color:#E0EDFF;-fx-text-fill:" + MAIN_STRONG_BLUE + ";-fx-padding:3 10;-fx-background-radius:10;");
+        Label planTitle = label("Your AI Generated Plan", 16, FontWeight.BOLD, NAVY);
+        Label draftBadge = label("Timefold Optimized", 10, FontWeight.BOLD, BLUE);
+        draftBadge.setStyle("-fx-background-color:#E0EDFF;-fx-text-fill:" + BLUE + ";-fx-padding:3 8;-fx-background-radius:10;");
 
         Region phSpace = new Region();
         HBox.setHgrow(phSpace, Priority.ALWAYS);
 
-        Button regenBtn = new Button("↺  Regenerate Plan");
+        Button regenBtn = new Button("↺  Regenerate");
         regenBtn.setFont(Font.font("Arial", FontWeight.BOLD, 11));
-        regenBtn.setStyle("-fx-background-color:white;-fx-text-fill:" + DARK_TEXT + ";-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-padding:7 14;-fx-cursor:hand;");
+        regenBtn.setStyle("-fx-background-color:white;-fx-text-fill:" + NAVY + ";-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-padding:6 12;-fx-cursor:hand;");
         regenBtn.setOnAction(e -> triggerPlanGeneration(searchField.getText().trim()));
 
-        Button editInputsBtn = new Button("✎  Edit Inputs");
-        editInputsBtn.setFont(Font.font("Arial", FontWeight.BOLD, 11));
-        editInputsBtn.setStyle("-fx-background-color:white;-fx-text-fill:" + DARK_TEXT + ";-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-padding:7 14;-fx-cursor:hand;");
-        editInputsBtn.setOnAction(e -> {
-            CreateEventC createView = new CreateEventC(uid, idToken);
-            LandingPage.landingPageStage.setScene(createView.getCreateEventScene());
-        });
+        planHeader.getChildren().addAll(planTitle, draftBadge, phSpace, regenBtn);
 
-        planHeader.getChildren().addAll(planTitle, draftBadge, phSpace, regenBtn, editInputsBtn);
-
-        // Stats Summary Row
-        HBox statsRow = new HBox(12);
+        // Stats Summary
+        HBox statsRow = new HBox(10);
         statsRow.setFillHeight(true);
 
         String dynamicType = ReviewPageC.EventData.eventType.isBlank() ? "Wedding" : ReviewPageC.EventData.eventType;
-        String dynamicDate = ReviewPageC.EventData.eventDate.isBlank() ? "18 May 2024" : ReviewPageC.EventData.eventDate;
+        String dynamicDate = !ReviewPageC.EventData.startDate.isBlank()
+                ? (!ReviewPageC.EventData.endDate.isBlank() && !ReviewPageC.EventData.startDate.equals(ReviewPageC.EventData.endDate)
+                ? ReviewPageC.EventData.startDate + " to " + ReviewPageC.EventData.endDate
+                : ReviewPageC.EventData.startDate)
+                : "18 May 2024";
         String dynamicBudget = ReviewPageC.EventData.budget.isBlank() ? "₹ 8,45,000" : ReviewPageC.EventData.budget;
+
+        String durationStr = "1 Day";
+        if (!ReviewPageC.EventData.startDate.isBlank() && !ReviewPageC.EventData.endDate.isBlank()) {
+            try {
+                java.time.LocalDate s = java.time.LocalDate.parse(ReviewPageC.EventData.startDate.trim());
+                java.time.LocalDate e = java.time.LocalDate.parse(ReviewPageC.EventData.endDate.trim());
+                long days = java.time.temporal.ChronoUnit.DAYS.between(s, e) + 1;
+                if (days > 1) durationStr = days + " Days";
+            } catch (Exception ignored) {}
+        }
 
         VBox pill1 = statPill("Event Type", dynamicType, "📅");
         VBox pill2 = statPill("Event Date", dynamicDate, "🕒");
-        VBox pill3 = statPill("Duration", "1 Day", "⏱");
+        VBox pill3 = statPill("Duration", durationStr, "⏱");
         VBox pill4 = statPill("Estimated Budget", dynamicBudget, "💰");
-        pill5 = statPill("Tasks", "42", "📋");
-        pill6 = statPill("Vendors", "18", "👥");
+        pill5 = statPill("Tasks", "0", "📋");
+        pill6 = statPill("Vendors", "0", "🏢");
 
         for (VBox p : new VBox[]{pill1, pill2, pill3, pill4, pill5, pill6}) {
             HBox.setHgrow(p, Priority.ALWAYS);
             statsRow.getChildren().add(p);
         }
 
-        // TABS
-        HBox tabHeader = new HBox(16);
+        // Tabs
+        HBox tabHeader = new HBox(14);
         tabHeader.setStyle("-fx-border-color:#E2E8F0;-fx-border-width:0 0 1.5 0;");
-        tabHeader.setPadding(new Insets(10, 0, 4, 0));
+        tabHeader.setPadding(new Insets(8, 0, 4, 0));
 
-        String[] tabs = {"Overview", "Timeline", "Tasks", "Vendors", "Budget Breakdown", "Checklist"};
+        String[] tabs = {"Overview", "Timeline", "Tasks", "Vendors", "Budget Breakdown"};
         Button[] tabButtons = new Button[tabs.length];
 
-        activeTabContent = new VBox(15);
-        activeTabContent.setPadding(new Insets(12, 0, 0, 0));
+        activeTabContent = new VBox(12);
+        activeTabContent.setPadding(new Insets(10, 0, 0, 0));
 
         for (int i = 0; i < tabs.length; i++) {
             final String tabName = tabs[i];
             Button tb = new Button(tabName);
             tb.setFont(Font.font("Arial", FontWeight.BOLD, 12));
             tb.setStyle(i == 0
-                    ? "-fx-background-color:transparent;-fx-text-fill:" + MAIN_BLUE + ";-fx-border-color:" + MAIN_BLUE + ";-fx-border-width:0 0 2.5 0;-fx-padding:4 8;-fx-cursor:hand;"
-                    : "-fx-background-color:transparent;-fx-text-fill:" + MUTED_TEXT + ";-fx-padding:4 8;-fx-cursor:hand;");
+                    ? "-fx-background-color:transparent;-fx-text-fill:" + NAVY + ";-fx-border-color:" + NAVY + ";-fx-border-width:0 0 2 0;-fx-padding:4 6;-fx-cursor:hand;"
+                    : "-fx-background-color:transparent;-fx-text-fill:" + BLUE + ";-fx-padding:4 6;-fx-cursor:hand;");
 
             tb.setOnAction(e -> {
                 for (Button b : tabButtons) {
-                    b.setStyle("-fx-background-color:transparent;-fx-text-fill:" + MUTED_TEXT + ";-fx-padding:4 8;-fx-cursor:hand;");
+                    b.setStyle("-fx-background-color:transparent;-fx-text-fill:" + BLUE + ";-fx-padding:4 6;-fx-cursor:hand;");
                 }
-                tb.setStyle("-fx-background-color:transparent;-fx-text-fill:" + MAIN_BLUE + ";-fx-border-color:" + MAIN_BLUE + ";-fx-border-width:0 0 2.5 0;-fx-padding:4 8;-fx-cursor:hand;");
+                tb.setStyle("-fx-background-color:transparent;-fx-text-fill:" + NAVY + ";-fx-border-color:" + NAVY + ";-fx-border-width:0 0 2 0;-fx-padding:4 6;-fx-cursor:hand;");
                 renderTabContent(tabName);
             });
             tabButtons[i] = tb;
@@ -238,59 +220,43 @@ public class AiPlanningC {
 
         dynamicContentArea = new StackPane();
         loadingIndicator = new ProgressIndicator();
-        loadingIndicator.setMaxSize(50, 50);
+        loadingIndicator.setMaxSize(40, 40);
         dynamicContentArea.getChildren().addAll(activeTabContent, loadingIndicator);
 
         planResultCard.getChildren().addAll(planHeader, statsRow, tabHeader, dynamicContentArea);
-
-        content.getChildren().addAll(headerBox, searchBar, popularSearches, featureBanner, planResultCard);
+        content.getChildren().addAll(headerBox, searchBar, featureBanner, planResultCard);
         scrollPane.setContent(content);
 
-        // =========================================================
-        // 4. FOOTER (Back goes to GuestManagementC)
-        // =========================================================
-        HBox footer = new HBox(14);
-        footer.setPrefHeight(65);
+        // FOOTER
+        HBox footer = new HBox(15);
+        footer.setPrefHeight(60);
+        footer.setMinHeight(60);
         footer.setAlignment(Pos.CENTER_RIGHT);
         footer.setPadding(new Insets(0, 35, 0, 35));
-        footer.setStyle("-fx-background-color:white;-fx-border-color:#E2E8F0;-fx-border-width:1 0 0 0;");
+        footer.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:1 0 0 0;");
 
-        Button backBtn = new Button("← Back");
-        backBtn.setPrefSize(90, 38);
-        backBtn.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        backBtn.setStyle("-fx-background-color:white;-fx-text-fill:" + MAIN_BLUE + ";-fx-border-color:" + MAIN_BLUE + ";-fx-border-radius:6;-fx-background-radius:6;-fx-cursor:hand;");
-        
-        // BACK ACTION: Navigates back to GuestManagementC
+        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.BOLD, NAVY);
+        Region fSpace = new Region();
+        HBox.setHgrow(fSpace, Priority.ALWAYS);
+
+        Button backBtn = new Button("Back");
+        backBtn.setPrefSize(82, 38);
+        backBtn.setStyle("-fx-background-color:white;-fx-text-fill:" + BLUE + ";-fx-border-color:" + BLUE + ";-fx-border-radius:7;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
         backBtn.setOnAction(e -> {
             GuestManagementC guestView = new GuestManagementC(uid, idToken);
             LandingPage.landingPageStage.setScene(guestView.getGuestManagementScene());
         });
 
-        Button saveDraftBtn = new Button("💾 Save Draft");
-        saveDraftBtn.setPrefSize(115, 38);
-        saveDraftBtn.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        saveDraftBtn.setStyle("-fx-background-color:white;-fx-text-fill:" + DARK_TEXT + ";-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-cursor:hand;");
-        saveDraftBtn.setOnAction(e -> {
-            savePlanToMemory();
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "AI Plan successfully saved as Draft!");
-            alert.setHeaderText("Draft Saved");
-            alert.showAndWait();
-        });
-
-        Region fSpace = new Region();
-        HBox.setHgrow(fSpace, Priority.ALWAYS);
-
-        Button reviewBtn = new Button("Review →");
-        reviewBtn.setPrefSize(115, 38);
-        reviewBtn.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        reviewBtn.setStyle("-fx-background-color:" + NAVY + ";-fx-text-fill:white;-fx-background-radius:6;-fx-cursor:hand;");
+        Button reviewBtn = new Button("Next");
+        reviewBtn.setPrefSize(82, 38);
+        reviewBtn.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
         reviewBtn.setOnAction(e -> {
             savePlanToMemory();
             ReviewPageC reviewView = new ReviewPageC(uid, idToken);
             LandingPage.landingPageStage.setScene(reviewView.getReviewScene());
         });
 
-        footer.getChildren().addAll(backBtn, saveDraftBtn, fSpace, reviewBtn);
+        footer.getChildren().addAll(copyright, fSpace, backBtn, reviewBtn);
 
         VBox rightSide = new VBox(topBar, scrollPane, footer);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
@@ -300,9 +266,7 @@ public class AiPlanningC {
         root.setCenter(fullPage);
 
         scene = new Scene(root, 1550, 750);
-
         Platform.runLater(() -> triggerPlanGeneration(""));
-
         return scene;
     }
 
@@ -313,7 +277,8 @@ public class AiPlanningC {
         Task<AiEventPlan> planTask = new Task<>() {
             @Override
             protected AiEventPlan call() {
-                return aiService.generatePlanFromEventData(query);
+                // Execute Timefold Planning Engine with actual customer requirements
+                return planningService.generateOptimizedPlan(query);
             }
         };
 
@@ -322,10 +287,9 @@ public class AiPlanningC {
             loadingIndicator.setVisible(false);
             activeTabContent.setOpacity(1.0);
 
-            if (pill5 != null && pill6 != null) {
+            if (pill5 != null && pill6 != null && currentPlan != null) {
                 Label taskCountLbl = (Label) pill5.getChildren().get(1);
                 taskCountLbl.setText(String.valueOf(currentPlan.getEstimatedTasks()));
-
                 Label vendorCountLbl = (Label) pill6.getChildren().get(1);
                 vendorCountLbl.setText(String.valueOf(currentPlan.getRecommendedVendorsCount()));
             }
@@ -336,7 +300,8 @@ public class AiPlanningC {
         planTask.setOnFailed(e -> {
             loadingIndicator.setVisible(false);
             activeTabContent.setOpacity(1.0);
-            currentPlan = aiService.generateIntelligentFallback(query);
+            // Fallback to Gemini Service if needed
+            currentPlan = geminiService.generateIntelligentFallback(query);
             renderTabContent("Overview");
         });
 
@@ -352,136 +317,77 @@ public class AiPlanningC {
         switch (tabName) {
             case "Overview" -> renderOverviewTab();
             case "Timeline" -> renderTimelineTab();
-            case "Tasks", "Checklist" -> renderTasksTab();
+            case "Tasks" -> renderTasksTab();
             case "Vendors" -> renderVendorsTab();
             case "Budget Breakdown" -> renderBudgetTab();
         }
     }
 
     private void renderOverviewTab() {
-        VBox summaryBox = new VBox(10);
-        summaryBox.setPadding(new Insets(16));
+        VBox summaryBox = new VBox(8);
+        summaryBox.setPadding(new Insets(12));
         summaryBox.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
 
-        Label sumTitle = label("Event Summary", 15, FontWeight.BOLD, MAIN_BLUE);
-        Label sumText = label(currentPlan.getSummary(), 13, FontWeight.NORMAL, DARK_TEXT);
+        Label sumTitle = label("Event Summary", 15, FontWeight.BOLD, NAVY);
+        Label sumText = label(currentPlan.getSummary(), 13, FontWeight.BOLD, NAVY);
         sumText.setWrapText(true);
 
-        HBox statsChips = new HBox(12);
-        statsChips.getChildren().addAll(
-                statChip("Estimated Guests", String.valueOf(ReviewPageC.EventData.guests > 0 ? ReviewPageC.EventData.guests : 250)),
-                statChip("Venue Type", ReviewPageC.EventData.venue.isBlank() ? "Banquet Hall" : ReviewPageC.EventData.venue),
-                statChip("Theme", currentPlan.getTheme()),
-                statChip("Location", ReviewPageC.EventData.city.isBlank() ? "Pune, Maharashtra" : ReviewPageC.EventData.city)
-        );
-
-        summaryBox.getChildren().addAll(sumTitle, sumText, statsChips);
-
-        HBox splitRow = new HBox(18);
-
-        VBox vendorsBox = new VBox(10);
-        vendorsBox.setPadding(new Insets(16));
-        vendorsBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
-        HBox.setHgrow(vendorsBox, Priority.ALWAYS);
-
-        HBox vbHeader = new HBox(label("Recommended Vendors (Top Picks)", 14, FontWeight.BOLD, MAIN_BLUE));
-        vendorsBox.getChildren().add(vbHeader);
-
-        for (AiEventPlan.VendorRecommendation vr : currentPlan.getVendorRecommendations()) {
-            HBox vrRow = new HBox(10);
-            vrRow.setAlignment(Pos.CENTER_LEFT);
-            vrRow.setPadding(new Insets(10));
-            vrRow.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:#E2E8F0;-fx-border-radius:6;-fx-background-radius:6;");
-
-            Label catIcon = label("🏢", 15, FontWeight.NORMAL, MAIN_STRONG_BLUE);
-            VBox nameBox = new VBox(2,
-                    label(vr.getCategory(), 11, FontWeight.BOLD, MAIN_STRONG_BLUE),
-                    label(vr.getName(), 13, FontWeight.BOLD, DARK_TEXT)
-            );
-            Region vSp = new Region();
-            HBox.setHgrow(vSp, Priority.ALWAYS);
-            Label rating = label(vr.getRating() + " ★", 12, FontWeight.BOLD, RATING_TEXT);
-
-            vrRow.getChildren().addAll(catIcon, nameBox, vSp, rating);
-            vendorsBox.getChildren().add(vrRow);
-        }
-
-        VBox budgetBox = new VBox(10);
-        budgetBox.setPadding(new Insets(16));
-        budgetBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
-        HBox.setHgrow(budgetBox, Priority.ALWAYS);
-
-        Label bTitle = label("Budget Overview", 14, FontWeight.BOLD, MAIN_BLUE);
-        Label totalB = label(ReviewPageC.EventData.budget.isBlank() ? "₹ 8,45,000" : ReviewPageC.EventData.budget, 20, FontWeight.BOLD, MAIN_BLUE);
-
-        ProgressBar pb = new ProgressBar(0.70);
-        pb.setMaxWidth(Double.MAX_VALUE);
-        pb.setPrefHeight(10);
-        pb.setStyle("-fx-accent: " + MAIN_STRONG_BLUE + ";");
-
-        VBox bList = new VBox(7);
-        for (AiEventPlan.BudgetItem bi : currentPlan.getBudgetBreakdown()) {
-            HBox bRow = new HBox(8);
-            bRow.setAlignment(Pos.CENTER_LEFT);
-            Label bDot = label("■", 10, FontWeight.NORMAL, MAIN_STRONG_BLUE);
-            Label bCat = label(bi.getCategory(), 12, FontWeight.BOLD, MUTED_TEXT);
-            Region bsp = new Region();
-            HBox.setHgrow(bsp, Priority.ALWAYS);
-            Label bVal = label(bi.getAmount() + " (" + bi.getPercentage() + "%)", 12, FontWeight.BOLD, DARK_TEXT);
-            bRow.getChildren().addAll(bDot, bCat, bsp, bVal);
-            bList.getChildren().add(bRow);
-        }
-
-        budgetBox.getChildren().addAll(bTitle, totalB, pb, bList);
-
-        splitRow.getChildren().addAll(vendorsBox, budgetBox);
-        activeTabContent.getChildren().addAll(summaryBox, splitRow);
+        summaryBox.getChildren().addAll(sumTitle, sumText);
+        activeTabContent.getChildren().add(summaryBox);
     }
 
     private void renderTimelineTab() {
-        VBox timelineBox = new VBox(10);
-        for (AiEventPlan.ScheduleItem item : currentPlan.getTimeline()) {
-            HBox row = new HBox(15);
-            row.setAlignment(Pos.CENTER_LEFT);
-            row.setPadding(new Insets(12, 16, 12, 16));
-            row.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;");
+        VBox timelineBox = new VBox(8);
+        if (currentPlan.getTimeline().isEmpty()) {
+            timelineBox.getChildren().add(label("No timeline tasks scheduled for the selected requirements.", 12, FontWeight.NORMAL, NAVY));
+        } else {
+            for (AiEventPlan.ScheduleItem item : currentPlan.getTimeline()) {
+                HBox row = new HBox(12);
+                row.setAlignment(Pos.CENTER_LEFT);
+                row.setPadding(new Insets(10));
+                row.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;");
 
-            Label timeLbl = label(item.getTime(), 13, FontWeight.BOLD, MAIN_STRONG_BLUE);
-            timeLbl.setPrefWidth(100);
-            Label actLbl = label(item.getActivity(), 13, FontWeight.BOLD, DARK_TEXT);
+                Label timeLbl = label(item.getTime(), 12, FontWeight.BOLD, BLUE);
+                timeLbl.setPrefWidth(160);
+                Label actLbl = label(item.getActivity(), 13, FontWeight.BOLD, NAVY);
 
-            row.getChildren().addAll(timeLbl, actLbl);
-            timelineBox.getChildren().add(row);
+                row.getChildren().addAll(timeLbl, actLbl);
+                timelineBox.getChildren().add(row);
+            }
         }
         activeTabContent.getChildren().add(timelineBox);
     }
 
     private void renderTasksTab() {
-        VBox tasksBox = new VBox(10);
-        for (String task : currentPlan.getTaskChecklist()) {
-            CheckBox cb = new CheckBox(task);
-            cb.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-            cb.setStyle("-fx-text-fill:" + DARK_TEXT + ";-fx-padding:8 12;");
-            tasksBox.getChildren().add(cb);
+        VBox tasksBox = new VBox(8);
+        if (currentPlan.getTaskChecklist().isEmpty()) {
+            tasksBox.getChildren().add(label("No tasks configured.", 12, FontWeight.NORMAL, NAVY));
+        } else {
+            for (String task : currentPlan.getTaskChecklist()) {
+                CheckBox cb = new CheckBox(task);
+                cb.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+                cb.setStyle("-fx-text-fill:" + NAVY + ";-fx-padding:6;-fx-font-weight:bold;");
+                tasksBox.getChildren().add(cb);
+            }
         }
         activeTabContent.getChildren().add(tasksBox);
     }
 
     private void renderVendorsTab() {
-        VBox vendorsList = new VBox(10);
+        VBox vendorsList = new VBox(8);
         for (AiEventPlan.VendorRecommendation vr : currentPlan.getVendorRecommendations()) {
-            HBox card = new HBox(14);
+            HBox card = new HBox(12);
             card.setAlignment(Pos.CENTER_LEFT);
-            card.setPadding(new Insets(14));
+            card.setPadding(new Insets(10));
             card.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;");
 
-            VBox vInfo = new VBox(3,
-                    label(vr.getCategory(), 11, FontWeight.BOLD, MAIN_STRONG_BLUE),
-                    label(vr.getName(), 14, FontWeight.BOLD, DARK_TEXT)
+            VBox vInfo = new VBox(2,
+                    label(vr.getCategory(), 11, FontWeight.BOLD, BLUE),
+                    label(vr.getName(), 14, FontWeight.BOLD, NAVY)
             );
             Region sp = new Region();
             HBox.setHgrow(sp, Priority.ALWAYS);
-            Label rating = label("Rating: " + vr.getRating() + " ★", 13, FontWeight.BOLD, RATING_TEXT);
+            Label rating = label("Rating: " + vr.getRating() + " ★", 12, FontWeight.BOLD, "#92400E");
 
             card.getChildren().addAll(vInfo, sp, rating);
             vendorsList.getChildren().add(card);
@@ -490,19 +396,19 @@ public class AiPlanningC {
     }
 
     private void renderBudgetTab() {
-        VBox bBox = new VBox(12);
+        VBox bBox = new VBox(10);
         for (AiEventPlan.BudgetItem bi : currentPlan.getBudgetBreakdown()) {
-            HBox row = new HBox(14);
+            HBox row = new HBox(12);
             row.setAlignment(Pos.CENTER_LEFT);
-            row.setPadding(new Insets(12, 16, 12, 16));
+            row.setPadding(new Insets(10));
             row.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;");
 
-            Label cat = label(bi.getCategory(), 13, FontWeight.BOLD, DARK_TEXT);
+            Label cat = label(bi.getCategory(), 13, FontWeight.BOLD, NAVY);
             cat.setPrefWidth(180);
             ProgressBar pb = new ProgressBar(bi.getPercentage() / 100.0);
             HBox.setHgrow(pb, Priority.ALWAYS);
-            pb.setStyle("-fx-accent:" + MAIN_STRONG_BLUE + ";");
-            Label amt = label(bi.getAmount(), 13, FontWeight.BOLD, MAIN_BLUE);
+            pb.setStyle("-fx-accent:" + BLUE + ";");
+            Label amt = label(bi.getAmount(), 13, FontWeight.BOLD, NAVY);
 
             row.getChildren().addAll(cat, pb, amt);
             bBox.getChildren().add(row);
@@ -519,75 +425,48 @@ public class AiPlanningC {
     }
 
     private HBox createFeatureBanner() {
-        HBox banner = new HBox(20);
-        banner.setPadding(new Insets(18));
-        banner.setStyle("-fx-background-color:#F0F6FE;-fx-border-color:#CCE3FE;-fx-border-radius:10;-fx-background-radius:10;");
+        HBox banner = new HBox(16);
+        banner.setPadding(new Insets(14));
+        banner.setStyle("-fx-background-color:#F0F6FE;-fx-border-color:#CCE3FE;-fx-border-radius:9;-fx-background-radius:9;");
 
-        VBox leftInfo = new VBox(8);
-        leftInfo.setPrefWidth(300);
-        Label bIcon = label("✨", 24, FontWeight.NORMAL, MAIN_STRONG_BLUE);
-        Label bTitle = label("AI-Powered Event Planning", 16, FontWeight.BOLD, MAIN_BLUE);
-        Label bDesc = label("Our AI analyzes your inputs and generates a complete event plan including timeline, tasks, vendor suggestions, and budget estimate.", 12, FontWeight.NORMAL, MUTED_TEXT);
+        VBox leftInfo = new VBox(4);
+        leftInfo.setPrefWidth(280);
+        Label bTitle = label("✨ Timefold AI Planning Active", 15, FontWeight.BOLD, NAVY);
+        Label bDesc = label("Our constraint solver creates an optimized schedule strictly for your selected event services and duration.", 12, FontWeight.BOLD, NAVY);
         bDesc.setWrapText(true);
-        leftInfo.getChildren().addAll(bIcon, bTitle, bDesc);
+        leftInfo.getChildren().addAll(bTitle, bDesc);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(15);
-        grid.setVgap(12);
-
-        grid.add(featureTile("Smart Timeline", "Optimized schedule based on event type & duration", "🕒"), 0, 0);
-        grid.add(featureTile("Vendor Suggestions", "AI-recommended vendors matching your requirements", "👥"), 1, 0);
-        grid.add(featureTile("Task Checklist", "Customized tasks and deadlines for your event", "📋"), 0, 1);
-        grid.add(featureTile("Budget Insights", "Estimated budget breakdown and cost optimization tips", "💰"), 1, 1);
-
-        HBox.setHgrow(grid, Priority.ALWAYS);
-        banner.getChildren().addAll(leftInfo, grid);
+        banner.getChildren().add(leftInfo);
         return banner;
     }
 
-    private VBox featureTile(String title, String desc, String icon) {
-        VBox tile = new VBox(3);
-        tile.getChildren().addAll(
-                label(icon + " " + title, 13, FontWeight.BOLD, DARK_TEXT),
-                label(desc, 11, FontWeight.NORMAL, MUTED_TEXT)
-        );
-        return tile;
-    }
-
     private VBox statPill(String title, String val, String icon) {
-        VBox pill = new VBox(3);
-        pill.setPadding(new Insets(10));
-        pill.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:" + BORDER + ";-fx-border-radius:8;-fx-background-radius:8;");
+        VBox pill = new VBox(2);
+        pill.setPadding(new Insets(8));
+        pill.setStyle("-fx-background-color:#F8FAFC;-fx-border-color:" + BORDER + ";-fx-border-radius:7;-fx-background-radius:7;");
         pill.getChildren().addAll(
-                label(icon + " " + title, 11, FontWeight.BOLD, MUTED_TEXT),
-                label(val, 14, FontWeight.BOLD, MAIN_BLUE)
+                label(icon + " " + title, 10, FontWeight.BOLD, NAVY),
+                label(val, 13, FontWeight.BOLD, NAVY)
         );
         return pill;
-    }
-
-    private VBox statChip(String key, String val) {
-        VBox chip = new VBox(2);
-        chip.setPadding(new Insets(6, 12, 6, 12));
-        chip.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;");
-        chip.getChildren().addAll(label(key, 10, FontWeight.BOLD, MUTED_TEXT), label(val, 12, FontWeight.BOLD, DARK_TEXT));
-        return chip;
     }
 
     private HBox sidebarItem(String icon, String text, boolean active) {
         HBox item = new HBox(12);
         item.setPrefHeight(44);
+        item.setMinHeight(44);
         item.setAlignment(Pos.CENTER_LEFT);
         item.setPadding(new Insets(0, 18, 0, 25));
         item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
-        item.getChildren().addAll(label(icon, 16, FontWeight.NORMAL, "white"), label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8"));
+        item.getChildren().addAll(label(icon, 13, FontWeight.NORMAL, "white"), label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8"));
         return item;
     }
 
     private Label label(String text, double size, FontWeight weight, String color) {
         Label l = new Label(text);
         l.setFont(Font.font("Arial", weight, size));
-        l.setStyle("-fx-text-fill: " + color + ";");
         l.setTextFill(Color.web(color));
+        l.setStyle("-fx-text-fill: " + color + " !important; -fx-opacity: 1.0;");
         return l;
     }
 }

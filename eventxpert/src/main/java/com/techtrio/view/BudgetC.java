@@ -1,24 +1,24 @@
 package com.techtrio.view;
 
+import com.techtrio.model.budget.BudgetAllocation;
+import com.techtrio.model.budget.BudgetOptimizationRequest;
+import com.techtrio.model.budget.BudgetOptimizationResult;
+import com.techtrio.services.BudgetOptimizerService;
 import com.techtrio.session.UserSession;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Separator;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class BudgetC {
 
@@ -26,910 +26,362 @@ public class BudgetC {
     private String uid;
     private String idToken;
 
-    private final String NAVY = "#002A60";
-    private final String BLUE = "#0057B8";
-    private final String LIGHT = "#C2F0F4";
-    private final String BG = "#F5F8FA";
-    private final String BORDER = "#D5DEE7";
-    private final String TEXT = "#102A43";
-    private final String GREY = "#667085";
+    private static final String NAVY = "#061B41";
+    private static final String BLUE = "#0D3979";
+    private static final String BG = "#F5F8FC";
+    private static final String BORDER = "#CBD5E1";
 
     private Label totalAmount;
+    private VBox allocationRowsContainer;
+    private ToggleButton toggleOptimizer;
+    private VBox smartRecommendationBox;
+    private BudgetOptimizerService optimizerService = new BudgetOptimizerService();
 
-    // Constructor with user information
     public BudgetC(String uid, String idToken) {
-        this.uid = (uid != null && !uid.isBlank())
-                ? uid
-                : UserSession.getUid();
-
-        this.idToken = (idToken != null && !idToken.isBlank())
-                ? idToken
-                : UserSession.getIdToken();
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
     }
 
-    // No-argument constructor
     public BudgetC() {
         this.uid = UserSession.getUid();
         this.idToken = UserSession.getIdToken();
     }
 
-    // Default scene
     public Scene getBudgetScene() {
         return getBudgetScene(null, null);
     }
 
-    // Budget scene
-    public Scene getBudgetScene(
-            Runnable backAction,
-            Runnable nextAction
-    ) {
+    public Scene getBudgetScene(Runnable backAction, Runnable nextAction) {
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color:" + BG + ";");
 
-        // =========================================================
-        // SIDEBAR
-        // =========================================================
+        // 1. SIDEBAR
+        VBox sidebar = new VBox();
+        sidebar.setPrefWidth(245);
+        sidebar.setMinWidth(245);
+        sidebar.setMaxWidth(245);
+        sidebar.setFillWidth(true);
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        VBox sidebar = new VBox(7);
+        Label logo = label("EventXpert", 22, FontWeight.BOLD, "#FFFFFF");
+        Label logoSub = label("EVENT MANAGEMENT", 10, FontWeight.NORMAL, "#BDE3FF");
+        VBox brand = new VBox(3, logo, logoSub);
+        brand.setPadding(new Insets(24, 20, 28, 25));
 
-        sidebar.setPrefWidth(205);
-        sidebar.setMinWidth(205);
-        sidebar.setMaxWidth(205);
+        Label createTitle = label("Create Event", 20, FontWeight.BOLD, "#FFFFFF");
+        Label step = label("Step-by-step setup", 12, FontWeight.NORMAL, "#BDE3FF");
+        VBox titleBox = new VBox(2, createTitle, step);
+        titleBox.setPadding(new Insets(0, 20, 20, 25));
 
-        sidebar.setPadding(
-                new Insets(24, 8, 20, 8)
+        VBox menu = new VBox();
+        menu.getChildren().addAll(
+                sidebarItem("[1]", "Event Details", false),
+                sidebarItem("[2]", "Requirements", false),
+                sidebarItem("[3]", "Venue", false),
+                sidebarItem("[4]", "Budget", true),
+                sidebarItem("[5]", "Guest", false),
+                sidebarItem("[6]", "AI Planning", false),
+                sidebarItem("[7]", "Review", false)
         );
 
-        sidebar.setStyle(
-                "-fx-background-color:" + NAVY + ";"
-        );
+        Region sideSpace = new Region();
+        VBox.setVgrow(sideSpace, Priority.ALWAYS);
+        sidebar.getChildren().addAll(brand, titleBox, menu, sideSpace);
 
-        Label logo = label(
-                "EventXpert",
-                21,
-                true,
-                Color.WHITE
-        );
+        // 2. TOP BAR
+        HBox topBar = new HBox();
+        topBar.setPrefHeight(60);
+        topBar.setAlignment(Pos.CENTER_RIGHT);
+        topBar.setPadding(new Insets(0, 30, 0, 30));
+        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:0 0 1 0;");
 
-        VBox eventTitle = new VBox(
-                2,
-                label(
-                        "Create Event",
-                        16,
-                        true,
-                        Color.WHITE
-                ),
-                label(
-                        "Step-by-step setup",
-                        10,
-                        false,
-                        Color.web("#D1DFEB")
-                )
-        );
+        Label topLogo = label("EventXpert", 14, FontWeight.BOLD, NAVY);
+        Region topSpace = new Region();
+        HBox.setHgrow(topSpace, Priority.ALWAYS);
+        Label bell = label("Notifications", 11, FontWeight.BOLD, NAVY);
+        Label help = label("?", 13, FontWeight.BOLD, NAVY);
+        help.setMinSize(28, 28);
+        help.setAlignment(Pos.CENTER);
+        help.setStyle("-fx-border-color:" + NAVY + ";-fx-border-radius:50;-fx-background-radius:50;");
+        topBar.getChildren().addAll(topLogo, topSpace, bell, help);
 
-        eventTitle.setPadding(
-                new Insets(7, 12, 15, 12)
-        );
+        // 3. CONTENT
+        VBox content = new VBox(14);
+        content.setPadding(new Insets(20, 35, 18, 35));
+        content.setStyle("-fx-background-color:" + BG + ";");
 
-        VBox navigation = new VBox(2);
+        Label stepText = label("STEP 4 OF 7", 11, FontWeight.BOLD, BLUE);
+        Label heading = label("Set Your Event Budget", 26, FontWeight.BOLD, NAVY);
+        Label description = label("Define your total spend and let our engine optimize the recommended distribution.", 13, FontWeight.BOLD, NAVY);
 
-        navigation.getChildren().addAll(
-                navItem("ⓘ", "Event Details", false),
-                navItem("▤", "Requirements", false),
-                navItem("⌖", "Location", false),
-                navItem("▣", "Budget", true),
-                 navItem("👥", "Guest Management", false),
-                navItem("✦", "AI Planning", false),
-                navItem("▤", "Review", false)
-        );
-
-        Region sidebarSpace = new Region();
-
-        VBox.setVgrow(
-                sidebarSpace,
-                Priority.ALWAYS
-        );
-
-        sidebar.getChildren().addAll(
-                logo,
-                eventTitle,
-                navigation,
-                sidebarSpace
-        );
-
-        // =========================================================
-        // TOP BAR
-        // =========================================================
-
-        HBox topBar = new HBox(24);
-
-        topBar.setAlignment(
-                Pos.CENTER_RIGHT
-        );
-
-        topBar.setPadding(
-                new Insets(12, 28, 12, 28)
-        );
-
-        topBar.setPrefHeight(58);
-
-        topBar.setStyle(
-                "-fx-background-color:#F8FAFC;" +
-                "-fx-border-color:#DCE5EC;" +
-                "-fx-border-width:0 0 1 0;"
-        );
-
-        topBar.getChildren().addAll(
-                label(
-                        "♧",
-                        19,
-                        false,
-                        Color.web(NAVY)
-                ),
-                label(
-                        "?",
-                        16,
-                        true,
-                        Color.web(NAVY)
-                )
-        );
-
-        // =========================================================
-        // TITLE
-        // =========================================================
-
-        VBox title = new VBox(
-                4,
-                label(
-                        "Set Your Event Budget",
-                        28,
-                        true,
-                        Color.web("#111111")
-                ),
-                label(
-                        "Define your total spend and let our AI optimize the distribution.",
-                        13,
-                        false,
-                        Color.web(GREY)
-                )
-        );
-
-        title.setPadding(
-                new Insets(22, 32, 18, 32)
-        );
-
-        // =========================================================
-        // ESTIMATED BUDGET CARD
-        // =========================================================
-
+        // LEFT COLUMN - Input & Toggle
         VBox estimated = card();
+        estimated.getChildren().add(label("Estimated Total Budget", 14, FontWeight.BOLD, NAVY));
 
-        estimated.getChildren().add(
-                label(
-                        "Estimated Total Budget",
-                        13,
-                        true,
-                        Color.web(TEXT)
-                )
-        );
+        String initialBudget = (ReviewPageC.EventData.budget != null && !ReviewPageC.EventData.budget.isBlank())
+                ? ReviewPageC.EventData.budget
+                : "₹ 8,45,000";
 
-        TextField amount = new TextField(
-                ReviewPageC.EventData.budget != null
-                        ? ReviewPageC.EventData.budget
-                        : "₹ 500,000"
-        );
+        TextField amountField = new TextField(initialBudget);
+        amountField.setPrefHeight(44);
+        amountField.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        amountField.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:7;-fx-background-radius:7;-fx-padding:8 12;-fx-text-fill:" + NAVY + " !important;");
 
-        amount.setPrefHeight(48);
+        estimated.getChildren().addAll(amountField, label("ⓘ Enter your estimated budget for the event.", 11, FontWeight.BOLD, NAVY));
 
-        amount.setFont(
-                Font.font(
-                        "Arial",
-                        16
-                )
-        );
-
-        amount.setStyle(
-                "-fx-border-color:#C9D3DC;" +
-                "-fx-border-radius:7;" +
-                "-fx-background-radius:7;" +
-                "-fx-padding:8 12;"
-        );
-
-        estimated.getChildren().add(
-                amount
-        );
-
-        estimated.getChildren().add(
-                label(
-                        "ⓘ  Minimum recommended for this scale: ₹450,000",
-                        10,
-                        false,
-                        Color.web(GREY)
-                )
-        );
-
-        // =========================================================
-        // SMART BUDGET OPTIMIZER
-        // =========================================================
-
-        VBox smart = card();
-
+        // Smart Budget Optimizer Card
+        VBox smartCard = card();
         HBox smartHeader = new HBox();
+        smartHeader.setAlignment(Pos.CENTER_LEFT);
 
-        smartHeader.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        Label smartTitle = label(
-                "✦  Smart Budget Optimizer",
-                15,
-                true,
-                Color.web(TEXT)
-        );
-
+        Label smartTitle = label("✦  Smart Budget Optimizer", 15, FontWeight.BOLD, NAVY);
         Region smartSpace = new Region();
+        HBox.setHgrow(smartSpace, Priority.ALWAYS);
 
-        HBox.setHgrow(
-                smartSpace,
-                Priority.ALWAYS
-        );
+        toggleOptimizer = new ToggleButton("ON");
+        toggleOptimizer.setSelected(true);
+        toggleOptimizer.setPrefSize(58, 28);
+        toggleOptimizer.setFont(Font.font("Arial", FontWeight.BOLD, 11));
+        toggleOptimizer.setTextFill(Color.WHITE);
+        toggleOptimizer.setStyle("-fx-background-color:" + BLUE + ";-fx-background-radius:20;-fx-cursor:hand;");
 
-        ToggleButton toggle =
-                new ToggleButton("ON");
+        smartHeader.getChildren().addAll(smartTitle, smartSpace, toggleOptimizer);
 
-        toggle.setSelected(true);
+        smartRecommendationBox = new VBox(6);
+        smartRecommendationBox.setPadding(new Insets(10));
+        smartRecommendationBox.setStyle("-fx-background-color:#F4F7F9;-fx-border-color:" + NAVY + ";-fx-border-width:0 0 0 3;-fx-border-radius:4;");
 
-        toggle.setPrefSize(
-                58,
-                27
-        );
+        smartCard.getChildren().addAll(smartHeader, label("Auto-allocate funds based on selected requirements.", 11, FontWeight.BOLD, NAVY), smartRecommendationBox);
 
-        toggle.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        10
-                )
-        );
+        VBox leftColumn = new VBox(14, estimated, smartCard);
+        leftColumn.setPrefWidth(380);
 
-        toggle.setTextFill(
-                Color.WHITE
-        );
-
-        toggle.setStyle(
-                "-fx-background-color:" + BLUE + ";" +
-                "-fx-background-radius:20;"
-        );
-
-        toggle.selectedProperty().addListener(
-                (obs, oldValue, newValue) -> {
-
-                    toggle.setText(
-                            newValue ? "ON" : "OFF"
-                    );
-
-                    toggle.setStyle(
-                            "-fx-background-color:" +
-                            (newValue ? BLUE : "#8A96A3") +
-                            ";" +
-                            "-fx-background-radius:20;"
-                    );
-                }
-        );
-
-        smartHeader.getChildren().addAll(
-                smartTitle,
-                smartSpace,
-                toggle
-        );
-
-        Label smartInfo = label(
-                "Auto-allocate funds based on industry standards.",
-                10,
-                false,
-                Color.web(GREY)
-        );
-
-        VBox recommendation = new VBox(8);
-
-        recommendation.setPadding(
-                new Insets(12)
-        );
-
-        recommendation.setStyle(
-                "-fx-background-color:#F4F7F9;" +
-                "-fx-border-color:" + NAVY + ";" +
-                "-fx-border-width:0 0 0 3;"
-        );
-
-        HBox tags = new HBox(
-                6,
-                tag("Venue 30%"),
-                tag("Catering 25%"),
-                tag("Decor 20%")
-        );
-
-        recommendation.getChildren().addAll(
-                label(
-                        "AI Recommendation Applied:",
-                        10,
-                        true,
-                        Color.web(NAVY)
-                ),
-                tags,
-                tag("Other 25%")
-        );
-
-        smart.getChildren().addAll(
-                smartHeader,
-                smartInfo,
-                recommendation
-        );
-
-        // =========================================================
-        // LEFT SIDE
-        // =========================================================
-
-        VBox left = new VBox(
-                16,
-                estimated,
-                smart
-        );
-
-        left.setPrefWidth(330);
-        left.setMinWidth(330);
-        left.setMaxWidth(330);
-
-        VBox.setVgrow(
-                estimated,
-                Priority.ALWAYS
-        );
-
-        VBox.setVgrow(
-                smart,
-                Priority.ALWAYS
-        );
-
-        // =========================================================
-        // ALLOCATION CARD
-        // =========================================================
-
-        VBox allocation = card();
-
-        allocation.setPrefWidth(480);
-        allocation.setMinWidth(450);
-
+        // RIGHT COLUMN - Recommendation Display
+        VBox allocationCard = card();
         HBox allocationHeader = new HBox();
+        allocationHeader.setAlignment(Pos.CENTER_LEFT);
 
-        allocationHeader.setAlignment(
-                Pos.CENTER_LEFT
+        VBox allocationText = new VBox(2,
+                label("AI/Smart Recommended Budget", 16, FontWeight.BOLD, NAVY),
+                label("Optimized for requirements chosen in Step 2", 11, FontWeight.BOLD, BLUE)
         );
-
-        VBox allocationText = new VBox(
-                3,
-                label(
-                        "Budget Allocation",
-                        16,
-                        true,
-                        Color.web("#111111")
-                ),
-                label(
-                        "Visual breakdown of your expenses",
-                        10,
-                        false,
-                        Color.web(GREY)
-                )
-        );
-
         Region allocationSpace = new Region();
+        HBox.setHgrow(allocationSpace, Priority.ALWAYS);
 
-        HBox.setHgrow(
-                allocationSpace,
-                Priority.ALWAYS
-        );
+        totalAmount = label(initialBudget, 20, FontWeight.BOLD, NAVY);
+        VBox totalBox = new VBox(1, totalAmount, label("Total Allocated", 10, FontWeight.BOLD, NAVY));
+        totalBox.setAlignment(Pos.CENTER_RIGHT);
 
-        totalAmount = label(
-                "₹500,000",
-                21,
-                true,
-                Color.web(NAVY)
-        );
+        allocationHeader.getChildren().addAll(allocationText, allocationSpace, totalBox);
 
-        VBox total = new VBox(1);
+        allocationRowsContainer = new VBox(10);
+        allocationRowsContainer.setPadding(new Insets(10, 0, 10, 0));
 
-        total.setAlignment(
-                Pos.CENTER_RIGHT
-        );
+        Label disclaimer = label("ⓘ This is a recommended allocation. Final budget will be managed and finalized by your organizer.", 11, FontWeight.BOLD, "#92400E");
+        disclaimer.setStyle("-fx-background-color:#FEF3C7;-fx-padding:8 12;-fx-background-radius:6;-fx-border-color:#FDE68A;-fx-border-radius:6;");
+        disclaimer.setWrapText(true);
 
-        total.getChildren().addAll(
-                totalAmount,
-                label(
-                        "Total Allocated",
-                        9,
-                        false,
-                        Color.web(GREY)
-                )
-        );
+        allocationCard.getChildren().addAll(allocationHeader, new Separator(), allocationRowsContainer, disclaimer);
+        HBox.setHgrow(allocationCard, Priority.ALWAYS);
 
-        allocationHeader.getChildren().addAll(
-                allocationText,
-                allocationSpace,
-                total
-        );
-
-        VBox rows = new VBox(12);
-
-        rows.getChildren().addAll(
-                budgetRow("▣", "Venue", "30%"),
-                budgetRow("🍴", "Catering", "25%"),
-                budgetRow("✧", "Decoration", "20%"),
-                budgetRow("▣", "Photography", "10%"),
-                budgetRow("▯", "Sound", "5%"),
-                budgetRow("•••", "Other", "10%")
-        );
-
-        allocation.getChildren().addAll(
-                allocationHeader,
-                new Separator(),
-                rows
-        );
-
-        // =========================================================
-        // BUDGET AMOUNT LISTENER
-        // =========================================================
-
-        amount.textProperty().addListener(
-                (obs, oldValue, newValue) -> {
-
-                    try {
-
-                        String clean =
-                                newValue.replaceAll(
-                                        "[^0-9.]",
-                                        ""
-                                );
-
-                        if (!clean.isEmpty()) {
-
-                            double value =
-                                    Double.parseDouble(clean);
-
-                            totalAmount.setText(
-                                    String.format(
-                                            "₹%,.0f",
-                                            value
-                                    )
-                            );
-                        }
-
-                    } catch (Exception e) {
-                        // Ignore invalid input while typing
+        // Safe Recalculation Engine
+        Runnable recalculate = () -> {
+            double parsedVal = 845000.0;
+            try {
+                String text = amountField.getText();
+                if (text != null) {
+                    String clean = text.replaceAll("[^0-9.]", "").trim();
+                    if (!clean.isEmpty()) {
+                        parsedVal = Double.parseDouble(clean);
                     }
                 }
-        );
+            } catch (Exception ignored) {}
 
-        // =========================================================
-        // CONTENT
-        // =========================================================
+            totalAmount.setText(String.format("₹ %,.0f", parsedVal));
 
-        HBox content = new HBox(22);
+            if (!toggleOptimizer.isSelected()) {
+                allocationRowsContainer.getChildren().clear();
+                Label offLabel = label("Smart Optimization is turned OFF.\nYour total budget (" + String.format("₹ %,.0f", parsedVal) + ") will be submitted directly to your organizer for manual planning.", 13, FontWeight.BOLD, NAVY);
+                offLabel.setPadding(new Insets(20));
+                allocationRowsContainer.getChildren().add(offLabel);
+                smartRecommendationBox.getChildren().clear();
+                smartRecommendationBox.getChildren().add(label("Optimizer Inactive (Manual Mode)", 11, FontWeight.BOLD, NAVY));
+                return;
+            }
 
-        content.setAlignment(
-                Pos.TOP_LEFT
-        );
+            // Extract selected requirements safely
+            String reqString = ReviewPageC.EventData.requirements;
+            List<String> selectedReqs = new ArrayList<>();
+            if (reqString != null && !reqString.isBlank()) {
+                selectedReqs.addAll(Arrays.asList(reqString.split(",\\s*")));
+            }
 
-        content.setPadding(
-                new Insets(0, 32, 20, 32)
-        );
+            BudgetOptimizationRequest req = new BudgetOptimizationRequest(
+                    parsedVal,
+                    ReviewPageC.EventData.eventType != null ? ReviewPageC.EventData.eventType : "Wedding",
+                    ReviewPageC.EventData.guests > 0 ? ReviewPageC.EventData.guests : 150,
+                    selectedReqs,
+                    ReviewPageC.EventData.city != null ? ReviewPageC.EventData.city : "Pune"
+            );
 
-        content.getChildren().addAll(
-                left,
-                allocation
-        );
+            BudgetOptimizationResult result = optimizerService.optimizeBudget(req);
 
-        HBox.setHgrow(
-                allocation,
-                Priority.ALWAYS
-        );
+            // Populate Recommendation Rows
+            allocationRowsContainer.getChildren().clear();
+            smartRecommendationBox.getChildren().clear();
+            smartRecommendationBox.getChildren().add(label("Constraint Optimization Applied:", 11, FontWeight.BOLD, NAVY));
 
-        VBox.setVgrow(
-                content,
-                Priority.ALWAYS
-        );
+            HBox chips = new HBox(6);
+            if (result != null && result.getAllocations() != null) {
+                for (BudgetAllocation alloc : result.getAllocations()) {
+                    allocationRowsContainer.getChildren().add(createBudgetRow(alloc));
+                    if (chips.getChildren().size() < 3) {
+                        chips.getChildren().add(tag(alloc.getCategory() + " " + alloc.getPercentage() + "%"));
+                    }
+                }
+            }
+            smartRecommendationBox.getChildren().add(chips);
+        };
 
-        // =========================================================
-        // FOOTER BUTTONS
-        // =========================================================
+        // Event Listeners
+        amountField.textProperty().addListener((obs, oldV, newV) -> recalculate.run());
+        toggleOptimizer.selectedProperty().addListener((obs, oldV, isSelected) -> {
+            toggleOptimizer.setText(isSelected ? "ON" : "OFF");
+            toggleOptimizer.setStyle("-fx-background-color:" + (isSelected ? BLUE : "#8A96A3") + ";-fx-background-radius:20;-fx-cursor:hand;");
+            recalculate.run();
+        });
 
+        // Initial Run
+        recalculate.run();
 
+        HBox mainRow = new HBox(20, leftColumn, allocationCard);
+        content.getChildren().addAll(stepText, heading, description, mainRow);
 
+        // FOOTER
+        HBox footer = new HBox(15);
+        footer.setPrefHeight(60);
+        footer.setMinHeight(60);
+        footer.setAlignment(Pos.CENTER_RIGHT);
+        footer.setPadding(new Insets(0, 35, 0, 35));
+        footer.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:1 0 0 0;");
 
+        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.BOLD, NAVY);
+        Region footerSpace = new Region();
+        HBox.setHgrow(footerSpace, Priority.ALWAYS);
 
-        Button back = footerButton(
-                "Back",
-                80,
-                false
-        );
+        Button back = new Button("Back");
+        Button next = new Button("Next");
 
-        Button next = footerButton(
-                "Next",
-                82,
-                true
-        );
+        back.setPrefSize(82, 38);
+        next.setPrefSize(82, 38);
 
-        // =========================================================
-        // BACK BUTTON
-        // =========================================================
+        back.setStyle("-fx-background-color:white;-fx-text-fill:" + BLUE + ";-fx-border-color:" + BLUE + ";-fx-border-radius:7;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
+        next.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
 
         back.setOnAction(e -> {
-
             if (backAction != null) {
-
                 backAction.run();
-
             } else {
-
-                LocationC locationPage =
-                        new LocationC(uid, idToken);
-
-                LandingPage.landingPageStage.setScene(
-                        locationPage.getLocationScene()
-                );
+                LocationC locationPage = new LocationC(uid, idToken);
+                LandingPage.landingPageStage.setScene(locationPage.getLocationScene());
             }
         });
 
-        // =========================================================
-        // NEXT BUTTON
-        // =========================================================
+        next.setOnAction(e -> {
+            ReviewPageC.EventData.budget = amountField.getText() != null ? amountField.getText().trim() : "₹ 8,45,000";
 
-       next.setOnAction(e -> {
+            if (nextAction != null) {
+                nextAction.run();
+            } else {
+                GuestManagementC guestPage = new GuestManagementC(uid, idToken);
+                LandingPage.landingPageStage.setScene(guestPage.getGuestManagementScene());
+            }
+        });
 
-    ReviewPageC.EventData.budget = amount.getText().trim();
+        footer.getChildren().addAll(copyright, footerSpace, back, next);
 
-    if (nextAction != null) {
-        nextAction.run();
-    } else {
-        GuestManagementC guestPage = new GuestManagementC(uid, idToken);
+        VBox rightSide = new VBox();
+        rightSide.getChildren().addAll(topBar, content, footer);
+        VBox.setVgrow(content, Priority.ALWAYS);
 
-        LandingPage.landingPageStage.setScene( guestPage.getGuestManagementScene()
-        );
-    }
-});
+        HBox fullPage = new HBox();
+        fullPage.getChildren().addAll(sidebar, rightSide);
+        HBox.setHgrow(rightSide, Priority.ALWAYS);
 
-        HBox buttons = new HBox(
-                10,
-                back,
-                next
-        );
-
-        buttons.setAlignment(
-                Pos.CENTER_RIGHT
-        );
-
-        Region footerSpace = new Region();
-
-        HBox.setHgrow(
-                footerSpace,
-                Priority.ALWAYS
-        );
-
-        HBox footer = new HBox(
-                footerSpace,
-                buttons
-        );
-
-        footer.setAlignment(
-                Pos.CENTER_RIGHT
-        );
-
-        footer.setPadding(
-                new Insets(10, 30, 12, 30)
-        );
-
-        footer.setPrefHeight(64);
-
-        footer.setStyle(
-                "-fx-background-color:#F8FAFC;" +
-                "-fx-border-color:#DCE5EC;" +
-                "-fx-border-width:1 0 0 0;"
-        );
-
-        // =========================================================
-        // CENTER
-        // =========================================================
-
-        VBox center = new VBox(
-                topBar,
-                title,
-                content,
-                footer
-        );
-
-        center.setStyle(
-                "-fx-background-color:" + BG + ";"
-        );
-
-        VBox.setVgrow(
-                content,
-                Priority.ALWAYS
-        );
-
-        // =========================================================
-        // ROOT
-        // =========================================================
-
-        BorderPane root = new BorderPane();
-
-        root.setStyle(
-                "-fx-background-color:" + NAVY + ";"
-        );
-
-        root.setLeft(sidebar);
-        root.setCenter(center);
-
-        scene = new Scene(
-                root,
-                1550,
-                750
-        );
-
+        root.setCenter(fullPage);
+        scene = new Scene(root, 1550, 750);
         return scene;
     }
 
-    // =============================================================
-    // LABEL
-    // =============================================================
+    private VBox createBudgetRow(BudgetAllocation allocation) {
+        HBox top = new HBox(12);
+        top.setAlignment(Pos.CENTER_LEFT);
 
-    private Label label(
-            String text,
-            double size,
-            boolean bold,
-            Color color
-    ) {
+        StackPane iconHolder = new StackPane();
+        iconHolder.setPrefSize(30, 30);
+        iconHolder.setStyle("-fx-background-color:#E0EDFF;-fx-background-radius:6;");
 
-        Label l = new Label(text);
-
-        l.setFont(
-                Font.font(
-                        "Arial",
-                        bold
-                                ? FontWeight.BOLD
-                                : FontWeight.NORMAL,
-                        size
-                )
-        );
-
-        l.setTextFill(color);
-
-        return l;
-    }
-
-    // =============================================================
-    // CARD
-    // =============================================================
-
-    private VBox card() {
-
-        VBox v = new VBox(12);
-
-        v.setPadding(
-                new Insets(18)
-        );
-
-        v.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:" + BORDER + ";" +
-                "-fx-border-radius:9;" +
-                "-fx-background-radius:9;"
-        );
-
-        return v;
-    }
-
-    // =============================================================
-    // NAV ITEM
-    // =============================================================
-
-    private HBox navItem(
-            String icon,
-            String text,
-            boolean active
-    ) {
-
-        Label i = label(
-                icon,
-                16,
-                false,
-                active
-                        ? Color.WHITE
-                        : Color.web("#D0DFEC")
-        );
-
-        Label t = label(
-                text,
-                12,
-                true,
-                active
-                        ? Color.WHITE
-                        : Color.web("#D0DFEC")
-        );
-
-        HBox h = new HBox(
-                12,
-                i,
-                t
-        );
-
-        h.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        h.setPrefHeight(38);
-
-        h.setPadding(
-                new Insets(7, 10, 7, 12)
-        );
-
-        if (active) {
-
-            h.setStyle(
-                    "-fx-background-color:#07396E;" +
-                    "-fx-border-color:" + LIGHT + ";" +
-                    "-fx-border-width:0 0 0 3;" +
-                    "-fx-background-radius:7;"
-            );
-
-        } else {
-
-            h.setStyle(
-                    "-fx-background-color:transparent;"
-            );
+        try {
+            String iconCode = (allocation.getIcon() != null && !allocation.getIcon().isBlank()) ? allocation.getIcon() : "fas-check-circle";
+            FontIcon fontIcon = new FontIcon(iconCode);
+            fontIcon.setIconSize(14);
+            fontIcon.setIconColor(Color.web(BLUE));
+            iconHolder.getChildren().add(fontIcon);
+        } catch (Exception ex) {
+            Label defaultIco = new Label("•");
+            defaultIco.setStyle("-fx-text-fill:" + BLUE + ";-fx-font-weight:bold;");
+            iconHolder.getChildren().add(defaultIco);
         }
 
-        return h;
+        Label nameLabel = label(allocation.getCategory(), 13, FontWeight.BOLD, NAVY);
+        Label percentBadge = label(allocation.getPercentage() + "%", 11, FontWeight.BOLD, BLUE);
+        percentBadge.setStyle("-fx-background-color:#E0F2FE;-fx-padding:2 6;-fx-background-radius:8;");
+
+        Region space = new Region();
+        HBox.setHgrow(space, Priority.ALWAYS);
+
+        Label amountLabel = label(String.format("₹ %,.0f", allocation.getRecommendedAmount()), 13, FontWeight.BOLD, NAVY);
+
+        top.getChildren().addAll(iconHolder, nameLabel, percentBadge, space, amountLabel);
+
+        ProgressBar bar = new ProgressBar(allocation.getPercentage() / 100.0);
+        bar.setMaxWidth(Double.MAX_VALUE);
+        bar.setPrefHeight(6);
+        bar.setStyle("-fx-accent:" + BLUE + ";");
+
+        return new VBox(4, top, bar);
     }
-
-    // =============================================================
-    // FOOTER BUTTON
-    // =============================================================
-
-    private Button footerButton(
-            String text,
-            double width,
-            boolean primary
-    ) {
-
-        Button b = new Button(text);
-
-        b.setPrefSize(
-                width,
-                42
-        );
-
-        b.setStyle(
-                primary
-                        ? "-fx-background-color:" + BLUE + ";" +
-                          "-fx-background-radius:7;" +
-                          "-fx-text-fill:white;" +
-                          "-fx-font-weight:bold;"
-                        : "-fx-background-color:white;" +
-                          "-fx-border-color:#A7B9C8;" +
-                          "-fx-border-radius:7;" +
-                          "-fx-background-radius:7;" +
-                          "-fx-text-fill:" + NAVY + ";"
-        );
-
-        return b;
-    }
-
-    // =============================================================
-    // TAG
-    // =============================================================
 
     private Label tag(String text) {
-
-        Label t = label(
-                text,
-                9,
-                true,
-                Color.web(NAVY)
-        );
-
-        t.setPadding(
-                new Insets(5, 8, 5, 8)
-        );
-
-        t.setStyle(
-                "-fx-background-color:" + LIGHT + ";" +
-                "-fx-background-radius:12;"
-        );
-
+        Label t = label(text, 10, FontWeight.BOLD, NAVY);
+        t.setPadding(new Insets(3, 7, 3, 7));
+        t.setStyle("-fx-background-color:#E0F2FE;-fx-background-radius:10;");
         return t;
     }
 
-    // =============================================================
-    // BUDGET ROW
-    // =============================================================
+    private VBox card() {
+        VBox v = new VBox(12);
+        v.setPadding(new Insets(16));
+        v.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:9;-fx-background-radius:9;");
+        return v;
+    }
 
-    private VBox budgetRow(
-            String icon,
-            String name,
-            String percent
-    ) {
+    private HBox sidebarItem(String icon, String text, boolean active) {
+        HBox item = new HBox(12);
+        item.setPrefHeight(44);
+        item.setMinHeight(44);
+        item.setAlignment(Pos.CENTER_LEFT);
+        item.setPadding(new Insets(0, 18, 0, 25));
+        item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
+        item.getChildren().addAll(label(icon, 13, FontWeight.NORMAL, "white"), label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8"));
+        return item;
+    }
 
-        HBox top = new HBox(10);
-
-        top.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        Label iconLabel = label(
-                icon,
-                15,
-                false,
-                Color.web(NAVY)
-        );
-
-        iconLabel.setPrefSize(
-                32,
-                32
-        );
-
-        iconLabel.setAlignment(
-                Pos.CENTER
-        );
-
-        iconLabel.setStyle(
-                "-fx-background-color:#E5F0FF;" +
-                "-fx-background-radius:7;"
-        );
-
-        Label nameLabel = label(
-                name,
-                11,
-                true,
-                Color.web(TEXT)
-        );
-
-        Region space = new Region();
-
-        HBox.setHgrow(
-                space,
-                Priority.ALWAYS
-        );
-
-        Label percentLabel = label(
-                percent,
-                10,
-                true,
-                Color.web(NAVY)
-        );
-
-        top.getChildren().addAll(
-                iconLabel,
-                nameLabel,
-                space,
-                percentLabel
-        );
-
-        ProgressBar line = new ProgressBar(
-                Double.parseDouble(
-                        percent.replace("%", "")
-                ) / 100
-        );
-
-        line.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        line.setPrefHeight(7);
-
-        line.setStyle(
-                "-fx-accent:#111111;"
-        );
-
-        return new VBox(
-                5,
-                top,
-                line
-        );
+    private Label label(String text, double size, FontWeight weight, String color) {
+        Label l = new Label(text != null ? text : "");
+        l.setFont(Font.font("Arial", weight, size));
+        l.setTextFill(Color.web(color));
+        l.setStyle("-fx-text-fill: " + color + " !important; -fx-opacity: 1.0;");
+        return l;
     }
 }
