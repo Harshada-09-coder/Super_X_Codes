@@ -2,6 +2,7 @@ package com.techtrio.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.google.cloud.firestore.annotation.IgnoreExtraProperties;
 
@@ -14,8 +15,17 @@ public class Event {
     private String eventType;
     private String category;
     private int guests; // Guest Count
+
+    // --- EVENT DURATION FIELDS ---
+    private String startDate;
+    private String endDate;
+    private String startTime;
+    private String endTime;
+
+    // Backward-compatibility fields
     private String eventDate;
     private String time;
+
     private String requirements;
     private String notes;
     private String city;
@@ -46,7 +56,7 @@ public class Event {
     private int guestLimit;
     private int checkedInCount = 0;
     private String qrToken;
-    private List<Guest> guestList = new ArrayList<>(); // Renamed from guests to avoid duplicate name
+    private List<Guest> guestList = new ArrayList<>();
 
     public Event() {
     }
@@ -99,20 +109,84 @@ public class Event {
         this.guests = guests;
     }
 
+    // --- EVENT DURATION GETTERS & SETTERS ---
+    public String getStartDate() {
+        if (startDate != null && !startDate.isBlank()) {
+            return startDate;
+        }
+        return eventDate != null ? eventDate : "";
+    }
+
+    public void setStartDate(String startDate) {
+        this.startDate = startDate;
+        if (this.eventDate == null || this.eventDate.isBlank()) {
+            this.eventDate = startDate;
+        }
+    }
+
+    public String getEndDate() {
+        if (endDate != null && !endDate.isBlank()) {
+            return endDate;
+        }
+        return getStartDate();
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    public String getStartTime() {
+        if (startTime != null && !startTime.isBlank()) {
+            return startTime;
+        }
+        return time != null ? time : "";
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+        if (this.time == null || this.time.isBlank()) {
+            this.time = startTime;
+        }
+    }
+
+    public String getEndTime() {
+        return endTime != null ? endTime : "";
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
+    // --- BACKWARD COMPATIBILITY GETTERS & SETTERS ---
     public String getEventDate() {
-        return eventDate;
+        if (eventDate != null && !eventDate.isBlank()) {
+            return eventDate;
+        }
+        return startDate != null ? startDate : "";
     }
 
     public void setEventDate(String eventDate) {
         this.eventDate = eventDate;
+        if (this.startDate == null || this.startDate.isBlank()) {
+            this.startDate = eventDate;
+        }
     }
 
     public String getTime() {
-        return time;
+        if (time != null && !time.isBlank()) {
+            return time;
+        }
+        if (startTime != null && !startTime.isBlank()) {
+            return (endTime != null && !endTime.isBlank()) ? (startTime + " - " + endTime) : startTime;
+        }
+        return "";
     }
 
     public void setTime(String time) {
         this.time = time;
+        if (this.startTime == null || this.startTime.isBlank()) {
+            this.startTime = time;
+        }
     }
 
     public String getRequirements() {
@@ -315,5 +389,33 @@ public class Event {
 
     public void setGuestList(List<Guest> guestList) {
         this.guestList = guestList;
+    }
+
+    private double allocatedBudget;
+    private Map<String, Object> budgetRecommendation;
+    private String budgetOptimizationStatus;
+
+    public double getAllocatedBudget() {
+        return allocatedBudget;
+    }
+
+    public void setAllocatedBudget(double allocatedBudget) {
+        this.allocatedBudget = allocatedBudget;
+    }
+
+    public Map<String, Object> getBudgetRecommendation() {
+        return budgetRecommendation;
+    }
+
+    public void setBudgetRecommendation(Map<String, Object> budgetRecommendation) {
+        this.budgetRecommendation = budgetRecommendation;
+    }
+
+    public String getBudgetOptimizationStatus() {
+        return budgetOptimizationStatus;
+    }
+
+    public void setBudgetOptimizationStatus(String budgetOptimizationStatus) {
+        this.budgetOptimizationStatus = budgetOptimizationStatus;
     }
 }

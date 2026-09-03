@@ -6,25 +6,29 @@ import com.techtrio.controller.NavigationManager;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
 import com.techtrio.model.OrganizerProfile;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import javafx.application.Platform;
 import javafx.concurrent.Task;
-import javafx.geometry.*;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.text.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class EventDetailsA {
 
     private Scene eventDetailsScene;
 
-    private final String P = "#002A60";
-    private final String BG = "#F7F9FC";
-    private final String BORDER = "#CBD5E1";
+    private final String PRIMARY = "#002A60";
+    private final String LIGHT = "#C2E0F4";
+    private final String BACKGROUND = "#F8FAFC";
+    private final String BORDER = "#E2E8F0";
 
     private Label eventTitleLabel;
     private Label eventStatusBadge;
@@ -42,7 +46,9 @@ public class EventDetailsA {
     private Label infoCustomerVal;
     private Label infoEventNameVal;
     private Label infoTypeVal;
-    private Label infoDateVal;
+    private Label infoStartDateVal;
+    private Label infoEndDateVal;
+    private Label infoTimeVal;
     private Label infoGuestsVal;
     private Label infoLocationVal;
     private Label infoOrganizerVal;
@@ -52,209 +58,222 @@ public class EventDetailsA {
     private Label venueNameVal;
     private Label venueCityVal;
 
-    private Label label(String text, int size, boolean bold) {
-        Label l = new Label(text);
-        l.setFont(Font.font("Arial", bold ? FontWeight.BOLD : FontWeight.NORMAL, size));
-        return l;
-    }
+    public Scene geteventDetailsScene() {
 
-    private VBox info(String title, Label valLabel) {
-        Label t = label(title, 12, false);
-        t.setTextFill(Color.web("#596273"));
-        valLabel.setFont(Font.font("Arial", 15));
-        return new VBox(4, t, valLabel);
-    }
+        // SIDEBAR
+        VBox sidebar = new VBox(6);
+        sidebar.setPrefWidth(240);
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setStyle("-fx-background-color:" + PRIMARY + ";");
 
-    private VBox card(String icon, String title, Node content) {
-        Label i = label(icon, 19, true);
-        i.setTextFill(Color.web(P));
+        HBox brandBox = new HBox(8);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(0, 6, 12, 6));
 
-        Label t = label(title, 19, true);
-        t.setTextFill(Color.web(P));
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
 
-        HBox head = new HBox(9, i, t);
-        head.setAlignment(Pos.CENTER_LEFT);
+        VBox brandTexts = new VBox(1);
+        Label logo = new Label("EventXpert");
+        logo.setTextFill(Color.WHITE);
+        logo.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        Label admin = new Label("ADMIN DASHBOARD");
+        admin.setTextFill(Color.web(LIGHT));
+        admin.setFont(Font.font("Arial", FontWeight.BOLD, 9));
+        brandTexts.getChildren().addAll(logo, admin);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
 
-        VBox box = new VBox(12, head, content);
-        box.setPadding(new Insets(18));
-        box.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:9;-fx-background-radius:9;");
-        return box;
-    }
+        VBox menu = new VBox(3);
+        String[][] items = {
+                {"Dashboard", "fas-tachometer-alt"},
+                {"Event Requests", "fas-inbox"},
+                {"Events", "fas-calendar-check"},
+                {"Calendar", "fas-calendar"},
+                {"Customers", "fas-users"},
+                {"Organizers", "fas-user-tie"},
+                {"Vendors", "fas-truck"},
+                {"Conflict Detection", "fas-shield-alt"},
+                {"Reports & Analytics", "fas-chart-pie"}
+        };
 
-    private VBox createSidebar() {
-        VBox sidebar = new VBox(7);
-        sidebar.setPrefWidth(260); sidebar.setMinWidth(260);
-        sidebar.setPadding(new Insets(25, 18, 18, 18));
-        sidebar.setStyle("-fx-background-color:" + P + ";");
-
-        Label logo = label("EventXpert", 26, true);
-        Label admin = label("ADMIN DASHBOARD", 12, true);
-        logo.setTextFill(Color.WHITE); admin.setTextFill(Color.WHITE);
-
-        VBox logoBox = new VBox(1, logo, admin);
-        VBox menu = new VBox(7);
-
-        String[] items = {"Dashboard", "Event Requests", "Events", "Calendar", "Customers", "Organizers", "Vendors", "Conflict Detection", "Reports & Analytics"};
-
-        for (String item : items) {
-            Label m = label(item, 14, true);
-            m.setTextFill(Color.WHITE);
-            m.setMaxWidth(Double.MAX_VALUE);
-            m.setPadding(new Insets(9, 13, 9, 13));
-
-            if (item.equals("Events")) {
-                m.setStyle("-fx-background-color:#07539A;-fx-background-radius:5;");
-            }
-
-            menu.getChildren().add(m);
+        for (String[] item : items) {
+            String name = item[0];
+            String iconLit = item[1];
+            menu.getChildren().add(createSidebarButton(name, iconLit, name.equals("Events")));
         }
 
         Region space = new Region();
         VBox.setVgrow(space, Priority.ALWAYS);
 
-        Label n = label("🔔  Notifications", 13, true);
-        Label s = label("⚙  Settings", 13, true);
-        Label p = label("👤  Profile", 13, true);
-        Label sp = label("?  Support", 13, true);
+        // SIDEBAR BOTTOM ITEMS WITH NAVIGATION
+        VBox bottomMenu = new VBox(3);
+        bottomMenu.getChildren().addAll(
+                createSidebarButton("Notifications", "fas-bell", false),
+                createSidebarButton("Profile", "fas-user", false),
+                createSidebarButton("Settings", "fas-cog", false),
+                createSidebarButton("Support", "fas-question-circle", false)
+        );
 
-        for (Label x : new Label[]{n, s, p, sp}) {
-            x.setTextFill(Color.WHITE);
-            x.setPadding(new Insets(7, 10, 7, 10));
-        }
+        sidebar.getChildren().addAll(brandBox, menu, space, bottomMenu);
 
-        sidebar.getChildren().addAll(logoBox, menu, space, n, s, p, sp);
-        return sidebar;
-    }
+        // MAIN CONTENT (TOPBAR REMOVED)
+        VBox content = new VBox(16);
+        content.setPadding(new Insets(24, 32, 28, 32));
+        content.setStyle("-fx-background-color:" + BACKGROUND + ";");
 
-    public Scene geteventDetailsScene() {
+        HBox titleRow = new HBox(12);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        Region headerSpace = new Region();
-        HBox.setHgrow(headerSpace, Priority.ALWAYS);
+        VBox titleBox = new VBox(2);
+        eventTitleLabel = new Label("Event Details");
+        eventTitleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        eventTitleLabel.setTextFill(Color.web(PRIMARY));
+        Label subtitle = new Label("View complete information about the selected customer event.");
+        subtitle.setFont(Font.font("Arial", 13));
+        subtitle.setTextFill(Color.web("#64748B"));
+        titleBox.getChildren().addAll(eventTitleLabel, subtitle);
 
-        HBox header = new HBox(20, headerSpace, label("🔔", 18, false), label("?", 18, true), label("⚙", 18, false), label("👤", 18, false));
-        header.setAlignment(Pos.CENTER_RIGHT);
-        header.setPadding(new Insets(8, 25, 8, 20));
-        header.setPrefHeight(55);
-        header.setStyle("-fx-background-color:white;-fx-border-color:#E5EAF0;");
+        eventStatusBadge = new Label("Upcoming");
+        eventStatusBadge.setTextFill(Color.web("#16A34A"));
+        eventStatusBadge.setFont(Font.font("Arial", FontWeight.BOLD, 11));
+        eventStatusBadge.setPadding(new Insets(4, 10, 4, 10));
+        eventStatusBadge.setStyle("-fx-background-color:#DCFCE7;-fx-background-radius:6;");
 
-        eventTitleLabel = label("Event Details", 30, true);
-        eventTitleLabel.setTextFill(Color.web(P));
+        Region titleSpace = new Region();
+        HBox.setHgrow(titleSpace, Priority.ALWAYS);
 
-        Label subtitle = label("View complete information about the selected event.", 15, false);
-        VBox titleBox = new VBox(4, eventTitleLabel, subtitle);
-
-        eventStatusBadge = label("Upcoming", 12, true);
-        eventStatusBadge.setTextFill(Color.web("#237A45"));
-        eventStatusBadge.setPadding(new Insets(6, 14, 6, 14));
-        eventStatusBadge.setStyle("-fx-background-color:#DDF7E7;-fx-background-radius:15;");
-
-        Button back = new Button("←  Back to Events");
+        Button back = new Button("← Back to Events");
+        back.setStyle("-fx-background-color:white;-fx-border-color:" + PRIMARY + ";-fx-text-fill:" + PRIMARY + ";-fx-font-weight:bold;-fx-font-size:11px;-fx-padding:6 14;-fx-border-radius:6;-fx-cursor:hand;");
         back.setOnAction(e -> {
             Stage stage = (Stage) back.getScene().getWindow();
             NavigationManager.navigate("Events", stage);
         });
 
-        back.setPrefHeight(38);
-        back.setStyle("-fx-background-color:white;-fx-border-color:" + P + ";-fx-text-fill:" + P + ";-fx-border-radius:7;-fx-font-weight:bold;-fx-cursor:hand;");
+        titleRow.getChildren().addAll(titleBox, eventStatusBadge, titleSpace, back);
 
-        Region titleSpace = new Region();
-        HBox.setHgrow(titleSpace, Priority.ALWAYS);
-
-        HBox titleRow = new HBox(12, titleBox, eventStatusBadge, titleSpace, back);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
-
-        // GRID EVENT INFO
+        // EVENT GRID
         GridPane eventGrid = new GridPane();
-        eventGrid.setHgap(40); eventGrid.setVgap(18);
+        eventGrid.setHgap(30); eventGrid.setVgap(14);
 
-        infoCustomerVal = label("Loading...", 15, false);
-        infoEventNameVal = label("Loading...", 15, false);
-        infoTypeVal = label("Loading...", 15, false);
-        infoDateVal = label("Loading...", 15, false);
-        infoGuestsVal = label("Loading...", 15, false);
-        infoLocationVal = label("Loading...", 15, false);
-        infoOrganizerVal = label("Loading...", 15, false);
-        infoBudgetVal = label("Loading...", 15, false);
-        infoStatusVal = label("Loading...", 15, false);
+        infoCustomerVal = new Label("Loading...");
+        infoEventNameVal = new Label("Loading...");
+        infoTypeVal = new Label("Loading...");
+        infoStartDateVal = new Label("Loading...");
+        infoEndDateVal = new Label("Loading...");
+        infoTimeVal = new Label("Loading...");
+        infoGuestsVal = new Label("Loading...");
+        infoLocationVal = new Label("Loading...");
+        infoOrganizerVal = new Label("Loading...");
+        infoBudgetVal = new Label("Loading...");
+        infoStatusVal = new Label("Loading...");
 
         eventGrid.add(info("Customer", infoCustomerVal), 0, 0);
         eventGrid.add(info("Event Name", infoEventNameVal), 1, 0);
         eventGrid.add(info("Event Type", infoTypeVal), 2, 0);
-        eventGrid.add(info("Event Date", infoDateVal), 0, 1);
-        eventGrid.add(info("Guests", infoGuestsVal), 1, 1);
-        eventGrid.add(info("Location", infoLocationVal), 2, 1);
-        eventGrid.add(info("Organizer", infoOrganizerVal), 0, 2);
-        eventGrid.add(info("Budget", infoBudgetVal), 1, 2);
-        eventGrid.add(info("Status", infoStatusVal), 2, 2);
 
-        VBox eventCard = card("▣", "Event Information", eventGrid);
+        eventGrid.add(info("Start Date", infoStartDateVal), 0, 1);
+        eventGrid.add(info("End Date", infoEndDateVal), 1, 1);
+        eventGrid.add(info("Start - End Time", infoTimeVal), 2, 1);
 
-        venueNameVal = label("Loading...", 15, false);
-        venueCityVal = label("Loading...", 15, false);
+        eventGrid.add(info("Guests", infoGuestsVal), 0, 2);
+        eventGrid.add(info("Location", infoLocationVal), 1, 2);
+        eventGrid.add(info("Assigned Organizer", infoOrganizerVal), 2, 2);
 
-        VBox locationContent = new VBox(10, info("Venue", venueNameVal), info("City", venueCityVal));
-        VBox locationCard = card("⌖", "Location", locationContent);
+        eventGrid.add(info("Budget", infoBudgetVal), 0, 3);
+        eventGrid.add(info("Status", infoStatusVal), 1, 3);
 
-        HBox row1 = new HBox(25, eventCard, locationCard);
+        VBox eventCard = card("fas-calendar-check", "Event Details", eventGrid);
+
+        venueNameVal = new Label("Loading...");
+        venueCityVal = new Label("Loading...");
+        VBox locationContent = new VBox(8, info("Venue Type", venueNameVal), info("City / Locality", venueCityVal));
+        VBox locationCard = card("fas-map-marker-alt", "Location & Venue", locationContent);
+        locationCard.setPrefWidth(320);
+
+        HBox row1 = new HBox(16, eventCard, locationCard);
         HBox.setHgrow(eventCard, Priority.ALWAYS);
 
-        // CUSTOMER CARD
+        // CUSTOMER INFO
         GridPane customerGrid = new GridPane();
-        customerGrid.setHgap(35); customerGrid.setVgap(14);
+        customerGrid.setHgap(30); customerGrid.setVgap(12);
 
-        custNameVal = label("Loading...", 15, false);
-        custTypeVal = label("Registered Client", 15, false);
-        custEmailVal = label("Loading...", 15, false);
-        custPhoneVal = label("Loading...", 15, false);
+        custNameVal = new Label("Loading...");
+        custTypeVal = new Label("Registered Client");
+        custEmailVal = new Label("Loading...");
+        custPhoneVal = new Label("Loading...");
 
         customerGrid.add(info("Customer Name", custNameVal), 0, 0);
-        customerGrid.add(info("Customer Type", custTypeVal), 1, 0);
-        customerGrid.add(info("Email", custEmailVal), 0, 1);
-        customerGrid.add(info("Phone", custPhoneVal), 1, 1);
+        customerGrid.add(info("Email", custEmailVal), 1, 0);
+        customerGrid.add(info("Phone", custPhoneVal), 0, 1);
+        customerGrid.add(info("Client Type", custTypeVal), 1, 1);
 
-        VBox customerCard = card("♙", "Customer Information", customerGrid);
+        VBox customerCard = card("fas-user", "Customer Information", customerGrid);
 
-        // ORGANIZER CARD
+        // ORGANIZER INFO
         GridPane organizerGrid = new GridPane();
-        organizerGrid.setHgap(35); organizerGrid.setVgap(14);
+        organizerGrid.setHgap(30); organizerGrid.setVgap(12);
 
-        orgNameVal = label("Loading...", 15, false);
-        orgStatusVal = label("Assigned", 15, false);
-        orgEmailVal = label("Loading...", 15, false);
-        orgContactVal = label("Loading...", 15, false);
+        orgNameVal = new Label("Loading...");
+        orgStatusVal = new Label("Assigned");
+        orgEmailVal = new Label("Loading...");
+        orgContactVal = new Label("Loading...");
 
         organizerGrid.add(info("Organization Name", orgNameVal), 0, 0);
         organizerGrid.add(info("Status", orgStatusVal), 1, 0);
         organizerGrid.add(info("Email", orgEmailVal), 0, 1);
         organizerGrid.add(info("Contact", orgContactVal), 1, 1);
 
-        VBox organizerCard = card("♙", "Assigned Organizer Information", organizerGrid);
+        VBox organizerCard = card("fas-user-tie", "Assigned Organizer", organizerGrid);
 
-        HBox row2 = new HBox(25, customerCard, organizerCard);
+        HBox row2 = new HBox(16, customerCard, organizerCard);
         HBox.setHgrow(customerCard, Priority.ALWAYS);
         HBox.setHgrow(organizerCard, Priority.ALWAYS);
 
-        VBox content = new VBox(18, titleRow, row1, row2);
-        content.setPadding(new Insets(18, 25, 25, 25));
-        content.setStyle("-fx-background-color:" + BG + ";");
+        content.getChildren().addAll(titleRow, row1, row2);
 
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setStyle("-fx-background-color:" + BG + ";");
-
-        VBox center = new VBox(header, scroll);
-        VBox.setVgrow(scroll, Priority.ALWAYS);
+        scroll.setStyle("-fx-background-color:transparent;-fx-background:" + BACKGROUND + ";-fx-border-color:transparent;");
 
         BorderPane root = new BorderPane();
-        root.setLeft(createSidebar());
-        root.setCenter(center);
+        root.setLeft(sidebar);
+        root.setCenter(scroll);
 
         loadEventDetailsAsync();
 
-        Scene scene = new Scene(root, 1550, 750);
-        eventDetailsScene = scene;
+        eventDetailsScene = new Scene(root, 1550, 785);
         return eventDetailsScene;
+    }
+
+    private Button createSidebarButton(String name, String iconLit, boolean active) {
+        Button btn = new Button("  " + name);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(PRIMARY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (active) {
+            btn.setStyle("-fx-background-color:" + LIGHT + ";-fx-text-fill:" + PRIMARY + ";-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:6;");
+        } else {
+            btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-cursor:hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color:rgba(255,255,255,0.08);-fx-text-fill:white;-fx-font-size:12px;-fx-background-radius:6;-fx-cursor:hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;"));
+        }
+
+        btn.setOnAction(e -> {
+            Stage stage = (Stage) btn.getScene().getWindow();
+            NavigationManager.navigate(name, stage);
+        });
+
+        return btn;
     }
 
     private void loadEventDetailsAsync() {
@@ -279,7 +298,15 @@ public class EventDetailsA {
                         infoCustomerVal.setText(cust != null && cust.getName() != null ? cust.getName() : "Customer");
                         infoEventNameVal.setText(event.getEventName() != null ? event.getEventName() : "N/A");
                         infoTypeVal.setText(event.getEventType() != null ? event.getEventType() : "General");
-                        infoDateVal.setText(event.getEventDate() != null ? event.getEventDate() : "TBD");
+
+                        infoStartDateVal.setText(event.getStartDate() != null && !event.getStartDate().isBlank() ? event.getStartDate() : (event.getEventDate() != null ? event.getEventDate() : "TBD"));
+                        infoEndDateVal.setText(event.getEndDate() != null && !event.getEndDate().isBlank() ? event.getEndDate() : infoStartDateVal.getText());
+
+                        String timeDisplay = (event.getStartTime() != null && !event.getStartTime().isBlank())
+                                ? event.getStartTime() + (event.getEndTime() != null && !event.getEndTime().isBlank() ? " - " + event.getEndTime() : "")
+                                : (event.getTime() != null ? event.getTime() : "TBD");
+                        infoTimeVal.setText(timeDisplay);
+
                         infoGuestsVal.setText(String.valueOf(event.getGuests()));
                         infoLocationVal.setText(event.getCity() != null ? event.getCity() : "N/A");
 
@@ -319,5 +346,34 @@ public class EventDetailsA {
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
+    }
+
+    private VBox info(String title, Label valLabel) {
+        Label t = new Label(title);
+        t.setFont(Font.font("Arial", FontWeight.BOLD, 10));
+        t.setTextFill(Color.web("#64748B"));
+        valLabel.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        valLabel.setTextFill(Color.web(PRIMARY));
+        return new VBox(2, t, valLabel);
+    }
+
+    private VBox card(String iconLit, String title, Node content) {
+        HBox head = new HBox(8);
+        head.setAlignment(Pos.CENTER_LEFT);
+
+        FontIcon fontIcon = new FontIcon(iconLit);
+        fontIcon.setIconSize(14);
+        fontIcon.setIconColor(Color.web(PRIMARY));
+
+        Label t = new Label(title);
+        t.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        t.setTextFill(Color.web(PRIMARY));
+
+        head.getChildren().addAll(fontIcon, t);
+
+        VBox box = new VBox(10, head, content);
+        box.setPadding(new Insets(16));
+        box.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
+        return box;
     }
 }
