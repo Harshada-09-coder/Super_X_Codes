@@ -1,6 +1,8 @@
 package com.techtrio.view;
 
 import com.techtrio.session.UserSession;
+import org.kordamp.ikonli.javafx.FontIcon;
+
 import java.awt.Desktop;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -37,6 +39,7 @@ public class LocationC {
     }
 
     public Scene getLocationScene() {
+        ReviewPageC.EventData.currentStep = 3;
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
@@ -49,64 +52,52 @@ public class LocationC {
         sidebar.setFillWidth(true);
         sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label logo = label("EventXpert", 22, FontWeight.BOLD, "white");
-        Label logoSub = label("EVENT MANAGEMENT", 10, FontWeight.NORMAL, "#BDE3FF");
-        VBox brand = new VBox(3, logo, logoSub);
-        brand.setPadding(new Insets(24, 20, 28, 25));
+        HBox brandBox = new HBox(10);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(24, 20, 20, 22));
 
-        Label create = label("Create Event", 20, FontWeight.BOLD, "white");
-        Label step = label("Step-by-step setup", 12, FontWeight.NORMAL, "#BDE3FF");
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(24);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = label("EventXpert", 20, FontWeight.BOLD, "white");
+        Label logoSub = label("EVENT MANAGEMENT", 9, FontWeight.NORMAL, "#BDE3FF");
+        brandTexts.getChildren().addAll(logo, logoSub);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        Label create = label("Create Event", 18, FontWeight.BOLD, "white");
+        Label step = label("Step-by-step setup", 11, FontWeight.NORMAL, "#BDE3FF");
         VBox title = new VBox(2, create, step);
         title.setPadding(new Insets(0, 20, 20, 25));
 
         VBox menu = new VBox();
         menu.getChildren().addAll(
-                sidebarItem("[1]", "Event Details", false),
-                sidebarItem("[2]", "Requirements", false),
-                sidebarItem("[3]", "Venue & Location", true),
-                sidebarItem("[4]", "Budget", false),
-                sidebarItem("[5]", "Guest", false),
-                sidebarItem("[6]", "AI Planning", false),
-                sidebarItem("[7]", "Review", false)
+                sidebarItem("[1]", "Event Details", "fas-info-circle", false),
+                sidebarItem("[2]", "Requirements", "fas-list-ul", false),
+                sidebarItem("[3]", "Venue & Location", "fas-map-marker-alt", true),
+                sidebarItem("[4]", "Budget", "fas-wallet", false),
+                sidebarItem("[5]", "Guest", "fas-users", false),
+                sidebarItem("[6]", "AI Planning", "fas-magic", false),
+                sidebarItem("[7]", "Review", "fas-check-circle", false)
         );
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
-        sidebar.getChildren().addAll(brand, title, menu, sideSpace);
+        sidebar.getChildren().addAll(brandBox, title, menu, sideSpace);
 
-        // TOP BAR
-        HBox topBar = new HBox();
-        topBar.setPrefHeight(60);
-        topBar.setMinHeight(60);
-        topBar.setAlignment(Pos.CENTER_RIGHT);
-        topBar.setPadding(new Insets(0, 30, 0, 30));
-        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:0 0 1 0;");
-
-        Label topLogo = label("EventXpert", 14, FontWeight.BOLD, NAVY);
-        Region topSpace = new Region();
-        HBox.setHgrow(topSpace, Priority.ALWAYS);
-        Label bell = label("Notifications", 11, FontWeight.NORMAL, NAVY);
-        Label help = label("?", 13, FontWeight.BOLD, NAVY);
-
-        help.setMinSize(28, 28);
-        help.setAlignment(Pos.CENTER);
-        help.setStyle("-fx-border-color:" + NAVY + ";-fx-border-radius:50;-fx-background-radius:50;");
-
-        topBar.getChildren().addAll(topLogo, topSpace, bell, help);
-
-        // CONTENT
+        // CONTENT (TopBar Removed)
         VBox content = new VBox(14);
-        content.setPadding(new Insets(20, 35, 18, 35));
+        content.setPadding(new Insets(28, 45, 20, 45));
         content.setStyle("-fx-background-color:" + BG + ";");
 
         Label stepText = label("STEP 3 OF 7", 10, FontWeight.BOLD, BLUE);
         Label heading = label("Where will your event take place?", 25, FontWeight.BOLD, NAVY);
         Label description = label("Provide your location and preferred venue type. Your assigned Organizer will suggest the best nearby venues.", 12, FontWeight.NORMAL, GREY);
 
-        // LEFT COLUMN - LOCATION & PREFERENCES CARD (Venue Name Input Removed)
         VBox venueDetailsCard = new VBox(10);
         venueDetailsCard.setPadding(new Insets(16));
-        venueDetailsCard.setStyle("-fx-background-color:white;-fx-background-radius:9;-fx-border-color:" + BORDER + ";-fx-border-radius:9;");
+        venueDetailsCard.setStyle("-fx-background-color:white;-fx-background-radius:10;-fx-border-color:" + BORDER + ";-fx-border-radius:10;");
 
         Label vDetailsTitle = label("Location & Venue Type", 15, FontWeight.BOLD, TEXT);
 
@@ -120,11 +111,11 @@ public class LocationC {
         venueType.setMaxWidth(Double.MAX_VALUE);
         styleCombo(venueType);
 
-        TextField city = new TextField(ReviewPageC.EventData.city != null ? ReviewPageC.EventData.city : "Pune");
+        TextField city = new TextField(ReviewPageC.EventData.city != null && !ReviewPageC.EventData.city.isBlank() ? ReviewPageC.EventData.city : "");
         city.setPromptText("e.g. Pune");
         styleField(city);
 
-        TextField locality = new TextField(ReviewPageC.EventData.area != null ? ReviewPageC.EventData.area : "Baner");
+        TextField locality = new TextField(ReviewPageC.EventData.area != null && !ReviewPageC.EventData.area.isBlank() ? ReviewPageC.EventData.area : "");
         locality.setPromptText("e.g. Baner, Kothrud");
         styleField(locality);
 
@@ -138,25 +129,24 @@ public class LocationC {
 
         venueDetailsCard.getChildren().addAll(vDetailsTitle, formField("Preferred Venue Type", venueType), cityAreaRow, formField("Preferred Landmark / Address", fullAddressField));
 
-        // VENUE INFORMATION CARD
         VBox venueInfoCard = new VBox(10);
         venueInfoCard.setPadding(new Insets(16));
-        venueInfoCard.setStyle("-fx-background-color:white;-fx-background-radius:9;-fx-border-color:" + BORDER + ";-fx-border-radius:9;");
+        venueInfoCard.setStyle("-fx-background-color:white;-fx-background-radius:10;-fx-border-color:" + BORDER + ";-fx-border-radius:10;");
 
         Label vInfoTitle = label("Capacity & Logistics Information", 15, FontWeight.BOLD, TEXT);
 
-        TextField guestCap = new TextField(ReviewPageC.EventData.guests > 0 ? String.valueOf(ReviewPageC.EventData.guests) : "250");
+        TextField guestCap = new TextField(ReviewPageC.EventData.guests > 0 ? String.valueOf(ReviewPageC.EventData.guests) : "");
         guestCap.setPromptText("e.g. 250");
         styleField(guestCap);
 
-        TextField estCost = new TextField(ReviewPageC.EventData.budget != null ? ReviewPageC.EventData.budget : "₹ 1,50,000");
+        TextField estCost = new TextField(ReviewPageC.EventData.budget != null ? ReviewPageC.EventData.budget : "");
+        estCost.setPromptText("e.g. ₹ 1,50,000");
         styleField(estCost);
 
         HBox capCostRow = new HBox(12, formField("Expected Guest Capacity", guestCap), formField("Target Venue Budget", estCost));
         HBox.setHgrow(capCostRow.getChildren().get(0), Priority.ALWAYS);
         HBox.setHgrow(capCostRow.getChildren().get(1), Priority.ALWAYS);
 
-        // Radio Rows
         HBox parkRow = radioOptionRow("Parking Required");
         HBox catRow = radioOptionRow("In-house Catering Needed");
         HBox decRow = radioOptionRow("Decoration Setup Required");
@@ -170,19 +160,17 @@ public class LocationC {
         VBox leftColumn = new VBox(14, venueDetailsCard, venueInfoCard);
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
 
-        // RIGHT COLUMN - MAP & VENUE FINDER
         VBox rightColumn = new VBox(14);
         rightColumn.setPrefWidth(420);
         rightColumn.setMinWidth(400);
 
         StackPane mapPanel = createMapPanel(city, locality);
 
-        // VENUE FINDER HELPER BOX
         HBox helpBox = new HBox(12);
         helpBox.setPrefHeight(68);
         helpBox.setAlignment(Pos.CENTER_LEFT);
         helpBox.setPadding(new Insets(10, 16, 10, 16));
-        helpBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:9;-fx-background-radius:9;");
+        helpBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
 
         Label helpIcon = label("📍", 18, FontWeight.NORMAL, BLUE);
         StackPane iconCircle = new StackPane(helpIcon);
@@ -211,7 +199,7 @@ public class LocationC {
         footer.setPadding(new Insets(0, 35, 0, 35));
         footer.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:1 0 0 0;");
 
-        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.NORMAL, GREY);
+        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.BOLD, GREY);
         Region footerSpace = new Region();
         HBox.setHgrow(footerSpace, Priority.ALWAYS);
 
@@ -225,6 +213,7 @@ public class LocationC {
         next.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
 
         back.setOnAction(e -> {
+            ReviewPageC.EventData.saveDraft(2);
             RequirementsC reqView = new RequirementsC(uid, idToken);
             LandingPage.landingPageStage.setScene(reqView.getRequirementsScene());
         });
@@ -238,8 +227,6 @@ public class LocationC {
             ReviewPageC.EventData.city = enteredCity;
             ReviewPageC.EventData.area = enteredArea;
             ReviewPageC.EventData.venue = selectedVenue;
-
-            // Default pending venue state
             ReviewPageC.EventData.confirmedVenueName = "Pending Organizer Suggestion";
 
             if (!enteredAddress.isEmpty()) {
@@ -248,6 +235,8 @@ public class LocationC {
                 ReviewPageC.EventData.confirmedVenueAddress = (!enteredArea.isEmpty() ? enteredArea + ", " : "") + enteredCity;
             }
 
+            ReviewPageC.EventData.saveDraft(4);
+
             BudgetC budgetView = new BudgetC(uid, idToken);
             LandingPage.landingPageStage.setScene(budgetView.getBudgetScene());
         });
@@ -255,12 +244,10 @@ public class LocationC {
         footer.getChildren().addAll(copyright, footerSpace, back, next);
 
         VBox rightSide = new VBox();
-        rightSide.setFillWidth(true);
-        rightSide.getChildren().addAll(topBar, content, footer);
+        rightSide.getChildren().addAll(content, footer);
         VBox.setVgrow(content, Priority.ALWAYS);
 
         HBox fullPage = new HBox();
-        fullPage.setFillHeight(true);
         fullPage.getChildren().addAll(sidebar, rightSide);
         HBox.setHgrow(rightSide, Priority.ALWAYS);
 
@@ -293,7 +280,7 @@ public class LocationC {
     private StackPane createMapPanel(TextField cityField, TextField areaField) {
         StackPane mapPanel = new StackPane();
         mapPanel.setPrefHeight(320);
-        mapPanel.setStyle("-fx-background-color:#E9EEF4;-fx-background-radius:9;-fx-border-color:" + BORDER + ";-fx-border-radius:9;");
+        mapPanel.setStyle("-fx-background-color:#E9EEF4;-fx-background-radius:10;-fx-border-color:" + BORDER + ";-fx-border-radius:10;");
 
         try {
             Image mapImage = new Image(getClass().getResource("/assets/images/map img.jpg").toExternalForm());
@@ -324,18 +311,26 @@ public class LocationC {
         return mapPanel;
     }
 
-    private HBox sidebarItem(String icon, String text, boolean active) {
-        HBox item = new HBox(12);
-        item.setPrefHeight(44);
-        item.setMinHeight(44);
+    private HBox sidebarItem(String stepNum, String text, String iconLiteral, boolean active) {
+        HBox item = new HBox(10);
+        item.setPrefHeight(42);
+        item.setMinHeight(42);
         item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(0, 18, 0, 25));
-        item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
+        item.setPadding(new Insets(0, 16, 0, 22));
 
-        item.getChildren().addAll(
-                label(icon, 13, FontWeight.NORMAL, "white"),
-                label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8")
-        );
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#B7C4D8"));
+
+        Label textLbl = label(stepNum + "  " + text, 12, active ? FontWeight.BOLD : FontWeight.NORMAL, active ? NAVY : "#B7C4D8");
+
+        if (active) {
+            item.setStyle("-fx-background-color: #E0F2FE; -fx-background-radius: 7px;");
+        } else {
+            item.setStyle("-fx-background-color: transparent;");
+        }
+
+        item.getChildren().addAll(icon, textLbl);
         return item;
     }
 
@@ -346,19 +341,19 @@ public class LocationC {
     }
 
     private void styleField(TextField field) {
-        field.setPrefHeight(32);
-        field.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-padding:0 10;-fx-font-size:11px;");
+        field.setPrefHeight(34);
+        field.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-padding:0 10;-fx-font-size:12px;-fx-text-fill:" + NAVY + ";");
     }
 
     private void styleCombo(ComboBox<String> combo) {
-        combo.setPrefHeight(32);
-        combo.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-font-size:11px;");
+        combo.setPrefHeight(34);
+        combo.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-font-size:12px;");
     }
 
     private Label label(String text, double size, FontWeight weight, String color) {
         Label l = new Label(text);
         l.setFont(Font.font("Arial", weight, size));
-        l.setTextFill(Color.web(color));
+        l.setStyle("-fx-text-fill: " + color + " !important;");
         return l;
     }
 }

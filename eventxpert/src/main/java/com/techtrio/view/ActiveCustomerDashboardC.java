@@ -6,10 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.techtrio.controller.CustomerController;
-import com.techtrio.controller.VendorController;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
-import com.techtrio.model.VendorBooking;
 import com.techtrio.model.WeatherData;
 import com.techtrio.services.WeatherService;
 import com.techtrio.session.UserSession;
@@ -47,6 +45,9 @@ public class ActiveCustomerDashboardC {
 
     // Header & Profile
     private Label welcomeHeadingLabel;
+
+    // Drafts Button UI
+    private Button draftsBtn;
 
     // Upcoming Event UI
     private Label upcomingEventNameLabel;
@@ -136,7 +137,7 @@ public class ActiveCustomerDashboardC {
         VBox navList = new VBox(5);
         navList.getChildren().addAll(
                 createSidebarItem("Dashboard", "fas-tachometer-alt", true, null),
-                createSidebarItem("Create Event", "fas-plus-circle", false, this::openCreateEvent),
+                createSidebarItem("Create Event", "fas-plus-circle", false, this::openCreateEventDirectly),
                 createSidebarItem("My Events", "fas-calendar-check", false, this::openMyEvents),
                 createSidebarItem("Notifications", "fas-bell", false, this::openNotifications),
                 createSidebarItem("Profile", "fas-user", false, this::openProfile),
@@ -191,15 +192,32 @@ public class ActiveCustomerDashboardC {
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
+        // =========================================================
+        // 🌟 TWO DISTINCT BUTTONS: 1. DRAFTS  &  2. CREATE EVENT
+        // =========================================================
+        
+        // 1. DRAFTS BUTTON (Opens the exact unfinished step)
+        draftsBtn = new Button(" Drafts");
+        FontIcon draftIcon = new FontIcon("fas-file-alt");
+        draftIcon.setIconSize(12);
+        draftIcon.setIconColor(Color.web(NAVY));
+        draftsBtn.setGraphic(draftIcon);
+        draftsBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-text-fill:" + NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 8 16; -fx-background-radius: 8px; -fx-border-radius: 8px; -fx-cursor: hand;");
+        draftsBtn.setOnAction(e -> openDraftsDirectly());
+
+        // 2. CREATE EVENT BUTTON (Starts a clean fresh event)
         Button createEventBtn = new Button(" Create Event");
         FontIcon plusIcon = new FontIcon("fas-plus");
         plusIcon.setIconSize(12);
         plusIcon.setIconColor(Color.WHITE);
         createEventBtn.setGraphic(plusIcon);
         createEventBtn.setStyle("-fx-background-color:" + NAVY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 9 18; -fx-background-radius: 8px; -fx-cursor: hand;");
-        createEventBtn.setOnAction(e -> openCreateEvent());
+        createEventBtn.setOnAction(e -> openCreateEventDirectly());
 
-        headerRow.getChildren().addAll(titleBox, headerSpacer, createEventBtn);
+        HBox buttonGroup = new HBox(12, draftsBtn, createEventBtn);
+        buttonGroup.setAlignment(Pos.CENTER_RIGHT);
+
+        headerRow.getChildren().addAll(titleBox, headerSpacer, buttonGroup);
 
         HBox kpiRow = createKpiRow();
 
@@ -369,6 +387,8 @@ public class ActiveCustomerDashboardC {
     private VBox createCalendarCard() {
         VBox card = new VBox(12);
         card.setPadding(new Insets(18));
+        card.setPrefHeight(270);
+        card.setMinHeight(270);
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
 
         HBox header = new HBox(10);
@@ -598,22 +618,24 @@ public class ActiveCustomerDashboardC {
     }
 
     private VBox createWeatherAlertCard() {
-        VBox card = new VBox(12);
+        VBox card = new VBox(14);
         card.setPadding(new Insets(18));
+        card.setPrefHeight(270);
+        card.setMinHeight(270);
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
 
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
 
         FontIcon cloudSunIcon = new FontIcon("fas-cloud-sun");
-        cloudSunIcon.setIconSize(20);
+        cloudSunIcon.setIconSize(22);
         cloudSunIcon.setIconColor(Color.web("#F59E0B"));
 
         VBox titleBox = new VBox(1);
         Label title = new Label("Weather Alert");
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
+        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
         weatherLocationLabel = new Label("📍 Pune, Maharashtra");
-        weatherLocationLabel.setStyle("-fx-font-size: 11px; -fx-text-fill:" + TEXT_MUTED + ";");
+        weatherLocationLabel.setStyle("-fx-font-size: 12px; -fx-text-fill:" + TEXT_MUTED + ";");
         titleBox.getChildren().addAll(title, weatherLocationLabel);
 
         Region spacer = new Region();
@@ -625,15 +647,15 @@ public class ActiveCustomerDashboardC {
 
         header.getChildren().addAll(cloudSunIcon, titleBox, spacer, sunGraphic);
 
-        HBox tempRow = new HBox(10);
+        HBox tempRow = new HBox(12);
         tempRow.setAlignment(Pos.BASELINE_LEFT);
         weatherTempLabel = new Label("32°C");
-        weatherTempLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
+        weatherTempLabel.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
         weatherConditionLabel = new Label("Partly Cloudy");
-        weatherConditionLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_MUTED + ";");
+        weatherConditionLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_MUTED + ";");
         tempRow.getChildren().addAll(weatherTempLabel, weatherConditionLabel);
 
-        HBox metricsRow = new HBox(14);
+        HBox metricsRow = new HBox(12);
         metricsRow.setAlignment(Pos.CENTER_LEFT);
 
         weatherHumidityLabel = new Label("60%");
@@ -648,14 +670,14 @@ public class ActiveCustomerDashboardC {
 
         HBox alertBanner = new HBox(8);
         alertBanner.setAlignment(Pos.CENTER_LEFT);
-        alertBanner.setPadding(new Insets(8, 12, 8, 12));
+        alertBanner.setPadding(new Insets(10, 14, 10, 14));
         alertBanner.setStyle("-fx-background-color: #F8FAFC; -fx-border-color:" + BORDER + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
 
         FontIcon infoIco = new FontIcon("fas-exclamation-triangle");
-        infoIco.setIconSize(12);
+        infoIco.setIconSize(13);
         infoIco.setIconColor(Color.web(NAVY));
 
-        weatherAlertTextLabel = new Label("No alerts for today. Enjoy your day!");
+        weatherAlertTextLabel = new Label("No weather alerts for event date. Enjoy your day!");
         weatherAlertTextLabel.setStyle("-fx-font-size: 11px; -fx-text-fill:" + TEXT_DARK + ";");
         alertBanner.getChildren().addAll(infoIco, weatherAlertTextLabel);
 
@@ -666,12 +688,14 @@ public class ActiveCustomerDashboardC {
     private HBox createWeatherMetric(String iconLit, String colorHex, String labelText, Label valLabel) {
         HBox item = new HBox(6);
         item.setAlignment(Pos.CENTER_LEFT);
+        item.setPadding(new Insets(4, 8, 4, 8));
+        item.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 6px; -fx-background-radius: 6px;");
 
         FontIcon icon = new FontIcon(iconLit);
         icon.setIconSize(13);
         icon.setIconColor(Color.web(colorHex));
 
-        VBox texts = new VBox(0);
+        VBox texts = new VBox(1);
         Label l = new Label(labelText);
         l.setStyle("-fx-font-size: 9px; -fx-text-fill:" + TEXT_MUTED + ";");
         valLabel.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
@@ -771,7 +795,6 @@ public class ActiveCustomerDashboardC {
             upcomingEventGuestsLabel.setText("👥 " + guests + " Guests");
             upcomingEventStatusBadge.setText("Status : " + status);
 
-            // Live Real-Time Budget Overview Binding
             double eventBudget = 0.0;
             try {
                 String clean = latestUpcomingEvent.getBudget() != null ? latestUpcomingEvent.getBudget().replaceAll("[^0-9.]", "") : "0";
@@ -822,7 +845,28 @@ public class ActiveCustomerDashboardC {
         }).start();
     }
 
-    private void openCreateEvent() {
+    // =========================================================================
+    // 🌟 1. DRAFTS BUTTON ACTION (Directly resumes exact step)
+    // =========================================================================
+    private void openDraftsDirectly() {
+        if (ReviewPageC.EventData.hasActiveDraft()) {
+            ReviewPageC.EventData.resumeDraft(uid, idToken);
+        } else {
+            Alert a = new Alert(Alert.AlertType.INFORMATION);
+            a.setTitle("Drafts");
+            a.setHeaderText("No Saved Drafts");
+            a.setContentText("You do not have any unfinished event drafts.");
+            if (LandingPage.landingPageStage != null) {
+                a.initOwner(LandingPage.landingPageStage);
+            }
+            a.showAndWait();
+        }
+    }
+
+    // =========================================================================
+    // 🌟 2. CREATE EVENT BUTTON ACTION (Directly starts a fresh new event)
+    // =========================================================================
+    private void openCreateEventDirectly() {
         CreateEventC createView = new CreateEventC(uid, idToken);
         if (LandingPage.landingPageStage != null) {
             LandingPage.landingPageStage.setScene(createView.getCreateEventScene(this::returnToDashboard));
