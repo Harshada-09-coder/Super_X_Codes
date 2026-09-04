@@ -40,7 +40,6 @@ public class OrganizerController {
         return service.markOrganizerAsExisting(uid);
     }
 
-    // --- FETCH ONLY EVENTS ASSIGNED BY ADMIN TO THIS SPECIFIC ORGANIZER ---
     public List<Event> getAssignedEvents(String organizerId) {
         return eventService.getEventsByOrganizerId(organizerId);
     }
@@ -55,5 +54,10 @@ public class OrganizerController {
 
     public boolean rejectEventAssignment(String eventId) {
         return eventService.rejectEventAssignment(eventId);
+    }
+
+    // --- ORGANIZER BUDGET FINALIZATION & VENDOR SYNC ---
+    public boolean updateEventBudgetBreakdown(String eventId, double allocatedBudget, Map<String, Object> budgetMap) {
+        return eventService.updateEventBudgetBreakdown(eventId, allocatedBudget, budgetMap);
     }
 }

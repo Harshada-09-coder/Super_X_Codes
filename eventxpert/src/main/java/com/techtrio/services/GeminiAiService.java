@@ -120,7 +120,7 @@ public class GeminiAiService {
                     JSONArray arr = obj.getJSONArray("models");
                     for (int i = 0; i < arr.length(); i++) {
                         JSONObject m = arr.getJSONObject(i);
-                        String name = m.optString("name", ""); // e.g. "models/gemini-3.6-flash"
+                        String name = m.optString("name", "");
                         if (name.startsWith("models/")) {
                             name = name.replace("models/", "");
                         }
@@ -211,11 +211,17 @@ public class GeminiAiService {
 
         int guests = ReviewPageC.EventData.guests > 0 ? ReviewPageC.EventData.guests : 250;
 
-        String date = (ReviewPageC.EventData.eventDate != null && !ReviewPageC.EventData.eventDate.isBlank())
-                ? ReviewPageC.EventData.eventDate : "Upcoming";
+        String startDate = (ReviewPageC.EventData.startDate != null && !ReviewPageC.EventData.startDate.isBlank())
+                ? ReviewPageC.EventData.startDate : "Upcoming";
 
-        String time = (ReviewPageC.EventData.time != null && !ReviewPageC.EventData.time.isBlank())
-                ? ReviewPageC.EventData.time : "10:00 AM";
+        String endDate = (ReviewPageC.EventData.endDate != null && !ReviewPageC.EventData.endDate.isBlank())
+                ? ReviewPageC.EventData.endDate : startDate;
+
+        String startTime = (ReviewPageC.EventData.startTime != null && !ReviewPageC.EventData.startTime.isBlank())
+                ? ReviewPageC.EventData.startTime : "10:00 AM";
+
+        String endTime = (ReviewPageC.EventData.endTime != null && !ReviewPageC.EventData.endTime.isBlank())
+                ? ReviewPageC.EventData.endTime : "06:00 PM";
 
         String requirements = (ReviewPageC.EventData.requirements != null && !ReviewPageC.EventData.requirements.isBlank())
                 ? ReviewPageC.EventData.requirements : "Venue, Catering, Decoration, Sound, Photography";
@@ -241,8 +247,10 @@ public class GeminiAiService {
                 + "- Event Type / Theme: " + eventType + "\n"
                 + "- Category: " + category + "\n"
                 + "- Expected Guest Count: " + guests + "\n"
-                + "- Scheduled Date: " + date + "\n"
-                + "- Start Time: " + time + "\n"
+                + "- Start Date: " + startDate + "\n"
+                + "- End Date: " + endDate + "\n"
+                + "- Start Time: " + startTime + "\n"
+                + "- End Time: " + endTime + "\n"
                 + "- Requested Services: " + requirements + "\n"
                 + "- Location: " + area + ", " + city + "\n"
                 + "- Venue Type: " + venue + "\n"
@@ -357,8 +365,11 @@ public class GeminiAiService {
                 : ((ReviewPageC.EventData.eventType != null && !ReviewPageC.EventData.eventType.isBlank())
                 ? ReviewPageC.EventData.eventType : "Event");
 
-        String eDate = (ReviewPageC.EventData.eventDate != null && !ReviewPageC.EventData.eventDate.isBlank())
-                ? ReviewPageC.EventData.eventDate : "the selected date";
+        String startDate = (ReviewPageC.EventData.startDate != null && !ReviewPageC.EventData.startDate.isBlank())
+                ? ReviewPageC.EventData.startDate : "the selected date";
+        String endDate = (ReviewPageC.EventData.endDate != null && !ReviewPageC.EventData.endDate.isBlank())
+                ? ReviewPageC.EventData.endDate : startDate;
+        String eDate = startDate.equals(endDate) || endDate.isBlank() ? startDate : (startDate + " to " + endDate);
 
         String loc = (ReviewPageC.EventData.city != null && !ReviewPageC.EventData.city.isBlank())
                 ? ReviewPageC.EventData.city : "Pune";
@@ -376,7 +387,18 @@ public class GeminiAiService {
             plan.setTheme("Classic Elegance & Royalty");
         }
 
-        plan.setDuration("1 Day");
+        String duration = "1 Day";
+        if (!ReviewPageC.EventData.startDate.isBlank() && !ReviewPageC.EventData.endDate.isBlank()) {
+            try {
+                java.time.LocalDate s = java.time.LocalDate.parse(ReviewPageC.EventData.startDate.trim());
+                java.time.LocalDate e = java.time.LocalDate.parse(ReviewPageC.EventData.endDate.trim());
+                long days = java.time.temporal.ChronoUnit.DAYS.between(s, e) + 1;
+                if (days > 1) {
+                    duration = days + " Days";
+                }
+            } catch (Exception ignored) {}
+        }
+        plan.setDuration(duration);
         plan.setEstimatedTasks(38);
         plan.setRecommendedVendorsCount(16);
 

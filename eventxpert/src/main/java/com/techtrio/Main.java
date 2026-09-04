@@ -10,6 +10,5 @@ public class Main {
         FirebaseConfig.initializeFirebase();
 
         Application.launch(LandingPage.class, args);
-        
     }
-}
+}     

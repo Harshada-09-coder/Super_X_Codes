@@ -9,8 +9,8 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -23,6 +23,7 @@ import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.ListenerRegistration;
 import com.google.firebase.cloud.FirestoreClient;
+import com.techtrio.context.AdminContext;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
 import com.techtrio.model.Guest;
@@ -72,8 +73,8 @@ public class GuestManagementO {
     private Label lblTotalLimit;
     private Label lblCheckedIn;
     private Label lblRemaining;
-    private Label lblEventBreadcrumb;
     private Label lblEventSubtitle;
+    private Button btnSendPasses;
 
     // Side widgets & Live Scanner
     private ProgressBar pbEntryRate;
@@ -97,19 +98,20 @@ public class GuestManagementO {
     }
 
     public Scene getScene(Stage stage, Runnable backAction) {
-        return getScene(stage, null, backAction);
+        return getScene(stage, AdminContext.getSelectedEventId(), backAction);
     }
 
     public Scene getScene(Stage stage, String eventId, Runnable backAction) {
         this.backAction = backAction;
-        this.currentEventId = eventId;
+        this.currentEventId = (eventId != null && !eventId.isBlank()) ? eventId : AdminContext.getSelectedEventId();
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
 
-        root.setTop(createTopBar());
-        root.setLeft(createSidebar(stage));
+        // 1. Sidebar (Matched with My Events)
+        root.setLeft(createCommonOrganizerSidebar("My Events"));
 
+        // 2. Main Content inside ScrollPane (Top Bar Removed)
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -125,137 +127,163 @@ public class GuestManagementO {
         return new Scene(root, 1550, 785);
     }
 
-    private HBox createTopBar() {
-        HBox topBar = new HBox();
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setPadding(new Insets(12, 24, 12, 24));
-        topBar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
-        topBar.setSpacing(16);
-
-        HBox searchBox = new HBox(8);
-        searchBox.setAlignment(Pos.CENTER_LEFT);
-        searchBox.setPadding(new Insets(6, 14, 6, 14));
-        searchBox.setMaxWidth(480);
-        searchBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 20; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 20;");
-        HBox.setHgrow(searchBox, Priority.ALWAYS);
-
-        Label searchIcon = new Label("🔍");
-        TextField searchInput = new TextField();
-        searchInput.setPromptText("Search guests, events, or actions...");
-        searchInput.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 12px;");
-        HBox.setHgrow(searchInput, Priority.ALWAYS);
-
-        searchBox.getChildren().addAll(searchIcon, searchInput);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Button bellBtn = new Button("🔔");
-        bellBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-
-        Button helpBtn = new Button("❓");
-        helpBtn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-
-        Circle avatar = new Circle(16, Color.web(PRIMARY_BLUE));
-
-        topBar.getChildren().addAll(searchBox, spacer, bellBtn, helpBtn, avatar);
-        return topBar;
-    }
-
-    private VBox createSidebar(Stage stage) {
-        VBox sidebar = new VBox(10);
+    // ==========================================
+    // ORGANIZER SIDEBAR (My Events Highlighted)
+    // ==========================================
+    private VBox createCommonOrganizerSidebar(String activeTab) {
+        VBox sidebar = new VBox(6);
         sidebar.setPrefWidth(240);
-        sidebar.setStyle("-fx-background-color: " + NAVY + ";");
-        sidebar.setPadding(new Insets(20, 12, 20, 12));
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label brand = new Label("EventXpert");
-        brand.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
+        HBox brandBox = new HBox(8);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(0, 6, 12, 6));
 
-        VBox menu = new VBox(6);
-        menu.getChildren().add(createNavBtn("Dashboard", false, () -> goDashboard(stage)));
-        menu.getChildren().add(createNavBtn("Event Requests", false, () -> {
-            detachListener();
-            EventRequestsO view = new EventRequestsO(uid, idToken);
-            LandingPage.landingPageStage.setScene(view.geteventRequestsOScene(() -> goDashboard(stage)));
-        }));
-        menu.getChildren().add(createNavBtn("My Events", false, () -> {
-            detachListener();
-            MyEventsO view = new MyEventsO(uid, idToken);
-            LandingPage.landingPageStage.setScene(view.getMyEventsOScene(() -> goDashboard(stage)));
-        }));
-        menu.getChildren().add(createNavBtn("Guest Management", true, () -> {}));
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
 
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
+        VBox brandTexts = new VBox(1);
+        Label logo = new Label("EventXpert");
+        logo.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        Label portal = new Label("ORGANIZER PORTAL");
+        portal.setStyle("-fx-text-fill: " + LIGHT_BLUE + "; -fx-font-size: 9px; -fx-font-weight: bold;");
+        brandTexts.getChildren().addAll(logo, portal);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
 
-        VBox bottom = new VBox(6);
-        bottom.getChildren().add(createNavBtn("Notifications", false, () -> {
-            detachListener();
-            NotificationsO view = new NotificationsO(uid, idToken);
-            LandingPage.landingPageStage.setScene(view.getNotificationScene());
-        }));
-        bottom.getChildren().add(createNavBtn("Settings", false, () -> {
-            detachListener();
-            SettingsO view = new SettingsO(uid, idToken);
-            LandingPage.landingPageStage.setScene(view.getSettingScene(() -> goDashboard(stage)));
-        }));
-        bottom.getChildren().add(createNavBtn("Profile", false, () -> {
-            detachListener();
-            ProfileO view = new ProfileO(uid, idToken);
-            LandingPage.landingPageStage.setScene(view.getProfileScene());
-        }));
+        VBox menu = new VBox(3);
+        String[][] menuItems = {
+                {"Dashboard", "fas-tachometer-alt"},
+                {"Event Requests", "fas-inbox"},
+                {"My Events", "fas-calendar-check"},
+                {"Schedule", "fas-calendar-alt"}
+        };
 
-        sidebar.getChildren().addAll(brand, new Separator(), menu, spacer, bottom);
+        for (String[] item : menuItems) {
+            String name = item[0];
+            String iconLit = item[1];
+            menu.getChildren().add(createSidebarButton(name, iconLit, name.equals(activeTab), () -> handleNav(name)));
+        }
+
+        Region space = new Region();
+        VBox.setVgrow(space, Priority.ALWAYS);
+
+        VBox bottomMenu = new VBox(3);
+        bottomMenu.getChildren().addAll(
+                createSidebarButton("Notifications", "fas-bell", false, () -> handleNav("Notifications")),
+                createSidebarButton("Profile", "fas-user", false, () -> handleNav("Profile")),
+                createSidebarButton("Settings", "fas-cog", false, () -> handleNav("Settings")),
+                createSidebarButton("Support", "fas-question-circle", false, () -> handleNav("Support"))
+        );
+
+        sidebar.getChildren().addAll(brandBox, menu, space, bottomMenu);
         return sidebar;
     }
 
-    private Button createNavBtn(String title, boolean active, Runnable action) {
-        Button b = new Button(title);
-        b.setMaxWidth(Double.MAX_VALUE);
-        b.setAlignment(Pos.CENTER_LEFT);
-        b.setStyle(active ? "-fx-background-color: #EAF3FF; -fx-text-fill: #0B4EA2; -fx-font-weight: bold; -fx-padding: 8 12; -fx-background-radius: 6px;"
-                : "-fx-background-color: transparent; -fx-text-fill: white; -fx-padding: 8 12; -fx-cursor: hand;");
-        if (action != null) b.setOnAction(e -> action.run());
-        return b;
+    private Button createSidebarButton(String name, String iconLit, boolean active, Runnable action) {
+        Button btn = new Button("  " + name);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (active) {
+            btn.setStyle("-fx-background-color:" + LIGHT_BLUE + ";-fx-text-fill:" + NAVY + ";-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:6;");
+        } else {
+            btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-cursor:hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color:rgba(255,255,255,0.08);-fx-text-fill:white;-fx-font-size:12px;-fx-background-radius:6;-fx-cursor:hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;"));
+        }
+
+        if (action != null) btn.setOnAction(e -> action.run());
+        return btn;
+    }
+
+    private void handleNav(String screen) {
+        detachListener();
+        switch (screen) {
+            case "Dashboard":
+                OrganizerDashboardO dash = new OrganizerDashboardO(uid, idToken);
+                LandingPage.landingPageStage.setScene(dash.getorganizerDashboardScene(null));
+                break;
+            case "Event Requests":
+                EventRequestsO reqs = new EventRequestsO(uid, idToken);
+                LandingPage.landingPageStage.setScene(reqs.geteventRequestsOScene(null));
+                break;
+            case "My Events":
+                handleBack(LandingPage.landingPageStage);
+                break;
+            case "Schedule":
+                ScheduleO sched = new ScheduleO();
+                LandingPage.landingPageStage.setScene(sched.getScene(LandingPage.landingPageStage, null));
+                break;
+            case "Notifications":
+                NotificationsO notif = new NotificationsO(uid, idToken);
+                LandingPage.landingPageStage.setScene(notif.getNotificationScene());
+                break;
+            case "Profile":
+                ProfileO prof = new ProfileO(uid, idToken);
+                LandingPage.landingPageStage.setScene(prof.getProfileScene());
+                break;
+            case "Settings":
+                SettingsO set = new SettingsO(uid, idToken);
+                LandingPage.landingPageStage.setScene(set.getSettingScene(null));
+                break;
+            case "Support":
+                SupportO supp = new SupportO(uid, idToken);
+                LandingPage.landingPageStage.setScene(supp.getSupportOScene(null));
+                break;
+        }
     }
 
     private VBox createMainContent(Stage stage) {
-        VBox mainBox = new VBox(20);
+        VBox mainBox = new VBox(18);
         mainBox.setPadding(new Insets(24, 30, 30, 30));
 
-        // Breadcrumbs & Title Row
-        VBox titleBox = new VBox(4);
-        lblEventBreadcrumb = new Label("My Events  >  Loading Event...  >  Guest Management");
-        lblEventBreadcrumb.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        // Breadcrumbs
+        HBox breadcrumbs = new HBox(8);
+        breadcrumbs.setAlignment(Pos.CENTER_LEFT);
 
-        HBox tRow = new HBox(10);
+        Label bc1 = new Label("← Back to Event Planning");
+        bc1.setStyle("-fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-cursor: hand;");
+        bc1.setOnMouseClicked(e -> handleBack(stage));
+        breadcrumbs.getChildren().add(bc1);
+
+        HBox tRow = new HBox(12);
         tRow.setAlignment(Pos.CENTER_LEFT);
 
         Label title = new Label("Guest Management & QR Check-In");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
-        Label statusBadge = new Label("Live Check-in Active");
-        statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 12px;");
+        Label statusBadge = new Label("LIVE CHECK-IN ACTIVE");
+        statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 12px;");
 
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        Button sendAllPassesBtn = new Button("📧  Send QR Passes to All");
-        sendAllPassesBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 6px; -fx-cursor: hand;");
-        sendAllPassesBtn.setOnAction(e -> handleSendQrPassesToAll());
+        // Dynamic Send Passes Button
+        btnSendPasses = new Button("📧  Send QR Passes to All");
+        btnSendPasses.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 7 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        btnSendPasses.setOnAction(e -> handleSendQrPassesToAll());
 
         Button addGuestBtn = new Button("+ Add Guest");
-        addGuestBtn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        addGuestBtn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 7 16; -fx-background-radius: 6px; -fx-cursor: hand;");
         addGuestBtn.setOnAction(e -> handleAddGuestDialog());
 
-        tRow.getChildren().addAll(title, statusBadge, headerSpacer, sendAllPassesBtn, addGuestBtn);
+        tRow.getChildren().addAll(title, statusBadge, headerSpacer, btnSendPasses, addGuestBtn);
 
-        lblEventSubtitle = new Label("Manage live guest attendance and QR-based entrance verification.");
-        lblEventSubtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        lblEventSubtitle = new Label("Manage live attendee verification and instant check-in.");
+        lblEventSubtitle.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        titleBox.getChildren().addAll(lblEventBreadcrumb, tRow, lblEventSubtitle);
-
-        // Top 4 Entry Metric Cards Row (NO RSVP)
+        // Top 4 Entry Metric Cards Row
         HBox summaryRow = new HBox(14);
         lblEntryMode = new Label("Individual Guest List");
         lblTotalLimit = new Label("0");
@@ -263,14 +291,14 @@ public class GuestManagementO {
         lblRemaining = new Label("0");
 
         summaryRow.getChildren().addAll(
-            createStatCard("ENTRY MODE 🏁", lblEntryMode, PRIMARY_BLUE),
-            createStatCard("GUEST LIMIT / CAPACITY 👥", lblTotalLimit, TEXT_MAIN),
-            createStatCard("CHECKED IN 🎟️", lblCheckedIn, GREEN_TEXT),
-            createStatCard("REMAINING ENTRIES ⌛", lblRemaining, YELLOW_TEXT)
+            createStatCard("ENTRY MODE", lblEntryMode, "fas-flag", PRIMARY_BLUE),
+            createStatCard("GUEST LIMIT / CAPACITY", lblTotalLimit, "fas-users", TEXT_MAIN),
+            createStatCard("CHECKED IN", lblCheckedIn, "fas-check-circle", GREEN_TEXT),
+            createStatCard("REMAINING ENTRIES", lblRemaining, "fas-hourglass-half", YELLOW_TEXT)
         );
 
         // Main 2-Column Split Grid
-        HBox bodyGrid = new HBox(20);
+        HBox bodyGrid = new HBox(18);
 
         // Left Column: Guest Roster / Live Entry Card
         VBox leftCol = new VBox(16);
@@ -290,22 +318,30 @@ public class GuestManagementO {
 
         bodyGrid.getChildren().addAll(leftCol, rightCol);
 
-        mainBox.getChildren().addAll(titleBox, summaryRow, bodyGrid);
+        mainBox.getChildren().addAll(breadcrumbs, tRow, lblEventSubtitle, summaryRow, bodyGrid);
         return mainBox;
     }
 
-    private VBox createStatCard(String title, Label valLabel, String valColor) {
+    private VBox createStatCard(String title, Label valLabel, String iconLit, String valColor) {
         VBox card = new VBox(6);
         card.setPadding(new Insets(14, 16, 14, 16));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
         HBox.setHgrow(card, Priority.ALWAYS);
 
+        HBox top = new HBox(6);
+        top.setAlignment(Pos.CENTER_LEFT);
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(11);
+        icon.setIconColor(Color.web(SECONDARY_TEXT));
+
         Label t = new Label(title);
         t.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        top.getChildren().addAll(icon, t);
 
         valLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + valColor + ";");
 
-        card.getChildren().addAll(t, valLabel);
+        card.getChildren().addAll(top, valLabel);
         return card;
     }
 
@@ -317,8 +353,8 @@ public class GuestManagementO {
         HBox topHeader = new HBox();
         topHeader.setAlignment(Pos.CENTER_LEFT);
 
-        Label title = new Label("Guest Roster & Check-In");
-        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        Label title = new Label("Live Guest Roster");
+        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -328,15 +364,19 @@ public class GuestManagementO {
         searchBox.setPadding(new Insets(6, 12, 6, 12));
         searchBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px;");
 
+        FontIcon searchIcon = new FontIcon("fas-search");
+        searchIcon.setIconSize(11);
+        searchIcon.setIconColor(Color.web(SECONDARY_TEXT));
+
         filterInput = new TextField();
         filterInput.setPromptText("Search guest by name or mobile...");
         filterInput.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 12px; -fx-pref-width: 200px;");
         filterInput.textProperty().addListener((obs, oldVal, newVal) -> filterGuestList(newVal));
-        searchBox.getChildren().addAll(new Label("🔍"), filterInput);
+        searchBox.getChildren().addAll(searchIcon, filterInput);
 
         topHeader.getChildren().addAll(title, spacer, searchBox);
 
-        // Table Header Row (NO RSVP)
+        // Table Header Row
         GridPane tableHeader = new GridPane();
         tableHeader.setPadding(new Insets(8, 12, 8, 12));
         tableHeader.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 6px;");
@@ -365,22 +405,24 @@ public class GuestManagementO {
         rosterTableContainer.getChildren().clear();
 
         if (currentEvent != null && "QR_ONLY".equalsIgnoreCase(currentEvent.getGuestMode())) {
+            int dynamicLimit = currentEvent.getGuestLimit() > 0 ? currentEvent.getGuestLimit() : (currentEvent.getGuests() > 0 ? currentEvent.getGuests() : 250);
+
             VBox qrNotice = new VBox(12);
             qrNotice.setAlignment(Pos.CENTER);
             qrNotice.setPadding(new Insets(30));
             qrNotice.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-radius: 8px;");
 
-            Label l1 = new Label("🏁 Single Event QR Entry Mode Active");
-            l1.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+            Label l1 = new Label("Single Event QR Entry Mode Active");
+            l1.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
-            Label l2 = new Label("Individual guest names are not required. Attendees can scan the Event Pass for instant check-in up to " + currentEvent.getGuestLimit() + " entries.");
+            Label l2 = new Label("Individual guest registration is not required. Attendees can present the Event QR Pass for entry up to " + dynamicLimit + " capacity.");
             l2.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-            Button btnViewEventQr = new Button("👁 View & Download Event QR");
+            Button btnViewEventQr = new Button("View & Download Event QR");
             btnViewEventQr.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 6px; -fx-cursor: hand;");
             btnViewEventQr.setOnAction(e -> {
                 String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), currentEvent.getQrToken());
-                showQrPreviewDialog(currentEvent.getEventName(), payload);
+                showInSceneQrDialog(currentEvent.getEventName(), payload);
             });
 
             qrNotice.getChildren().addAll(l1, l2, btnViewEventQr);
@@ -392,7 +434,7 @@ public class GuestManagementO {
             VBox empty = new VBox(12);
             empty.setAlignment(Pos.CENTER);
             empty.setPadding(new Insets(30));
-            empty.getChildren().add(new Label("No guests found."));
+            empty.getChildren().add(new Label("No guests registered yet."));
             rosterTableContainer.getChildren().add(empty);
             return;
         }
@@ -464,17 +506,25 @@ public class GuestManagementO {
                     : "-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 4 8; -fx-background-radius: 4px; -fx-cursor: hand;");
             btnCheckIn.setOnAction(e -> performManualCheckIn(item));
 
-            Button btnViewQr = new Button("👁");
+            Button btnViewQr = new Button();
+            FontIcon eyeIco = new FontIcon("fas-eye");
+            eyeIco.setIconSize(11);
+            eyeIco.setIconColor(Color.web(PRIMARY_BLUE));
+            btnViewQr.setGraphic(eyeIco);
             btnViewQr.setTooltip(new Tooltip("View & Download QR Pass"));
-            btnViewQr.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-font-size: 10px; -fx-padding: 4 8; -fx-background-radius: 4px; -fx-cursor: hand;");
+            btnViewQr.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-padding: 4 8; -fx-background-radius: 4px; -fx-cursor: hand;");
             btnViewQr.setOnAction(e -> {
                 String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), item.getId());
-                showQrPreviewDialog(item.getName(), payload);
+                showInSceneQrDialog(item.getName(), payload);
             });
 
-            Button btnEmail = new Button("✉");
+            Button btnEmail = new Button();
+            FontIcon envIco = new FontIcon("fas-envelope");
+            envIco.setIconSize(11);
+            envIco.setIconColor(Color.web(PRIMARY_BLUE));
+            btnEmail.setGraphic(envIco);
             btnEmail.setTooltip(new Tooltip("Send QR Pass via Email"));
-            btnEmail.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-font-size: 10px; -fx-padding: 4 8; -fx-background-radius: 4px; -fx-cursor: hand;");
+            btnEmail.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-padding: 4 8; -fx-background-radius: 4px; -fx-cursor: hand;");
             btnEmail.setOnAction(e -> handleSendSingleQrPass(item));
 
             actions.getChildren().addAll(btnCheckIn, btnViewQr, btnEmail);
@@ -503,14 +553,24 @@ public class GuestManagementO {
         card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-border-color: " + BRIGHT_BLUE + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
-        HBox header = new HBox();
-        Label title = new Label("((•)) Live Entry Scanner");
+        HBox header = new HBox(6);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        FontIcon scanIco = new FontIcon("fas-qrcode");
+        scanIco.setIconSize(14);
+        scanIco.setIconColor(Color.web(PRIMARY_BLUE));
+
+        Label title = new Label("Live Entry Scanner");
         title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
         Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
         Label liveDot = new Label("● LIVE"); liveDot.setStyle("-fx-text-fill: " + RED_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold;");
-        header.getChildren().addAll(title, spacer, liveDot);
+        header.getChildren().addAll(scanIco, title, spacer, liveDot);
 
-        Button camBtn = new Button("📷 Open Camera Scanner");
+        Button camBtn = new Button("  Open Camera Scanner");
+        FontIcon camIco = new FontIcon("fas-camera");
+        camIco.setIconSize(12);
+        camIco.setIconColor(Color.WHITE);
+        camBtn.setGraphic(camIco);
         camBtn.setMaxWidth(Double.MAX_VALUE);
         camBtn.setStyle("-fx-background-color: #0B4EA2; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 8; -fx-background-radius: 6; -fx-cursor: hand;");
         camBtn.setOnAction(e -> {
@@ -520,12 +580,12 @@ public class GuestManagementO {
             });
         });
 
-        Label prompt = new Label("Scan attendee QR or enter payload:");
+        Label prompt = new Label("Scan attendee QR or enter code:");
         prompt.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         HBox scanInputBox = new HBox(6);
         txtScannerInput = new TextField();
-        txtScannerInput.setPromptText("EVENTXPERT:event_id:token or Mobile...");
+        txtScannerInput.setPromptText("Scan code or mobile...");
         txtScannerInput.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-size: 11px;");
         HBox.setHgrow(txtScannerInput, Priority.ALWAYS);
 
@@ -548,8 +608,8 @@ public class GuestManagementO {
         card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
-        Label title = new Label("Attendance / Entry Rate");
-        title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        Label title = new Label("Attendance Rate");
+        title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
         HBox rateRow = new HBox();
         rateRow.setAlignment(Pos.CENTER_LEFT);
@@ -578,10 +638,10 @@ public class GuestManagementO {
         card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
-        Label title = new Label("🏁 QR Configuration");
-        title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        Label title = new Label("QR Database Sync");
+        title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
-        Label pLabel = new Label("Entry Token: Protected & Enforced in Database");
+        Label pLabel = new Label("Real-time Firestore Token Security Active");
         pLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         Button genBtn = new Button("🔄 Refresh Live Roster");
@@ -594,68 +654,62 @@ public class GuestManagementO {
     }
 
     // ==========================================
-    // QR CODE PREVIEW & DOWNLOAD DIALOG
+    // IN-SCENE POPUP DIALOG (No Standalone Window & No Payload String)
     // ==========================================
-    private void showQrPreviewDialog(String guestName, String payload) {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("Entry Pass QR - " + guestName);
+    private void showInSceneQrDialog(String guestName, String payload) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("QR Pass");
+        dialog.setHeaderText(null);
+        if (LandingPage.landingPageStage != null) {
+            dialog.initOwner(LandingPage.landingPageStage);
+        }
 
-        VBox root = new VBox(14);
-        root.setAlignment(Pos.CENTER);
-        root.setPadding(new Insets(24));
-        root.setStyle("-fx-background-color: white; -fx-border-color: #CBD5E1; -fx-border-radius: 10px;");
+        VBox content = new VBox(14);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(16));
+        content.setStyle("-fx-background-color: white;");
 
-        Label title = new Label("🎟 Entry Pass QR Code");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #062A60;");
+        Label title = new Label("Entry Pass QR Code");
+        title.setStyle("-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #062A60;");
 
         Label sub = new Label("Guest: " + guestName + "\nEvent: " + (currentEvent != null ? currentEvent.getEventName() : "Event"));
         sub.setStyle("-fx-font-size: 12px; -fx-text-fill: #52677D; -fx-text-alignment: center;");
 
-        // QR Image तयार करणे
-        javafx.scene.image.WritableImage qrImg = QRCodeUtil.generateQrImage(payload, 240, 240);
+        // QR Image
+        javafx.scene.image.WritableImage qrImg = QRCodeUtil.generateQrImage(payload, 220, 220);
         javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView(qrImg);
-        imgView.setStyle("-fx-border-color: #0B4EA2; -fx-border-width: 1px; -fx-padding: 6;");
-
-        Label payloadLbl = new Label("Payload: " + payload);
-        payloadLbl.setStyle("-fx-font-size: 10px; -fx-text-fill: #94A3B8;");
+        imgView.setStyle("-fx-border-color: #0B4EA2; -fx-border-width: 1px; -fx-padding: 4;");
 
         // Download Button
-        Button btnDownload = new Button("📥 Download QR PNG");
-        btnDownload.setStyle("-fx-background-color: #0B4EA2; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 18; -fx-background-radius: 6; -fx-cursor: hand;");
+        Button btnDownload = new Button("📥 Download PNG");
+        btnDownload.setStyle("-fx-background-color: #0B4EA2; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 8 18; -fx-background-radius: 6; -fx-cursor: hand;");
         btnDownload.setOnAction(e -> {
             FileChooser chooser = new FileChooser();
             chooser.setTitle("Save QR Code");
             chooser.setInitialFileName(guestName.replaceAll("\\s+", "_") + "_QR.png");
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Image", "*.png"));
-            File file = chooser.showSaveDialog(dialog);
+            File file = chooser.showSaveDialog(dialog.getDialogPane().getScene().getWindow());
             if (file != null) {
                 try {
-                    BufferedImage bImage = new BufferedImage(240, 240, BufferedImage.TYPE_INT_ARGB);
-                    for (int x = 0; x < 240; x++) {
-                        for (int y = 0; y < 240; y++) {
+                    BufferedImage bImage = new BufferedImage(220, 220, BufferedImage.TYPE_INT_ARGB);
+                    for (int x = 0; x < 220; x++) {
+                        for (int y = 0; y < 220; y++) {
                             bImage.setRGB(x, y, qrImg.getPixelReader().getArgb(x, y));
                         }
                     }
                     ImageIO.write(bImage, "png", file);
-                    new Alert(Alert.AlertType.INFORMATION, "QR Code saved successfully to: " + file.getAbsolutePath(), ButtonType.OK).showAndWait();
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "QR Code saved successfully to: " + file.getName(), ButtonType.OK);
+                    alert.initOwner(dialog.getDialogPane().getScene().getWindow());
+                    alert.showAndWait();
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
             }
         });
 
-        Button btnClose = new Button("Close");
-        btnClose.setStyle("-fx-background-color: #E2E8F0; -fx-text-fill: #334155; -fx-font-weight: bold; -fx-padding: 6 16; -fx-background-radius: 6; -fx-cursor: hand;");
-        btnClose.setOnAction(e -> dialog.close());
-
-        HBox btnRow = new HBox(10, btnDownload, btnClose);
-        btnRow.setAlignment(Pos.CENTER);
-
-        root.getChildren().addAll(title, sub, imgView, payloadLbl, btnRow);
-
-        Scene scene = new Scene(root, 360, 440);
-        dialog.setScene(scene);
+        content.getChildren().addAll(title, sub, imgView, btnDownload);
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
         dialog.showAndWait();
     }
 
@@ -688,9 +742,7 @@ public class GuestManagementO {
                     Event ev = snapshot.toObject(Event.class);
                     if (ev != null) {
                         this.currentEvent = ev;
-                        Platform.runLater(() -> {
-                            updateUIWithRealtimeEvent(ev);
-                        });
+                        Platform.runLater(() -> updateUIWithRealtimeEvent(ev));
                     }
                 });
 
@@ -701,9 +753,6 @@ public class GuestManagementO {
     }
 
     private void updateUIWithRealtimeEvent(Event ev) {
-        lblEventBreadcrumb.setText("My Events  >  " + (ev.getEventName() != null ? ev.getEventName() : "Event") + "  >  Guest Management");
-        lblEventSubtitle.setText("Manage live guest attendance and QR-based entrance verification for " + ev.getEventName());
-
         int limit = ev.getGuestLimit() > 0 ? ev.getGuestLimit() : (ev.getGuests() > 0 ? ev.getGuests() : 250);
         int checked = ev.getCheckedInCount();
         int remaining = Math.max(0, limit - checked);
@@ -714,8 +763,10 @@ public class GuestManagementO {
 
         if ("QR_ONLY".equalsIgnoreCase(ev.getGuestMode())) {
             lblEntryMode.setText("Single Event QR");
+            if (btnSendPasses != null) btnSendPasses.setText("📧  Send Event QR");
         } else {
             lblEntryMode.setText("Individual Guest List");
+            if (btnSendPasses != null) btnSendPasses.setText("📧  Send QR Passes to All");
         }
 
         double rate = limit > 0 ? ((double) checked / limit) : 0.0;
@@ -750,7 +801,6 @@ public class GuestManagementO {
     // ==========================================
     // CHECK-IN & SCANNER LOGIC
     // ==========================================
-
     private void handleVerifyScan() {
         String input = txtScannerInput.getText().trim();
         if (input.isEmpty() || currentEvent == null) return;
@@ -765,7 +815,7 @@ public class GuestManagementO {
                     GuestService.CheckInResult result = guestService.processQREntryCheckIn(currentEvent.getEventId(), token);
                     Platform.runLater(() -> {
                         if (result.isSuccess()) {
-                            lblScanResult.setText("Entry Allowed ✓ (" + result.getCurrentCheckedIn() + "/" + currentEvent.getGuestLimit() + ")");
+                            lblScanResult.setText("Entry Allowed ✓ (" + result.getCurrentCheckedIn() + " / " + currentEvent.getGuestLimit() + ")");
                             lblScanResult.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + GREEN_TEXT + ";");
                         } else {
                             lblScanResult.setText("Entry Denied ✕ " + result.getMessage());
@@ -778,9 +828,13 @@ public class GuestManagementO {
             }).start();
 
         } else {
+            // Manual Mode: Exact Match by ID, Mobile, or Scanned Payload
             Guest target = null;
             for (Guest g : currentGuestList) {
-                if (g.getId().equalsIgnoreCase(input) || (g.getMobile() != null && g.getMobile().equalsIgnoreCase(input))) {
+                if (g.getId().equalsIgnoreCase(input) || 
+                    input.endsWith(g.getId()) || 
+                    (g.getMobile() != null && g.getMobile().equalsIgnoreCase(input)) ||
+                    (g.getEmail() != null && g.getEmail().equalsIgnoreCase(input))) {
                     target = g;
                     break;
                 }
@@ -803,6 +857,9 @@ public class GuestManagementO {
                 GuestService.CheckInResult result = guestService.checkInManualGuest(currentEvent.getEventId(), guest.getId());
                 Platform.runLater(() -> {
                     if (result.isSuccess()) {
+                        guest.setCheckedIn(true);
+                        guest.setCheckInTime(System.currentTimeMillis());
+                        renderRosterRows();
                         lblScanResult.setText("Checked In: " + guest.getName() + " ✓");
                         lblScanResult.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + GREEN_TEXT + ";");
                     } else {
@@ -819,6 +876,7 @@ public class GuestManagementO {
     private void handleSendSingleQrPass(Guest guest) {
         if (guest.getEmail() == null || guest.getEmail().isBlank()) {
             Alert alert = new Alert(Alert.AlertType.WARNING, "This guest does not have an email address.", ButtonType.OK);
+            alert.initOwner(LandingPage.landingPageStage);
             alert.showAndWait();
             return;
         }
@@ -836,6 +894,7 @@ public class GuestManagementO {
             Platform.runLater(() -> {
                 Alert a = new Alert(sent ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR,
                         sent ? "QR Pass sent successfully to " + guest.getEmail() : "Failed to send QR pass.", ButtonType.OK);
+                a.initOwner(LandingPage.landingPageStage);
                 a.showAndWait();
             });
         }).start();
@@ -853,7 +912,11 @@ public class GuestManagementO {
                 String customerEmail = (profile != null && profile.getEmail() != null) ? profile.getEmail() : UserSession.getUserEmail();
 
                 if (customerEmail == null || customerEmail.isBlank()) {
-                    Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, "Customer email not found for this event.").showAndWait());
+                    Platform.runLater(() -> {
+                        Alert a = new Alert(Alert.AlertType.WARNING, "Customer email not found for this event.");
+                        a.initOwner(LandingPage.landingPageStage);
+                        a.showAndWait();
+                    });
                     return;
                 }
 
@@ -869,7 +932,8 @@ public class GuestManagementO {
 
                 Platform.runLater(() -> {
                     Alert a = new Alert(sent ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR,
-                            sent ? "Single Event QR Pass sent successfully to Customer (" + customerEmail + ")!" : "Failed to send QR email.", ButtonType.OK);
+                            sent ? "Event QR Pass sent successfully to Customer (" + customerEmail + ")!" : "Failed to send QR email.", ButtonType.OK);
+                    a.initOwner(LandingPage.landingPageStage);
                     a.showAndWait();
                 });
             }).start();
@@ -883,6 +947,7 @@ public class GuestManagementO {
         }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Send individual QR Entry Passes to all " + currentGuestList.size() + " guests via email?", ButtonType.YES, ButtonType.NO);
+        confirm.initOwner(LandingPage.landingPageStage);
         confirm.showAndWait();
         if (confirm.getResult() == ButtonType.YES) {
             new Thread(() -> {
@@ -903,7 +968,9 @@ public class GuestManagementO {
                 }
                 final int finalCount = count;
                 Platform.runLater(() -> {
-                    new Alert(Alert.AlertType.INFORMATION, "QR Entry Passes sent to " + finalCount + " guests!", ButtonType.OK).showAndWait();
+                    Alert a = new Alert(Alert.AlertType.INFORMATION, "QR Entry Passes sent to " + finalCount + " guests!", ButtonType.OK);
+                    a.initOwner(LandingPage.landingPageStage);
+                    a.showAndWait();
                 });
             }).start();
         }
@@ -913,6 +980,7 @@ public class GuestManagementO {
         Dialog<Guest> dialog = new Dialog<>();
         dialog.setTitle("Add New Guest");
         dialog.setHeaderText("Add attendee to live event roster");
+        if (LandingPage.landingPageStage != null) dialog.initOwner(LandingPage.landingPageStage);
 
         ButtonType addBtnType = new ButtonType("Add Guest", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(addBtnType, ButtonType.CANCEL);
@@ -947,16 +1015,36 @@ public class GuestManagementO {
         result.ifPresent(newGuest -> {
             if (currentEvent != null) {
                 currentEvent.getGuestList().add(newGuest);
-                currentEvent.setGuestLimit(currentEvent.getGuestList().size());
+                int newLimit = currentEvent.getGuestList().size();
+                currentEvent.setGuestLimit(newLimit);
+
+                // Update UI instantly
+                currentGuestList.add(newGuest);
+                filterGuestList(filterInput != null ? filterInput.getText() : "");
+                lblTotalLimit.setText(String.valueOf(newLimit));
+                lblRemaining.setText(String.valueOf(Math.max(0, newLimit - currentEvent.getCheckedInCount())));
+
+                // Update in Firestore
                 new Thread(() -> {
                     try {
                         FirestoreClient.getFirestore().collection("events")
                                 .document(currentEvent.getEventId())
-                                .update("guestList", currentEvent.getGuestList(), "guestLimit", currentEvent.getGuestLimit());
+                                .update("guestList", currentEvent.getGuestList(), "guestLimit", newLimit);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }).start();
+
+                // विचारणा: नवीन पाहुण्याला ईमेल पाठवायचा का?
+                if (newGuest.getEmail() != null && !newGuest.getEmail().isBlank()) {
+                    Alert sendPassConfirm = new Alert(Alert.AlertType.CONFIRMATION, "Send QR Entry Pass to " + newGuest.getName() + " (" + newGuest.getEmail() + ") now?", ButtonType.YES, ButtonType.NO);
+                    sendPassConfirm.initOwner(LandingPage.landingPageStage);
+                    sendPassConfirm.showAndWait().ifPresent(ans -> {
+                        if (ans == ButtonType.YES) {
+                            handleSendSingleQrPass(newGuest);
+                        }
+                    });
+                }
             }
         });
     }
@@ -965,6 +1053,16 @@ public class GuestManagementO {
         if (firestoreListener != null) {
             firestoreListener.remove();
             firestoreListener = null;
+        }
+    }
+
+    private void handleBack(Stage stage) {
+        detachListener();
+        if (backAction != null) {
+            backAction.run();
+        } else {
+            ViewEventO view = new ViewEventO(uid, idToken);
+            LandingPage.landingPageStage.setScene(view.getScene(stage, () -> goDashboard(stage)));
         }
     }
 

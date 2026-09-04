@@ -13,6 +13,7 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
+import com.google.firebase.cloud.FirestoreClient;
 import com.techtrio.firebase.FirebaseConfig;
 import com.techtrio.model.Event;
 import com.techtrio.model.OrganizerProfile;
@@ -354,5 +355,22 @@ public class EventService {
             e.printStackTrace();
         }
         return list;
+    }
+    public boolean updateEventBudgetBreakdown(String eventId, double allocatedBudget, Map<String, Object> budgetMap) {
+        if (eventId == null || eventId.isBlank()) return false;
+        try {
+            Firestore db = FirestoreClient.getFirestore();
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("allocatedBudget", allocatedBudget);
+            updates.put("budgetRecommendation", budgetMap);
+            updates.put("budgetOptimizationStatus", "FINALIZED");
+            
+            db.collection("events").document(eventId.trim()).update(updates).get();
+            System.out.println("✅ Budget breakdown updated in Firestore for event: " + eventId);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
