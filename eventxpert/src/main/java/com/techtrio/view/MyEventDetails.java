@@ -1,12 +1,20 @@
 package com.techtrio.view;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
 import com.techtrio.controller.CustomerController;
 import com.techtrio.controller.CustomerEventController;
+import com.techtrio.firebase.FirebaseConfig;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
+import com.techtrio.services.PaymentService;
+import com.techtrio.services.RazorpayServices;
 import com.techtrio.session.UserSession;
+import com.techtrio.util.OtpHelper;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import javafx.application.Platform;
@@ -36,7 +44,7 @@ public class MyEventDetails {
     private static final String TEXT_MUTED = "#64748B";
     private static final String BORDER = "#E2E8F0";
 
-    // Dynamic UI Labels (Real-time Database Data)
+    // Dynamic UI Labels
     private Label eventTitleLabel;
     private Label eventTypeBadge;
     private Label eventIdLabel;
@@ -50,6 +58,12 @@ public class MyEventDetails {
     private Label userNameLabel;
     private Label userEmailLabel;
     private Label statusBadgeLabel;
+    
+    // ⭐ Pay Now Button
+    private Button btnPayNow;
+    
+    // ⭐ Event Paid Amount लोकल व्हेरिएबल (Event मॉडेलवर अवलंबून न राहण्यासाठी)
+    private double eventPaidAmount = 0.0;
 
     private BorderPane rootPane;
 
@@ -185,7 +199,7 @@ public class MyEventDetails {
         VBox page = new VBox(16);
         page.setPadding(new Insets(24, 32, 32, 32));
 
-        HBox headerRow = new HBox(12);
+        HBox headerRow = new HBox(14);
         headerRow.setAlignment(Pos.CENTER_LEFT);
 
         Hyperlink backLink = new Hyperlink("← Back to My Events");
@@ -210,12 +224,31 @@ public class MyEventDetails {
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
 
-        statusBadgeLabel = new Label("Planning");
-        statusBadgeLabel.setStyle("-fx-background-color: #FEF3C7; -fx-text-fill: #B45309; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 5 12; -fx-background-radius: 6px;");
+        // ⭐ PAY NOW BUTTON
+        btnPayNow = new Button("Pay Now");
+        FontIcon payIcon = new FontIcon("fas-credit-card");
+        payIcon.setIconSize(14);
+        payIcon.setIconColor(Color.WHITE);
+        btnPayNow.setGraphic(payIcon);
+        btnPayNow.setStyle("-fx-background-color: #16A34A; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 7 20; -fx-background-radius: 6px; -fx-cursor: hand;");
+        btnPayNow.setOnMouseEntered(e -> btnPayNow.setStyle("-fx-background-color: #15803D; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 7 20; -fx-background-radius: 6px; -fx-cursor: hand;"));
+        btnPayNow.setOnMouseExited(e -> btnPayNow.setStyle("-fx-background-color: #16A34A; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 7 20; -fx-background-radius: 6px; -fx-cursor: hand;"));
+        btnPayNow.setOnAction(e -> handlePayNowAction());
 
-        headerRow.getChildren().addAll(backLink, new Label("|"), titleCol, sp, statusBadgeLabel);
+        // Approved तपासणे
+        String currentEvtStatus = (event != null && event.getStatus() != null) ? event.getStatus() : "";
+        boolean isInitialApproved = isStatusApproved(currentEvtStatus);
+        btnPayNow.setVisible(isInitialApproved);
+        btnPayNow.setManaged(isInitialApproved);
 
-        // ⭐ 5 Top Cards Arranged with "Progress" Card
+        statusBadgeLabel = new Label(isInitialApproved ? "APPROVED" : "Planning");
+        statusBadgeLabel.setStyle(isInitialApproved 
+                ? "-fx-background-color: #DCFCE7; -fx-text-fill: #15803D; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 6 14; -fx-background-radius: 6px;"
+                : "-fx-background-color: #FEF3C7; -fx-text-fill: #B45309; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 6 14; -fx-background-radius: 6px;");
+
+        headerRow.getChildren().addAll(backLink, new Label("|"), titleCol, sp, btnPayNow, statusBadgeLabel);
+
+        // 5 Top Cards
         HBox kpiRow = new HBox(14);
         eventDateKpiVal = new Label("Date TBD");
         eventTimeKpiVal = new Label("10:00 AM");
@@ -284,6 +317,7 @@ public class MyEventDetails {
         return page;
     }
 
+    // ================= REAL-TIME FIRESTORE DATA =================
     private void loadRealtimeEventDataAsync() {
         Task<Void> task = new Task<>() {
             @Override
@@ -294,6 +328,30 @@ public class MyEventDetails {
                 CustomerEventController eventController = new CustomerEventController();
                 String eventId = (event != null) ? event.getEventId() : null;
                 Map<String, String> orgDetails = eventController.getOrganizerDetailsForEvent(eventId);
+
+                // Firestore मधून ताजी व्हॅल्यू मिळवा
+                if (eventId != null) {
+                    try {
+                        Firestore db = FirebaseConfig.getFirestore();
+                        if (db != null) {
+                            DocumentSnapshot doc = db.collection("events").document(eventId).get().get();
+                            if (doc.exists()) {
+                                String dbStatus = doc.getString("status");
+                                Double dbBudget = doc.getDouble("totalBudget");
+                                Double dbPaid = doc.getDouble("paidAmount");
+                                if (dbStatus != null && event != null) event.setStatus(dbStatus);
+                                if (dbBudget != null && event != null) event.setAllocatedBudget(dbBudget);
+                                
+                                // ⭐ FIX: event.setPaidAmount ऐवजी लोकल व्हेरिएबल अपडेट केले
+                                if (dbPaid != null) {
+                                    eventPaidAmount = dbPaid;
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
 
                 Platform.runLater(() -> {
                     if (profile != null && profile.getName() != null) {
@@ -307,7 +365,7 @@ public class MyEventDetails {
                         String date = (event.getEventDate() != null) ? event.getEventDate() : "TBD";
                         String time = (event.getTime() != null) ? event.getTime() : "10:00 AM";
                         String loc = (event.getCity() != null) ? event.getCity() + ", Maharashtra" : "Pune, Maharashtra";
-                        String status = (event.getStatus() != null) ? event.getStatus().toUpperCase() : "PLANNING";
+                        String status = (event.getStatus() != null) ? event.getStatus() : "PLANNING";
                         int guests = event.getGuests() > 0 ? event.getGuests() : 100;
 
                         eventTitleLabel.setText(name);
@@ -318,7 +376,23 @@ public class MyEventDetails {
                         guestCountKpiVal.setText(String.valueOf(guests));
                         eventTypeVal.setText(type);
                         locationVal.setText(loc);
-                        statusBadgeLabel.setText(status);
+
+                        // ⭐ APPROVED चेक
+                        boolean isApproved = isStatusApproved(status);
+
+                        if (isApproved) {
+                            statusBadgeLabel.setText("APPROVED");
+                            statusBadgeLabel.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #15803D; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 6 14; -fx-background-radius: 6px;");
+                            
+                            btnPayNow.setVisible(true);
+                            btnPayNow.setManaged(true);
+                        } else {
+                            statusBadgeLabel.setText(status.toUpperCase());
+                            statusBadgeLabel.setStyle("-fx-background-color: #FEF3C7; -fx-text-fill: #B45309; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 6 14; -fx-background-radius: 6px;");
+                            
+                            btnPayNow.setVisible(false);
+                            btnPayNow.setManaged(false);
+                        }
 
                         if (event.getNotes() != null && !event.getNotes().isBlank()) {
                             notesVal.setText(event.getNotes());
@@ -338,6 +412,102 @@ public class MyEventDetails {
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
+    }
+
+    private boolean isStatusApproved(String status) {
+        if (status == null) return false;
+        String s = status.trim().toUpperCase();
+        return s.contains("APPROV") || s.contains("CONFIRM") || s.contains("ACCEPT");
+    }
+
+    // ================= ⭐ PAY NOW ACTION =================
+    // ================= ⭐ PAY NOW ACTION =================
+ // ================= ⭐ PAY NOW ACTION (ACTUAL USER BUDGET) =================
+    private void handlePayNowAction() {
+        if (event == null) return;
+
+        // १. युजर ईमेल मिळवा
+        String userEmail = (userEmailLabel != null && !userEmailLabel.getText().equals("user@email.com"))
+                ? userEmailLabel.getText() : UserSession.getUserEmail();
+
+        if (userEmail == null || userEmail.isBlank()) {
+            userEmail = "customer@eventxpert.com";
+        }
+
+        // २. OTP Verification
+        boolean isOtpValid = OtpHelper.sendAndVerifyOtp(userEmail);
+        if (!isOtpValid) {
+            return;
+        }
+
+        // ३. युझरने टाकलेले खरे बजेट मिळवणे (उदा. ₹ २३,०००) - कोणतेही ५०,००० नाही
+        double totalBudget = 0.0;
+        if (event.getBudget() != null && !event.getBudget().isBlank()) {
+            try {
+                totalBudget = Double.parseDouble(event.getBudget().replaceAll("[^0-9.]", "").trim());
+            } catch (Exception ignored) {}
+        }
+        if (totalBudget <= 0 && event.getAllocatedBudget() > 0) {
+            totalBudget = event.getAllocatedBudget();
+        }
+
+        double alreadyPaid = this.eventPaidAmount;
+        double amountToPay = (totalBudget > alreadyPaid) ? (totalBudget - alreadyPaid) : totalBudget;
+
+        if (amountToPay <= 0) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Payment Info");
+            alert.setHeaderText(null);
+            alert.setContentText("This event is already fully paid!");
+            alert.showAndWait();
+            return;
+        }
+
+        final double finalAmount = amountToPay;
+        final String finalEmail = userEmail;
+
+        // ४. Razorpay Live Payment (खऱ्या रकमेसह)
+        RazorpayServices.startPayment(finalAmount, finalEmail,
+            (paymentId) -> {
+                try {
+                    // ५. Database मध्ये सेव्ह आणि वाटप
+                    new PaymentService().processPaymentAndDistribute(null, event.getEventId(), finalAmount);
+
+                    // ६. ॲप विंडो समोर आणणे
+                    Stage stage = null;
+                    if (LandingPage.landingPageStage != null) {
+                        stage = LandingPage.landingPageStage;
+                    } else if (rootPane != null && rootPane.getScene() != null && rootPane.getScene().getWindow() instanceof Stage) {
+                        stage = (Stage) rootPane.getScene().getWindow();
+                    }
+                    if (stage != null) {
+                        stage.setIconified(false);
+                        stage.toFront();
+                        stage.requestFocus();
+                    }
+
+                    // ७. स्वच्छ पॉपअप मेसेज
+                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                    successAlert.setTitle("Success");
+                    successAlert.setHeaderText(null);
+                    successAlert.setContentText("Payment Successful!\nAmount: ₹ " + String.format("%.2f", finalAmount));
+                    successAlert.showAndWait();
+
+                    // ⭐ ८. थेट Payment.java स्क्रीन उघडेल जिथे पावती डाऊनलोड करता येईल
+                    goPayment();
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            },
+            (errorMsg) -> {
+                Alert failAlert = new Alert(Alert.AlertType.ERROR);
+                failAlert.setTitle("Payment Failed");
+                failAlert.setHeaderText(null);
+                failAlert.setContentText("Payment was not completed: " + errorMsg);
+                failAlert.showAndWait();
+            }
+        );
     }
 
     private VBox createWhiteCard() {

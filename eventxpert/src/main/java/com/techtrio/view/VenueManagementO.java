@@ -438,7 +438,7 @@ private void loadDynamicVenueDataAsync() {
         HBox.setHgrow(mapCard, Priority.ALWAYS);
 
         HBox mapHeader = new HBox();
-        Label mapTitle = new Label("🗺 Interactive Map & Route Preview");
+        Label mapTitle = new Label("🗺️ Interactive Map & Route Preview");
         mapTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + NAVY + ";");
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
 
@@ -475,7 +475,7 @@ private void loadDynamicVenueDataAsync() {
 
         VBox riskList = new VBox(8);
         riskList.getChildren().addAll(
-                createRiskRow("☁ Weather Contingency", "INDOOR READY", GREEN_BG, GREEN_TEXT),
+                createRiskRow("☁️ Weather Contingency", "INDOOR READY", GREEN_BG, GREEN_TEXT),
                 createRiskRow("🚗 Valet & Parking Access", "SUFFICIENT", GREEN_BG, GREEN_TEXT),
                 createRiskRow("⚡ Generator Backup", "VERIFIED", GREEN_BG, GREEN_TEXT)
         );
@@ -499,7 +499,7 @@ private void loadDynamicVenueDataAsync() {
             mapView.setPreserveRatio(false);
             mapVisual.getChildren().add(mapView);
         } catch (Exception ex) {
-            Label noImg = new Label("🗺 Interactive Map Preview");
+            Label noImg = new Label("🗺️ Interactive Map Preview");
             noImg.setStyle("-fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + ";");
             mapVisual.getChildren().add(noImg);
         }

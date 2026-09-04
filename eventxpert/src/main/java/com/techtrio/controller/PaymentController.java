@@ -2,14 +2,14 @@ package com.techtrio.controller;
 
 import java.util.List;
 import com.techtrio.model.Payment;
-import com.techtrio.services.PaymentService;
+import com.techtrio.services.RazorpayServices;
 
 public class PaymentController {
 
-    private final PaymentService paymentService;
+    private final RazorpayServices paymentService;
 
     public PaymentController() {
-        this.paymentService = new PaymentService();
+        this.paymentService = new RazorpayServices();
     }
 
     /**

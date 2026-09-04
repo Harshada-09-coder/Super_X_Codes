@@ -148,6 +148,16 @@ public class Payment {
     public void setPaymentDate(String paymentDate) {
         this.paymentDate = paymentDate;
     }
+
+    public void setId(String id) {
+        this.paymentId = id;
+    }
+
+    public String getId() {
+        return this.paymentId;
+    }
+
+
 }
     
 
