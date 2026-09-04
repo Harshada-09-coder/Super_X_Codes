@@ -35,7 +35,7 @@ public class BudgetC {
     private VBox allocationRowsContainer;
     private ToggleButton toggleOptimizer;
     private VBox smartRecommendationBox;
-    private BudgetOptimizerService optimizerService = new BudgetOptimizerService();
+    private final BudgetOptimizerService optimizerService = new BudgetOptimizerService();
 
     public BudgetC(String uid, String idToken) {
         this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
@@ -118,11 +118,13 @@ public class BudgetC {
         VBox estimated = card();
         estimated.getChildren().add(label("Estimated Total Budget", 14, FontWeight.BOLD, NAVY));
 
+        // ⭐ Dynamic value from Previous Step or empty
         String initialBudget = (ReviewPageC.EventData.budget != null && !ReviewPageC.EventData.budget.isBlank())
                 ? ReviewPageC.EventData.budget
-                : "₹ 8,45,000";
+                : "";
 
         TextField amountField = new TextField(initialBudget);
+        amountField.setPromptText("Enter Total Budget (e.g. 100000)");
         amountField.setPrefHeight(44);
         amountField.setFont(Font.font("Arial", FontWeight.BOLD, 16));
         amountField.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:7;-fx-background-radius:7;-fx-padding:8 12;-fx-text-fill:" + NAVY + " !important;");
@@ -168,7 +170,7 @@ public class BudgetC {
         Region allocationSpace = new Region();
         HBox.setHgrow(allocationSpace, Priority.ALWAYS);
 
-        totalAmount = label(initialBudget, 20, FontWeight.BOLD, NAVY);
+        totalAmount = label("₹ 0", 20, FontWeight.BOLD, NAVY);
         VBox totalBox = new VBox(1, totalAmount, label("Total Allocated", 10, FontWeight.BOLD, NAVY));
         totalBox.setAlignment(Pos.CENTER_RIGHT);
 
@@ -186,7 +188,7 @@ public class BudgetC {
 
         // Safe Recalculation Engine
         Runnable recalculate = () -> {
-            double parsedVal = 845000.0;
+            double parsedVal = 0.0;
             try {
                 String text = amountField.getText();
                 if (text != null) {
@@ -199,6 +201,14 @@ public class BudgetC {
 
             totalAmount.setText(String.format("₹ %,.0f", parsedVal));
 
+            if (parsedVal <= 0) {
+                allocationRowsContainer.getChildren().clear();
+                allocationRowsContainer.getChildren().add(label("Please enter your estimated budget to see optimization.", 12, FontWeight.NORMAL, NAVY));
+                smartRecommendationBox.getChildren().clear();
+                smartRecommendationBox.getChildren().add(label("Awaiting Budget Input...", 11, FontWeight.BOLD, NAVY));
+                return;
+            }
+
             if (!toggleOptimizer.isSelected()) {
                 allocationRowsContainer.getChildren().clear();
                 Label offLabel = label("Smart Optimization is turned OFF.\nYour total budget (" + String.format("₹ %,.0f", parsedVal) + ") will be submitted directly to your organizer for manual planning.", 13, FontWeight.BOLD, NAVY);
@@ -209,7 +219,6 @@ public class BudgetC {
                 return;
             }
 
-            // Extract selected requirements safely
             String reqString = ReviewPageC.EventData.requirements;
             List<String> selectedReqs = new ArrayList<>();
             if (reqString != null && !reqString.isBlank()) {
@@ -218,15 +227,14 @@ public class BudgetC {
 
             BudgetOptimizationRequest req = new BudgetOptimizationRequest(
                     parsedVal,
-                    ReviewPageC.EventData.eventType != null ? ReviewPageC.EventData.eventType : "Wedding",
-                    ReviewPageC.EventData.guests > 0 ? ReviewPageC.EventData.guests : 150,
+                    ReviewPageC.EventData.eventType != null ? ReviewPageC.EventData.eventType : "General",
+                    ReviewPageC.EventData.guests > 0 ? ReviewPageC.EventData.guests : 100,
                     selectedReqs,
                     ReviewPageC.EventData.city != null ? ReviewPageC.EventData.city : "Pune"
             );
 
             BudgetOptimizationResult result = optimizerService.optimizeBudget(req);
 
-            // Populate Recommendation Rows
             allocationRowsContainer.getChildren().clear();
             smartRecommendationBox.getChildren().clear();
             smartRecommendationBox.getChildren().add(label("Constraint Optimization Applied:", 11, FontWeight.BOLD, NAVY));
@@ -243,7 +251,6 @@ public class BudgetC {
             smartRecommendationBox.getChildren().add(chips);
         };
 
-        // Event Listeners
         amountField.textProperty().addListener((obs, oldV, newV) -> recalculate.run());
         toggleOptimizer.selectedProperty().addListener((obs, oldV, isSelected) -> {
             toggleOptimizer.setText(isSelected ? "ON" : "OFF");
@@ -251,7 +258,6 @@ public class BudgetC {
             recalculate.run();
         });
 
-        // Initial Run
         recalculate.run();
 
         HBox mainRow = new HBox(20, leftColumn, allocationCard);
@@ -288,7 +294,8 @@ public class BudgetC {
         });
 
         next.setOnAction(e -> {
-            ReviewPageC.EventData.budget = amountField.getText() != null ? amountField.getText().trim() : "₹ 8,45,000";
+            String val = amountField.getText() != null ? amountField.getText().trim() : "";
+            ReviewPageC.EventData.budget = !val.isBlank() ? (val.startsWith("₹") ? val : "₹ " + val) : "₹ 0";
 
             if (nextAction != null) {
                 nextAction.run();

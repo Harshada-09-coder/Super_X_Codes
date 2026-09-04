@@ -13,9 +13,7 @@ public class MapBridge {
         this.localityField = localityField;
     }
 
-    /**
-     * JavaScript मधून मॅपवर क्लिक केल्यावर ही method आपोआप कॉल होईल.
-     */
+    
     public void onLocationSelected(String city, String area, double lat, double lng) {
         Platform.runLater(() -> {
             if (city != null && !city.isBlank()) {

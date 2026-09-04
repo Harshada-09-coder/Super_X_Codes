@@ -63,7 +63,7 @@ public class LocationC {
         menu.getChildren().addAll(
                 sidebarItem("[1]", "Event Details", false),
                 sidebarItem("[2]", "Requirements", false),
-                sidebarItem("[3]", "Venue", true),
+                sidebarItem("[3]", "Venue & Location", true),
                 sidebarItem("[4]", "Budget", false),
                 sidebarItem("[5]", "Guest", false),
                 sidebarItem("[6]", "AI Planning", false),
@@ -101,68 +101,71 @@ public class LocationC {
 
         Label stepText = label("STEP 3 OF 7", 10, FontWeight.BOLD, BLUE);
         Label heading = label("Where will your event take place?", 25, FontWeight.BOLD, NAVY);
-        Label description = label("Provide your venue and location details for a smooth event experience.", 12, FontWeight.NORMAL, GREY);
+        Label description = label("Provide your location and preferred venue type. Your assigned Organizer will suggest the best nearby venues.", 12, FontWeight.NORMAL, GREY);
 
-        // LEFT COLUMN - VENUE DETAILS & INFORMATION
+        // LEFT COLUMN - LOCATION & PREFERENCES CARD (Venue Name Input Removed)
         VBox venueDetailsCard = new VBox(10);
         venueDetailsCard.setPadding(new Insets(16));
         venueDetailsCard.setStyle("-fx-background-color:white;-fx-background-radius:9;-fx-border-color:" + BORDER + ";-fx-border-radius:9;");
 
-        Label vDetailsTitle = label("Venue Details", 15, FontWeight.BOLD, TEXT);
+        Label vDetailsTitle = label("Location & Venue Type", 15, FontWeight.BOLD, TEXT);
 
         ComboBox<String> venueType = new ComboBox<>();
         venueType.getItems().addAll("Hotel", "Banquet Hall", "Conference Center", "Outdoor Venue", "Restaurant", "Resort", "Other");
         if (ReviewPageC.EventData.venue != null && !ReviewPageC.EventData.venue.isBlank()) {
             venueType.setValue(ReviewPageC.EventData.venue);
         } else {
-            venueType.setPromptText("Select venue type");
+            venueType.setValue("Banquet Hall");
         }
         venueType.setMaxWidth(Double.MAX_VALUE);
         styleCombo(venueType);
 
-        TextField city = new TextField(ReviewPageC.EventData.city != null ? ReviewPageC.EventData.city : "");
+        TextField city = new TextField(ReviewPageC.EventData.city != null ? ReviewPageC.EventData.city : "Pune");
         city.setPromptText("e.g. Pune");
         styleField(city);
 
-        TextField locality = new TextField(ReviewPageC.EventData.area != null ? ReviewPageC.EventData.area : "");
-        locality.setPromptText("e.g. Baner");
+        TextField locality = new TextField(ReviewPageC.EventData.area != null ? ReviewPageC.EventData.area : "Baner");
+        locality.setPromptText("e.g. Baner, Kothrud");
         styleField(locality);
 
         HBox cityAreaRow = new HBox(12, formField("City", city), formField("Area / Locality", locality));
         HBox.setHgrow(cityAreaRow.getChildren().get(0), Priority.ALWAYS);
         HBox.setHgrow(cityAreaRow.getChildren().get(1), Priority.ALWAYS);
 
-        // Venue Name आणि Full Address काढून टाकले आहेत
-        venueDetailsCard.getChildren().addAll(vDetailsTitle, formField("Venue Type", venueType), cityAreaRow);
+        TextField fullAddressField = new TextField(ReviewPageC.EventData.confirmedVenueAddress != null ? ReviewPageC.EventData.confirmedVenueAddress : "");
+        fullAddressField.setPromptText("Enter preferred street or landmark address (Optional)...");
+        styleField(fullAddressField);
+
+        venueDetailsCard.getChildren().addAll(vDetailsTitle, formField("Preferred Venue Type", venueType), cityAreaRow, formField("Preferred Landmark / Address", fullAddressField));
 
         // VENUE INFORMATION CARD
         VBox venueInfoCard = new VBox(10);
         venueInfoCard.setPadding(new Insets(16));
         venueInfoCard.setStyle("-fx-background-color:white;-fx-background-radius:9;-fx-border-color:" + BORDER + ";-fx-border-radius:9;");
 
-        Label vInfoTitle = label("Venue Information", 15, FontWeight.BOLD, TEXT);
+        Label vInfoTitle = label("Capacity & Logistics Information", 15, FontWeight.BOLD, TEXT);
 
         TextField guestCap = new TextField(ReviewPageC.EventData.guests > 0 ? String.valueOf(ReviewPageC.EventData.guests) : "250");
         guestCap.setPromptText("e.g. 250");
         styleField(guestCap);
 
-        TextField estCost = new TextField("₹ ");
+        TextField estCost = new TextField(ReviewPageC.EventData.budget != null ? ReviewPageC.EventData.budget : "₹ 1,50,000");
         styleField(estCost);
 
-        HBox capCostRow = new HBox(12, formField("Guest Capacity", guestCap), formField("Estimated Venue Cost", estCost));
+        HBox capCostRow = new HBox(12, formField("Expected Guest Capacity", guestCap), formField("Target Venue Budget", estCost));
         HBox.setHgrow(capCostRow.getChildren().get(0), Priority.ALWAYS);
         HBox.setHgrow(capCostRow.getChildren().get(1), Priority.ALWAYS);
 
         // Radio Rows
-        HBox parkRow = radioOptionRow("Parking Available");
-        HBox catRow = radioOptionRow("Catering Allowed");
-        HBox decRow = radioOptionRow("Decoration Allowed");
+        HBox parkRow = radioOptionRow("Parking Required");
+        HBox catRow = radioOptionRow("In-house Catering Needed");
+        HBox decRow = radioOptionRow("Decoration Setup Required");
 
         TextField addNotesField = new TextField();
-        addNotesField.setPromptText("Any special information about the venue...");
+        addNotesField.setPromptText("Any specific venue instructions for organizer (e.g. Sea-view, AC Hall)...");
         styleField(addNotesField);
 
-        venueInfoCard.getChildren().addAll(vInfoTitle, capCostRow, parkRow, catRow, decRow, formField("Additional Notes", addNotesField));
+        venueInfoCard.getChildren().addAll(vInfoTitle, capCostRow, parkRow, catRow, decRow, formField("Special Venue Notes", addNotesField));
 
         VBox leftColumn = new VBox(14, venueDetailsCard, venueInfoCard);
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
@@ -181,18 +184,18 @@ public class LocationC {
         helpBox.setPadding(new Insets(10, 16, 10, 16));
         helpBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:9;-fx-background-radius:9;");
 
-        Label helpIcon = label("🔍", 18, FontWeight.NORMAL, BLUE);
+        Label helpIcon = label("📍", 18, FontWeight.NORMAL, BLUE);
         StackPane iconCircle = new StackPane(helpIcon);
         iconCircle.setPrefSize(36, 36);
         iconCircle.setStyle("-fx-background-color:" + LIGHT_BLUE + ";-fx-background-radius:50;");
 
-        Label helpTitle = label("Need help finding a venue?", 13, FontWeight.BOLD, TEXT);
-        Label helpSub = label("Connect with our Venue Finder.", 11, FontWeight.NORMAL, GREY);
+        Label helpTitle = label("Organizer Curated Venues", 13, FontWeight.BOLD, TEXT);
+        Label helpSub = label("Your organizer will propose top matching venues.", 11, FontWeight.NORMAL, GREY);
         VBox helpText = new VBox(1, helpTitle, helpSub);
 
         Region helpSpace = new Region();
         HBox.setHgrow(helpSpace, Priority.ALWAYS);
-        Label arrow = label("→", 20, FontWeight.NORMAL, GREY);
+        Label arrow = label("✓", 16, FontWeight.BOLD, BLUE);
         helpBox.getChildren().addAll(iconCircle, helpText, helpSpace, arrow);
 
         rightColumn.getChildren().addAll(mapPanel, helpBox);
@@ -230,14 +233,18 @@ public class LocationC {
             String enteredCity = city.getText().trim();
             String enteredArea = locality.getText().trim();
             String selectedVenue = venueType.getValue() != null ? venueType.getValue() : "Banquet Hall";
+            String enteredAddress = fullAddressField.getText().trim();
 
             ReviewPageC.EventData.city = enteredCity;
             ReviewPageC.EventData.area = enteredArea;
             ReviewPageC.EventData.venue = selectedVenue;
 
-            // ऑटो-कॅल्क्युलेटेड Venue Name आणि Address पुढील Review Page साठी सेट राहतील
-            if (!enteredCity.isEmpty() || !enteredArea.isEmpty()) {
-                ReviewPageC.EventData.confirmedVenueName = selectedVenue + " (" + (!enteredArea.isEmpty() ? enteredArea : enteredCity) + ")";
+            // Default pending venue state
+            ReviewPageC.EventData.confirmedVenueName = "Pending Organizer Suggestion";
+
+            if (!enteredAddress.isEmpty()) {
+                ReviewPageC.EventData.confirmedVenueAddress = enteredAddress;
+            } else if (!enteredArea.isEmpty() || !enteredCity.isEmpty()) {
                 ReviewPageC.EventData.confirmedVenueAddress = (!enteredArea.isEmpty() ? enteredArea + ", " : "") + enteredCity;
             }
 
@@ -267,7 +274,7 @@ public class LocationC {
         row.setAlignment(Pos.CENTER_LEFT);
 
         Label labelTitle = label(title, 11, FontWeight.BOLD, TEXT);
-        labelTitle.setPrefWidth(160);
+        labelTitle.setPrefWidth(180);
 
         ToggleGroup tg = new ToggleGroup();
         RadioButton rbYes = new RadioButton("Yes");
