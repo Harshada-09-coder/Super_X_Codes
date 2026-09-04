@@ -1,170 +1,100 @@
 package com.techtrio.services;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
-import com.google.cloud.firestore.QuerySnapshot;
-import com.google.cloud.firestore.WriteResult;
+import com.google.cloud.firestore.*;
 import com.techtrio.firebase.FirebaseConfig;
 import com.techtrio.model.Payment;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class PaymentService {
 
-    public static final String COLLECTION_NAME = "payments";
-    private final EventService eventService = new EventService();
+    private final Firestore db = FirebaseConfig.getFirestore();
 
-    private Firestore getDb() {
-        return FirebaseConfig.getFirestore();
-    }
+    public void processPaymentAndDistribute(Payment payment, String eventId, double paidAmount) throws Exception {
+        if (db == null) return;
 
-    /**
-     * Process Payment & Save Distribution to Firestore
-     */
-    public boolean processPayment(Payment payment) {
-        if (payment == null || payment.getEventId() == null || payment.getEventId().isBlank()) {
-            return false;
+        // १. Save Payment record
+        DocumentReference paymentRef = db.collection("payments").document();
+        if (payment != null) {
+            payment.setPaymentId(paymentRef.getId());
+            paymentRef.set(payment).get();
         }
 
-        try {
-            Firestore db = getDb();
-            if (db == null) return false;
+        // २. Update Event Paid Amount
+        DocumentReference eventRef = db.collection("events").document(eventId);
+        DocumentSnapshot eventSnap = eventRef.get().get();
 
-            // Generate IDs if not present
-            if (payment.getPaymentId() == null || payment.getPaymentId().isBlank()) {
-                payment.setPaymentId("PAY_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        double currentPaid = 0.0;
+        double totalBudget = 0.0;
+        String organizerId = "";
+
+        if (eventSnap.exists()) {
+            Double p = eventSnap.getDouble("paidAmount");
+            Double b = eventSnap.getDouble("totalBudget");
+            if (p != null) currentPaid = p;
+            if (b != null) totalBudget = b;
+            organizerId = eventSnap.getString("organizerId");
+        }
+
+        double newPaid = currentPaid + paidAmount;
+        Map<String, Object> eventUpdate = new HashMap<>();
+        eventUpdate.put("paidAmount", newPaid);
+        if (newPaid >= totalBudget && totalBudget > 0) {
+            eventUpdate.put("paymentStatus", "PAID");
+        } else {
+            eventUpdate.put("paymentStatus", "PARTIAL");
+        }
+        eventRef.update(eventUpdate).get();
+
+        // ३. Vendor Real-Time Distribution (final variable fix)
+        QuerySnapshot bookingsSnap = db.collection("vendor_bookings")
+                .whereEqualTo("eventId", eventId)
+                .get().get();
+
+        double totalVendorShare = 0.0;
+        for (QueryDocumentSnapshot bookingDoc : bookingsSnap) {
+            String vendorId = bookingDoc.getString("vendorId");
+            Double rawCost = bookingDoc.getDouble("cost");
+            
+            // ⭐ FIX: final variable for lambda closure
+            final double finalVendorCost = (rawCost != null) ? rawCost : 0.0;
+            totalVendorShare += finalVendorCost;
+
+            if (vendorId != null && !vendorId.isBlank()) {
+                DocumentReference vendorRef = db.collection("vendors").document(vendorId);
+                db.runTransaction((Transaction.Function<Void>) transaction -> {
+                    DocumentSnapshot vSnap = transaction.get(vendorRef).get();
+                    double currentEarning = 0.0;
+                    if (vSnap.exists() && vSnap.contains("totalEarnings")) {
+                        Double d = vSnap.getDouble("totalEarnings");
+                        if (d != null) currentEarning = d;
+                    }
+                    transaction.update(vendorRef, "totalEarnings", currentEarning + finalVendorCost);
+                    return null;
+                }).get();
             }
-            if (payment.getTransactionId() == null || payment.getTransactionId().isBlank()) {
-                payment.setTransactionId("TXN_" + UUID.randomUUID().toString().substring(0, 10).toUpperCase());
-            }
 
-            // Set Timestamp and Status
-            String now = Instant.now().toString();
-            payment.setPaymentDate(now);
-            payment.setPaymentStatus("SUCCESS");
-
-            // 1. Save Payment Record to Firestore
-            ApiFuture<WriteResult> future = db.collection(COLLECTION_NAME)
-                    .document(payment.getPaymentId())
-                    .set(payment);
-            future.get();
-
-            // 2. Update Event Status to PAID
-            eventService.updateEventStatus(payment.getEventId(), "PAID");
-
-            System.out.println("Payment successful! ID: " + payment.getPaymentId() + ", Txn: " + payment.getTransactionId());
-            return true;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+            bookingDoc.getReference().update("paymentStatus", "PAID");
         }
-    }
 
-    /**
-     * Helper to Calculate 3-Way Split (Platform: 5%, Vendor: vendorCost, Organizer: Remaining)
-     */
-    public Payment calculateSplit(String eventId, String customerId, String customerName, 
-                                  String organizerId, double totalAmount, double vendorCost) {
-        
-        double platformFee = totalAmount * 0.05; // 5% Platform Fee
-        double organizerAmount = totalAmount - (platformFee + vendorCost);
-        if (organizerAmount < 0) organizerAmount = 0;
+        // ४. Organizer Real-Time Distribution
+        double organizerShare = paidAmount - totalVendorShare;
+        if (organizerShare < 0) organizerShare = paidAmount * 0.15;
+        final double finalOrgShare = organizerShare;
 
-        Payment payment = new Payment();
-        payment.setEventId(eventId);
-        payment.setCustomerId(customerId);
-        payment.setCustomerName(customerName);
-        payment.setOrganizerId(organizerId);
-        payment.setTotalAmount(totalAmount);
-        payment.setPlatformFee(platformFee);
-        payment.setVendorAmount(vendorCost);
-        payment.setOrganizerAmount(organizerAmount);
-
-        return payment;
-    }
-
-    /**
-     * Get Payment Details by Event ID
-     */
-    public Payment getPaymentByEventId(String eventId) {
-        if (eventId == null || eventId.isBlank()) return null;
-
-        try {
-            Firestore db = getDb();
-            if (db == null) return null;
-
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME)
-                    .whereEqualTo("eventId", eventId.trim())
-                    .limit(1)
-                    .get();
-
-            List<QueryDocumentSnapshot> docs = future.get().getDocuments();
-            if (!docs.isEmpty()) {
-                return docs.get(0).toObject(Payment.class);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (organizerId != null && !organizerId.isBlank()) {
+            DocumentReference orgRef = db.collection("organizers").document(organizerId);
+            db.runTransaction((Transaction.Function<Void>) transaction -> {
+                DocumentSnapshot oSnap = transaction.get(orgRef).get();
+                double currentEarning = 0.0;
+                if (oSnap.exists() && oSnap.contains("totalEarnings")) {
+                    Double d = oSnap.getDouble("totalEarnings");
+                    if (d != null) currentEarning = d;
+                }
+                transaction.update(orgRef, "totalEarnings", currentEarning + finalOrgShare);
+                return null;
+            }).get();
         }
-        return null;
-    }
-
-    /**
-     * Get All Payments (Admin Revenue/Analytics साठी)
-     */
-    public List<Payment> getAllPayments() {
-        List<Payment> list = new ArrayList<>();
-        try {
-            Firestore db = getDb();
-            if (db == null) return list;
-
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME).get();
-            for (DocumentSnapshot doc : future.get().getDocuments()) {
-                Payment p = doc.toObject(Payment.class);
-                if (p != null) list.add(p);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-    /**
-     * Get Payments for a Specific Organizer (Organizer Revenue साठी)
-     */
-    public List<Payment> getPaymentsByOrganizerId(String organizerId) {
-        List<Payment> list = new ArrayList<>();
-        if (organizerId == null || organizerId.isBlank()) return list;
-
-        try {
-            Firestore db = getDb();
-            if (db == null) return list;
-
-            ApiFuture<QuerySnapshot> future = db.collection(COLLECTION_NAME)
-                    .whereEqualTo("organizerId", organizerId.trim())
-                    .get();
-
-            for (DocumentSnapshot doc : future.get().getDocuments()) {
-                Payment p = doc.toObject(Payment.class);
-                if (p != null) list.add(p);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-     public double getTotalPlatformRevenue() {
-        double total = 0.0;
-        List<Payment> payments = getAllPayments();
-        for (Payment p : payments) {
-            total += p.getPlatformFee();
-        }
-        return total;
     }
 }

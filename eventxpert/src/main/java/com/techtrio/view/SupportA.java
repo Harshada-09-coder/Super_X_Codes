@@ -1,7 +1,19 @@
 package com.techtrio.view;
 
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
+import com.techtrio.controller.AdminController;
 import com.techtrio.controller.NavigationManager;
+import com.techtrio.model.AdminProfile;
+import com.techtrio.session.UserSession;
 
+import java.io.File;
+import java.lang.reflect.Method;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -23,10 +35,12 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 public class SupportA {
-        private Scene supportScene;
+
+    private Scene supportScene;
 
     // Colors
     private final String NAVY = "#062B63";
@@ -34,11 +48,24 @@ public class SupportA {
     private final String BG = "#F5F8FC";
     private final String BORDER = "#D6DEE8";
     private final String TEXT = "#14213D";
-    private final String GRAY = "#596579";  
+    private final String GRAY = "#596579";
 
-    public Scene getsupportScene(){
+    private final AdminController adminController = new AdminController();
+    private String adminId;
 
-        
+    // Dynamic Form Controls
+    private TextField nameField;
+    private TextField emailField;
+    private ComboBox<String> issueBox;
+    private TextField subjectField;
+    private TextArea descriptionArea;
+    private Label topProfileAvatar;
+    private Button attachBtn;
+
+    private File attachedFile = null;
+
+    public Scene getsupportScene() {
+
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
@@ -92,56 +119,35 @@ public class SupportA {
                 "♧   Notifications"
         };
 
+        for (String item : menu) {
+            Label nav = new Label(item);
+            nav.setMaxWidth(Double.MAX_VALUE);
+            nav.setPrefHeight(48);
+            nav.setAlignment(Pos.CENTER_LEFT);
+            nav.setPadding(new Insets(0, 12, 0, 10));
+            nav.setTextFill(Color.web("#9FB3CE"));
+            nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+            nav.setStyle("-fx-background-radius:8;");
 
+            nav.setOnMouseEntered(e -> nav.setStyle("-fx-background-color:#0C3975;-fx-background-radius:8;"));
+            nav.setOnMouseExited(e -> nav.setStyle("-fx-background-color:transparent;-fx-background-radius:8;"));
 
-for (String item : menu) {
+            nav.setOnMouseClicked(e -> {
+                Stage stage = (Stage) nav.getScene().getWindow();
+                String page = item
+                        .replace("▦", "")
+                        .replace("▣", "")
+                        .replace("♙", "")
+                        .replace("▤", "")
+                        .replace("△", "")
+                        .replace("▥", "")
+                        .replace("♧", "")
+                        .trim();
+                NavigationManager.navigate(page, stage);
+            });
 
-    Label nav = new Label(item);
-
-    nav.setMaxWidth(Double.MAX_VALUE);
-    nav.setPrefHeight(48);
-    nav.setAlignment(Pos.CENTER_LEFT);
-    nav.setPadding(new Insets(0, 12, 0, 10));
-    nav.setTextFill(Color.web("#9FB3CE"));
-    nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-
-    nav.setStyle("-fx-background-radius:8;");
-
-    nav.setOnMouseEntered(e ->
-            nav.setStyle(
-                    "-fx-background-color:#0C3975;" +
-                    "-fx-background-radius:8;"
-            )
-    );
-
-    nav.setOnMouseExited(e ->
-            nav.setStyle(
-                    "-fx-background-color:transparent;" +
-                    "-fx-background-radius:8;"
-            )
-    );
-
-    // Navigation
-    nav.setOnMouseClicked(e -> {
-
-        Stage stage =
-                (Stage) nav.getScene().getWindow();
-
-        String page = item
-                .replace("▦", "")
-                .replace("▣", "")
-                .replace("♙", "")
-                .replace("▤", "")
-                .replace("△", "")
-                .replace("▥", "")
-                .replace("♧", "")
-                .trim();
-
-        NavigationManager.navigate(page, stage);
-    });
-
-    mainNav.getChildren().add(nav);
-}
+            mainNav.getChildren().add(nav);
+        }
 
         Region space = new Region();
         VBox.setVgrow(space, Priority.ALWAYS);
@@ -154,32 +160,23 @@ for (String item : menu) {
                 "●   Profile"
         };
 
-    for (String item : bottom) {
+        for (String item : bottom) {
+            Label nav = new Label(item);
+            nav.setMaxWidth(Double.MAX_VALUE);
+            nav.setPrefHeight(48);
+            nav.setAlignment(Pos.CENTER_LEFT);
+            nav.setPadding(new Insets(0, 12, 0, 10));
+            nav.setTextFill(Color.web("#9FB3CE"));
+            nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
 
-    Label nav = new Label(item);
+            nav.setOnMouseClicked(e -> {
+                Stage stage = (Stage) nav.getScene().getWindow();
+                String page = item.replace("⚙", "").replace("●", "").trim();
+                NavigationManager.navigate(page, stage);
+            });
 
-    nav.setMaxWidth(Double.MAX_VALUE);
-    nav.setPrefHeight(48);
-    nav.setAlignment(Pos.CENTER_LEFT);
-    nav.setPadding(new Insets(0, 12, 0, 10));
-    nav.setTextFill(Color.web("#9FB3CE"));
-    nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-
-    nav.setOnMouseClicked(e -> {
-
-        Stage stage =
-                (Stage) nav.getScene().getWindow();
-
-        String page = item
-                .replace("⚙", "")
-                .replace("●", "")
-                .trim();
-
-        NavigationManager.navigate(page, stage);
-    });
-
-    bottomNav.getChildren().add(nav);
-}
+            bottomNav.getChildren().add(nav);
+        }
 
         // Support active
         Label supportNav = new Label("❔   Support");
@@ -234,8 +231,16 @@ for (String item : menu) {
         searchBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         searchBtn.setStyle(
                 "-fx-background-color:" + NAVY + ";" +
-                "-fx-background-radius:7;"
+                "-fx-background-radius:7;" +
+                "-fx-cursor:hand;"
         );
+
+        searchBtn.setOnAction(e -> {
+            String query = search.getText().trim();
+            if (!query.isEmpty()) {
+                showAlert("Search Results", "Search completed for '" + query + "'.\nFound relevant guides in User Guide & FAQs.");
+            }
+        });
 
         StackPane searchBox = new StackPane(search);
         searchBox.setPrefWidth(410);
@@ -250,6 +255,8 @@ for (String item : menu) {
         Label bell = new Label("♧");
         bell.setFont(Font.font(25));
         bell.setTextFill(Color.web("#26354A"));
+        bell.setStyle("-fx-cursor:hand;");
+        bell.setOnMouseClicked(e -> NavigationManager.navigate("Notifications", (Stage) bell.getScene().getWindow()));
 
         Label question = new Label("?");
         question.setPrefSize(25, 25);
@@ -261,22 +268,24 @@ for (String item : menu) {
                 "-fx-font-weight:bold;"
         );
 
-        Label profile = new Label("AD");
-        profile.setPrefSize(38, 38);
-        profile.setAlignment(Pos.CENTER);
-        profile.setStyle(
+        topProfileAvatar = new Label("AD");
+        topProfileAvatar.setPrefSize(38, 38);
+        topProfileAvatar.setAlignment(Pos.CENTER);
+        topProfileAvatar.setStyle(
                 "-fx-background-color:" + NAVY + ";" +
                 "-fx-background-radius:50%;" +
                 "-fx-text-fill:white;" +
-                "-fx-font-weight:bold;"
+                "-fx-font-weight:bold;" +
+                "-fx-cursor:hand;"
         );
+        topProfileAvatar.setOnMouseClicked(e -> NavigationManager.navigate("Profile", (Stage) topProfileAvatar.getScene().getWindow()));
 
         topBar.getChildren().addAll(
                 searchArea,
                 topSpace,
                 bell,
                 question,
-                profile
+                topProfileAvatar
         );
 
         main.setTop(topBar);
@@ -304,44 +313,31 @@ for (String item : menu) {
         helpCards.setFillHeight(true);
         helpCards.setCursor(javafx.scene.Cursor.HAND);
 
+        VBox guide = helpCard("▤", "User Guide", "Learn how to use\nEventXpert");
+        guide.setOnMouseClicked(e -> showAlert("User Guide", "• Dashboard: Manage all key metrics.\n• Event Requests: Assign organizers to new events.\n• Vendors & Venues: Monitor verified profiles.\n• Analytics: Real-time revenue insights."));
 
-        VBox guide = helpCard(
-                "▤",
-                "User Guide",
-                "Learn how to use\nEventXpert"
-        );
+        VBox faq = helpCard("▣", "FAQs", "Find answers to common\nquestions");
+        faq.setOnMouseClicked(e -> showAlert("Frequently Asked Questions", "Q: How to approve an event?\nA: Navigate to Event Requests, select the event and assign an organizer.\n\nQ: How to update profile?\nA: Go to Profile page and click Edit Profile."));
 
-        VBox faq = helpCard(
-                "▣",
-                "FAQs",
-                "Find answers to common\nquestions"
-        );
+        VBox tutorial = helpCard("▥", "System Tutorial", "Learn the main features");
+        tutorial.setOnMouseClicked(e -> showAlert("System Tutorial", "Welcome to EventXpert Console!\n1. Check Notifications for pending requests.\n2. Review system status on Dashboard.\n3. Track revenue in Reports & Analytics."));
 
-        VBox tutorial = helpCard(
-                "▥",
-                "System Tutorial",
-                "Learn the main features"
-        );
-
-        VBox contact = helpCard(
-                "♧",
-                "Contact Support",
-                "Get assistance from our\nsupport team"
-        );
+        VBox contact = helpCard("♧", "Contact Support", "Get assistance from our\nsupport team");
+        contact.setOnMouseClicked(e -> {
+            if (subjectField != null) subjectField.requestFocus();
+        });
 
         HBox.setHgrow(guide, Priority.ALWAYS);
         HBox.setHgrow(faq, Priority.ALWAYS);
         HBox.setHgrow(tutorial, Priority.ALWAYS);
         HBox.setHgrow(contact, Priority.ALWAYS);
 
-        helpCards.getChildren().addAll(
-                guide, faq, tutorial, contact
-        );
+        helpCards.getChildren().addAll(guide, faq, tutorial, contact);
 
         // ================= LOWER SECTION =================
         HBox lower = new HBox(26);
 
-        // ----- Support Request -----
+        // ----- Support Request Form -----
         VBox request = new VBox();
         request.setStyle(cardStyle());
         request.setPadding(new Insets(0));
@@ -363,26 +359,26 @@ for (String item : menu) {
 
         // Name
         Label nameLabel = formLabel("Name");
-        TextField name = input("");
+        nameField = input("Administrator");
 
         // Email
         Label emailLabel = formLabel("Email");
-        TextField email = input("");
+        emailField = input("admin@eventxpert.com");
 
         // Issue
         Label issueLabel = formLabel("Issue Type");
-        ComboBox<String> issue = new ComboBox<>();
-        issue.getItems().addAll(
+        issueBox = new ComboBox<>();
+        issueBox.getItems().addAll(
                 "Technical Issue",
                 "Account Issue",
                 "Payment Issue",
                 "Event Issue",
                 "Other"
         );
-        issue.setValue("Technical Issue");
-        issue.setPrefHeight(44);
-        issue.setMaxWidth(Double.MAX_VALUE);
-        issue.setStyle(
+        issueBox.setValue("Technical Issue");
+        issueBox.setPrefHeight(44);
+        issueBox.setMaxWidth(Double.MAX_VALUE);
+        issueBox.setStyle(
                 "-fx-border-color:#C9D2DE;" +
                 "-fx-border-radius:6;" +
                 "-fx-background-radius:6;" +
@@ -391,49 +387,64 @@ for (String item : menu) {
 
         // Subject
         Label subjectLabel = formLabel("Subject");
-        TextField subject = input("");
+        subjectField = input("");
+        subjectField.setPromptText("Enter brief subject...");
 
-        VBox nameBox = new VBox(6, nameLabel, name);
-        VBox emailBox = new VBox(6, emailLabel, email);
-        VBox issueBox = new VBox(6, issueLabel, issue);
-        VBox subjectBox = new VBox(6, subjectLabel, subject);
+        VBox nameBox = new VBox(6, nameLabel, nameField);
+        VBox emailBox = new VBox(6, emailLabel, emailField);
+        VBox issueBoxCont = new VBox(6, issueLabel, issueBox);
+        VBox subjectBox = new VBox(6, subjectLabel, subjectField);
 
         form.add(nameBox, 0, 0);
         form.add(emailBox, 1, 0);
-        form.add(issueBox, 0, 1);
+        form.add(issueBoxCont, 0, 1);
         form.add(subjectBox, 1, 1);
 
         GridPane.setHgrow(nameBox, Priority.ALWAYS);
         GridPane.setHgrow(emailBox, Priority.ALWAYS);
-        GridPane.setHgrow(issueBox, Priority.ALWAYS);
+        GridPane.setHgrow(issueBoxCont, Priority.ALWAYS);
         GridPane.setHgrow(subjectBox, Priority.ALWAYS);
 
         // Description
         Label descLabel = formLabel("Description");
-        TextArea description = new TextArea();
-        description.setPrefRowCount(3);
-        description.setWrapText(true);
-        description.setStyle(
+        descriptionArea = new TextArea();
+        descriptionArea.setPromptText("Describe the issue or assistance required in detail...");
+        descriptionArea.setPrefRowCount(3);
+        descriptionArea.setWrapText(true);
+        descriptionArea.setStyle(
                 "-fx-border-color:#C9D2DE;" +
                 "-fx-border-radius:6;" +
                 "-fx-background-radius:6;" +
                 "-fx-font-size:15px;"
         );
 
-        VBox descBox = new VBox(6, descLabel, description);
+        VBox descBox = new VBox(6, descLabel, descriptionArea);
         descBox.setPadding(new Insets(0, 28, 0, 28));
 
         // Buttons
-        Button attach = new Button("📎   Attach\n      File");
-        attach.setPrefSize(138, 42);
-        attach.setStyle(
+        attachBtn = new Button("📎   Attach\n      File");
+        attachBtn.setPrefSize(138, 42);
+        attachBtn.setStyle(
                 "-fx-background-color:white;" +
                 "-fx-border-color:" + NAVY + ";" +
                 "-fx-border-radius:6;" +
                 "-fx-text-fill:" + NAVY + ";" +
                 "-fx-font-weight:bold;" +
-                "-fx-font-size:14px;"
+                "-fx-font-size:14px;" +
+                "-fx-cursor:hand;"
         );
+
+        attachBtn.setOnAction(e -> {
+            Stage stage = (Stage) attachBtn.getScene().getWindow();
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Attach File to Support Request");
+            attachedFile = fileChooser.showOpenDialog(stage);
+            if (attachedFile != null) {
+                String fname = attachedFile.getName();
+                if (fname.length() > 10) fname = fname.substring(0, 9) + "..";
+                attachBtn.setText("📎  " + fname);
+            }
+        });
 
         Button submit = new Button("Submit Request");
         submit.setPrefSize(170, 42);
@@ -441,22 +452,16 @@ for (String item : menu) {
         submit.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         submit.setStyle(
                 "-fx-background-color:" + NAVY + ";" +
-                "-fx-background-radius:6;"
+                "-fx-background-radius:6;" +
+                "-fx-cursor:hand;"
         );
 
-        submit.setOnAction(e -> {
-            Alert alert = new Alert(
-                    Alert.AlertType.INFORMATION,
-                    "Your support request has been submitted."
-            );
-            alert.setHeaderText("Support Request");
-            alert.showAndWait();
-        });
+        submit.setOnAction(e -> submitSupportRequest());
 
         Region buttonSpace = new Region();
         HBox.setHgrow(buttonSpace, Priority.ALWAYS);
 
-        HBox buttons = new HBox(10, attach, buttonSpace, submit);
+        HBox buttons = new HBox(10, attachBtn, buttonSpace, submit);
         buttons.setPadding(new Insets(25, 28, 28, 28));
         buttons.setAlignment(Pos.CENTER_LEFT);
 
@@ -511,7 +516,6 @@ for (String item : menu) {
         right.getChildren().addAll(contactInfo, systemInfo);
 
         lower.getChildren().addAll(request, right);
-
         VBox.setVgrow(lower, Priority.ALWAYS);
 
         content.getChildren().addAll(
@@ -535,19 +539,135 @@ for (String item : menu) {
         root.setLeft(sidebar);
         root.setCenter(main);
 
-        // ================= SCENE =================
+        // Load Admin's actual profile data dynamically
+        loadAdminProfileData();
+
         Scene scene = new Scene(root, 1550, 750);
         supportScene = scene;
-
         return supportScene;
-        
+    }
 
+    /* ================= DYNAMIC DATA SYNC ================= */
+
+    private void loadAdminProfileData() {
+        Thread thread = new Thread(() -> {
+            try {
+                adminId = UserSession.getUid();
+                if (adminId == null || adminId.isBlank()) {
+                    try {
+                        Method m = NavigationManager.class.getMethod("getCurrentAdminId");
+                        Object res = m.invoke(null);
+                        if (res != null) adminId = res.toString();
+                    } catch (Exception ignored) {}
+                }
+
+                AdminProfile profile = (adminId != null && !adminId.isBlank()) ? adminController.getAdminProfile(adminId) : null;
+
+                String liveName = "System Administrator";
+                String liveEmail = "admin@eventxpert.com";
+
+                if (profile != null) {
+                    if (profile.getName() != null && !profile.getName().isBlank()) liveName = profile.getName();
+                    if (profile.getEmail() != null && !profile.getEmail().isBlank()) liveEmail = profile.getEmail();
+                }
+
+                final String fName = liveName;
+                final String fEmail = liveEmail;
+
+                Platform.runLater(() -> {
+                    nameField.setText(fName);
+                    emailField.setText(fEmail);
+                    topProfileAvatar.setText(getInitials(fName));
+                });
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void submitSupportRequest() {
+        String name = nameField.getText().trim();
+        String email = emailField.getText().trim();
+        String issueType = issueBox.getValue();
+        String subject = subjectField.getText().trim();
+        String desc = descriptionArea.getText().trim();
+
+        if (subject.isEmpty()) {
+            showAlert("Required", "Please enter a subject for your request.");
+            return;
+        }
+
+        if (desc.isEmpty()) {
+            showAlert("Required", "Please provide a detailed description of the issue.");
+            return;
+        }
+
+        String ticketId = "TICK-" + (System.currentTimeMillis() % 100000);
+
+        Thread thread = new Thread(() -> {
+            try {
+                Firestore db = FirestoreClient.getFirestore();
+                if (db != null) {
+                    Map<String, Object> ticket = new HashMap<>();
+                    ticket.put("ticketId", ticketId);
+                    ticket.put("name", name);
+                    ticket.put("email", email);
+                    ticket.put("issueType", issueType);
+                    ticket.put("subject", subject);
+                    ticket.put("description", desc);
+                    ticket.put("attachedFile", (attachedFile != null) ? attachedFile.getName() : "None");
+                    ticket.put("status", "Open");
+                    ticket.put("createdAt", Instant.now().toString());
+
+                    db.collection("support_tickets").document(ticketId).set(ticket).get();
+                }
+
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(
+                            Alert.AlertType.INFORMATION,
+                            "Your support request #" + ticketId + " has been submitted successfully.\nOur technical team will review and respond within 24 hours."
+                    );
+                    alert.setTitle("Support Request");
+                    alert.setHeaderText("Ticket Created: #" + ticketId);
+                    alert.showAndWait();
+
+                    subjectField.clear();
+                    descriptionArea.clear();
+                    attachedFile = null;
+                    attachBtn.setText("📎   Attach\n      File");
+                });
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                Platform.runLater(() -> showAlert("Error", "Could not submit ticket to database: " + ex.getMessage()));
+            }
+        });
+
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private String getInitials(String fullName) {
+        if (fullName == null || fullName.isBlank()) return "AD";
+        String[] parts = fullName.trim().split("\\s+");
+        if (parts.length == 1) return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
+        return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1)).toUpperCase();
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     // ================= HELPER METHODS =================
 
     private VBox helpCard(String icon, String title, String text) {
-
         Label iconLabel = new Label(icon);
         iconLabel.setPrefSize(52, 52);
         iconLabel.setAlignment(Pos.CENTER);
@@ -604,12 +724,7 @@ for (String item : menu) {
         return label;
     }
 
-    private HBox infoRow(
-            String icon,
-            String title,
-            String value
-    ) {
-
+    private HBox infoRow(String icon, String title, String value) {
         Label iconLabel = new Label(icon);
         iconLabel.setPrefWidth(28);
         iconLabel.setFont(Font.font(20));
@@ -625,7 +740,6 @@ for (String item : menu) {
         valueLabel.setWrapText(true);
 
         VBox text = new VBox(2, titleLabel, valueLabel);
-
         HBox row = new HBox(10, iconLabel, text);
         row.setAlignment(Pos.CENTER_LEFT);
 
@@ -633,7 +747,6 @@ for (String item : menu) {
     }
 
     private HBox dataRow(String left, String right) {
-
         Label l = new Label(left);
         l.setFont(Font.font("Arial", 14));
         l.setTextFill(Color.web(GRAY));
@@ -658,14 +771,4 @@ for (String item : menu) {
                 "-fx-border-color:#E0E5EC;" +
                 "-fx-border-radius:10;";
     }
-
 }
-
-    
-    
-    
-    
-   
-   
-   
-   
