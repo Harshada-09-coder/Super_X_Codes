@@ -422,6 +422,7 @@ public class MyEventDetails {
 
     // ================= ⭐ PAY NOW ACTION =================
     // ================= ⭐ PAY NOW ACTION =================
+ // ================= ⭐ PAY NOW ACTION (ACTUAL USER BUDGET) =================
     private void handlePayNowAction() {
         if (event == null) return;
 
@@ -439,10 +440,19 @@ public class MyEventDetails {
             return;
         }
 
-        // ३. भरावयाची रक्कम
-        double totalBudget = (event.getAllocatedBudget() > 0) ? event.getAllocatedBudget() : 50000.0;
+        // ३. युझरने टाकलेले खरे बजेट मिळवणे (उदा. ₹ २३,०००) - कोणतेही ५०,००० नाही
+        double totalBudget = 0.0;
+        if (event.getBudget() != null && !event.getBudget().isBlank()) {
+            try {
+                totalBudget = Double.parseDouble(event.getBudget().replaceAll("[^0-9.]", "").trim());
+            } catch (Exception ignored) {}
+        }
+        if (totalBudget <= 0 && event.getAllocatedBudget() > 0) {
+            totalBudget = event.getAllocatedBudget();
+        }
+
         double alreadyPaid = this.eventPaidAmount;
-        double amountToPay = Math.max(0, totalBudget - alreadyPaid);
+        double amountToPay = (totalBudget > alreadyPaid) ? (totalBudget - alreadyPaid) : totalBudget;
 
         if (amountToPay <= 0) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -456,14 +466,14 @@ public class MyEventDetails {
         final double finalAmount = amountToPay;
         final String finalEmail = userEmail;
 
-        // ४. Razorpay Live Payment
-        RazorpayServices.startPayment(finalAmount, finalEmail, "9999999999",
-            paymentId -> {
+        // ४. Razorpay Live Payment (खऱ्या रकमेसह)
+        RazorpayServices.startPayment(finalAmount, finalEmail,
+            (paymentId) -> {
                 try {
-                    // ५. Database मध्ये सेव्ह आणि Organizer व Vendor ला वाटप
+                    // ५. Database मध्ये सेव्ह आणि वाटप
                     new PaymentService().processPaymentAndDistribute(null, event.getEventId(), finalAmount);
 
-                    // ६. ॲप विंडो पुन्हा समोर आणणे (Bring to Front)
+                    // ६. ॲप विंडो समोर आणणे
                     Stage stage = null;
                     if (LandingPage.landingPageStage != null) {
                         stage = LandingPage.landingPageStage;
@@ -476,21 +486,21 @@ public class MyEventDetails {
                         stage.requestFocus();
                     }
 
-                    // ७. स्वच्छ पॉपअप मेसेज (कोणतीही अडगळ नाही)
+                    // ७. स्वच्छ पॉपअप मेसेज
                     Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
                     successAlert.setTitle("Success");
                     successAlert.setHeaderText(null);
                     successAlert.setContentText("Payment Successful!\nAmount: ₹ " + String.format("%.2f", finalAmount));
                     successAlert.showAndWait();
 
-                    // ⭐ ८. पॉपअप नंतर थेट Payment.java ची स्क्रीन उघडेल!
+                    // ⭐ ८. थेट Payment.java स्क्रीन उघडेल जिथे पावती डाऊनलोड करता येईल
                     goPayment();
 
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
             },
-            errorMsg -> {
+            (errorMsg) -> {
                 Alert failAlert = new Alert(Alert.AlertType.ERROR);
                 failAlert.setTitle("Payment Failed");
                 failAlert.setHeaderText(null);

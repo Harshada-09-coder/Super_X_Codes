@@ -13,8 +13,8 @@ public class VenueController {
         this.venueService = new VenueService();
     }
 
-    public List<VenueModel> getNearbyVenues(String city, String venueType, int minCapacity) {
-        return venueService.getNearbyVenues(city, venueType, minCapacity);
+    public List<VenueModel> getNearbyVenues(String city, String area, String venueType, int minCapacity, double targetBudget) {
+        return venueService.getNearbyVenues(city, area, venueType, minCapacity, targetBudget);
     }
 
     public boolean sendVenueSuggestions(String eventId, List<VenueModel> suggestedVenues) {

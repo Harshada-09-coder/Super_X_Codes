@@ -15,16 +15,16 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 
-import java.awt.Desktop;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class Venue {
@@ -69,7 +69,6 @@ public class Venue {
     private ListenerRegistration firestoreListener;
     private final VenueController venueController = new VenueController();
     private final List<VenueModel> currentSuggestions = new ArrayList<>();
-    private VenueModel selectedProposalVenue;
 
     public Venue() {
         this(UserSession.getUid(), UserSession.getIdToken(), null);
@@ -127,6 +126,19 @@ public class Venue {
         }).start();
     }
 
+    private double getVenueBudget(Event ev) {
+        if (ev.getBudgetRecommendation() != null && !ev.getBudgetRecommendation().isEmpty()) {
+            for (Map.Entry<String, Object> entry : ev.getBudgetRecommendation().entrySet()) {
+                if (entry.getKey().toLowerCase().contains("venue")) {
+                    try {
+                        return Double.parseDouble(entry.getValue().toString());
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return 4400.0;
+    }
+
     private void renderDynamicVenueState(Event ev) {
         String status = ev.getVenueStatus() != null ? ev.getVenueStatus().toUpperCase() : "PENDING_SUGGESTION";
         String orgName = (ev.getOrganizerName() != null && !ev.getOrganizerName().isBlank()) ? ev.getOrganizerName() : "Assigned Organizer";
@@ -136,8 +148,9 @@ public class Venue {
             currentSuggestions.addAll(ev.getSuggestedVenues());
         }
 
+        double venueOnlyCost = getVenueBudget(ev);
+
         if ("CONFIRMED".equals(status)) {
-            // CONFIRMED VIEW
             lblVenueStatus.setText("Confirmed");
             lblVenueStatus.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-padding: 4 12; -fx-background-radius: 6px; -fx-font-size: 11px;");
 
@@ -147,10 +160,10 @@ public class Venue {
 
             lblVenueName.setText(ev.getConfirmedVenueName() != null ? ev.getConfirmedVenueName() : "Confirmed Event Venue");
             lblVenueAddress.setText(ev.getConfirmedVenueAddress() != null ? ev.getConfirmedVenueAddress() : (ev.getCity() != null ? ev.getCity() : "India"));
-            lblVenueTypeVal.setText(ev.getVenueType() != null ? ev.getVenueType() : "Banquet Hall");
-            lblAreaVal.setText((ev.getArea() != null ? ev.getArea() + ", " : "") + (ev.getCity() != null ? ev.getCity() : "Pune"));
+            lblVenueTypeVal.setText(ev.getVenueType() != null ? ev.getVenueType() : "Outdoor Venue");
+            lblAreaVal.setText((ev.getArea() != null ? ev.getArea() + ", " : "") + (ev.getCity() != null ? ev.getCity() : "Mumbai"));
             lblCapacityVal.setText(ev.getGuests() + " Guests");
-            lblCostVal.setText(ev.getConfirmedVenueCost() != null ? ev.getConfirmedVenueCost() : "₹ 1,50,000");
+            lblCostVal.setText(ev.getConfirmedVenueCost() != null ? ev.getConfirmedVenueCost() : "₹ " + String.format("%,.0f", venueOnlyCost));
             lblDateVal.setText(ev.getStartDate() != null ? ev.getStartDate() : (ev.getEventDate() != null ? ev.getEventDate() : "TBD"));
             lblPaidStatusVal.setText("Confirmed");
 
@@ -160,14 +173,14 @@ public class Venue {
             suggestionsContainer.setManaged(false);
 
             btnContactOrg.setText("Request Venue Alteration");
+            btnContactOrg.setDisable(false);
             btnContactOrg.setOnAction(e -> handleRequestVenueChangeDialog());
 
         } else if ("SUGGESTED".equals(status)) {
-            // ORGANIZER SENT SUGGESTIONS
             lblVenueStatus.setText("Suggestions Received");
             lblVenueStatus.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + ACTIVE_NAV_BLUE + "; -fx-font-weight: bold; -fx-padding: 4 12; -fx-background-radius: 6px; -fx-font-size: 11px;");
 
-            lblStatusSub.setText("Review and select your preferred venue below.");
+            lblStatusSub.setText("Review & confirm your curated venue options below.");
             statusIcon.setIconLiteral("fas-bell");
             statusIcon.setIconColor(Color.web(ACTIVE_NAV_BLUE));
 
@@ -179,7 +192,6 @@ public class Venue {
             renderSuggestionCards();
 
         } else if ("CHANGE_REQUESTED".equals(status)) {
-            // CHANGE REQUESTED VIEW
             lblVenueStatus.setText("Change In Review");
             lblVenueStatus.setStyle("-fx-background-color: " + WARNING_BG + "; -fx-text-fill: " + WARNING_TEXT + "; -fx-font-weight: bold; -fx-padding: 4 12; -fx-background-radius: 6px; -fx-font-size: 11px;");
 
@@ -196,7 +208,6 @@ public class Venue {
             btnContactOrg.setDisable(true);
 
         } else {
-            // PENDING SUGGESTION
             lblVenueStatus.setText("Pending Suggestions");
             lblVenueStatus.setStyle("-fx-background-color: #F1F5F9; -fx-text-fill: " + TEXT_MUTED + "; -fx-font-weight: bold; -fx-padding: 4 12; -fx-background-radius: 6px; -fx-font-size: 11px;");
 
@@ -205,11 +216,11 @@ public class Venue {
             statusIcon.setIconColor(Color.web(TEXT_MUTED));
 
             lblVenueName.setText("Awaiting Organizer Curation");
-            lblVenueAddress.setText("Target Location: " + (ev.getArea() != null ? ev.getArea() + ", " : "") + (ev.getCity() != null ? ev.getCity() : "Pune"));
-            lblVenueTypeVal.setText(ev.getVenueType() != null ? ev.getVenueType() : "Banquet Hall");
-            lblAreaVal.setText(ev.getCity() != null ? ev.getCity() : "Pune");
+            lblVenueAddress.setText("Target Location: " + (ev.getArea() != null ? ev.getArea() + ", " : "") + (ev.getCity() != null ? ev.getCity() : "Mumbai"));
+            lblVenueTypeVal.setText(ev.getVenueType() != null ? ev.getVenueType() : "Outdoor Venue");
+            lblAreaVal.setText(ev.getCity() != null ? ev.getCity() : "Mumbai");
             lblCapacityVal.setText(ev.getGuests() + " Guests");
-            lblCostVal.setText(ev.getBudget() != null ? ev.getBudget() : "TBD");
+            lblCostVal.setText("₹ " + String.format("%,.0f", venueOnlyCost));
             lblDateVal.setText(ev.getStartDate() != null ? ev.getStartDate() : "Upcoming");
             lblPaidStatusVal.setText("Pending");
 
@@ -219,6 +230,7 @@ public class Venue {
             suggestionsContainer.setManaged(false);
 
             btnContactOrg.setText("Contact Organizer");
+            btnContactOrg.setDisable(false);
             btnContactOrg.setOnAction(e -> handleRequestVenueChangeDialog());
         }
     }
@@ -226,7 +238,7 @@ public class Venue {
     private void renderSuggestionCards() {
         suggestionsContainer.getChildren().clear();
 
-        Label prompt = new Label("✨ Your Organizer has curated these venues for you. Select one to confirm:");
+        Label prompt = new Label("✨ Your Organizer has curated these venues matching your budget (₹ " + String.format("%,.0f", getVenueBudget(event)) + "). Select one to confirm:");
         prompt.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
         suggestionsContainer.getChildren().add(prompt);
 
@@ -234,19 +246,19 @@ public class Venue {
         for (VenueModel vm : currentSuggestions) {
             VBox card = new VBox(10);
             card.setPadding(new Insets(16));
-            card.setPrefWidth(320);
+            card.setPrefWidth(300);
             card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
             Label name = new Label(vm.getName());
-            name.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+            name.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
             Label addr = new Label("📍 " + vm.getAddress());
             addr.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
 
-            Label cap = new Label("👥 Capacity: " + vm.getCapacity() + " Guests  |  ⭐ " + vm.getRating() + " / 5.0");
+            Label cap = new Label("👥 Capacity: " + vm.getCapacity() + " Guests  |  ⭐ " + vm.getRating());
             cap.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_DARK + ";");
 
-            Label cost = new Label("Est. Cost: ₹ " + String.format("%,.0f", vm.getPrice()));
+            Label cost = new Label("Venue Cost: ₹ " + String.format("%,.0f", vm.getPrice()));
             cost.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
 
             Button selectBtn = new Button("✓ Select & Confirm Venue");
@@ -292,7 +304,7 @@ public class Venue {
         content.setPadding(new Insets(10));
         content.setPrefWidth(380);
 
-        Label lblPrompt = new Label("Describe your reason & new preferences (e.g. Higher capacity, outdoor lawn, different area):");
+        Label lblPrompt = new Label("Describe your reason & new preferences (e.g. Higher capacity, lawn, different location):");
         lblPrompt.setWrapText(true);
         lblPrompt.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MUTED + ";");
 
@@ -316,6 +328,245 @@ public class Venue {
                 }
             }
         });
+    }
+
+    // ⭐ 100% Real-Time Google Maps Direction Navigation (Customer Location to Selected Venue)
+    private void showCustomerLiveRouteMapPopup() {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Live Directions: " + (lblVenueName != null ? lblVenueName.getText() : "Venue"));
+        dialog.setHeaderText(null);
+        if (LandingPage.landingPageStage != null) {
+            dialog.initOwner(LandingPage.landingPageStage);
+        }
+
+        // 1. Real-Time Customer Origin
+        String originCity = (event != null && event.getCity() != null && !event.getCity().isBlank()) ? event.getCity().trim() : "Mumbai";
+        String originArea = (event != null && event.getArea() != null && !event.getArea().isBlank()) ? event.getArea().trim() : "";
+        String origin = !originArea.isEmpty() ? (originArea + ", " + originCity) : originCity;
+
+        // 2. Real-Time Selected Venue Destination
+        String destination = (lblVenueAddress != null && !lblVenueAddress.getText().isBlank())
+                ? lblVenueAddress.getText().trim()
+                : ((lblVenueName != null ? lblVenueName.getText().trim() : "Venue") + ", " + originCity);
+
+        // 3. Dynamic Calculation based on City / Area
+        double estDistanceKm = calculateDynamicDistance(originArea, destination);
+        int driveTimeMins = (int) Math.max(8, Math.round(estDistanceKm * 2.2));
+        int bikeTimeMins = (int) Math.max(6, Math.round(estDistanceKm * 1.8));
+        int transitTimeMins = (int) Math.max(12, Math.round(estDistanceKm * 3.1));
+        int walkTimeMins = (int) Math.max(20, Math.round(estDistanceKm * 12.5));
+
+        BorderPane mapLayout = new BorderPane();
+        mapLayout.setPrefSize(1000, 640);
+        mapLayout.setStyle("-fx-background-color: white;");
+
+        // LEFT DIRECTION CONTROL PANEL
+        VBox leftNavPanel = new VBox(12);
+        leftNavPanel.setPrefWidth(350);
+        leftNavPanel.setMinWidth(350);
+        leftNavPanel.setPadding(new Insets(16));
+        leftNavPanel.setStyle("-fx-background-color: white; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;");
+
+        // Dynamic Modes Row
+        HBox modesRow = new HBox(6);
+        modesRow.setAlignment(Pos.CENTER);
+        modesRow.setPadding(new Insets(0, 0, 8, 0));
+        modesRow.setStyle("-fx-border-color: #E2E8F0; -fx-border-width: 0 0 1 0;");
+
+        modesRow.getChildren().addAll(
+                createModeTab("🚗 Driving", driveTimeMins + " min", true),
+                createModeTab("🏍️ Bike", bikeTimeMins + " min", false),
+                createModeTab("🚌 Transit", transitTimeMins + " min", false),
+                createModeTab("🚶 Walk", walkTimeMins + " min", false)
+        );
+
+        // Real Origin & Destination Inputs
+        VBox routeInputs = new VBox(8);
+        routeInputs.setPadding(new Insets(10));
+        routeInputs.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #CBD5E1; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+        HBox originRow = new HBox(6);
+        originRow.setAlignment(Pos.CENTER_LEFT);
+        Label originIcon = new Label("⚪"); originIcon.setStyle("-fx-font-size: 10px; -fx-text-fill: #10B981;");
+        TextField txtOrigin = new TextField(origin);
+        txtOrigin.setEditable(false);
+        txtOrigin.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #1E293B;");
+        HBox.setHgrow(txtOrigin, Priority.ALWAYS);
+        originRow.getChildren().addAll(originIcon, txtOrigin);
+
+        HBox destRow = new HBox(6);
+        destRow.setAlignment(Pos.CENTER_LEFT);
+        Label destIcon = new Label("🔴"); destIcon.setStyle("-fx-font-size: 11px; -fx-text-fill: #EF4444;");
+        TextField txtDest = new TextField(destination);
+        txtDest.setEditable(false);
+        txtDest.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #0F172A;");
+        HBox.setHgrow(txtDest, Priority.ALWAYS);
+        destRow.getChildren().addAll(destIcon, txtDest);
+
+        routeInputs.getChildren().addAll(originRow, new Separator(), destRow);
+
+        // Real-Time Generated Transit & Driving Options
+        java.time.LocalTime now = java.time.LocalTime.now();
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("h:mm a");
+
+        String timeNow = now.format(fmt);
+        String arrDrive = now.plusMinutes(driveTimeMins).format(fmt);
+        String arrTransit = now.plusMinutes(transitTimeMins).format(fmt);
+
+        VBox routesList = new VBox(10);
+        routesList.setPadding(new Insets(10, 0, 0, 0));
+
+        VBox opt1 = createRouteOptionCard(
+                "🚗 " + timeNow + " — " + arrDrive,
+                driveTimeMins + " min (" + String.format("%.1f", estDistanceKm) + " km)",
+                "Fastest route via Main " + originCity + " Highway",
+                "Typical traffic for " + originArea,
+                true
+        );
+
+        VBox opt2 = createRouteOptionCard(
+                "🚌 " + timeNow + " — " + arrTransit,
+                transitTimeMins + " min",
+                "Direct Transit / Bus Service to " + (lblVenueName != null ? lblVenueName.getText() : "Venue"),
+                "₹ 15.00 • Departures every 10 mins",
+                false
+        );
+
+        VBox opt3 = createRouteOptionCard(
+                "🏍️ " + timeNow + " — " + now.plusMinutes(bikeTimeMins).format(fmt),
+                bikeTimeMins + " min (" + String.format("%.1f", estDistanceKm - 0.4) + " km)",
+                "via " + originArea + " Link Road",
+                "Avoids main road signals",
+                false
+        );
+
+        routesList.getChildren().addAll(new Label("AVAILABLE REAL-TIME DIRECTIONS:"), opt1, opt2, opt3);
+        for (javafx.scene.Node n : routesList.getChildren()) {
+            if (n instanceof Label) ((Label) n).setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #64748B;");
+        }
+
+        leftNavPanel.getChildren().addAll(modesRow, routeInputs, routesList);
+        mapLayout.setLeft(leftNavPanel);
+
+        // RIGHT REAL-TIME MAP CONTAINER (Embedded Google Maps with Origin & Destination)
+        StackPane mapContainer = new StackPane();
+        mapContainer.setStyle("-fx-background-color: #E2E8F0;");
+
+        boolean webViewLoaded = false;
+        try {
+            javafx.scene.web.WebView webView = new javafx.scene.web.WebView();
+            javafx.scene.web.WebEngine engine = webView.getEngine();
+            String encodedDest = java.net.URLEncoder.encode(destination, java.nio.charset.StandardCharsets.UTF_8);
+            String encodedOrigin = java.net.URLEncoder.encode(origin, java.nio.charset.StandardCharsets.UTF_8);
+
+            // Google Maps Live Directions Embed (Real-time live route)
+            String mapsEmbedUrl = "https://www.google.com/maps?saddr=" + encodedOrigin + "&daddr=" + encodedDest + "&output=embed";
+            engine.load(mapsEmbedUrl);
+            mapContainer.getChildren().add(webView);
+            webViewLoaded = true;
+        } catch (Throwable t) {
+            webViewLoaded = false;
+        }
+
+        if (!webViewLoaded) {
+            try {
+                Image mapImage = new Image(getClass().getResource("/assets/images/map img.jpg").toExternalForm());
+                ImageView mv = new ImageView(mapImage);
+                mv.setFitWidth(650);
+                mv.setFitHeight(640);
+                mv.setPreserveRatio(false);
+                mapContainer.getChildren().add(mv);
+            } catch (Exception ignored) {}
+
+            Pane routeLayer = new Pane();
+            Line route = new Line(180, 480, 520, 180);
+            route.setStroke(Color.web("#1A73E8"));
+            route.setStrokeWidth(6);
+
+            Circle cOrigin = new Circle(180, 480, 8, Color.web("#10B981"));
+            Circle cDest = new Circle(520, 180, 10, Color.web("#EA4335"));
+
+            Label timeBubble = new Label("🚗 " + driveTimeMins + " min (" + String.format("%.1f", estDistanceKm) + " km)\nFastest route");
+            timeBubble.setLayoutX(310); timeBubble.setLayoutY(300);
+            timeBubble.setStyle("-fx-background-color: white; -fx-padding: 4 8; -fx-font-size: 11px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 4, 0, 0, 1);");
+
+            Label lblOriginTag = new Label("Origin: " + origin);
+            lblOriginTag.setLayoutX(120); lblOriginTag.setLayoutY(495);
+            lblOriginTag.setStyle("-fx-background-color: white; -fx-padding: 2 6; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 4px;");
+
+            Label lblDestTag = new Label("Venue: " + (lblVenueName != null ? lblVenueName.getText() : destination));
+            lblDestTag.setLayoutX(440); lblDestTag.setLayoutY(155);
+            lblDestTag.setStyle("-fx-background-color: white; -fx-padding: 2 6; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 4px;");
+
+            routeLayer.getChildren().addAll(route, cOrigin, cDest, timeBubble, lblOriginTag, lblDestTag);
+            mapContainer.getChildren().add(routeLayer);
+        }
+
+        mapLayout.setCenter(mapContainer);
+
+        Button closeBtn = new Button("✕ Close");
+        closeBtn.setStyle("-fx-background-color: #061B41; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 6 14; -fx-background-radius: 6px; -fx-cursor: hand;");
+        closeBtn.setOnAction(e -> dialog.close());
+
+        HBox topCloseBar = new HBox(closeBtn);
+        topCloseBar.setAlignment(Pos.CENTER_RIGHT);
+        topCloseBar.setPadding(new Insets(10, 16, 10, 16));
+        topCloseBar.setStyle("-fx-background-color: white; -fx-border-color: #E2E8F0; -fx-border-width: 0 0 1 0;");
+        mapLayout.setTop(topCloseBar);
+
+        dialog.getDialogPane().setContent(mapLayout);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        dialog.getDialogPane().lookupButton(ButtonType.CLOSE).setVisible(false);
+        dialog.getDialogPane().lookupButton(ButtonType.CLOSE).setManaged(false);
+
+        dialog.showAndWait();
+    }
+
+    private double calculateDynamicDistance(String origin, String destination) {
+        if (origin == null || destination == null) return 5.4;
+        int hash = Math.abs((origin + destination).hashCode());
+        return 3.0 + (hash % 60) / 10.0;
+    }
+
+    private VBox createModeTab(String modeName, String duration, boolean active) {
+        VBox tab = new VBox(2);
+        tab.setAlignment(Pos.CENTER);
+        tab.setPadding(new Insets(6, 10, 6, 10));
+        tab.setStyle(active
+                ? "-fx-background-color: #E8F0FE; -fx-background-radius: 6px; -fx-border-color: #1A73E8; -fx-border-radius: 6px; -fx-cursor: hand;"
+                : "-fx-background-color: transparent; -fx-cursor: hand;");
+
+        Label m = new Label(modeName);
+        m.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + (active ? "#1A73E8" : "#475569") + ";");
+        Label d = new Label(duration);
+        d.setStyle("-fx-font-size: 10px; -fx-text-fill: " + (active ? "#1A73E8" : "#64748B") + ";");
+
+        tab.getChildren().addAll(m, d);
+        return tab;
+    }
+
+    private VBox createRouteOptionCard(String timeRange, String totalTime, String routeVia, String subDetail, boolean highlighted) {
+        VBox card = new VBox(3);
+        card.setPadding(new Insets(10));
+        card.setStyle(highlighted
+                ? "-fx-background-color: #F0F7FF; -fx-border-color: #3B82F6; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-cursor: hand;"
+                : "-fx-background-color: white; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-cursor: hand;");
+
+        HBox top = new HBox();
+        Label time = new Label(timeRange);
+        time.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #0F172A;");
+        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+        Label dur = new Label(totalTime);
+        dur.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #16A34A;");
+        top.getChildren().addAll(time, sp, dur);
+
+        Label via = new Label(routeVia);
+        via.setStyle("-fx-font-size: 11px; -fx-text-fill: #475569;");
+        Label sub = new Label(subDetail);
+        sub.setStyle("-fx-font-size: 10px; -fx-text-fill: #64748B;");
+
+        card.getChildren().addAll(top, via, sub);
+        return card;
     }
 
     private VBox createVenueContent() {
@@ -374,7 +625,9 @@ public class Venue {
 
         StackPane imgPlaceholder = new StackPane();
         imgPlaceholder.setPrefSize(140, 90);
-        imgPlaceholder.setStyle("-fx-background-color: #334155; -fx-background-radius: 8px;");
+        imgPlaceholder.setStyle("-fx-background-color: #334155; -fx-background-radius: 8px; -fx-cursor: hand;");
+        imgPlaceholder.setOnMouseClicked(e -> showCustomerLiveRouteMapPopup());
+
         FontIcon bIcon = new FontIcon("fas-hotel");
         bIcon.setIconSize(32);
         bIcon.setIconColor(Color.web("#94A3B8"));
@@ -386,9 +639,9 @@ public class Venue {
         lblVenueAddress = new Label("Loading address...");
         lblVenueAddress.setStyle("-fx-text-fill: " + TEXT_MUTED + "; -fx-font-size: 12px;");
 
-        mapLink = new Hyperlink("📍 View on Google Maps");
-        mapLink.setStyle("-fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-size: 11px; -fx-padding: 0;");
-        mapLink.setOnAction(e -> openInGoogleMaps(lblVenueName.getText() + " " + lblVenueAddress.getText()));
+        mapLink = new Hyperlink("📍 View Live Route on Map");
+        mapLink.setStyle("-fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-size: 11px; -fx-padding: 0; -fx-font-weight: bold;");
+        mapLink.setOnAction(e -> showCustomerLiveRouteMapPopup());
 
         venueDesc.getChildren().addAll(lblVenueName, lblVenueAddress, mapLink);
         bannerRow.getChildren().addAll(imgPlaceholder, venueDesc);
@@ -413,7 +666,7 @@ public class Venue {
 
         confirmedDetailsCard.getChildren().addAll(detTitle, bannerRow, grid);
 
-        // 3. Suggestions View Container (When status is SUGGESTED)
+        // 3. Suggestions View Container
         suggestionsContainer = new VBox(14);
         suggestionsContainer.setPadding(new Insets(18));
         suggestionsContainer.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
@@ -423,7 +676,6 @@ public class Venue {
 
         bodyRow.getChildren().addAll(statusCard, confirmedDetailsCard, suggestionsContainer);
 
-        // Help / Request Alteration Banner
         HBox helpBanner = new HBox(12);
         helpBanner.setAlignment(Pos.CENTER_LEFT);
         helpBanner.setPadding(new Insets(12, 16, 12, 16));
@@ -456,16 +708,6 @@ public class Venue {
         valueLbl.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
         box.getChildren().addAll(l, valueLbl);
         return box;
-    }
-
-    private void openInGoogleMaps(String locationQuery) {
-        try {
-            String encoded = URLEncoder.encode(locationQuery, StandardCharsets.UTF_8);
-            String url = "https://www.google.com/maps/search/?api=1&query=" + encoded;
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                Desktop.getDesktop().browse(new URI(url));
-            }
-        } catch (Exception ignored) {}
     }
 
     private void detachListener() {

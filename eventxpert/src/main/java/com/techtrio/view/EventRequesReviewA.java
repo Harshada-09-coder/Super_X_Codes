@@ -1,7 +1,6 @@
 package com.techtrio.view;
 
 import java.util.List;
-import java.util.Optional;
 import com.techtrio.model.ConflictResult;
 
 import com.techtrio.context.AdminContext;
@@ -21,7 +20,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
@@ -59,7 +57,13 @@ public class EventRequesReviewA {
 
     private TextArea notesArea;
 
+    // ⭐ In-App Modal Overlay Layer (Replaces Dialog / Separate Window)
+    private StackPane modalOverlayPane;
+
     public Scene geteventRequestReviewScene() {
+
+        StackPane rootStack = new StackPane();
+        rootStack.setStyle("-fx-background-color:" + BACKGROUND + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
         // SIDEBAR
         VBox sidebar = new VBox(6);
@@ -239,7 +243,7 @@ public class EventRequesReviewA {
 
         customerCard.getChildren().addAll(cHeader, custRow);
 
-        // ADMIN ACTION CARD (Approve, Assign & Conflict check)
+        // ADMIN ACTION CARD
         VBox reviewCard = new VBox(10);
         reviewCard.setPadding(new Insets(16));
         reviewCard.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
@@ -260,18 +264,17 @@ public class EventRequesReviewA {
         checkConflict.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-text-fill:" + PRIMARY + ";-fx-font-weight:bold;-fx-border-radius:6;-fx-cursor:hand;");
         checkConflict.setOnAction(e -> checkEventConflict());
 
-        // ⭐ RESTORED APPROVE BUTTON WITH LOGIC
         Button approveBtn = new Button("✓  Approve Event");
         approveBtn.setMaxWidth(Double.MAX_VALUE);
         approveBtn.setPrefHeight(36);
         approveBtn.setStyle("-fx-background-color:#16A34A;-fx-text-fill:white;-fx-font-weight:bold;-fx-background-radius:6;-fx-cursor:hand;");
         approveBtn.setOnAction(e -> handleApproveEvent());
 
-        Button assign = new Button("Assign Organizer (Modal)");
+        Button assign = new Button("Assign Organizer");
         assign.setMaxWidth(Double.MAX_VALUE);
         assign.setPrefHeight(36);
         assign.setStyle("-fx-background-color:" + PRIMARY + ";-fx-text-fill:white;-fx-font-weight:bold;-fx-background-radius:6;-fx-cursor:hand;");
-        assign.setOnAction(e -> handleAssignOrganizerModal());
+        assign.setOnAction(e -> showInAppAssignOrganizerModal());
 
         Button reject = new Button("Reject Request");
         reject.setMaxWidth(Double.MAX_VALUE);
@@ -308,13 +311,21 @@ public class EventRequesReviewA {
         scroll.setFitToWidth(true);
         scroll.setStyle("-fx-background-color:transparent;-fx-background:" + BACKGROUND + ";-fx-border-color:transparent;");
 
-        BorderPane root = new BorderPane();
-        root.setLeft(sidebar);
-        root.setCenter(scroll);
+        BorderPane mainLayout = new BorderPane();
+        mainLayout.setLeft(sidebar);
+        mainLayout.setCenter(scroll);
+
+        // ⭐ Modal Overlay (Hidden by default)
+        modalOverlayPane = new StackPane();
+        modalOverlayPane.setStyle("-fx-background-color: rgba(0, 42, 96, 0.45);");
+        modalOverlayPane.setVisible(false);
+        modalOverlayPane.setManaged(false);
+
+        rootStack.getChildren().addAll(mainLayout, modalOverlayPane);
 
         loadEventReviewDetailsAsync();
 
-        eventRequestReviewScene = new Scene(root, 1550, 785);
+        eventRequestReviewScene = new Scene(rootStack, 1550, 785);
         return eventRequestReviewScene;
     }
 
@@ -346,7 +357,6 @@ public class EventRequesReviewA {
         return btn;
     }
 
-    // ⭐ RESTORED APPROVE EVENT FUNCTIONALITY
     private void handleApproveEvent() {
         String selectedEvtId = AdminContext.getSelectedEventId();
         if (selectedEvtId == null || selectedEvtId.isBlank()) {
@@ -383,8 +393,8 @@ public class EventRequesReviewA {
         }
     }
 
-    // MODAL DIALOG FOR ORGANIZER ASSIGNMENT (NO NEW STAGE)
-    private void handleAssignOrganizerModal() {
+    // ⭐ BEAUTIFUL COMPACT IN-APP MODAL (NO SEPARATE WINDOW STAGE)
+    private void showInAppAssignOrganizerModal() {
         String selectedEvtId = AdminContext.getSelectedEventId();
         if (selectedEvtId == null || selectedEvtId.isBlank()) {
             showAlert("Please select an event to assign an organizer.");
@@ -399,18 +409,29 @@ public class EventRequesReviewA {
             return;
         }
 
-        Dialog<OrganizerProfile> dialog = new Dialog<>();
-        dialog.setTitle("Assign Organizer");
-        dialog.setHeaderText("Select an Organization to assign this event:");
-        if (LandingPage.landingPageStage != null) {
-            dialog.initOwner(LandingPage.landingPageStage);
-        }
+        modalOverlayPane.getChildren().clear();
+        modalOverlayPane.setAlignment(Pos.CENTER);
 
-        ButtonType assignBtnType = new ButtonType("Assign Organizer", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(assignBtnType, ButtonType.CANCEL);
+        VBox card = new VBox(14);
+        card.setMaxWidth(480);
+        card.setMaxHeight(Region.USE_PREF_SIZE);
+        card.setPadding(new Insets(24));
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-border-color: " + BORDER + "; -fx-border-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 18, 0, 0, 4);");
 
-        VBox contentPane = new VBox(10);
-        contentPane.setPadding(new Insets(16));
+        StackPane.setAlignment(card, Pos.CENTER);
+
+        HBox head = new HBox(8);
+        head.setAlignment(Pos.CENTER_LEFT);
+        FontIcon icon = new FontIcon("fas-user-tie");
+        icon.setIconSize(18);
+        icon.setIconColor(Color.web(PRIMARY));
+        Label title = new Label("Assign Event Organizer");
+        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY + ";");
+        head.getChildren().addAll(icon, title);
+
+        Label sub = new Label("Select an active organizer organization from Firestore to assign this event:");
+        sub.setWrapText(true);
+        sub.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748B;");
 
         ComboBox<OrganizerProfile> orgComboBox = new ComboBox<>(FXCollections.observableArrayList(activeOrganizers));
         orgComboBox.setMaxWidth(Double.MAX_VALUE);
@@ -433,38 +454,55 @@ public class EventRequesReviewA {
             }
         });
 
-        contentPane.getChildren().add(orgComboBox);
-        dialog.getDialogPane().setContent(contentPane);
+        HBox btns = new HBox(10);
+        btns.setAlignment(Pos.CENTER_RIGHT);
+        btns.setPadding(new Insets(6, 0, 0, 0));
 
-        dialog.setResultConverter(buttonType -> {
-            if (buttonType == assignBtnType) {
-                return orgComboBox.getValue();
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 6px; -fx-padding: 7 16; -fx-font-size: 12px; -fx-cursor: hand;");
+        cancelBtn.setOnAction(e -> closeInAppModal());
+
+        Button confirmBtn = new Button("Assign Organizer");
+        confirmBtn.setStyle("-fx-background-color: " + PRIMARY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-padding: 7 18; -fx-cursor: hand;");
+
+        confirmBtn.setOnAction(e -> {
+            OrganizerProfile selectedOrganizer = orgComboBox.getValue();
+            if (selectedOrganizer != null) {
+                String orgUid = selectedOrganizer.getOrganizerId();
+                String orgName = (selectedOrganizer.getOrganizationName() != null && !selectedOrganizer.getOrganizationName().isBlank())
+                        ? selectedOrganizer.getOrganizationName()
+                        : selectedOrganizer.getName();
+
+                String notes = notesArea != null ? notesArea.getText().trim() : "";
+
+                boolean updated = controller.assignOrganizerToEvent(selectedEvtId, orgUid, orgName, "ADMIN", notes);
+                if (updated) {
+                    closeInAppModal();
+                    Alert a = new Alert(Alert.AlertType.INFORMATION, "Event successfully assigned to Organization [" + orgName + "]!");
+                    a.setHeaderText("Assignment Successful");
+                    if (LandingPage.landingPageStage != null) a.initOwner(LandingPage.landingPageStage);
+                    a.showAndWait();
+
+                    EventRequestA requestsView = new EventRequestA();
+                    LandingPage.landingPageStage.setScene(requestsView.geteventRequestScene());
+                } else {
+                    showAlert("Could not update organizer in Firestore.");
+                }
             }
-            return null;
         });
 
-        Optional<OrganizerProfile> result = dialog.showAndWait();
-        result.ifPresent(selectedOrganizer -> {
-            String orgUid = selectedOrganizer.getOrganizerId();
-            String orgName = (selectedOrganizer.getOrganizationName() != null && !selectedOrganizer.getOrganizationName().isBlank())
-                    ? selectedOrganizer.getOrganizationName()
-                    : selectedOrganizer.getName();
+        btns.getChildren().addAll(cancelBtn, confirmBtn);
+        card.getChildren().addAll(head, new Separator(), sub, orgComboBox, btns);
 
-            String notes = notesArea != null ? notesArea.getText().trim() : "";
+        modalOverlayPane.getChildren().add(card);
+        modalOverlayPane.setVisible(true);
+        modalOverlayPane.setManaged(true);
+    }
 
-            boolean updated = controller.assignOrganizerToEvent(selectedEvtId, orgUid, orgName, "ADMIN", notes);
-            if (updated) {
-                Alert a = new Alert(Alert.AlertType.INFORMATION, "Event successfully assigned to Organization [" + orgName + "]!");
-                a.setHeaderText("Assignment Successful");
-                if (LandingPage.landingPageStage != null) a.initOwner(LandingPage.landingPageStage);
-                a.showAndWait();
-
-                EventRequestA requestsView = new EventRequestA();
-                LandingPage.landingPageStage.setScene(requestsView.geteventRequestScene());
-            } else {
-                showAlert("Could not update organizer in Firestore.");
-            }
-        });
+    private void closeInAppModal() {
+        modalOverlayPane.setVisible(false);
+        modalOverlayPane.setManaged(false);
+        modalOverlayPane.getChildren().clear();
     }
 
     private void loadEventReviewDetailsAsync() {
