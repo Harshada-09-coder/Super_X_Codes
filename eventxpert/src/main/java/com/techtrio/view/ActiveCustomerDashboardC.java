@@ -205,21 +205,30 @@ public class ActiveCustomerDashboardC {
 
         HBox mainGrid = new HBox(20);
 
+        // Left Column (Upcoming Event + My Calendar)
         VBox leftColumn = new VBox(20);
-        leftColumn.getChildren().addAll(
-                createUpcomingEventCard(),
-                createCalendarCard()
-        );
+        VBox upcomingCard = createUpcomingEventCard();
+        VBox calendarCard = createCalendarCard();
+        leftColumn.getChildren().addAll(upcomingCard, calendarCard);
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
 
+        // Right Column (Budget Overview + Weather Alert)
         VBox rightColumn = new VBox(20);
         rightColumn.setPrefWidth(420);
         rightColumn.setMinWidth(400);
 
-        rightColumn.getChildren().addAll(
-                createBudgetOverviewCard(),
-                createWeatherAlertCard()
-        );
+        VBox budgetCard = createBudgetOverviewCard();
+        VBox weatherCard = createWeatherAlertCard();
+
+        // 1. रो १ ची उंची समान करणे (Upcoming Event आणि Budget Overview ची उंची तंतोतंत समान)
+        budgetCard.minHeightProperty().bind(upcomingCard.heightProperty());
+        budgetCard.prefHeightProperty().bind(upcomingCard.heightProperty());
+
+        // 2. रो २ ची उंची समान करणे (My Calendar आणि Weather Alert ची उंची तंतोतंत समान)
+        weatherCard.minHeightProperty().bind(calendarCard.heightProperty());
+        weatherCard.prefHeightProperty().bind(calendarCard.heightProperty());
+
+        rightColumn.getChildren().addAll(budgetCard, weatherCard);
 
         mainGrid.getChildren().addAll(leftColumn, rightColumn);
         content.getChildren().addAll(headerRow, kpiRow, mainGrid);
@@ -279,6 +288,8 @@ public class ActiveCustomerDashboardC {
         VBox card = new VBox(14);
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
+        card.setPrefHeight(215);
+        card.setMinHeight(215);
 
         HBox header = new HBox(8);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -370,6 +381,8 @@ public class ActiveCustomerDashboardC {
         VBox card = new VBox(12);
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
+        card.setPrefHeight(340);
+        card.setMinHeight(340);
 
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -513,6 +526,8 @@ public class ActiveCustomerDashboardC {
         VBox card = new VBox(12);
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
+        card.setPrefHeight(215);
+        card.setMinHeight(215);
 
         HBox header = new HBox(8);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -561,6 +576,10 @@ public class ActiveCustomerDashboardC {
         budgetOverviewProgressPercent.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill:" + PRIMARY_BLUE + ";");
         progressRow.getChildren().addAll(budgetOverviewProgressBar, budgetOverviewProgressPercent);
 
+        // वरच्या कार्डसोबत अचूक तळाशी अलाइन राहण्यासाठी Spacer
+        Region budgetSpacer = new Region();
+        VBox.setVgrow(budgetSpacer, Priority.ALWAYS);
+
         HBox statsRow = new HBox(20);
         statsRow.setAlignment(Pos.CENTER_LEFT);
         statsRow.setPadding(new Insets(6, 0, 0, 0));
@@ -593,27 +612,29 @@ public class ActiveCustomerDashboardC {
 
         statsRow.getChildren().addAll(allocPill, remPill);
 
-        card.getChildren().addAll(header, totalBox, progressRow, statsRow);
+        card.getChildren().addAll(header, totalBox, progressRow, budgetSpacer, statsRow);
         return card;
     }
 
     private VBox createWeatherAlertCard() {
-        VBox card = new VBox(12);
+        VBox card = new VBox(14);
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
+        card.setPrefHeight(340);
+        card.setMinHeight(340);
 
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
 
         FontIcon cloudSunIcon = new FontIcon("fas-cloud-sun");
-        cloudSunIcon.setIconSize(20);
+        cloudSunIcon.setIconSize(22);
         cloudSunIcon.setIconColor(Color.web("#F59E0B"));
 
-        VBox titleBox = new VBox(1);
+        VBox titleBox = new VBox(2);
         Label title = new Label("Weather Alert");
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
+        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
         weatherLocationLabel = new Label("📍 Pune, Maharashtra");
-        weatherLocationLabel.setStyle("-fx-font-size: 11px; -fx-text-fill:" + TEXT_MUTED + ";");
+        weatherLocationLabel.setStyle("-fx-font-size: 12px; -fx-text-fill:" + TEXT_MUTED + ";");
         titleBox.getChildren().addAll(title, weatherLocationLabel);
 
         Region spacer = new Region();
@@ -625,16 +646,24 @@ public class ActiveCustomerDashboardC {
 
         header.getChildren().addAll(cloudSunIcon, titleBox, spacer, sunGraphic);
 
-        HBox tempRow = new HBox(10);
+        // Temperature & Condition Row - मोठा व स्पष्ट फॉन्ट
+        HBox tempRow = new HBox(14);
         tempRow.setAlignment(Pos.BASELINE_LEFT);
+        tempRow.setPadding(new Insets(4, 0, 2, 0));
+
         weatherTempLabel = new Label("32°C");
-        weatherTempLabel.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
+        weatherTempLabel.setStyle("-fx-font-size: 34px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
+
         weatherConditionLabel = new Label("Partly Cloudy");
-        weatherConditionLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_MUTED + ";");
+        weatherConditionLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_MUTED + ";");
+        weatherConditionLabel.setWrapText(true);
+
         tempRow.getChildren().addAll(weatherTempLabel, weatherConditionLabel);
 
-        HBox metricsRow = new HBox(14);
+        // Metrics Row - व्यवस्थित स्पेसिंग असलेले आकर्षक Pill Cards
+        HBox metricsRow = new HBox(12);
         metricsRow.setAlignment(Pos.CENTER_LEFT);
+        metricsRow.setPadding(new Insets(4, 0, 4, 0));
 
         weatherHumidityLabel = new Label("60%");
         weatherWindLabel = new Label("12 km/h");
@@ -646,38 +675,45 @@ public class ActiveCustomerDashboardC {
                 createWeatherMetric("fas-thermometer-half", "#DC2626", "Feels like", weatherFeelsLikeLabel)
         );
 
-        HBox alertBanner = new HBox(8);
+        // तळाशी अलाइन राहण्यासाठी Flex Spacer
+        Region cardSpacer = new Region();
+        VBox.setVgrow(cardSpacer, Priority.ALWAYS);
+
+        HBox alertBanner = new HBox(10);
         alertBanner.setAlignment(Pos.CENTER_LEFT);
-        alertBanner.setPadding(new Insets(8, 12, 8, 12));
+        alertBanner.setPadding(new Insets(10, 14, 10, 14));
         alertBanner.setStyle("-fx-background-color: #F8FAFC; -fx-border-color:" + BORDER + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
 
         FontIcon infoIco = new FontIcon("fas-exclamation-triangle");
-        infoIco.setIconSize(12);
+        infoIco.setIconSize(13);
         infoIco.setIconColor(Color.web(NAVY));
 
         weatherAlertTextLabel = new Label("No alerts for today. Enjoy your day!");
-        weatherAlertTextLabel.setStyle("-fx-font-size: 11px; -fx-text-fill:" + TEXT_DARK + ";");
+        weatherAlertTextLabel.setStyle("-fx-font-size: 12px; -fx-text-fill:" + TEXT_DARK + ";");
         alertBanner.getChildren().addAll(infoIco, weatherAlertTextLabel);
 
-        card.getChildren().addAll(header, tempRow, metricsRow, alertBanner);
+        card.getChildren().addAll(header, tempRow, metricsRow, cardSpacer, alertBanner);
         return card;
     }
 
     private HBox createWeatherMetric(String iconLit, String colorHex, String labelText, Label valLabel) {
-        HBox item = new HBox(6);
+        HBox item = new HBox(8);
         item.setAlignment(Pos.CENTER_LEFT);
+        item.setPadding(new Insets(8, 12, 8, 12));
+        item.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: " + BORDER + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
 
         FontIcon icon = new FontIcon(iconLit);
-        icon.setIconSize(13);
+        icon.setIconSize(14);
         icon.setIconColor(Color.web(colorHex));
 
-        VBox texts = new VBox(0);
+        VBox texts = new VBox(1);
         Label l = new Label(labelText);
-        l.setStyle("-fx-font-size: 9px; -fx-text-fill:" + TEXT_MUTED + ";");
-        valLabel.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
+        l.setStyle("-fx-font-size: 10px; -fx-text-fill:" + TEXT_MUTED + ";");
+        valLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
         texts.getChildren().addAll(l, valLabel);
 
         item.getChildren().addAll(icon, texts);
+        HBox.setHgrow(item, Priority.ALWAYS);
         return item;
     }
 
