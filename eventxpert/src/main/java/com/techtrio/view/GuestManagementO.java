@@ -13,7 +13,9 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -117,7 +119,7 @@ public class GuestManagementO {
         // 1. Sidebar (Matched with My Events)
         root.setLeft(createCommonOrganizerSidebar("My Events"));
 
-        // 2. Main Content inside ScrollPane (Top Bar Removed)
+        // 2. Main Content inside ScrollPane
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -134,9 +136,6 @@ public class GuestManagementO {
         return new Scene(rootLayer, 1550, 785);
     }
 
-    // ==========================================
-    // ORGANIZER SIDEBAR (My Events Highlighted)
-    // ==========================================
     private VBox createCommonOrganizerSidebar(String activeTab) {
         VBox sidebar = new VBox(6);
         sidebar.setPrefWidth(240);
@@ -255,7 +254,6 @@ public class GuestManagementO {
         VBox mainBox = new VBox(18);
         mainBox.setPadding(new Insets(24, 30, 30, 30));
 
-        // Breadcrumbs
         HBox breadcrumbs = new HBox(8);
         breadcrumbs.setAlignment(Pos.CENTER_LEFT);
 
@@ -276,21 +274,24 @@ public class GuestManagementO {
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        // Dynamic Send Passes Button
         btnSendPasses = new Button("📧  Send QR Passes to All");
         btnSendPasses.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 7 16; -fx-background-radius: 6px; -fx-cursor: hand;");
         btnSendPasses.setOnAction(e -> handleSendQrPassesToAll());
+
+        // ⭐ Organizer साठी थेट CSV Import चे बटण
+        Button btnImportCsv = new Button("📁 Import CSV");
+        btnImportCsv.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 7 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        btnImportCsv.setOnAction(e -> handleImportCsv(stage));
 
         Button addGuestBtn = new Button("+ Add Guest");
         addGuestBtn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 7 16; -fx-background-radius: 6px; -fx-cursor: hand;");
         addGuestBtn.setOnAction(e -> handleAddGuestDialog());
 
-        tRow.getChildren().addAll(title, statusBadge, headerSpacer, btnSendPasses, addGuestBtn);
+        tRow.getChildren().addAll(title, statusBadge, headerSpacer, btnSendPasses, btnImportCsv, addGuestBtn);
 
         lblEventSubtitle = new Label("Manage live attendee verification and instant check-in.");
         lblEventSubtitle.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        // Top 4 Entry Metric Cards Row
         HBox summaryRow = new HBox(14);
         lblEntryMode = new Label("Individual Guest List");
         lblTotalLimit = new Label("0");
@@ -304,15 +305,12 @@ public class GuestManagementO {
             createStatCard("REMAINING ENTRIES", lblRemaining, "fas-hourglass-half", YELLOW_TEXT)
         );
 
-        // Main 2-Column Split Grid
         HBox bodyGrid = new HBox(18);
 
-        // Left Column: Guest Roster / Live Entry Card
         VBox leftCol = new VBox(16);
         HBox.setHgrow(leftCol, Priority.ALWAYS);
         leftCol.getChildren().add(createGuestRosterCard());
 
-        // Right Column: Side Widgets
         VBox rightCol = new VBox(16);
         rightCol.setPrefWidth(340);
         rightCol.setMinWidth(320);
@@ -383,7 +381,6 @@ public class GuestManagementO {
 
         topHeader.getChildren().addAll(title, spacer, searchBox);
 
-        // Table Header Row
         GridPane tableHeader = new GridPane();
         tableHeader.setPadding(new Insets(8, 12, 8, 12));
         tableHeader.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 6px;");
@@ -452,7 +449,6 @@ public class GuestManagementO {
             row.setPadding(new Insets(10, 12, 10, 12));
             row.setStyle("-fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
 
-            // Guest Name + Avatar
             HBox guestCell = new HBox(10);
             guestCell.setAlignment(Pos.CENTER_LEFT);
 
@@ -479,14 +475,12 @@ public class GuestManagementO {
             guestCell.getChildren().addAll(avatar, textGroup);
             row.add(guestCell, 0, 0);
 
-            // Contact (Email or Mobile)
             String contact = (item.getEmail() != null && !item.getEmail().isBlank())
                     ? item.getEmail() : (item.getMobile() != null ? item.getMobile() : "-");
             Label contactLbl = new Label(contact);
             contactLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
             row.add(contactLbl, 1, 0);
 
-            // Type Badge
             Label typeBadge = new Label(item.getType() != null ? item.getType() : "General");
             if ("VIP".equalsIgnoreCase(item.getType())) {
                 typeBadge.setStyle("-fx-background-color: " + YELLOW_BG + "; -fx-text-fill: " + YELLOW_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
@@ -497,12 +491,10 @@ public class GuestManagementO {
             }
             row.add(typeBadge, 2, 0);
 
-            // Check-In Status
             Label checkInLbl = new Label(item.isCheckedIn() ? "✓ Checked In" : "● Not Checked In");
             checkInLbl.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + (item.isCheckedIn() ? GREEN_TEXT : SECONDARY_TEXT) + ";");
             row.add(checkInLbl, 3, 0);
 
-            // Actions (Check In + View QR + Send Email)
             HBox actions = new HBox(6);
             actions.setAlignment(Pos.CENTER_LEFT);
 
@@ -521,7 +513,8 @@ public class GuestManagementO {
             btnViewQr.setTooltip(new Tooltip("View & Download QR Pass"));
             btnViewQr.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-padding: 4 8; -fx-background-radius: 4px; -fx-cursor: hand;");
             btnViewQr.setOnAction(e -> {
-                String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), item.getId());
+                String safeId = (item.getId() != null && !item.getId().isBlank()) ? item.getId() : (item.getMobile() != null ? item.getMobile() : UUID.randomUUID().toString().substring(0, 8));
+                String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), safeId);
                 showInSceneQrDialog(item.getName(), payload);
             });
 
@@ -550,10 +543,6 @@ public class GuestManagementO {
         ColumnConstraints c5 = new ColumnConstraints(); c5.setPercentWidth(16);
         grid.getColumnConstraints().addAll(c1, c2, c3, c4, c5);
     }
-
-    // ==========================================
-    // RIGHT COLUMN SIDE WIDGETS
-    // ==========================================
 
     private VBox createLiveScannerCard(Stage stage) {
         VBox card = new VBox(10);
@@ -660,9 +649,6 @@ public class GuestManagementO {
         return card;
     }
 
-    // ==========================================
-    // IN-APP RECTANGULAR COMPACT MODAL
-    // ==========================================
     private void showInAppModal(String title, String message, boolean isSuccess) {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(6, 42, 96, 0.45);");
@@ -725,12 +711,10 @@ public class GuestManagementO {
         Label sub = new Label("Guest: " + guestName + "\nEvent: " + (currentEvent != null ? currentEvent.getEventName() : "Event"));
         sub.setStyle("-fx-font-size: 12px; -fx-text-fill: #52677D; -fx-text-alignment: center;");
 
-        // QR Image
         javafx.scene.image.WritableImage qrImg = QRCodeUtil.generateQrImage(payload, 220, 220);
         javafx.scene.image.ImageView imgView = new javafx.scene.image.ImageView(qrImg);
         imgView.setStyle("-fx-border-color: #0B4EA2; -fx-border-width: 1px; -fx-padding: 4;");
 
-        // Download Button
         Button btnDownload = new Button("📥 Download PNG");
         btnDownload.setStyle("-fx-background-color: #0B4EA2; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 8 18; -fx-background-radius: 6; -fx-cursor: hand;");
         btnDownload.setOnAction(e -> {
@@ -761,9 +745,6 @@ public class GuestManagementO {
         dialog.showAndWait();
     }
 
-    // ==========================================
-    // REAL-TIME FIRESTORE LISTENER
-    // ==========================================
     private void initRealtimeFirestoreListener() {
         new Thread(() -> {
             try {
@@ -800,6 +781,7 @@ public class GuestManagementO {
         }).start();
     }
 
+    // ⭐ CSV मधून आलेले पाहुणे लोड करताना सुरक्षितपणे ID तपासणे
     private void updateUIWithRealtimeEvent(Event ev) {
         int limit = ev.getGuestLimit() > 0 ? ev.getGuestLimit() : (ev.getGuests() > 0 ? ev.getGuests() : 250);
         int checked = ev.getCheckedInCount();
@@ -824,7 +806,17 @@ public class GuestManagementO {
 
         currentGuestList.clear();
         if (ev.getGuestList() != null) {
-            currentGuestList.addAll(ev.getGuestList());
+            for (Guest g : ev.getGuestList()) {
+                if (g != null) {
+                    if (g.getId() == null || g.getId().isBlank()) {
+                        String safeId = (g.getMobile() != null && !g.getMobile().isBlank())
+                                ? g.getMobile().replaceAll("[^0-9]", "")
+                                : UUID.randomUUID().toString().substring(0, 8);
+                        g.setId(safeId);
+                    }
+                    currentGuestList.add(g);
+                }
+            }
         }
         filterGuestList(filterInput != null ? filterInput.getText() : "");
     }
@@ -846,9 +838,7 @@ public class GuestManagementO {
         renderRosterRows();
     }
 
-    // ==========================================
-    // CHECK-IN & SCANNER LOGIC
-    // ==========================================
+    // ⭐ CSV पाहुण्यांचा स्कॅन किंवा कोड व्हेरिफिकेशन करताना एरर येणार नाही
     private void handleVerifyScan() {
         String input = txtScannerInput.getText().trim();
         if (input.isEmpty() || currentEvent == null) return;
@@ -863,7 +853,6 @@ public class GuestManagementO {
                     GuestService.CheckInResult result = guestService.processQREntryCheckIn(currentEvent.getEventId(), token);
                     Platform.runLater(() -> {
                         if (result.isSuccess()) {
-                            // Update local and firestore checkedIn count
                             int newChecked = result.getCurrentCheckedIn();
                             currentEvent.setCheckedInCount(newChecked);
 
@@ -882,10 +871,10 @@ public class GuestManagementO {
         } else {
             Guest target = null;
             for (Guest g : currentGuestList) {
-                if (g.getId().equalsIgnoreCase(input) || 
-                    input.endsWith(g.getId()) || 
-                    (g.getMobile() != null && g.getMobile().equalsIgnoreCase(input)) ||
-                    (g.getEmail() != null && g.getEmail().equalsIgnoreCase(input))) {
+                String gId = g.getId() != null ? g.getId() : "";
+                if ((!gId.isEmpty() && (gId.equalsIgnoreCase(input) || input.endsWith(gId))) || 
+                    (g.getMobile() != null && !g.getMobile().isBlank() && g.getMobile().equalsIgnoreCase(input)) ||
+                    (g.getEmail() != null && !g.getEmail().isBlank() && g.getEmail().equalsIgnoreCase(input))) {
                     target = g;
                     break;
                 }
@@ -905,13 +894,15 @@ public class GuestManagementO {
 
         new Thread(() -> {
             try {
-                GuestService.CheckInResult result = guestService.checkInManualGuest(currentEvent.getEventId(), guest.getId());
+                String safeId = (guest.getId() != null && !guest.getId().isBlank()) 
+                        ? guest.getId() : (guest.getMobile() != null ? guest.getMobile() : UUID.randomUUID().toString().substring(0, 8));
+                
+                GuestService.CheckInResult result = guestService.checkInManualGuest(currentEvent.getEventId(), safeId);
                 Platform.runLater(() -> {
                     if (result.isSuccess()) {
                         guest.setCheckedIn(true);
                         guest.setCheckInTime(System.currentTimeMillis());
 
-                        // ⭐ Sync checkedInCount directly with Event Document in Firestore
                         int newCheckedCount = currentEvent.getCheckedInCount() + 1;
                         currentEvent.setCheckedInCount(newCheckedCount);
 
@@ -944,7 +935,8 @@ public class GuestManagementO {
         }
 
         new Thread(() -> {
-            String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), guest.getId());
+            String safeId = (guest.getId() != null && !guest.getId().isBlank()) ? guest.getId() : (guest.getMobile() != null ? guest.getMobile() : UUID.randomUUID().toString().substring(0, 8));
+            String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), safeId);
             boolean sent = EmailService.sendGuestQrPass(
                     guest.getEmail(),
                     guest.getName(),
@@ -963,10 +955,10 @@ public class GuestManagementO {
         }).start();
     }
 
+    // ⭐ CSV मधून आलेल्या सर्व पाहुण्यांना खात्रीने अचूक QR पास पाठवणे
     private void handleSendQrPassesToAll() {
         if (currentEvent == null) return;
 
-        // 1. SINGLE EVENT QR MODE -> Send to Customer's Email
         if ("QR_ONLY".equalsIgnoreCase(currentEvent.getGuestMode())) {
             String customerId = currentEvent.getCustomerId();
 
@@ -1000,7 +992,6 @@ public class GuestManagementO {
             return;
         }
 
-        // 2. MANUAL GUEST LIST MODE -> Send to each individual Guest
         if (currentGuestList.isEmpty()) {
             showInAppModal("No Attendees", "No guests found on list to send passes to.", false);
             return;
@@ -1010,7 +1001,10 @@ public class GuestManagementO {
             int count = 0;
             for (Guest g : currentGuestList) {
                 if (g.getEmail() != null && !g.getEmail().isBlank()) {
-                    String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), g.getId());
+                    String safeId = (g.getId() != null && !g.getId().isBlank()) 
+                            ? g.getId() : (g.getMobile() != null && !g.getMobile().isBlank() ? g.getMobile() : UUID.randomUUID().toString().substring(0, 8));
+                    
+                    String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), safeId);
                     EmailService.sendGuestQrPass(
                             g.getEmail(),
                             g.getName(),
@@ -1025,6 +1019,100 @@ public class GuestManagementO {
             final int finalCount = count;
             Platform.runLater(() -> showInAppModal("Batch Dispatched", "QR Entry Passes sent successfully to " + finalCount + " guests!", true));
         }).start();
+    }
+
+    // ⭐ Organizer कडून थेट CSV इंपोर्ट करण्याची पद्धत
+    private void handleImportCsv(Stage stage) {
+        if (currentEvent == null) {
+            showInAppModal("Error", "No active event loaded to import guests.", false);
+            return;
+        }
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Select CSV File");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files (*.csv)", "*.csv"));
+        File file = chooser.showOpenDialog(stage != null ? stage : LandingPage.landingPageStage);
+
+        if (file != null) {
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                boolean isFirstLine = true;
+                int count = 0;
+                List<Guest> newGuests = new ArrayList<>();
+
+                while ((line = br.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+
+                    if (isFirstLine) {
+                        isFirstLine = false;
+                        String lower = line.toLowerCase();
+                        if (lower.contains("name") || lower.contains("email") || lower.contains("mobile") || lower.contains("contact")) {
+                            continue;
+                        }
+                    }
+
+                    String[] parts = line.split(",");
+                    if (parts.length >= 2) {
+                        String name = parts[0].trim();
+                        String col1 = parts.length > 1 ? parts[1].trim() : "";
+                        String col2 = parts.length > 2 ? parts[2].trim() : "";
+                        String type = parts.length > 3 ? parts[3].trim() : "General";
+
+                        String mobile = "";
+                        String email = "";
+
+                        if (col1.contains("@")) {
+                            email = col1;
+                            mobile = col2;
+                        } else {
+                            mobile = col1;
+                            email = col2;
+                        }
+
+                        if (type.isBlank()) type = "General";
+
+                        if (!name.isEmpty()) {
+                            Guest g = new Guest(name, mobile, email, type);
+                            String safeId = !mobile.isBlank() ? mobile.replaceAll("[^0-9]", "") : UUID.randomUUID().toString().substring(0, 8);
+                            g.setId(safeId);
+                            newGuests.add(g);
+                            count++;
+                        }
+                    }
+                }
+
+                if (count > 0) {
+                    if (currentEvent.getGuestList() == null) {
+                        currentEvent.setGuestList(new ArrayList<>());
+                    }
+                    currentEvent.getGuestList().addAll(newGuests);
+                    int newLimit = currentEvent.getGuestList().size();
+                    currentEvent.setGuestLimit(newLimit);
+
+                    currentGuestList.clear();
+                    currentGuestList.addAll(currentEvent.getGuestList());
+                    filterGuestList(filterInput != null ? filterInput.getText() : "");
+                    lblTotalLimit.setText(String.valueOf(newLimit));
+                    lblRemaining.setText(String.valueOf(Math.max(0, newLimit - currentEvent.getCheckedInCount())));
+
+                    new Thread(() -> {
+                        try {
+                            FirestoreClient.getFirestore().collection("events")
+                                    .document(currentEvent.getEventId())
+                                    .update("guestList", currentEvent.getGuestList(), "guestLimit", newLimit);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }).start();
+
+                    showInAppModal("Import Complete", count + " guests imported from CSV & synced with Firestore!", true);
+                }
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showInAppModal("Import Error", "Could not read CSV file: " + ex.getMessage(), false);
+            }
+        }
     }
 
     private void handleAddGuestDialog() {
@@ -1057,7 +1145,11 @@ public class GuestManagementO {
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == addBtnType) {
-                return new Guest(nameInput.getText().trim(), mobileInput.getText().trim(), emailInput.getText().trim(), typeCombo.getValue());
+                Guest g = new Guest(nameInput.getText().trim(), mobileInput.getText().trim(), emailInput.getText().trim(), typeCombo.getValue());
+                if (g.getId() == null || g.getId().isBlank()) {
+                    g.setId(UUID.randomUUID().toString().substring(0, 8));
+                }
+                return g;
             }
             return null;
         });

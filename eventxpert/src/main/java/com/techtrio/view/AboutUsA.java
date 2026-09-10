@@ -51,9 +51,7 @@ public class AboutUsA {
         message.setAlignment(Pos.CENTER);
         thanks.getChildren().addAll(label("THANK YOU", 36, Color.web("#F8FAFC"), true), label("For Your Guidance, Support & Inspiration", 14, Color.web("#CBD5E1"), false), badge, message, label("MENTOR   |   GUIDE   |   INSPIRATION", 11, Color.web("#7DD3FC"), true));
 
-        VBox sir = new VBox(8); sir.setAlignment(Pos.CENTER); sir.setPrefWidth(185);
-        ImageView core2WebImage = loadCore2WebImage();
-        sir.getChildren().addAll(core2WebImage != null ? core2WebImage : avatar("SS", 50, GOLD), label("Shashi Sir", 14, Color.web(GOLD), true));
+        VBox sir = new VBox(8, avatar("", 50, GOLD), label("Shashi Sir", 14, Color.web(GOLD), true)); sir.setAlignment(Pos.CENTER); sir.setPrefWidth(185);
         card.getChildren().addAll(brand, thanks, sir);
         card.lookupAll(".label").forEach(node -> ((Label) node).setStyle("-fx-text-fill:#FFFFFF;"));
         badge.setStyle("-fx-text-fill:" + GOLD + "; -fx-border-color:" + GOLD + "; -fx-border-radius:12; -fx-background-radius:12; -fx-background-color:rgba(245,158,11,0.11);");
@@ -108,18 +106,8 @@ public class AboutUsA {
     private StackPane avatar(String initials, int size, String color) { Circle circle = new Circle(size, Color.web(color, 0.17)); circle.setStroke(Color.web(color)); circle.setStrokeWidth(2); return new StackPane(circle, label(initials, size * 0.46, Color.web(color), true)); }
 
     private ImageView loadLogo() {
-        try { var stream = getClass().getResourceAsStream("/assets/icons/Logo.png"); if (stream == null) return null; ImageView image = new ImageView(new Image(stream)); image.setFitWidth(94); image.setFitHeight(94); image.setPreserveRatio(true); return image; }
+        try { var stream = getClass().getResourceAsStream(""); if (stream == null) return null; ImageView image = new ImageView(new Image(stream)); image.setFitWidth(94); image.setFitHeight(94); image.setPreserveRatio(true); return image; }
         catch (Exception ignored) { return null; }
-    }
-
-    private ImageView loadCore2WebImage() {
-        try {
-            var stream = getClass().getResourceAsStream("/assets/icons/Core2Web.jpg");
-            if (stream == null) return null;
-            ImageView image = new ImageView(new Image(stream));
-            image.setFitWidth(120); image.setFitHeight(120); image.setPreserveRatio(true);
-            return image;
-        } catch (Exception ignored) { return null; }
     }
 
     private VBox createSidebar() {
