@@ -28,7 +28,6 @@ public class GuestManagementC {
     private String uid;
     private String idToken;
 
-    // High Contrast Force NAVY Colors
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
     private static final String BG = "#F5F8FC";
@@ -92,6 +91,8 @@ public class GuestManagementC {
     }
 
     public Scene getGuestManagementScene(Runnable backAction, Runnable nextAction) {
+        ReviewPageC.EventData.currentStep = 5;
+
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
@@ -103,63 +104,50 @@ public class GuestManagementC {
         sidebar.setFillWidth(true);
         sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label logo = label("EventXpert", 22, FontWeight.BOLD, "#FFFFFF");
-        Label logoSub = label("EVENT MANAGEMENT", 10, FontWeight.NORMAL, "#BDE3FF");
-        VBox brand = new VBox(3, logo, logoSub);
-        brand.setPadding(new Insets(24, 20, 28, 25));
+        HBox brandBox = new HBox(10);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(24, 20, 20, 22));
 
-        Label createTitle = label("Create Event", 20, FontWeight.BOLD, "#FFFFFF");
-        Label step = label("Step-by-step setup", 12, FontWeight.NORMAL, "#BDE3FF");
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(24);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = label("EventXpert", 20, FontWeight.BOLD, "white");
+        Label logoSub = label("EVENT MANAGEMENT", 9, FontWeight.NORMAL, "#BDE3FF");
+        brandTexts.getChildren().addAll(logo, logoSub);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        Label createTitle = label("Create Event", 18, FontWeight.BOLD, "white");
+        Label step = label("Step-by-step setup", 11, FontWeight.NORMAL, "#BDE3FF");
         VBox titleBox = new VBox(2, createTitle, step);
         titleBox.setPadding(new Insets(0, 20, 20, 25));
 
         VBox menu = new VBox();
         menu.getChildren().addAll(
-                sidebarItem("[1]", "Event Details", false),
-                sidebarItem("[2]", "Requirements", false),
-                sidebarItem("[3]", "Venue", false),
-                sidebarItem("[4]", "Budget", false),
-                sidebarItem("[5]", "Guest", true),
-                sidebarItem("[6]", "AI Planning", false),
-                sidebarItem("[7]", "Review", false)
+                sidebarItem("[1]", "Event Details", "fas-info-circle", false),
+                sidebarItem("[2]", "Requirements", "fas-list-ul", false),
+                sidebarItem("[3]", "Venue & Location", "fas-map-marker-alt", false),
+                sidebarItem("[4]", "Budget", "fas-wallet", false),
+                sidebarItem("[5]", "Guest", "fas-users", true),
+                sidebarItem("[6]", "AI Planning", "fas-magic", false),
+                sidebarItem("[7]", "Review", "fas-check-circle", false)
         );
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
-        sidebar.getChildren().addAll(brand, titleBox, menu, sideSpace);
+        sidebar.getChildren().addAll(brandBox, titleBox, menu, sideSpace);
 
-        // 2. TOP BAR
-        HBox topBar = new HBox();
-        topBar.setPrefHeight(60);
-        topBar.setAlignment(Pos.CENTER_RIGHT);
-        topBar.setPadding(new Insets(0, 30, 0, 30));
-        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:0 0 1 0;");
+        // 2. MAIN CONTENT (TopBar Removed)
+        VBox content = new VBox(16);
+        content.setPadding(new Insets(28, 45, 20, 45));
 
-        Label topLogo = label("EventXpert", 14, FontWeight.BOLD, NAVY);
-        Region topSpace = new Region();
-        HBox.setHgrow(topSpace, Priority.ALWAYS);
-        Label notification = label("Notifications", 11, FontWeight.BOLD, NAVY);
-        Label help = label("?", 13, FontWeight.BOLD, NAVY);
-        help.setMinSize(28, 28);
-        help.setAlignment(Pos.CENTER);
-        help.setStyle("-fx-border-color:" + NAVY + ";-fx-border-radius:50;-fx-background-radius:50;-fx-text-fill:" + NAVY + ";");
-
-        topBar.getChildren().addAll(topLogo, topSpace, notification, help);
-
-        // 3. SCROLLABLE BODY
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
-
-        VBox page = new VBox(16);
-        page.setPadding(new Insets(20, 35, 20, 35));
-
-        Label stepText = label("STEP 5 OF 7", 11, FontWeight.BOLD, BLUE);
+        Label stepText = label("STEP 5 OF 7", 10, FontWeight.BOLD, BLUE);
         Label title = label("Guest Management", 26, FontWeight.BOLD, NAVY);
-        Label subtitle = label("Choose how you want to manage guest entry for your event.", 13, FontWeight.BOLD, NAVY);
-        VBox titleBoxPage = new VBox(4, stepText, title, subtitle);
+        Label subtitle = label("Choose how you want to manage guest entry for your event.", 12, FontWeight.NORMAL, "#64748B");
+        VBox titleBoxPage = new VBox(3, stepText, title, subtitle);
 
-        // CARD 1: MANUAL GUEST LIST (Ikonli FontIcon)
+        // Cards Row
         cardManual = createCard();
         cardManual.setPrefWidth(450);
         HBox.setHgrow(cardManual, Priority.ALWAYS);
@@ -168,7 +156,6 @@ public class GuestManagementC {
         HBox topManual = new HBox();
         topManual.setAlignment(Pos.CENTER_LEFT);
 
-        // Ikonli Users Icon
         StackPane iconCircleManual = new StackPane();
         Circle cManual = new Circle(18, Color.web("#E0EDFF"));
         FontIcon iconUsers = new FontIcon("fas-users");
@@ -202,13 +189,11 @@ public class GuestManagementC {
                 btnManualSelect
         );
 
-        // CARD 2: SINGLE EVENT QR (Ikonli FontIcon)
         cardQr = createCard();
         cardQr.setPrefWidth(450);
         HBox.setHgrow(cardQr, Priority.ALWAYS);
         cardQr.setCursor(javafx.scene.Cursor.HAND);
 
-        // Ikonli QR Code Icon
         StackPane iconCircleQr = new StackPane();
         Circle cQr = new Circle(18, Color.web("#F1F5F9"));
         FontIcon iconQr = new FontIcon("fas-qrcode");
@@ -329,7 +314,6 @@ public class GuestManagementC {
         colStatus.setPrefWidth(120);
         styleColumnCell(colStatus);
 
-        // Real-Time Delete Action Column (with Ikonli Trash Icon)
         TableColumn<GuestRow, Void> colAction = new TableColumn<>("Action");
         colAction.setPrefWidth(100);
         colAction.setCellFactory(param -> new TableCell<>() {
@@ -361,8 +345,11 @@ public class GuestManagementC {
         }
 
         addGuestsCard.getChildren().addAll(addHeader, formRow, table);
-        page.getChildren().addAll(titleBoxPage, cardsHolder, addGuestsCard);
-        scrollPane.setContent(page);
+        content.getChildren().addAll(titleBoxPage, cardsHolder, addGuestsCard);
+
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
 
         // FOOTER
         HBox footer = new HBox(15);
@@ -386,6 +373,7 @@ public class GuestManagementC {
         next.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
 
         back.setOnAction(e -> {
+            ReviewPageC.EventData.saveDraft(4);
             if (backAction != null) {
                 backAction.run();
             } else {
@@ -397,6 +385,7 @@ public class GuestManagementC {
         next.setOnAction(e -> {
             ReviewPageC.EventData.guestMode = selectedMode;
             ReviewPageC.EventData.guestList = new ArrayList<>(guestMasterList);
+            ReviewPageC.EventData.saveDraft(6);
 
             if (nextAction != null) {
                 nextAction.run();
@@ -408,7 +397,7 @@ public class GuestManagementC {
 
         footer.getChildren().addAll(copyright, footerSpace, back, next);
 
-        VBox rightSide = new VBox(topBar, scrollPane, footer);
+        VBox rightSide = new VBox(scrollPane, footer);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
         HBox fullPage = new HBox(sidebar, rightSide);
@@ -510,22 +499,33 @@ public class GuestManagementC {
         return card;
     }
 
-    private HBox sidebarItem(String icon, String text, boolean active) {
-        HBox item = new HBox(12);
-        item.setPrefHeight(44);
-        item.setMinHeight(44);
+    private HBox sidebarItem(String stepNum, String text, String iconLiteral, boolean active) {
+        HBox item = new HBox(10);
+        item.setPrefHeight(42);
+        item.setMinHeight(42);
         item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(0, 18, 0, 25));
-        item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
-        item.getChildren().addAll(label(icon, 13, FontWeight.NORMAL, "white"), label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8"));
+        item.setPadding(new Insets(0, 16, 0, 22));
+
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#B7C4D8"));
+
+        Label textLbl = label(stepNum + "  " + text, 12, active ? FontWeight.BOLD : FontWeight.NORMAL, active ? NAVY : "#B7C4D8");
+
+        if (active) {
+            item.setStyle("-fx-background-color: #E0F2FE; -fx-background-radius: 7px;");
+        } else {
+            item.setStyle("-fx-background-color: transparent;");
+        }
+
+        item.getChildren().addAll(icon, textLbl);
         return item;
     }
 
     private Label label(String text, double size, FontWeight weight, String color) {
         Label l = new Label(text);
         l.setFont(Font.font("Arial", weight, size));
-        l.setTextFill(Color.web(color));
-        l.setStyle("-fx-text-fill: " + color + " !important; -fx-opacity: 1.0;");
+        l.setStyle("-fx-text-fill: " + color + " !important;");
         return l;
     }
 }

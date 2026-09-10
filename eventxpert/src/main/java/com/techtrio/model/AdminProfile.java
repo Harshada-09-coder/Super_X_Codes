@@ -10,6 +10,7 @@ public class AdminProfile {
     private String email;
     private String mobileNo;
     private String address;
+    private String role; // Firestore मधील 'role' फील्डसाठी जोडले आहे
     private Timestamp createdAt;
 
     // Firestore साठी required
@@ -72,6 +73,14 @@ public class AdminProfile {
         this.address = address;
     }
 
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
     public Timestamp getCreatedAt() {
         return createdAt;
     }
@@ -81,10 +90,10 @@ public class AdminProfile {
     }
 
     public boolean isTwoFactorEnabled() {
-    return twoFactorEnabled;
-}
+        return twoFactorEnabled;
+    }
 
-public void setTwoFactorEnabled(boolean twoFactorEnabled) {
-    this.twoFactorEnabled = twoFactorEnabled;
-}
+    public void setTwoFactorEnabled(boolean twoFactorEnabled) {
+        this.twoFactorEnabled = twoFactorEnabled;
+    }
 }

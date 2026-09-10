@@ -1,7 +1,18 @@
 package com.techtrio.view;
 
+import com.techtrio.model.Event;
+import com.techtrio.services.EventService;
 import com.techtrio.session.UserSession;
+import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.lang.reflect.Method;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -18,11 +29,19 @@ public class NewCustomerDashboard {
     private String uid;
     private String idToken;
 
-    private final String NAVY = "#082E6B";
-    private final String BLUE = "#174A88";
-    private final String LIGHT = "#F5F8FC";
-    private final String TEXT = "#082E6B";
-    private final String GRAY = "#526071";
+    private static final String NAVY = "#062A60";
+    private static final String PRIMARY_BLUE = "#0B4EA2";
+    private static final String LIGHT_BLUE = "#EAF3FF";
+    private static final String BACKGROUND = "#F8FAFC";
+    private static final String BORDER_COLOR = "#DCE5F0";
+    private static final String SECONDARY_TEXT = "#64748B";
+
+    private final EventService eventService = new EventService();
+    private List<Event> customerEvents = new ArrayList<>();
+
+    private YearMonth currentYearMonth = YearMonth.now();
+    private Label monthLabel;
+    private GridPane calendarGrid;
 
     public NewCustomerDashboard() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -35,340 +54,461 @@ public class NewCustomerDashboard {
     }
 
     public Scene getnewCustomerScene(Runnable callBackAction1) {
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        VBox sidebar = new VBox(18);
-        sidebar.setPrefWidth(285);
-        sidebar.setPadding(new Insets(28, 0, 20, 0));
-        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
+        // 1. Sidebar
+        root.setLeft(createCustomerSidebar());
 
-        Circle profileCircle = new Circle(33);
-        profileCircle.setFill(Color.web("#E7E7E7"));
+        // 2. Main Content
+        VBox content = new VBox(20);
+        content.setPadding(new Insets(24, 32, 28, 32));
+        content.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        Label initial = new Label("C");
-        initial.setFont(Font.font("Arial", FontWeight.BOLD, 25));
-        initial.setTextFill(Color.web(NAVY));
+        // Header
+        Label welcome = new Label("Welcome to EventXpert! 👋");
+        welcome.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        welcome.setTextFill(Color.web(NAVY));
 
-        StackPane profile = new StackPane(profileCircle, initial);
+        Label subtitle = new Label("Let's plan your first event seamlessly with AI constraint planning, verified venues and trusted vendors.");
+        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        Label logo = new Label("EventXpert");
-        logo.setFont(Font.font("Arial", FontWeight.BOLD, 29));
-        logo.setTextFill(Color.WHITE);
+        VBox heading = new VBox(4, welcome, subtitle);
 
-        Label dashboardText = new Label("Customer Dashboard");
-        dashboardText.setFont(Font.font("Arial", 17));
-        dashboardText.setTextFill(Color.web("#B8D0EE"));
+        // Top Action Cards
+        HBox topCards = new HBox(18);
 
-        VBox brand = new VBox(5, profile, logo, dashboardText);
-        brand.setAlignment(Pos.CENTER);
-        brand.setPadding(new Insets(0, 0, 20, 0));
-
-        sidebar.getChildren().add(brand);
-
-        HBox dashNav = navItem("▦", "Dashboard", true, () -> {});
-        HBox createEventNav = navItem("⊕", "Create Event", false, this::openCreateEvent);
-        HBox myEventsNav = navItem("□", "My Events", false, this::openCreateEvent);
-        HBox calendarNav = navItem("□", "Calendar", false, () -> {});
-        HBox notificationsNav = navItem("♧", "Notifications", false, this::openNotifications);
-
-        sidebar.getChildren().addAll(
-                dashNav,
-                createEventNav,
-                myEventsNav,
-                calendarNav,
-                notificationsNav
-        );
-
-        Region sideSpace = new Region();
-        VBox.setVgrow(sideSpace, Priority.ALWAYS);
-
-        HBox profileNav = navItem("♙", "Profile", false, this::openProfile);
-        HBox settingsNav = navItem("⚙", "Settings", false, this::openSettings);
-        HBox supportNav = navItem("?", "Support", false, () -> {});
-
-        sidebar.getChildren().addAll(
-                sideSpace,
-                profileNav,
-                settingsNav,
-                supportNav
-        );
-
-        HBox topBar = new HBox(18);
-        topBar.setAlignment(Pos.CENTER_RIGHT);
-        topBar.setPadding(new Insets(14, 25, 14, 25));
-        topBar.setPrefHeight(72);
-        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E0E5EC;-fx-border-width:0 0 1 0;");
-
-        Region topSpace = new Region();
-        HBox.setHgrow(topSpace, Priority.ALWAYS);
-
-        TextField search = new TextField();
-        search.setPromptText("Search events...");
-        search.setPrefWidth(325);
-        search.setPrefHeight(42);
-        search.setStyle("-fx-background-color:#F8FAFD;-fx-border-color:#C8D2DF;-fx-border-radius:8;-fx-background-radius:8;-fx-padding:0 15;-fx-font-size:14;");
-
-        Label notification = new Label("♧");
-        notification.setFont(Font.font("Arial", 22));
-        notification.setTextFill(Color.web(GRAY));
-        notification.setStyle("-fx-cursor:hand;");
-        notification.setOnMouseClicked(e -> openNotifications());
-
-        Button createTop = new Button("Create Event");
-        createTop.setPrefHeight(42);
-        createTop.setStyle("-fx-background-color:" + NAVY + ";-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:15;-fx-background-radius:8;-fx-padding:0 22;-fx-cursor:hand;");
-        createTop.setOnAction(e -> openCreateEvent());
-
-        Circle topProfile = new Circle(20);
-        topProfile.setFill(Color.web("#D7EAF8"));
-
-        Label topInitial = new Label("C");
-        topInitial.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-        topInitial.setTextFill(Color.web(NAVY));
-
-        StackPane topUser = new StackPane(topProfile, topInitial);
-        topUser.setStyle("-fx-cursor:hand;");
-        topUser.setOnMouseClicked(e -> openProfile());
-
-        topBar.getChildren().addAll(topSpace, search, notification, createTop, topUser);
-
-        VBox content = new VBox(18);
-        content.setPadding(new Insets(22, 32, 35, 32));
-        content.setStyle("-fx-background-color:" + LIGHT + ";");
-
-        Label welcome = new Label("Welcome to EventXpert!");
-        welcome.setFont(Font.font("Arial", FontWeight.BOLD, 30));
-        welcome.setTextFill(Color.web(TEXT));
-
-        Label subtitle = new Label("Let's plan your first event and make it memorable.");
-        subtitle.setFont(Font.font("Arial", 16));
-        subtitle.setTextFill(Color.web(GRAY));
-
-        VBox heading = new VBox(2, welcome, subtitle);
-
-        VBox firstEvent = new VBox(13);
-        firstEvent.setPadding(new Insets(22));
-        firstEvent.setStyle(cardStyle());
-
-        Label firstTitle = new Label("Plan Your First Event");
-        firstTitle.setFont(Font.font("Arial", FontWeight.BOLD, 23));
-        firstTitle.setTextFill(Color.web(TEXT));
-
-        Label firstDescription = new Label(
-                "Whether you're planning a birthday celebration, corporate event, "
-              + "or any special occasion, EventXpert helps you manage everything in one place."
-        );
-        firstDescription.setWrapText(true);
-        firstDescription.setFont(Font.font("Arial", 14));
-        firstDescription.setTextFill(Color.web(GRAY));
-
-        Button firstButton = new Button("+ Create Your First Event");
-        firstButton.setPrefHeight(42);
-        firstButton.setStyle(buttonStyle());
-        firstButton.setOnAction(e -> openCreateEvent());
-
-        // Added ONCE to prevent duplicate-children exception
-        firstEvent.getChildren().addAll(firstTitle, firstDescription, firstButton);
-
-        VBox aiCard = new VBox(12);
-        aiCard.setPadding(new Insets(20));
-        aiCard.setPrefWidth(305);
-        aiCard.setStyle("-fx-background-color:#174A88;-fx-background-radius:12;");
-
-        Label aiIcon = new Label("✦");
-        aiIcon.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-        aiIcon.setTextFill(Color.WHITE);
-
-        Label aiTitle = new Label("Plan Smarter with AI");
-        aiTitle.setFont(Font.font("Arial", FontWeight.BOLD, 21));
-        aiTitle.setTextFill(Color.WHITE);
-
-        Label aiText = new Label(
-                "Let EventXpert's AI Event Planner create a personalized "
-              + "event plan based on your event type, guest count, preferences and budget."
-        );
-        aiText.setWrapText(true);
-        aiText.setFont(Font.font("Arial", 13));
-        aiText.setTextFill(Color.WHITE);
-
-        Button aiButton = new Button("Try AI Event Planner  →");
-        aiButton.setMaxWidth(Double.MAX_VALUE);
-        aiButton.setPrefHeight(40);
-        aiButton.setStyle("-fx-background-color:#BFE0FA;-fx-text-fill:#082E6B;-fx-font-weight:bold;-fx-font-size:14;-fx-background-radius:7;-fx-cursor:hand;");
-        aiButton.setOnAction(e -> openCreateEvent());
-
-        aiCard.getChildren().addAll(aiIcon, aiTitle, aiText, aiButton);
-
-        HBox topCards = new HBox(22, firstEvent, aiCard);
+        // Plan First Event Card
+        VBox firstEvent = new VBox(12);
+        firstEvent.setPadding(new Insets(20));
+        firstEvent.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
         HBox.setHgrow(firstEvent, Priority.ALWAYS);
 
-        HBox stats = new HBox(15);
-        stats.getChildren().addAll(
-                statCard("Upcoming Events", "0"),
-                statCard("Active Events", "0"),
-                statCard("Total Events", "0"),
-                statCard("Pending Requests", "0")
+        Label firstTitle = new Label("Plan Your First Event");
+        firstTitle.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        firstTitle.setTextFill(Color.web(NAVY));
+
+        Label firstDescription = new Label("Create a customized event, specify guests, budget, and let our verified organizers handle venue & vendor coordination.");
+        firstDescription.setWrapText(true);
+        firstDescription.setStyle("-fx-font-size: 12.5px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        Button firstButton = new Button("+ Create Your First Event");
+        firstButton.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 18; -fx-background-radius: 6px; -fx-cursor: hand;");
+        firstButton.setOnAction(e -> openCreateEvent());
+
+        firstEvent.getChildren().addAll(firstTitle, firstDescription, firstButton);
+
+        // AI Smarter Card
+        VBox aiCard = new VBox(12);
+        aiCard.setPadding(new Insets(20));
+        aiCard.setPrefWidth(320);
+        aiCard.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-background-radius: 10px;");
+
+        Label aiTitle = new Label("✦ Timefold AI Planning");
+        aiTitle.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        aiTitle.setTextFill(Color.WHITE);
+
+        Label aiText = new Label("Our constraint solver creates optimal budget breakdowns and vendor timelines tailored to your event type.");
+        aiText.setWrapText(true);
+        aiText.setStyle("-fx-font-size: 12px; -fx-text-fill: #E0E7FF;");
+
+        Button aiButton = new Button("Try AI Planner →");
+        aiButton.setStyle("-fx-background-color: white; -fx-text-fill: " + NAVY + "; -fx-font-weight: bold; -fx-padding: 7 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        aiButton.setOnAction(e -> openCreateEvent());
+
+        aiCard.getChildren().addAll(aiTitle, aiText, aiButton);
+        topCards.getChildren().addAll(firstEvent, aiCard);
+
+        // Category Exploration Row
+        Label exploreTitle = new Label("Explore Event Packages");
+        exploreTitle.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        exploreTitle.setTextFill(Color.web(NAVY));
+
+        HBox categoryGrid = new HBox(14);
+        categoryGrid.getChildren().addAll(
+                createEventCard("fas-birthday-cake", "Birthday Party", "Venue, decor, catering & cakes", this::openCreateEvent),
+                createEventCard("fas-building", "Corporate Event", "Seminars, AV, catering & conferences", this::openCreateEvent),
+                createEventCard("fas-graduation-cap", "Educational Meet", "Workshops, training & seminars", this::openCreateEvent),
+                createEventCard("fas-users", "Family Gathering", "Reunions, celebrations & dining", this::openCreateEvent)
         );
 
-        Label exploreTitle = new Label("Explore Event Ideas");
-        exploreTitle.setFont(Font.font("Arial", FontWeight.BOLD, 23));
-        exploreTitle.setTextFill(Color.web(TEXT));
+        // Dynamic Calendar Section
+        VBox calendarCard = createCustomerCalendarContainer();
 
-        Label exploreSubtitle = new Label("Choose an event category to get started with your planning.");
-        exploreSubtitle.setFont(Font.font("Arial", 14));
-        exploreSubtitle.setTextFill(Color.web(GRAY));
+        content.getChildren().addAll(heading, topCards, exploreTitle, categoryGrid, calendarCard);
 
-        VBox exploreHeading = new VBox(2, exploreTitle, exploreSubtitle);
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
 
-        HBox row1 = new HBox(15);
-        row1.getChildren().addAll(
-                eventCard("▣", "Birthday Celebration", "Plan a memorable birthday with venue, catering, entertainment and more.", "Plan Birthday  →", this::openCreateEvent),
-                eventCard("▣", "Corporate Event", "Organize a professional seminar, conference, meeting or corporate gathering.", "Plan Corporate Event  →", this::openCreateEvent)
-        );
+        root.setCenter(scroll);
 
-        HBox row2 = new HBox(15);
-        row2.getChildren().addAll(
-                eventCard("◇", "Educational Event", "Plan seminars, workshops, conferences, training sessions and educational programs.", "Plan Educational Event  →", this::openCreateEvent),
-                eventCard("♧", "Family Event", "Create memorable family gatherings, reunions, celebrations and special occasions.", "Plan Family Event  →", this::openCreateEvent)
-        );
+        // Initial calendar render and async data fetch
+        renderCalendarMonth();
+        loadCustomerEventsAsync();
 
-        content.getChildren().addAll(heading, topCards, stats, exploreHeading, row1, row2);
-
-        BorderPane mainArea = new BorderPane();
-        mainArea.setTop(topBar);
-        mainArea.setCenter(content);
-
-        HBox root = new HBox(sidebar, mainArea);
-        HBox.setHgrow(mainArea, Priority.ALWAYS);
-
-        Scene scene = new Scene(root, 1550, 750);
-        newCustomerScene = scene;
+        newCustomerScene = new Scene(root, 1550, 785);
         return newCustomerScene;
+    }
+
+    private VBox createCustomerCalendarContainer() {
+        VBox box = new VBox(14);
+        box.setPadding(new Insets(20));
+        box.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+
+        // Calendar Header
+        HBox topRow = new HBox(12);
+        topRow.setAlignment(Pos.CENTER_LEFT);
+
+        Label calTitle = new Label("My Events Calendar");
+        calTitle.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        calTitle.setTextFill(Color.web(NAVY));
+
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
+
+        Button todayBtn = new Button("Today");
+        todayBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 4px; -fx-cursor: hand; -fx-font-weight: bold; -fx-font-size: 11px;");
+        todayBtn.setOnAction(e -> {
+            currentYearMonth = YearMonth.now();
+            renderCalendarMonth();
+        });
+
+        Button prevBtn = new Button("‹");
+        prevBtn.setStyle("-fx-background-color: #F1F5F9; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 3 10;");
+        prevBtn.setOnAction(e -> {
+            currentYearMonth = currentYearMonth.minusMonths(1);
+            renderCalendarMonth();
+        });
+
+        Button nextBtn = new Button("›");
+        nextBtn.setStyle("-fx-background-color: #F1F5F9; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand; -fx-padding: 3 10;");
+        nextBtn.setOnAction(e -> {
+            currentYearMonth = currentYearMonth.plusMonths(1);
+            renderCalendarMonth();
+        });
+
+        monthLabel = new Label();
+        monthLabel.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+        monthLabel.setTextFill(Color.web(NAVY));
+
+        topRow.getChildren().addAll(calTitle, sp, todayBtn, prevBtn, nextBtn, monthLabel);
+
+        calendarGrid = new GridPane();
+        calendarGrid.setHgap(6);
+        calendarGrid.setVgap(6);
+
+        for (int i = 0; i < 7; i++) {
+            ColumnConstraints cc = new ColumnConstraints();
+            cc.setPercentWidth(100.0 / 7);
+            calendarGrid.getColumnConstraints().add(cc);
+        }
+
+        box.getChildren().addAll(topRow, calendarGrid);
+        return box;
+    }
+
+    private void renderCalendarMonth() {
+        if (calendarGrid == null) return;
+        calendarGrid.getChildren().clear();
+
+        monthLabel.setText(currentYearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)));
+
+        String[] days = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+        for (int i = 0; i < 7; i++) {
+            Label dayHead = new Label(days[i]);
+            dayHead.setFont(Font.font("Arial", FontWeight.BOLD, 11));
+            dayHead.setTextFill(Color.web("#64748B"));
+            dayHead.setAlignment(Pos.CENTER);
+            dayHead.setMaxWidth(Double.MAX_VALUE);
+            dayHead.setPadding(new Insets(5));
+            dayHead.setStyle("-fx-background-color: #F8FAFC; -fx-background-radius: 4px;");
+            calendarGrid.add(dayHead, i, 0);
+        }
+
+        LocalDate firstOfMonth = currentYearMonth.atDay(1);
+        int dayOfWeekOffset = firstOfMonth.getDayOfWeek().getValue() % 7; // Sunday = 0
+        int daysInMonth = currentYearMonth.lengthOfMonth();
+        LocalDate today = LocalDate.now();
+
+        int row = 1;
+        int col = dayOfWeekOffset;
+
+        for (int day = 1; day <= daysInMonth; day++) {
+            LocalDate cellDate = currentYearMonth.atDay(day);
+
+            VBox cell = new VBox(4);
+            cell.setAlignment(Pos.TOP_CENTER);
+            cell.setPadding(new Insets(6, 4, 6, 4));
+            cell.setPrefHeight(60);
+            boolean isToday = cellDate.equals(today);
+
+            // Find events scheduled on this day
+            List<Event> matchedEvents = getEventsOnDate(cellDate);
+            boolean hasEvents = !matchedEvents.isEmpty();
+
+            // Cell styling
+            if (isToday) {
+                cell.setStyle("-fx-background-color: #EFF6FF; -fx-border-color: " + PRIMARY_BLUE + "; -fx-border-radius: 6px; -fx-background-radius: 6px;");
+            } else if (hasEvents) {
+                cell.setStyle("-fx-background-color: #F0FDF4; -fx-border-color: #86EFAC; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-cursor: hand;");
+            } else {
+                cell.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px;");
+            }
+
+            Label dayNum = new Label(String.valueOf(day));
+            dayNum.setFont(Font.font("Arial", (isToday || hasEvents) ? FontWeight.BOLD : FontWeight.NORMAL, 12));
+            dayNum.setTextFill(Color.web(isToday ? PRIMARY_BLUE : (hasEvents ? "#166534" : "#1E293B")));
+            cell.getChildren().add(dayNum);
+
+            // DYNAMIC DOT INDICATOR
+            if (hasEvents) {
+                HBox dotsBox = new HBox(3);
+                dotsBox.setAlignment(Pos.CENTER);
+
+                StringBuilder tipText = new StringBuilder("Events on " + cellDate + ":\n");
+                int dotCount = Math.min(matchedEvents.size(), 3);
+
+                for (int i = 0; i < dotCount; i++) {
+                    Circle dot = new Circle(3.5, Color.web(PRIMARY_BLUE));
+                    dotsBox.getChildren().add(dot);
+                }
+
+                for (Event ev : matchedEvents) {
+                    String evName = (ev.getEventName() != null && !ev.getEventName().isBlank()) ? ev.getEventName() : "Event";
+                    tipText.append("• ").append(evName).append("\n");
+                }
+
+                Tooltip tip = new Tooltip(tipText.toString().trim());
+                tip.setStyle("-fx-font-size: 11px;");
+                Tooltip.install(cell, tip);
+
+                cell.getChildren().add(dotsBox);
+            }
+
+            calendarGrid.add(cell, col, row);
+
+            col++;
+            if (col == 7) {
+                col = 0;
+                row++;
+            }
+        }
+    }
+
+    private List<Event> getEventsOnDate(LocalDate date) {
+        List<Event> matched = new ArrayList<>();
+        if (customerEvents == null || date == null) return matched;
+
+        for (Event ev : customerEvents) {
+            LocalDate d = parseDate(ev.getEventDate());
+            if (d == null) d = parseDate(ev.getStartDate());
+
+            if (d != null && d.equals(date)) {
+                matched.add(ev);
+            }
+        }
+        return matched;
+    }
+
+    private void loadCustomerEventsAsync() {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                try {
+                    System.out.println("[CustomerDashboard] Loading events for customer UID: " + uid);
+                    customerEvents = fetchCustomerEventsSafely(uid);
+                    System.out.println("[CustomerDashboard] Loaded " + (customerEvents != null ? customerEvents.size() : 0) + " events.");
+
+                    Platform.runLater(() -> renderCalendarMonth());
+                } catch (Throwable t) {
+                    System.err.println("[CustomerDashboard] Error loading events: " + t.getMessage());
+                }
+                return null;
+            }
+        };
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /**
+     * Safely fetches customer events using reflection to prevent compilation issues
+     */
+    @SuppressWarnings("unchecked")
+    private List<Event> fetchCustomerEventsSafely(String uId) {
+        if (uId == null || uId.isBlank() || eventService == null) return new ArrayList<>();
+        try {
+            Class<?> cls = eventService.getClass();
+            // 1. Try getEventsByCustomerId(String)
+            try {
+                Method m = cls.getMethod("getEventsByCustomerId", String.class);
+                return (List<Event>) m.invoke(eventService, uId);
+            } catch (NoSuchMethodException ignored) {}
+
+            // 2. Try getEventsByUserId(String)
+            try {
+                Method m = cls.getMethod("getEventsByUserId", String.class);
+                return (List<Event>) m.invoke(eventService, uId);
+            } catch (NoSuchMethodException ignored) {}
+
+            // 3. Try getEventsByCustomer(String)
+            try {
+                Method m = cls.getMethod("getEventsByCustomer", String.class);
+                return (List<Event>) m.invoke(eventService, uId);
+            } catch (NoSuchMethodException ignored) {}
+
+            // 4. Try getEventsByOrganizerId(String) as fallback
+            try {
+                Method m = cls.getMethod("getEventsByOrganizerId", String.class);
+                return (List<Event>) m.invoke(eventService, uId);
+            } catch (NoSuchMethodException ignored) {}
+
+        } catch (Exception ex) {
+            System.err.println("[CustomerDashboard] Event fetch reflection note: " + ex.getMessage());
+        }
+        return new ArrayList<>();
+    }
+
+    private LocalDate parseDate(String s) {
+        if (s == null || s.isBlank()) return null;
+        String clean = s.trim();
+
+        if (clean.contains("T")) clean = clean.split("T")[0];
+        if (clean.contains(" ")) clean = clean.split(" ")[0];
+
+        List<DateTimeFormatter> formatters = List.of(
+                DateTimeFormatter.ISO_LOCAL_DATE,
+                DateTimeFormatter.ofPattern("dd-MM-yyyy"),
+                DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+                DateTimeFormatter.ofPattern("yyyy/MM/dd"),
+                DateTimeFormatter.ofPattern("MM/dd/yyyy"),
+                DateTimeFormatter.ofPattern("d-M-yyyy"),
+                DateTimeFormatter.ofPattern("d/M/yyyy")
+        );
+
+        for (DateTimeFormatter dtf : formatters) {
+            try {
+                return LocalDate.parse(clean, dtf);
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    private VBox createEventCard(String iconLit, String title, String desc, Runnable onClick) {
+        VBox card = new VBox(10);
+        card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px; -fx-cursor: hand;");
+        HBox.setHgrow(card, Priority.ALWAYS);
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(18);
+        icon.setIconColor(Color.web(PRIMARY_BLUE));
+
+        Label t = new Label(title);
+        t.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        t.setTextFill(Color.web(NAVY));
+
+        Label d = new Label(desc);
+        d.setWrapText(true);
+        d.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        Button planBtn = new Button("Plan Now →");
+        planBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 0;");
+
+        card.getChildren().addAll(icon, t, d, planBtn);
+        card.setOnMouseClicked(e -> {
+            if (onClick != null) onClick.run();
+        });
+        return card;
+    }
+
+    private VBox createCustomerSidebar() {
+        VBox sidebar = new VBox(6);
+        sidebar.setPrefWidth(240);
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
+
+        HBox brandBox = new HBox(8);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(0, 6, 12, 6));
+
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = new Label("EventXpert");
+        logo.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        Label portal = new Label("CUSTOMER PORTAL");
+        portal.setStyle("-fx-text-fill: " + LIGHT_BLUE + "; -fx-font-size: 9px; -fx-font-weight: bold;");
+        brandTexts.getChildren().addAll(logo, portal);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        VBox menu = new VBox(3);
+        menu.getChildren().addAll(
+                createSidebarButton("Dashboard", "fas-tachometer-alt", true, () -> {}),
+                createSidebarButton("Create Event", "fas-plus-circle", false, this::openCreateEvent),
+                createSidebarButton("My Events", "fas-calendar-check", false, this::openCreateEvent),
+                createSidebarButton("Notifications", "fas-bell", false, this::openNotifications),
+                createSidebarButton("Profile", "fas-user", false, this::openProfile),
+                createSidebarButton("Settings", "fas-cog", false, this::openSettings)
+        );
+
+        Region space = new Region();
+        VBox.setVgrow(space, Priority.ALWAYS);
+
+        sidebar.getChildren().addAll(brandBox, menu, space);
+        return sidebar;
+    }
+
+    private Button createSidebarButton(String name, String iconLit, boolean active, Runnable action) {
+        Button btn = new Button("  " + name);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (active) {
+            btn.setStyle("-fx-background-color:" + LIGHT_BLUE + ";-fx-text-fill:" + NAVY + ";-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:6;");
+        } else {
+            btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-cursor:hand;");
+        }
+
+        if (action != null) btn.setOnAction(e -> action.run());
+        return btn;
     }
 
     private void openCreateEvent() {
         CreateEventC createEventView = new CreateEventC(uid, idToken);
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(createEventView.getCreateEventScene(this::returnToDashboard));
-        }
+        LandingPage.landingPageStage.setScene(createEventView.getCreateEventScene(this::returnToDashboard));
     }
 
     private void openProfile() {
         ProfilePageC profilePage = new ProfilePageC();
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(profilePage.getProfileScene(this::returnToDashboard));
-        }
+        LandingPage.landingPageStage.setScene(profilePage.getProfileScene(this::returnToDashboard));
     }
 
     private void openSettings() {
         SettingC settingPage = new SettingC();
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(settingPage.getSettingScene(this::returnToDashboard));
-        }
+        LandingPage.landingPageStage.setScene(settingPage.getSettingScene(this::returnToDashboard));
     }
 
     private void openNotifications() {
         Notification notificationPage = new Notification();
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(notificationPage.getNotificationScene());
-        }
+        LandingPage.landingPageStage.setScene(notificationPage.getNotificationScene());
     }
 
     private void returnToDashboard() {
         NewCustomerDashboard dash = new NewCustomerDashboard(uid, idToken);
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(dash.getnewCustomerScene(null));
-        }
-    }
-
-    private HBox navItem(String icon, String text, boolean active) {
-        return navItem(icon, text, active, null);
-    }
-
-    private HBox navItem(String icon, String text, boolean active, Runnable action) {
-        Label iconLabel = new Label(icon);
-        iconLabel.setFont(Font.font("Arial", 17));
-        iconLabel.setTextFill(Color.WHITE);
-
-        Label textLabel = new Label(text);
-        textLabel.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-        textLabel.setTextFill(active ? Color.WHITE : Color.web("#B8D0EE"));
-
-        HBox item = new HBox(15, iconLabel, textLabel);
-        item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(12, 25, 12, 35));
-        item.setMaxWidth(Double.MAX_VALUE);
-
-        if (active) {
-            item.setStyle("-fx-background-color:#174A88;");
-        }
-        if (action != null) {
-            item.setStyle(item.getStyle() + "-fx-cursor:hand;");
-            item.setOnMouseClicked(e -> action.run());
-        }
-        return item;
-    }
-
-    private VBox statCard(String title, String value) {
-        VBox card = new VBox(8);
-        card.setPadding(new Insets(16));
-        card.setPrefHeight(100);
-        card.setStyle(cardStyle());
-
-        Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Arial", 14));
-        titleLabel.setTextFill(Color.web(GRAY));
-
-        Label valueLabel = new Label(value);
-        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 25));
-        valueLabel.setTextFill(Color.web(TEXT));
-
-        card.getChildren().addAll(titleLabel, valueLabel);
-        HBox.setHgrow(card, Priority.ALWAYS);
-        return card;
-    }
-
-    private VBox eventCard(String icon, String title, String description, String action, Runnable onClick) {
-        VBox card = new VBox(10);
-        card.setPadding(new Insets(18));
-        card.setMinHeight(145);
-        card.setStyle(cardStyle() + "-fx-cursor:hand;");
-        if (onClick != null) {
-            card.setOnMouseClicked(e -> onClick.run());
-        }
-
-        Label iconLabel = new Label(icon);
-        iconLabel.setPrefSize(45, 35);
-        iconLabel.setAlignment(Pos.CENTER);
-        iconLabel.setFont(Font.font("Arial", 17));
-        iconLabel.setTextFill(Color.web(NAVY));
-        iconLabel.setStyle("-fx-background-color:#C7E7FA;-fx-background-radius:20;");
-
-        Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 19));
-        titleLabel.setTextFill(Color.web(TEXT));
-
-        HBox titleRow = new HBox(12, iconLabel, titleLabel);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
-
-        Label descriptionLabel = new Label(description);
-        descriptionLabel.setWrapText(true);
-        descriptionLabel.setFont(Font.font("Arial", 13));
-        descriptionLabel.setTextFill(Color.web(GRAY));
-
-        Label actionLabel = new Label(action);
-        actionLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        actionLabel.setTextFill(Color.web(NAVY));
-
-        card.getChildren().addAll(titleRow, descriptionLabel, actionLabel);
-        HBox.setHgrow(card, Priority.ALWAYS);
-        return card;
-    }
-
-    private String cardStyle() {
-        return "-fx-background-color:white;-fx-background-radius:10;-fx-border-color:#DCE3EC;-fx-border-radius:10;-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.08),5,0,0,2);";
-    }
-
-    private String buttonStyle() {
-        return "-fx-background-color:#082E6B;-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:14;-fx-background-radius:7;-fx-padding:0 22;-fx-cursor:hand;";
+        LandingPage.landingPageStage.setScene(dash.getnewCustomerScene(null));
     }
 }

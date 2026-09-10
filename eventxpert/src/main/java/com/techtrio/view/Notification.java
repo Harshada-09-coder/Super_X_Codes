@@ -3,6 +3,7 @@ package com.techtrio.view;
 import com.techtrio.controller.CustomerController;
 import com.techtrio.controller.CustomerState;
 import com.techtrio.session.UserSession;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -11,129 +12,278 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 
 public class Notification {
 
     private static final String NAVY = "#061B41";
-    private static final String BG = "#F5F8FC";
-    private static final String BORDER = "#D7DEE8";
+    private static final String PRIMARY_BLUE = "#0D3979";
+    private static final String BG = "#F4F7FC";
+    private static final String BORDER = "#E2E8F0";
+    private static final String TEXT_DARK = "#101828";
+    private static final String TEXT_MUTED = "#64748B";
 
     public Scene getNotificationScene() {
-
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color:" + BG + ";");
+        root.setStyle("-fx-background-color:" + BG + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        VBox sidebar = new VBox();
-        sidebar.setPrefWidth(250);
-        sidebar.setMinWidth(250);
-        sidebar.setMaxWidth(250);
-        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
+        // 1. Unified Sidebar
+        root.setLeft(createSidebar());
 
-        VBox logoBox = new VBox(2);
-        logoBox.setPadding(new Insets(24, 20, 20, 20));
-        logoBox.getChildren().addAll(
-                styledLabel("EventXpert", 23, FontWeight.BOLD, "#FFFFFF"),
-                styledLabel("CUSTOMER PANEL", 9, FontWeight.NORMAL, "#B8C9E2")
-        );
+        // 2. Main Content
+        VBox mainContent = new VBox(20);
+        mainContent.setPadding(new Insets(24, 35, 30, 35));
+        mainContent.setStyle("-fx-background-color:" + BG + ";");
 
-        VBox menu = new VBox(5);
-        menu.setPadding(new Insets(8, 12, 8, 12));
-        menu.getChildren().addAll(
-                menuItem("▦", "Dashboard", false, this::returnToDashboard),
-                menuItem("⊕", "Create Event", false, this::openCreateEvent),
-                menuItem("▣", "My Events", false),
-                menuItem("□", "Calendar", false),
-                menuItem("♧", "Notifications", true)
-        );
+        // Header with Back Button
+        HBox header = new HBox(16);
+        header.setAlignment(Pos.CENTER_LEFT);
 
-        Region sidebarSpace = new Region();
-        VBox.setVgrow(sidebarSpace, Priority.ALWAYS);
+        Button backBtn = new Button("← Back to Dashboard");
+        backBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-border-color: " + BORDER + "; -fx-border-radius: 7px; -fx-background-radius: 7px; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 8 16; -fx-cursor: hand;");
+        backBtn.setOnAction(e -> returnToDashboard());
 
-        VBox bottomMenu = new VBox(5);
-        bottomMenu.setPadding(new Insets(8, 12, 18, 12));
-        bottomMenu.getChildren().addAll(
-                menuItem("◉", "Profile", false),
-                menuItem("⚙", "Settings", false),
-                menuItem("?", "Support", false)
-        );
+        VBox headingText = new VBox(2);
+        Label title = new Label("Notifications Center");
+        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
+        Label subtitle = new Label("Manage how you receive alerts and stay updated with your events.");
+        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill:" + TEXT_MUTED + ";");
+        headingText.getChildren().addAll(title, subtitle);
 
-        sidebar.getChildren().addAll(logoBox, menu, sidebarSpace, bottomMenu);
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        BorderPane rightArea = new BorderPane();
-        HBox topBar = new HBox(12);
-        topBar.setPrefHeight(64);
-        topBar.setMinHeight(64);
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setPadding(new Insets(10, 20, 10, 20));
-        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E0E6EF;-fx-border-width:0 0 1 0;");
+        Button markAll = new Button("Mark all as read");
+        markAll.setStyle("-fx-background-color: white; -fx-text-fill:" + NAVY + "; -fx-border-color:" + BORDER + "; -fx-border-radius: 7px; -fx-background-radius: 7px; -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 8 14; -fx-cursor: hand;");
 
-        Button backButton = new Button("←  Back");
-        backButton.setOnAction(e -> returnToDashboard());
-        backButton.setPrefSize(105, 36);
-        backButton.setStyle("-fx-background-color:white;-fx-text-fill:#0D3979;-fx-border-color:#0D3979;-fx-border-radius:6;-fx-background-radius:6;-fx-font-family:Arial;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
+        Button clearAll = new Button("Clear All");
+        clearAll.setStyle("-fx-background-color: #FEE2E2; -fx-text-fill: #DC2626; -fx-border-radius: 7px; -fx-background-radius: 7px; -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 8 14; -fx-cursor: hand;");
 
-        TextField search = new TextField();
-        search.setPromptText("Search");
-        search.setPrefWidth(560);
-        search.setPrefHeight(36);
-        search.setStyle("-fx-background-color:#F7F9FC;-fx-border-color:#D2DAE5;-fx-border-radius:18;-fx-background-radius:18;-fx-padding:0 15;-fx-font-family:Arial;-fx-font-size:12px;");
+        header.getChildren().addAll(backBtn, headingText, headerSpacer, markAll, clearAll);
 
-        Region topSpace = new Region();
-        HBox.setHgrow(topSpace, Priority.ALWAYS);
-
-        Label notificationIcon = styledLabel("♧", 21, FontWeight.NORMAL, NAVY);
-        Circle avatarCircle = new Circle(18, Color.web("#C9E8FA"));
-        Label avatarLetter = styledLabel("C", 12, FontWeight.BOLD, NAVY);
-        StackPane avatar = new StackPane(avatarCircle, avatarLetter);
-
-        topBar.getChildren().addAll(backButton, search, topSpace, notificationIcon, avatar);
-
-        VBox main = new VBox(18);
-        main.setPadding(new Insets(25, 30, 25, 30));
-        main.setStyle("-fx-background-color:" + BG + ";");
-
-        HBox heading = new HBox();
-        heading.setAlignment(Pos.CENTER_LEFT);
-
-        VBox headingText = new VBox(4);
-        headingText.getChildren().addAll(
-                styledLabel("Notifications", 28, FontWeight.BOLD, NAVY),
-                styledLabel("Manage how you receive notifications and stay updated.", 13, FontWeight.NORMAL, "#596273")
-        );
-
-        Region headingSpace = new Region();
-        HBox.setHgrow(headingSpace, Priority.ALWAYS);
-
-        Button markAll = new Button("✉  Mark all as read");
-        markAll.setPrefHeight(38);
-        markAll.setStyle("-fx-background-color:white;-fx-text-fill:" + NAVY + ";-fx-border-color:#D5DDE7;-fx-border-radius:6;-fx-background-radius:6;-fx-font-size:11px;-fx-font-weight:bold;-fx-cursor:hand;");
-
-        Button clearAll = new Button("▥  Clear All");
-        clearAll.setPrefHeight(38);
-        clearAll.setStyle("-fx-background-color:white;-fx-text-fill:#D62828;-fx-border-color:#E7B7B7;-fx-border-radius:6;-fx-background-radius:6;-fx-font-size:11px;-fx-font-weight:bold;-fx-cursor:hand;");
-
-        heading.getChildren().addAll(headingText, headingSpace, markAll, clearAll);
-
-        HBox content = new HBox(20);
+        HBox contentGrid = new HBox(20);
         VBox preferences = notificationPreferences();
         VBox recent = recentNotifications();
 
         HBox.setHgrow(preferences, Priority.ALWAYS);
         HBox.setHgrow(recent, Priority.ALWAYS);
 
-        content.getChildren().addAll(preferences, recent);
-        VBox.setVgrow(content, Priority.ALWAYS);
+        contentGrid.getChildren().addAll(preferences, recent);
 
-        main.getChildren().addAll(heading, content);
-        rightArea.setTop(topBar);
-        rightArea.setCenter(main);
+        mainContent.getChildren().addAll(header, contentGrid);
 
-        root.setLeft(sidebar);
-        root.setCenter(rightArea);
+        ScrollPane scrollPane = new ScrollPane(mainContent);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BG + "; -fx-border-color: transparent;");
 
-        return new Scene(root, 1550, 750);
+        root.setCenter(scrollPane);
+        return new Scene(root, 1550, 785);
+    }
+
+    private VBox createSidebar() {
+        VBox sidebar = new VBox(8);
+        sidebar.setPrefWidth(245);
+        sidebar.setMinWidth(245);
+        sidebar.setMaxWidth(245);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
+
+        HBox brandBox = new HBox(10);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(6, 10, 14, 10));
+
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(24);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label brandTitle = new Label("EventXpert");
+        brandTitle.setStyle("-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;");
+        Label brandSub = new Label("Plan. Manage. Celebrate.");
+        brandSub.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 10px;");
+        brandTexts.getChildren().addAll(brandTitle, brandSub);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        VBox navList = new VBox(5);
+        navList.getChildren().addAll(
+                createSidebarItem("Dashboard", "fas-tachometer-alt", false, this::returnToDashboard),
+                createSidebarItem("Create Event", "fas-plus-circle", false, this::openCreateEvent),
+                createSidebarItem("My Events", "fas-calendar-check", false, this::openMyEvents),
+                createSidebarItem("Notifications", "fas-bell", true, null),
+                createSidebarItem("Profile", "fas-user", false, this::openProfile),
+                createSidebarItem("Settings", "fas-cog", false, this::openSettings)
+        );
+
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        sidebar.getChildren().addAll(brandBox, navList, spacer);
+        return sidebar;
+    }
+
+    private Button createSidebarItem(String title, String iconLiteral, boolean active, Runnable action) {
+        Button btn = new Button("  " + title);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(38);
+        btn.setPadding(new Insets(0, 12, 0, 12));
+
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (active) {
+            btn.setStyle("-fx-background-color: #E0F2FE; -fx-text-fill:" + NAVY + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-background-radius: 7px;");
+        } else {
+            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 12px; -fx-cursor: hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-text-fill: white; -fx-font-size: 12px; -fx-background-radius: 7px; -fx-cursor: hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 12px; -fx-cursor: hand;"));
+        }
+
+        if (action != null) btn.setOnAction(e -> action.run());
+        return btn;
+    }
+
+    private VBox notificationPreferences() {
+        VBox card = new VBox(14);
+        card.setPadding(new Insets(20));
+        card.setStyle("-fx-background-color:white; -fx-border-color:" + BORDER + "; -fx-border-radius:12; -fx-background-radius:12;");
+
+        HBox titleRow = new HBox(12);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
+
+        StackPane iconBox = new StackPane();
+        Circle iconCircle = new Circle(20, Color.web("#E0F2FE"));
+        FontIcon icon = new FontIcon("fas-sliders-h");
+        icon.setIconSize(16);
+        icon.setIconColor(Color.web(PRIMARY_BLUE));
+        iconBox.getChildren().addAll(iconCircle, icon);
+
+        VBox titleBox = new VBox(2);
+        Label t = new Label("Notification Preferences");
+        t.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
+        Label d = new Label("Choose the types of updates and reminders you receive.");
+        d.setStyle("-fx-font-size: 12px; -fx-text-fill:" + TEXT_MUTED + ";");
+        titleBox.getChildren().addAll(t, d);
+
+        titleRow.getChildren().addAll(iconBox, titleBox);
+
+        VBox options = new VBox(0);
+        options.getChildren().addAll(
+                notificationOption("fas-calendar-day", "Event Reminders", "Receive reminders for upcoming milestone dates.", true),
+                notificationOption("fas-sync-alt", "Event Updates", "Get notified about status changes and organizer actions.", true),
+                notificationOption("fas-magic", "AI Planning Updates", "Receive suggestions from our constraint optimization engine.", true),
+                notificationOption("fas-envelope", "Email Notifications", "Receive copies of key alerts directly to your email.", true),
+                notificationOption("fas-shield-alt", "Security Alerts", "Get notified about login activity on your account.", true)
+        );
+
+        Button save = new Button("Save Preferences");
+        save.setPrefHeight(38);
+        save.setMaxWidth(Double.MAX_VALUE);
+        save.setStyle("-fx-background-color:" + NAVY + "; -fx-text-fill:white; -fx-background-radius:7; -fx-font-size:12px; -fx-font-weight:bold; -fx-cursor:hand;");
+        save.setOnAction(e -> {
+            Alert a = new Alert(Alert.AlertType.INFORMATION, "Notification preferences updated successfully!");
+            a.setHeaderText("Saved");
+            a.showAndWait();
+        });
+
+        card.getChildren().addAll(titleRow, new Separator(), options, save);
+        return card;
+    }
+
+    private HBox notificationOption(String iconLiteral, String title, String description, boolean selected) {
+        HBox row = new HBox(12);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(12, 4, 12, 4));
+        row.setStyle("-fx-border-color:#F1F5F9; -fx-border-width:0 0 1 0;");
+
+        StackPane iconBox = new StackPane();
+        Circle circle = new Circle(18, Color.web("#F8FAFC"));
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(Color.web(PRIMARY_BLUE));
+        iconBox.getChildren().addAll(circle, icon);
+
+        VBox textBox = new VBox(2);
+        Label titleLbl = new Label(title);
+        titleLbl.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
+        Label descLbl = new Label(description);
+        descLbl.setStyle("-fx-font-size: 11px; -fx-text-fill:" + TEXT_MUTED + ";");
+        textBox.getChildren().addAll(titleLbl, descLbl);
+
+        Region space = new Region();
+        HBox.setHgrow(space, Priority.ALWAYS);
+
+        CheckBox checkBox = new CheckBox();
+        checkBox.setSelected(selected);
+
+        row.getChildren().addAll(iconBox, textBox, space, checkBox);
+        return row;
+    }
+
+    private VBox recentNotifications() {
+        VBox card = new VBox(12);
+        card.setPadding(new Insets(20));
+        card.setStyle("-fx-background-color:white; -fx-border-color:" + BORDER + "; -fx-border-radius:12; -fx-background-radius:12;");
+
+        HBox header = new HBox();
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Label title = new Label("Recent Notifications");
+        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
+
+        Region space = new Region();
+        HBox.setHgrow(space, Priority.ALWAYS);
+
+        header.getChildren().addAll(title, space);
+
+        VBox list = new VBox(0);
+        list.getChildren().addAll(
+                recentNotification("fas-calendar-check", "Event Planning Active", "Your latest event is in planning and assigned to organizer.", "Just now", true),
+                recentNotification("fas-wallet", "Budget Optimized", "Smart budget breakdown generated and ready for review.", "2 hrs ago", true),
+                recentNotification("fas-cloud-sun", "Weather Update", "Live forecast loaded for your event location.", "Yesterday", false)
+        );
+
+        card.getChildren().addAll(header, new Separator(), list);
+        return card;
+    }
+
+    private HBox recentNotification(String iconLiteral, String title, String message, String time, boolean unread) {
+        HBox row = new HBox(12);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(12, 4, 12, 4));
+        row.setStyle("-fx-border-color:#F1F5F9; -fx-border-width:0 0 1 0;");
+
+        StackPane iconBox = new StackPane();
+        Circle circle = new Circle(18, Color.web(unread ? "#E0F2FE" : "#F8FAFC"));
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(Color.web(PRIMARY_BLUE));
+        iconBox.getChildren().addAll(circle, icon);
+
+        VBox text = new VBox(2);
+        Label titleLbl = new Label(title);
+        titleLbl.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
+        Label msgLbl = new Label(message);
+        msgLbl.setStyle("-fx-font-size: 11px; -fx-text-fill:" + TEXT_MUTED + ";");
+        text.getChildren().addAll(titleLbl, msgLbl);
+
+        Region space = new Region();
+        HBox.setHgrow(space, Priority.ALWAYS);
+
+        VBox right = new VBox(4);
+        right.setAlignment(Pos.CENTER_RIGHT);
+        Label timeLbl = new Label(time);
+        timeLbl.setStyle("-fx-font-size: 10px; -fx-text-fill:" + TEXT_MUTED + ";");
+        right.getChildren().add(timeLbl);
+
+        if (unread) {
+            Circle dot = new Circle(4, Color.web(PRIMARY_BLUE));
+            right.getChildren().add(dot);
+        }
+
+        row.getChildren().addAll(iconBox, text, space, right);
+        return row;
     }
 
     private void returnToDashboard() {
@@ -158,158 +308,24 @@ public class Notification {
         }
     }
 
-    private VBox notificationPreferences() {
-        VBox card = new VBox(12);
-        card.setPadding(new Insets(20));
-        card.setPrefWidth(560);
-        card.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:12;-fx-background-radius:12;");
-
-        HBox titleRow = new HBox(12);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
-
-        Circle iconCircle = new Circle(22, Color.web("#E4F2FF"));
-        Label icon = styledLabel("♧", 18, FontWeight.BOLD, "#1769D1");
-        StackPane iconBox = new StackPane(iconCircle, icon);
-
-        VBox titleBox = new VBox(3);
-        titleBox.getChildren().addAll(
-                styledLabel("Notification Preferences", 18, FontWeight.BOLD, NAVY),
-                styledLabel("Choose the types of notifications you want to receive.", 11, FontWeight.NORMAL, "#596273")
-        );
-
-        titleRow.getChildren().addAll(iconBox, titleBox);
-
-        VBox options = new VBox(0);
-        options.getChildren().addAll(
-                notificationOption("▣", "Event Reminders", "Receive reminders for your upcoming events.", true),
-                notificationOption("♧", "Event Updates", "Get notified about event changes and important updates.", true),
-                notificationOption("✦", "AI Planning Updates", "Receive updates and suggestions from AI planning assistant.", true),
-                notificationOption("✉", "Email Notifications", "Receive important alerts and updates via email.", true),
-                notificationOption("♢", "Security Alerts", "Get notified about login activity and security updates.", true)
-        );
-
-        Button save = new Button("▣  Save Changes");
-        save.setPrefHeight(40);
-        save.setMaxWidth(Double.MAX_VALUE);
-        save.setStyle("-fx-background-color:" + NAVY + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-family:Arial;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
-
-        card.getChildren().addAll(titleRow, options, save);
-        return card;
-    }
-
-    private HBox notificationOption(String iconText, String title, String description, boolean selected) {
-        HBox row = new HBox(12);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(12, 2, 12, 2));
-        row.setStyle("-fx-border-color:#E8EDF3;-fx-border-width:0 0 1 0;");
-
-        Circle circle = new Circle(21, Color.web("#EAF5FF"));
-        Label icon = styledLabel(iconText, 16, FontWeight.BOLD, "#1769D1");
-        StackPane iconBox = new StackPane(circle, icon);
-
-        VBox textBox = new VBox(3);
-        textBox.getChildren().addAll(
-                styledLabel(title, 13, FontWeight.BOLD, NAVY),
-                styledLabel(description, 10, FontWeight.NORMAL, "#596273")
-        );
-
-        Region space = new Region();
-        HBox.setHgrow(space, Priority.ALWAYS);
-
-        CheckBox checkBox = new CheckBox();
-        checkBox.setSelected(selected);
-
-        row.getChildren().addAll(iconBox, textBox, space, checkBox);
-        return row;
-    }
-
-    private VBox recentNotifications() {
-        VBox card = new VBox(8);
-        card.setPadding(new Insets(20));
-        card.setPrefWidth(560);
-        card.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:12;-fx-background-radius:12;");
-
-        HBox header = new HBox();
-        header.setAlignment(Pos.CENTER_LEFT);
-
-        VBox titleBox = new VBox(3);
-        titleBox.getChildren().add(styledLabel("Recent Notifications", 18, FontWeight.BOLD, NAVY));
-
-        Region space = new Region();
-        HBox.setHgrow(space, Priority.ALWAYS);
-
-        Button viewAll = new Button("View All");
-        viewAll.setStyle("-fx-background-color:transparent;-fx-text-fill:#1769D1;-fx-font-size:11px;-fx-font-weight:bold;-fx-cursor:hand;");
-
-        header.getChildren().addAll(titleBox, space, viewAll);
-
-        VBox list = new VBox(0);
-        list.getChildren().addAll(
-                recentNotification("▣", "Event Reminder", "Your event request is currently PENDING approval.", "10:30 AM", true),
-                recentNotification("♧", "Event Created", "Your event has been successfully saved to Firestore.", "Yesterday", true)
-        );
-
-        card.getChildren().addAll(header, list);
-        return card;
-    }
-
-    private HBox recentNotification(String iconText, String title, String message, String time, boolean unread) {
-        HBox row = new HBox(12);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(12, 2, 12, 2));
-        row.setMinHeight(68);
-        row.setStyle("-fx-border-color:#E8EDF3;-fx-border-width:0 0 1 0;");
-
-        Circle circle = new Circle(21, Color.web("#EAF5FF"));
-        Label icon = styledLabel(iconText, 16, FontWeight.BOLD, "#1769D1");
-        StackPane iconBox = new StackPane(circle, icon);
-
-        VBox text = new VBox(4);
-        text.getChildren().addAll(styledLabel(title, 13, FontWeight.BOLD, NAVY), styledLabel(message, 10, FontWeight.NORMAL, "#596273"));
-
-        Region space = new Region();
-        HBox.setHgrow(space, Priority.ALWAYS);
-
-        VBox right = new VBox(5);
-        right.setAlignment(Pos.CENTER_RIGHT);
-        right.getChildren().add(styledLabel(time, 9, FontWeight.NORMAL, "#596273"));
-
-        if (unread) {
-            Circle dot = new Circle(5, Color.web("#1769D1"));
-            right.getChildren().add(dot);
+    private void openMyEvents() {
+        MyEvents myEventsPage = new MyEvents(UserSession.getUid(), UserSession.getIdToken());
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(myEventsPage.getMyEventsScene(this::returnToDashboard));
         }
-
-        row.getChildren().addAll(iconBox, text, space, right);
-        return row;
     }
 
-    private HBox menuItem(String icon, String text, boolean active) {
-        return menuItem(icon, text, active, null);
-    }
-
-    private HBox menuItem(String icon, String text, boolean active, Runnable action) {
-        HBox item = new HBox(11);
-        item.setAlignment(Pos.CENTER_LEFT);
-        item.setPrefHeight(40);
-        item.setPadding(new Insets(0, 11, 0, 13));
-
-        if (active) item.setStyle("-fx-background-color:#1769D1;-fx-background-radius:7;");
-        if (action != null) {
-            item.setStyle(item.getStyle() + "-fx-cursor:hand;");
-            item.setOnMouseClicked(e -> action.run());
+    private void openProfile() {
+        ProfilePageC profilePage = new ProfilePageC();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(profilePage.getProfileScene(this::returnToDashboard));
         }
-
-        item.getChildren().addAll(
-                styledLabel(icon, 16, FontWeight.NORMAL, active ? "#FFFFFF" : "#D1D9E8"),
-                styledLabel(text, 12, active ? FontWeight.BOLD : FontWeight.NORMAL, active ? "#FFFFFF" : "#D1D9E8")
-        );
-        return item;
     }
 
-    private Label styledLabel(String text, double size, FontWeight weight, String color) {
-        Label label = new Label(text);
-        label.setFont(Font.font("Arial", weight, size));
-        label.setTextFill(Color.web(color));
-        return label;
+    private void openSettings() {
+        SettingC settingPage = new SettingC();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(settingPage.getSettingScene(this::returnToDashboard));
+        }
     }
 }

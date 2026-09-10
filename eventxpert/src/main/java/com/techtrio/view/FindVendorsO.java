@@ -14,7 +14,6 @@ import com.techtrio.model.Event;
 import com.techtrio.model.OrganizerProfile;
 import com.techtrio.model.VendorBooking;
 import com.techtrio.model.VendorProfile;
-import com.techtrio.services.EventService;
 import com.techtrio.services.VendorProfileService;
 import com.techtrio.session.UserSession;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -25,8 +24,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 
 public class FindVendorsO {
@@ -49,6 +50,7 @@ public class FindVendorsO {
     private Label resultsCountLabel;
     private Label eventTagLabel;
     private Label breadcrumbLabel;
+    private StackPane rootLayer;
 
     private Event currentEvent;
     private List<VendorProfile> realVendorsList = new ArrayList<>();
@@ -71,13 +73,14 @@ public class FindVendorsO {
     public Scene getScene(Stage stage, Runnable backAction) {
         this.backAction = backAction;
 
-        BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
+        rootLayer = new StackPane();
+        rootLayer.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        // 1. Sidebar (Matched with AI Planner - "My Events" is active)
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color: " + BACKGROUND + ";");
+
         root.setLeft(createCommonOrganizerSidebar("My Events"));
 
-        // 2. Main Content inside ScrollPane (Top Bar Removed)
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -86,9 +89,11 @@ public class FindVendorsO {
         scrollPane.setContent(mainContent);
         root.setCenter(scrollPane);
 
+        rootLayer.getChildren().add(root);
+
         loadDynamicEventContextAndVendors(stage);
 
-        return new Scene(root, 1550, 785);
+        return new Scene(rootLayer, 1550, 785);
     }
 
     private void loadDynamicEventContextAndVendors(Stage stage) {
@@ -256,9 +261,22 @@ public class FindVendorsO {
 
         assignBtn.setOnAction(e -> {
             if (currentEvent == null) {
-                Alert alert = new Alert(Alert.AlertType.WARNING, "Please select an event before assigning vendors.");
-                if (LandingPage.landingPageStage != null) alert.initOwner(LandingPage.landingPageStage);
-                alert.showAndWait();
+                showInAppModal("Event Required", "Please select an event before assigning vendors.", "⚠️", "#FEF3C7", PRIMARY_BLUE);
+                return;
+            }
+
+            // ⭐ VENUE LOCK CHECK (Attractive In-Screen Pop-up)
+            String vStatus = currentEvent.getVenueStatus() != null ? currentEvent.getVenueStatus().toUpperCase() : "";
+            boolean isVenueConfirmed = "CONFIRMED".equals(vStatus) && currentEvent.getConfirmedVenueName() != null && !currentEvent.getConfirmedVenueName().startsWith("Pending");
+
+            if (!isVenueConfirmed) {
+                showInAppModal(
+                        "Venue Lock Active",
+                        "The Venue is not yet confirmed by the Customer. Please confirm the Venue first before assigning vendors.",
+                        "🔒",
+                        "#FEF3C7",
+                        PRIMARY_BLUE
+                );
                 return;
             }
 
@@ -273,11 +291,13 @@ public class FindVendorsO {
             String orgEmail = (orgProfile != null && orgProfile.getEmail() != null) ? orgProfile.getEmail() : "";
 
             String evtName = currentEvent.getEventName() != null ? currentEvent.getEventName() : "Event";
-            String evtDate = currentEvent.getEventDate() != null ? currentEvent.getEventDate() : "TBD";
+            String evtDate = currentEvent.getEventDate() != null ? currentEvent.getEventDate() : (currentEvent.getStartDate() != null ? currentEvent.getStartDate() : "TBD");
             int evtGuests = currentEvent.getGuests() > 0 ? currentEvent.getGuests() : 100;
-            String evtLoc = currentEvent.getCity() != null ? currentEvent.getCity() : "Pune";
+            
+            String evtLoc = (currentEvent.getConfirmedVenueAddress() != null && !currentEvent.getConfirmedVenueAddress().isBlank())
+                    ? currentEvent.getConfirmedVenueAddress()
+                    : ((currentEvent.getArea() != null ? currentEvent.getArea() + ", " : "") + (currentEvent.getCity() != null ? currentEvent.getCity() : "Pune"));
 
-            // 🎯 PULL EXACT ORGANIZER ALLOCATED AMOUNT
             double allocatedAmount = getExactAllocatedAmount(currentEvent, cat);
             String formattedAmount = "₹ " + String.format("%,.0f", allocatedAmount);
 
@@ -304,14 +324,21 @@ public class FindVendorsO {
             boolean success = vendorController.requestVendorBooking(booking);
 
             if (success) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Vendor [" + bName + "] has been assigned for [" + cat + "] with allocated amount " + formattedAmount + "!\nSynced live to Vendor Portal & Customer Dashboard.");
-                alert.setHeaderText("Request Dispatched Successfully");
-                if (LandingPage.landingPageStage != null) alert.initOwner(LandingPage.landingPageStage);
-                alert.showAndWait();
+                showInAppModal(
+                        "Request Dispatched!",
+                        "Vendor [" + bName + "] has been assigned for [" + cat + "] with allocated amount " + formattedAmount + "!\nSynced live with Venue: " + evtLoc,
+                        "✓",
+                        "#DEF7EC",
+                        "#0E9F6E"
+                );
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to dispatch booking request to Firestore.");
-                if (LandingPage.landingPageStage != null) alert.initOwner(LandingPage.landingPageStage);
-                alert.showAndWait();
+                showInAppModal(
+                        "Dispatch Failed",
+                        "Failed to dispatch booking request to Firestore. Please check network connection.",
+                        "✕",
+                        "#FDE8E8",
+                        "#F05252"
+                );
             }
         });
 
@@ -319,11 +346,63 @@ public class FindVendorsO {
         return card;
     }
 
+    // ✨ इन-स्क्रीन सुंदर व आकर्षक पॉप-अप (No New Window/Stage)
+    private void showInAppModal(String title, String message, String iconSymbol, String iconBgHex, String btnColorHex) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(6, 42, 96, 0.45);");
+
+        VBox modal = new VBox(16);
+        modal.setMaxWidth(420);
+        modal.setMaxHeight(Region.USE_PREF_SIZE);
+        modal.setPadding(new Insets(26));
+        modal.setAlignment(Pos.CENTER);
+        modal.setStyle(
+                "-fx-background-color: #FFFFFF;" +
+                "-fx-background-radius: 18px;" +
+                "-fx-border-color: #E2E8F0;" +
+                "-fx-border-width: 1px;" +
+                "-fx-border-radius: 18px;"
+        );
+        modal.setEffect(new DropShadow(25, Color.rgb(0, 0, 0, 0.20)));
+
+        StackPane iconCircle = new StackPane();
+        Circle bgCircle = new Circle(28, Color.web(iconBgHex));
+        Label ic = new Label(iconSymbol);
+        ic.setStyle("-fx-font-size: 22px;");
+        iconCircle.getChildren().addAll(bgCircle, ic);
+
+        Label lblTitle = new Label(title);
+        lblTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+
+        Label lblMsg = new Label(message);
+        lblMsg.setWrapText(true);
+        lblMsg.setAlignment(Pos.CENTER);
+        lblMsg.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-text-alignment: center; -fx-line-spacing: 3px;");
+
+        Button btnClose = new Button("Okay, Understood");
+        btnClose.setMaxWidth(Double.MAX_VALUE);
+        btnClose.setStyle(
+                "-fx-background-color: " + btnColorHex + ";" +
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-padding: 10 18;" +
+                "-fx-background-radius: 8px;" +
+                "-fx-cursor: hand;"
+        );
+
+        btnClose.setOnAction(e -> rootLayer.getChildren().remove(overlay));
+
+        modal.getChildren().addAll(iconCircle, lblTitle, lblMsg, btnClose);
+        overlay.getChildren().add(modal);
+
+        rootLayer.getChildren().add(overlay);
+    }
+
     private double getExactAllocatedAmount(Event event, String category) {
         if (event == null) return 0.0;
         String catLower = category != null ? category.toLowerCase().trim() : "";
 
-        // 1. From live budget recommendation map saved by Organizer
         if (event.getBudgetRecommendation() != null && !event.getBudgetRecommendation().isEmpty()) {
             for (Map.Entry<String, Object> entry : event.getBudgetRecommendation().entrySet()) {
                 if (entry.getKey().toLowerCase().trim().contains(catLower) || catLower.contains(entry.getKey().toLowerCase().trim())) {
@@ -332,13 +411,12 @@ public class FindVendorsO {
             }
         }
 
-        // 2. From Timefold AI Plan
         if (event.getAiPlanJson() != null && !event.getAiPlanJson().isBlank()) {
             AiEventPlan plan = AiEventPlan.fromJson(event.getAiPlanJson());
             if (plan != null && plan.getBudgetBreakdown() != null) {
                 for (AiEventPlan.BudgetItem bi : plan.getBudgetBreakdown()) {
                     if (bi.getCategory() != null && (bi.getCategory().toLowerCase().trim().contains(catLower) || catLower.contains(bi.getCategory().toLowerCase().trim()))) {
-                        double total = 100000;
+                        double total = 15000;
                         try {
                             String clean = event.getBudget().replaceAll("[^0-9.]", "");
                             if (!clean.isEmpty()) total = Double.parseDouble(clean);
@@ -349,12 +427,12 @@ public class FindVendorsO {
             }
         }
 
-        double total = 50000.0;
+        double total = 15000.0;
         try {
             String clean = event.getBudget().replaceAll("[^0-9.]", "");
             if (!clean.isEmpty()) total = Double.parseDouble(clean);
         } catch (Exception ignored) {}
-        return total * 0.15;
+        return total * 0.20;
     }
 
     private VBox createCommonOrganizerSidebar(String activeTab) {

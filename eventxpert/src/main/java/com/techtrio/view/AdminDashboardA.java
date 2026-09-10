@@ -1,10 +1,13 @@
 package com.techtrio.view;
 
 import java.util.List;
+import java.util.Map;
 
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.firebase.cloud.FirestoreClient;
 import com.techtrio.controller.AdminController;
 import com.techtrio.controller.NavigationManager;
-import com.techtrio.controller.PaymentController;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
 import com.techtrio.model.OrganizerProfile;
@@ -91,7 +94,6 @@ public class AdminDashboardA {
         Region sidebarSpace = new Region();
         VBox.setVgrow(sidebarSpace, Priority.ALWAYS);
 
-        // SIDEBAR BOTTOM NAVIGATION
         VBox bottomMenu = new VBox(3);
         bottomMenu.getChildren().addAll(
                 createSidebarButton("Notifications", "fas-bell", false),
@@ -102,7 +104,7 @@ public class AdminDashboardA {
 
         sidebar.getChildren().addAll(brandBox, menu, sidebarSpace, bottomMenu);
 
-        // MAIN CONTENT (TOPBAR REMOVED)
+        // MAIN CONTENT
         VBox content = new VBox(18);
         content.setPadding(new Insets(24, 32, 28, 32));
         content.setStyle("-fx-background-color:" + BACKGROUND + ";");
@@ -142,7 +144,7 @@ public class AdminDashboardA {
         pendingRequestsCard.setOnMouseClicked(e -> NavigationManager.navigate("Event Requests", (Stage) pendingRequestsCard.getScene().getWindow()));
         revenueCard.setOnMouseClicked(e -> NavigationManager.navigate("Reports & Analytics", (Stage) revenueCard.getScene().getWindow()));
 
-        // MIDDLE ROW: RECENT EVENTS TABLE + QUICK ACTIONS
+        // MIDDLE ROW
         VBox requestBox = new VBox(10);
         requestBox.setPadding(new Insets(16));
         requestBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
@@ -165,7 +167,7 @@ public class AdminDashboardA {
         table.setPrefHeight(230);
         requestBox.getChildren().addAll(requestTitle, table);
 
-        // ⭐ RESTORED QUICK ACTIONS
+        // QUICK ACTIONS
         VBox quickBox = new VBox(12);
         quickBox.setPadding(new Insets(16));
         quickBox.setPrefWidth(280);
@@ -194,7 +196,7 @@ public class AdminDashboardA {
 
         HBox middleRow = new HBox(16, requestBox, quickBox);
 
-        // ⭐ RESTORED EVENT STATUS & RECENT ACTIVITIES
+        // EVENT STATUS & LIVE ACTIVITY
         VBox statusBox = new VBox(10);
         statusBox.setPadding(new Insets(16));
         statusBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
@@ -263,7 +265,7 @@ public class AdminDashboardA {
             btn.setStyle("-fx-background-color:" + LIGHT + ";-fx-text-fill:" + PRIMARY + ";-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:6;");
         } else {
             btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-cursor:hand;");
-            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color:rgba(255,255,255,0.08);-fx-text-fill:white;-fx-font-size:12px;-fx-background-radius:6;-fx-cursor:hand;"));
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color:rgba(255,255,255,0.08);-fx-text-fill:white;-fx-font-size:12px;-fx-background-radius:6;"));
             btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;"));
         }
 
@@ -275,58 +277,96 @@ public class AdminDashboardA {
         return btn;
     }
 
+    // ⭐ अचूक Admin Revenue: (Contingency मधून उरलेले + Non-Venue Vendors चे ३% फी)
     private void loadDashboardDataAsync() {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
                 AdminController controller = new AdminController();
-                PaymentController paymentController = new PaymentController();
 
                 List<CustomerProfile> customers = controller.getAllCustomerProfiles();
                 List<Event> events = controller.getAllEvents();
                 List<OrganizerProfile> organizers = controller.getAllOrganizers();
                 List<VendorProfile> vendors = controller.getAllVendors();
-                double totalPlatformRevenue = paymentController.getTotalPlatformRevenue();
+
+                double totalAdminRevenue = 0.0;
+
+                if (events != null) {
+                    for (Event ev : events) {
+                        double paid = ev.getPaidAmount();
+                        if (paid > 0) {
+                            // १. Organizer चे १५%
+                            double orgShare15 = paid * 0.15;
+
+                            // २. Contingency & Other मधून मिळणारा हिस्सा
+                            double contingencyPool = 0.0;
+                            double vendor3PercentCut = 0.0;
+
+                            if (ev.getBudgetRecommendation() != null) {
+                                for (Map.Entry<String, Object> entry : ev.getBudgetRecommendation().entrySet()) {
+                                    String key = entry.getKey().toLowerCase();
+                                    try {
+                                        double amt = Double.parseDouble(entry.getValue().toString());
+                                        if (key.contains("contingency") || key.contains("other") || key.contains("misc")) {
+                                            contingencyPool += amt;
+                                        } else if (!key.contains("venue")) {
+                                            // Venue सोडून इतर व्हेंडर्सकडून ३% फी
+                                            vendor3PercentCut += (amt * 0.03);
+                                        }
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+
+                            // जर Contingency मधून १५% दिले, तर उरलेली रक्कम Admin कडे राहते
+                            double adminContingencyShare = Math.max(0.0, contingencyPool - orgShare15);
+                            totalAdminRevenue += (adminContingencyShare + vendor3PercentCut);
+                        }
+                    }
+                }
+
+                final double finalTotalRevenue = totalAdminRevenue;
 
                 Platform.runLater(() -> {
-                    totalCustomersVal.setText(String.valueOf(customers.size()));
-                    totalOrganizersVal.setText(String.valueOf(organizers.size()));
-                    totalVendorsVal.setText(String.valueOf(vendors.size()));
-                    totalRevenueVal.setText("₹" + String.format("%.2f", totalPlatformRevenue));
+                    totalCustomersVal.setText(String.valueOf(customers != null ? customers.size() : 0));
+                    totalOrganizersVal.setText(String.valueOf(organizers != null ? organizers.size() : 0));
+                    totalVendorsVal.setText(String.valueOf(vendors != null ? vendors.size() : 0));
+                    totalRevenueVal.setText("₹" + String.format("%.2f", finalTotalRevenue));
 
                     int pendingCount = 0;
                     int activeCount = 0;
 
                     table.getItems().clear();
-                    for (Event ev : events) {
-                        if ("PENDING".equalsIgnoreCase(ev.getStatus())) {
-                            pendingCount++;
-                        } else {
-                            activeCount++;
+                    if (events != null) {
+                        for (Event ev : events) {
+                            if ("PENDING".equalsIgnoreCase(ev.getStatus())) {
+                                pendingCount++;
+                            } else {
+                                activeCount++;
+                            }
+
+                            CustomerProfile cust = (customers != null) ? customers.stream()
+                                    .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
+                                    .findFirst().orElse(null) : null;
+
+                            String custName = cust != null ? cust.getName() : "Customer";
+                            String dateDisplay = (ev.getStartDate() != null && !ev.getStartDate().isBlank())
+                                    ? ev.getStartDate() + (ev.getEndDate() != null && !ev.getEndDate().isBlank() && !ev.getStartDate().equals(ev.getEndDate()) ? " to " + ev.getEndDate() : "")
+                                    : (ev.getEventDate() != null ? ev.getEventDate() : "TBD");
+
+                            String timeDisplay = (ev.getStartTime() != null && !ev.getStartTime().isBlank())
+                                    ? ev.getStartTime() + (ev.getEndTime() != null && !ev.getEndTime().isBlank() ? " - " + ev.getEndTime() : "")
+                                    : (ev.getTime() != null ? ev.getTime() : "TBD");
+
+                            table.getItems().add(new String[]{
+                                    custName,
+                                    ev.getEventType() != null ? ev.getEventType() : "General",
+                                    dateDisplay,
+                                    timeDisplay,
+                                    String.valueOf(ev.getGuests()),
+                                    ev.getBudget() != null ? ev.getBudget() : "N/A",
+                                    ev.getStatus() != null ? ev.getStatus() : "PENDING"
+                            });
                         }
-
-                        CustomerProfile cust = customers.stream()
-                                .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
-                                .findFirst().orElse(null);
-
-                        String custName = cust != null ? cust.getName() : "Customer";
-                        String dateDisplay = (ev.getStartDate() != null && !ev.getStartDate().isBlank())
-                                ? ev.getStartDate() + (ev.getEndDate() != null && !ev.getEndDate().isBlank() && !ev.getStartDate().equals(ev.getEndDate()) ? " to " + ev.getEndDate() : "")
-                                : (ev.getEventDate() != null ? ev.getEventDate() : "TBD");
-
-                        String timeDisplay = (ev.getStartTime() != null && !ev.getStartTime().isBlank())
-                                ? ev.getStartTime() + (ev.getEndTime() != null && !ev.getEndTime().isBlank() ? " - " + ev.getEndTime() : "")
-                                : (ev.getTime() != null ? ev.getTime() : "TBD");
-
-                        table.getItems().add(new String[]{
-                                custName,
-                                ev.getEventType() != null ? ev.getEventType() : "General",
-                                dateDisplay,
-                                timeDisplay,
-                                String.valueOf(ev.getGuests()),
-                                ev.getBudget() != null ? ev.getBudget() : "N/A",
-                                ev.getStatus() != null ? ev.getStatus() : "PENDING"
-                        });
                     }
 
                     activeEventsVal.setText(String.valueOf(activeCount));

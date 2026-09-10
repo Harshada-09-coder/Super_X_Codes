@@ -6,6 +6,7 @@ import com.techtrio.context.AdminContext;
 import com.techtrio.controller.AdminController;
 import com.techtrio.controller.NavigationManager;
 import com.techtrio.model.OrganizerProfile;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -25,7 +26,7 @@ public class OrganizerManagementA {
 
     private Scene organizerScene;
 
-    final String PRIMARY = "#002A60", SECONDARY = "#8CAFC6", LIGHT = "#C2E0F4", BG = "#F6F9FC";
+    final String PRIMARY = "#002A60", SECONDARY = "#8CAFC6", LIGHT = "#C2E0F4", BG = "#F8FAFC", BORDER = "#E2E8F0";
 
     TableView<OrganizerProfile> table;
     ObservableList<OrganizerProfile> data = FXCollections.observableArrayList();
@@ -55,80 +56,122 @@ public class OrganizerManagementA {
     VBox card() {
         VBox v = new VBox(8);
         v.setPadding(new Insets(18));
-        v.setStyle("-fx-background-color:white;-fx-border-color:#D9E1EA;" +
-                "-fx-border-radius:8;-fx-background-radius:8;");
+        v.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";" +
+                "-fx-border-radius:10;-fx-background-radius:10;");
         return v;
     }
 
-    VBox sidebar() {
-        VBox side = new VBox(7);
-        side.setPrefWidth(285);
-        side.setPadding(new Insets(24, 12, 15, 12));
-        side.setStyle("-fx-background-color:" + PRIMARY + ";");
-        side.setCursor(javafx.scene.Cursor.HAND);
+    private VBox createAdminSidebar(String activeTab) {
+        VBox sidebar = new VBox(6);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setPrefWidth(240);
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setStyle("-fx-background-color:" + PRIMARY + ";");
 
-        Label logo = label("EventXpert", 30, true);
+        HBox brandBox = new HBox(8);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(0, 6, 12, 6));
+
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = new Label("EventXpert");
         logo.setTextFill(Color.WHITE);
+        logo.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        Label adminLabel = new Label("ADMIN DASHBOARD");
+        adminLabel.setTextFill(Color.web(LIGHT));
+        adminLabel.setFont(Font.font("Arial", FontWeight.BOLD, 9));
+        brandTexts.getChildren().addAll(logo, adminLabel);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
 
-        Label admin = new Label("ADMIN DASHBOARD");
-        admin.setTextFill(Color.WHITE);
-        admin.setStyle("-fx-font-size:16px;-fx-font-weight:bold;");
+        VBox menu = new VBox(3);
+        String[][] menuItems = {
+                {"Dashboard", "fas-tachometer-alt"},
+                {"Event Requests", "fas-inbox"},
+                {"Events", "fas-calendar-check"},
+                {"Calendar", "fas-calendar"},
+                {"Customers", "fas-users"},
+                {"Organizers", "fas-user-tie"},
+                {"Vendors", "fas-truck"},
+                {"Conflict Detection", "fas-shield-alt"},
+                {"Reports & Analytics", "fas-chart-pie"}
+        };
 
-        VBox head = new VBox(2, logo, admin);
-        head.setPadding(new Insets(0, 12, 18, 12));
-
-        String[] items = {"Dashboard", "Event Requests", "Events", "Calendar", "Customers", "Organizers", "Vendors", "Conflict Detection", "Reports & Analytics"};
-
-        VBox menu = new VBox(4);
-
-        for (String x : items) {
-            Label l = new Label(x);
-            l.setTextFill(Color.WHITE);
-            l.setFont(Font.font("Arial", 17));
-            l.setPadding(new Insets(9, 14, 9, 14));
-            l.setMaxWidth(Double.MAX_VALUE);
-
-            if (x.equals("Organizers"))
-                l.setStyle("-fx-background-color:#1264A3;" +
-                        "-fx-background-radius:6;-fx-font-weight:bold;");
-
-            l.setOnMouseClicked(e -> {
-                Stage stage = (Stage) l.getScene().getWindow();
-                NavigationManager.navigate(x, stage);
-            });
-
-            menu.getChildren().add(l);
+        for (String[] item : menuItems) {
+            String name = item[0];
+            String iconLit = item[1];
+            menu.getChildren().add(createSidebarButton(name, iconLit, name.equals(activeTab)));
         }
 
-        Region gap = new Region();
-        VBox.setVgrow(gap, Priority.ALWAYS);
+        Region sidebarSpace = new Region();
+        VBox.setVgrow(sidebarSpace, Priority.ALWAYS);
 
-        Label notifications = new Label("🔔  Notifications");
-        Label settings = new Label("⚙  Settings");
-        Label profile = new Label("👤  Profile");
-        Label support = new Label("?  Support");
+        VBox bottomMenu = new VBox(3);
+        bottomMenu.getChildren().addAll(
+                createSidebarButton("Notifications", "fas-bell", false),
+                createSidebarButton("Profile", "fas-user", false),
+                createSidebarButton("Settings", "fas-cog", false),
+                createSidebarButton("Support", "fas-question-circle", false)
+        );
 
-        for (Label l : new Label[]{notifications, settings, profile, support}) {
-            l.setTextFill(Color.WHITE);
-            l.setFont(Font.font("Arial", 17));
-            l.setPadding(new Insets(7, 14, 7, 14));
-        }
-
-        side.getChildren().addAll(head, menu, gap, notifications, settings, profile, support);
-        return side;
+        sidebar.getChildren().addAll(brandBox, menu, sidebarSpace, bottomMenu);
+        return sidebar;
     }
 
-    VBox stat(String title, Label valLabel, String sub) {
+    private Button createSidebarButton(String name, String iconLit, boolean active) {
+        Button btn = new Button("  " + name);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(PRIMARY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (active) {
+            btn.setStyle("-fx-background-color:" + LIGHT + "; -fx-text-fill:" + PRIMARY + "; -fx-font-weight:bold; -fx-font-size:12px; -fx-background-radius:6;");
+        } else {
+            btn.setStyle("-fx-background-color:transparent; -fx-text-fill:#CBD5E1; -fx-font-size:12px; -fx-cursor:hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color:rgba(255,255,255,0.08); -fx-text-fill:white; -fx-font-size:12px; -fx-background-radius:6; -fx-cursor:hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color:transparent; -fx-text-fill:#CBD5E1; -fx-font-size:12px;"));
+        }
+
+        btn.setOnAction(e -> {
+            Stage stage = (Stage) btn.getScene().getWindow();
+            NavigationManager.navigate(name, stage);
+        });
+
+        return btn;
+    }
+
+    VBox statWithIcon(String title, Label valLabel, String sub, String iconLit, String iconColor) {
         VBox v = card();
-        v.setPrefHeight(125);
-        valLabel.setFont(Font.font("Arial", FontWeight.BOLD, 34));
+        v.setPrefHeight(110);
+        valLabel.setFont(Font.font("Arial", FontWeight.BOLD, 22));
         valLabel.setTextFill(Color.web(PRIMARY));
 
-        v.getChildren().addAll(
-                label(title.toUpperCase(), 14, false),
-                valLabel,
-                label(sub, 14, false)
-        );
+        HBox top = new HBox(8);
+        top.setAlignment(Pos.CENTER_LEFT);
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(Color.web(iconColor));
+
+        Label t = new Label(title.toUpperCase());
+        t.setFont(Font.font("Arial", FontWeight.BOLD, 11));
+        t.setTextFill(Color.web("#64748B"));
+        top.getChildren().addAll(icon, t);
+
+        Label subLbl = new Label(sub);
+        subLbl.setFont(Font.font("Arial", 11));
+        subLbl.setTextFill(Color.web("#94A3B8"));
+
+        v.getChildren().addAll(top, valLabel, subLbl);
         return v;
     }
 
@@ -136,7 +179,7 @@ public class OrganizerManagementA {
         table = new TableView<>();
         table.setItems(data);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setPrefHeight(300);
+        table.setPrefHeight(320);
 
         TableColumn<OrganizerProfile, String> orgNameCol = new TableColumn<>("Organization Name");
         orgNameCol.setCellValueFactory(d -> new javafx.beans.property.SimpleStringProperty(
@@ -196,28 +239,32 @@ public class OrganizerManagementA {
     public Scene getorganizerScene() {
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color:" + BG + ";");
-        root.setLeft(sidebar());
+        root.setStyle("-fx-background-color:" + BG + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
+        root.setLeft(createAdminSidebar("Organizers"));
 
         VBox content = new VBox(18);
-        content.setPadding(new Insets(25));
+        content.setPadding(new Insets(24, 32, 28, 32));
 
-        Label title = label("Organizer Management", 32, true);
-        Label sub = label("Manage and monitor all registered organizers on EventXpert.", 18, false);
-        VBox heading = new VBox(5, title, sub);
+        Label title = new Label("Organizer Management");
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        title.setTextFill(Color.web(PRIMARY));
+
+        Label sub = new Label("Manage and monitor all registered organizers on EventXpert.");
+        sub.setFont(Font.font("Arial", 13));
+        sub.setTextFill(Color.web("#64748B"));
+
+        VBox heading = new VBox(2, title, sub);
 
         totalOrganizersVal = new Label("0");
         activeOrganizersVal = new Label("0");
         newOrganizersVal = new Label("0");
         inactiveOrganizersVal = new Label("0");
 
-        HBox stats = new HBox(15,
-                stat("Total Organizers", totalOrganizersVal, "Registered"),
-                stat("Active Organizers", activeOrganizersVal, "Currently active"),
-                stat("New Organizers", newOrganizersVal, "Recent onboarding"),
-                stat("Inactive Organizers", inactiveOrganizersVal, "Need attention"));
-        stats.setStyle("-fx-font-size:18;");
-        stats.setCursor(javafx.scene.Cursor.HAND);
+        HBox stats = new HBox(14,
+                statWithIcon("Total Organizers", totalOrganizersVal, "Registered", "fas-user-tie", PRIMARY),
+                statWithIcon("Active Organizers", activeOrganizersVal, "Currently active", "fas-check-circle", "#16A34A"),
+                statWithIcon("New Organizers", newOrganizersVal, "Recent onboarding", "fas-user-plus", "#0284C7"),
+                statWithIcon("Inactive Organizers", inactiveOrganizersVal, "Need attention", "fas-exclamation-circle", "#DC2626"));
 
         for (javafx.scene.Node n : stats.getChildren())
             HBox.setHgrow(n, Priority.ALWAYS);
@@ -227,7 +274,9 @@ public class OrganizerManagementA {
         HBox tableHead = new HBox();
         tableHead.setAlignment(Pos.CENTER_LEFT);
 
-        Label all = label("All Organizers", 21, true);
+        Label all = new Label("All Organizers");
+        all.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        all.setTextFill(Color.web(PRIMARY));
 
         Region space = new Region();
         HBox.setHgrow(space, Priority.ALWAYS);
@@ -235,6 +284,7 @@ public class OrganizerManagementA {
         TextField tableSearch = new TextField();
         tableSearch.setPromptText("Search organizers...");
         tableSearch.setPrefWidth(280);
+        tableSearch.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 6;");
 
         Button filter = button("☰  Filter");
         filter.setOnAction(e -> tableSearch.clear());
@@ -262,13 +312,13 @@ public class OrganizerManagementA {
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setStyle("-fx-background-color:" + BG + ";");
+        scroll.setStyle("-fx-background-color:transparent; -fx-background:" + BG + "; -fx-border-color:transparent;");
 
         root.setCenter(scroll);
 
         loadOrganizersDataAsync();
 
-        Scene scene = new Scene(root, 1550, 750);
+        Scene scene = new Scene(root, 1550, 785);
         organizerScene = scene;
         return organizerScene;
     }

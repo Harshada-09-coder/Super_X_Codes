@@ -72,7 +72,7 @@ public class MyBookingsV {
     private VBox tableRowsContainer;
     private String activeTabFilter = "All Bookings";
 
-    // 5 KPI Summary labels (Including Cancelled Card)
+    // 5 KPI Summary labels (Including In Progress, Completed & Cancelled Cards)
     private Label totalBookingsValLbl;
     private Label upcomingValLbl;
     private Label inProgressValLbl;
@@ -132,6 +132,7 @@ public class MyBookingsV {
         return myBookingScene;
     }
 
+    // ⭐ ACCURATE REAL-TIME STATUS MAPPING
     private void loadBookingsFromFirestoreAsync(Stage stage) {
         if (uid == null || uid.isBlank()) return;
 
@@ -149,10 +150,18 @@ public class MyBookingsV {
                 bookingList.clear();
                 if (result != null) {
                     for (VendorBooking b : result) {
-                        String rawStatus = b.getStatus() != null ? b.getStatus().toUpperCase() : "PENDING";
+                        String rawStatus = b.getStatus() != null ? b.getStatus().trim().toUpperCase() : "PENDING";
                         String uiStatus = "Pending";
-                        if ("CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus) || "PAID".equals(rawStatus)) uiStatus = "Confirmed";
-                        else if ("REJECTED".equals(rawStatus) || "CANCELLED".equals(rawStatus)) uiStatus = "Cancelled";
+
+                        if ("COMPLETED".equals(rawStatus)) {
+                            uiStatus = "Completed";
+                        } else if ("IN_PROGRESS".equals(rawStatus) || "IN PROGRESS".equals(rawStatus)) {
+                            uiStatus = "In Progress";
+                        } else if ("CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus) || "PAID".equals(rawStatus)) {
+                            uiStatus = "Confirmed";
+                        } else if ("REJECTED".equals(rawStatus) || "CANCELLED".equals(rawStatus)) {
+                            uiStatus = "Cancelled";
+                        }
 
                         bookingList.add(new BookingData(
                                 b.getBookingId() != null ? b.getBookingId() : "",
@@ -182,18 +191,20 @@ public class MyBookingsV {
     private void updateSummaryCounts() {
         int total = bookingList.size();
         int upcoming = 0;
+        int inProgress = 0;
         int completed = 0;
         int cancelled = 0;
 
         for (BookingData b : bookingList) {
             if ("Confirmed".equalsIgnoreCase(b.status)) upcoming++;
+            else if ("In Progress".equalsIgnoreCase(b.status)) inProgress++;
             else if ("Completed".equalsIgnoreCase(b.status)) completed++;
             else if ("Cancelled".equalsIgnoreCase(b.status)) cancelled++;
         }
 
         if (totalBookingsValLbl != null) totalBookingsValLbl.setText(String.valueOf(total));
         if (upcomingValLbl != null) upcomingValLbl.setText(String.valueOf(upcoming));
-        if (inProgressValLbl != null) inProgressValLbl.setText(String.valueOf(upcoming > 0 ? 1 : 0));
+        if (inProgressValLbl != null) inProgressValLbl.setText(String.valueOf(inProgress));
         if (completedValLbl != null) completedValLbl.setText(String.valueOf(completed));
         if (cancelledValLbl != null) cancelledValLbl.setText(String.valueOf(cancelled));
     }
@@ -203,14 +214,13 @@ public class MyBookingsV {
         Label title = new Label("My Bookings");
         title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
-        Label subtitle = new Label("View and manage all your assigned, confirmed and cancelled bookings.");
+        Label subtitle = new Label("View and manage all your assigned, confirmed, live in-progress and completed deliveries.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         header.getChildren().addAll(title, subtitle);
         return header;
     }
 
-    // ⭐ 5 Summary Cards Row including CANCELLED card
     private HBox createSummaryCardsRow() {
         HBox row = new HBox(14);
         totalBookingsValLbl = new Label("0");
@@ -222,7 +232,7 @@ public class MyBookingsV {
         row.getChildren().addAll(
                 createSummaryCard("Total Bookings", totalBookingsValLbl, "fas-calendar-alt", PRIMARY_BLUE),
                 createSummaryCard("Upcoming", upcomingValLbl, "fas-clock", PRIMARY_BLUE),
-                createSummaryCard("In Progress", inProgressValLbl, "fas-spinner", PRIMARY_BLUE),
+                createSummaryCard("In Progress", inProgressValLbl, "fas-spinner", WARNING_TEXT),
                 createSummaryCard("Completed", completedValLbl, "fas-check-circle", GREEN_TEXT),
                 createSummaryCard("Cancelled", cancelledValLbl, "fas-times-circle", RED_TEXT)
         );
@@ -275,12 +285,14 @@ public class MyBookingsV {
         row.getChildren().clear();
 
         int allCount = bookingList.size();
-        long upcomingCount = bookingList.stream().filter(b -> "Confirmed".equalsIgnoreCase(b.status)).count();
+        long upcomingCount = bookingList.stream().filter(b -> "Confirmed".equalsIgnoreCase(b.status) || "In Progress".equalsIgnoreCase(b.status)).count();
+        long completedCount = bookingList.stream().filter(b -> "Completed".equalsIgnoreCase(b.status)).count();
         long cancelledCount = bookingList.stream().filter(b -> "Cancelled".equalsIgnoreCase(b.status)).count();
 
         String[] tabs = {
                 "All Bookings " + allCount,
-                "Upcoming " + upcomingCount,
+                "Active " + upcomingCount,
+                "Completed " + completedCount,
                 "Cancelled " + cancelledCount
         };
 
@@ -316,7 +328,7 @@ public class MyBookingsV {
         addTableHeaderLabel(tableHeader, "DATE", 1, 140);
         addTableHeaderLabel(tableHeader, "SERVICE", 2, 140);
         addTableHeaderLabel(tableHeader, "AMOUNT", 3, 100);
-        addTableHeaderLabel(tableHeader, "STATUS", 4, 100);
+        addTableHeaderLabel(tableHeader, "STATUS", 4, 110);
         addTableHeaderLabel(tableHeader, "ACTION", 5, 100);
 
         tableRowsContainer = new VBox(4);
@@ -336,7 +348,8 @@ public class MyBookingsV {
         tableRowsContainer.getChildren().clear();
 
         List<BookingData> filtered = bookingList.stream().filter(b -> {
-            if ("Upcoming".equalsIgnoreCase(activeTabFilter) && !"Confirmed".equalsIgnoreCase(b.status)) return false;
+            if ("Active".equalsIgnoreCase(activeTabFilter) && !("Confirmed".equalsIgnoreCase(b.status) || "In Progress".equalsIgnoreCase(b.status))) return false;
+            if ("Completed".equalsIgnoreCase(activeTabFilter) && !"Completed".equalsIgnoreCase(b.status)) return false;
             if ("Cancelled".equalsIgnoreCase(activeTabFilter) && !"Cancelled".equalsIgnoreCase(b.status)) return false;
 
             if (searchInput != null && !searchInput.getText().isBlank()) {
@@ -371,13 +384,15 @@ public class MyBookingsV {
             Label sLbl = new Label(b.service); sLbl.setPrefWidth(140);
             Label aLbl = new Label(b.amount); aLbl.setPrefWidth(100); aLbl.setStyle("-fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
 
-            Label statusBadge = new Label(b.status); statusBadge.setPrefWidth(100);
-            if (b.status.equalsIgnoreCase("Confirmed")) {
-                statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
+            Label statusBadge = new Label(b.status); statusBadge.setPrefWidth(110);
+            if (b.status.equalsIgnoreCase("Completed")) {
+                statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 3 8; -fx-background-radius: 10px;");
+            } else if (b.status.equalsIgnoreCase("In Progress")) {
+                statusBadge.setStyle("-fx-background-color: " + WARNING_BG + "; -fx-text-fill: " + WARNING_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 3 8; -fx-background-radius: 10px;");
             } else if (b.status.equalsIgnoreCase("Cancelled")) {
-                statusBadge.setStyle("-fx-background-color: " + RED_BG + "; -fx-text-fill: " + RED_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
+                statusBadge.setStyle("-fx-background-color: " + RED_BG + "; -fx-text-fill: " + RED_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 3 8; -fx-background-radius: 10px;");
             } else {
-                statusBadge.setStyle("-fx-background-color: " + WARNING_BG + "; -fx-text-fill: " + WARNING_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
+                statusBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 3 8; -fx-background-radius: 10px;");
             }
 
             Button viewBtn = new Button("View Details");

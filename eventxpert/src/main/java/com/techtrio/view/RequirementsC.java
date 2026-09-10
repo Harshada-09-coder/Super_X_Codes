@@ -29,7 +29,6 @@ public class RequirementsC {
     private static final String TEXT = "#101828";
     private static final String GREY = "#667085";
 
-    // 8 Core Service Card holders
     private ServiceCardBox cardDecoration;
     private ServiceCardBox cardCatering;
     private ServiceCardBox cardPhotography;
@@ -45,6 +44,7 @@ public class RequirementsC {
     }
 
     public Scene getRequirementsScene() {
+        ReviewPageC.EventData.currentStep = 2;
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
@@ -56,69 +56,57 @@ public class RequirementsC {
         sidebar.setMaxWidth(245);
         sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label logo = label("EventXpert", 22, FontWeight.BOLD, "white");
-        Label logoSub = label("EVENT MANAGEMENT", 10, FontWeight.NORMAL, "#BDE3FF");
-        VBox brand = new VBox(3, logo, logoSub);
-        brand.setPadding(new Insets(24, 20, 28, 25));
+        HBox brandBox = new HBox(10);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(24, 20, 20, 22));
 
-        Label create = label("Create Event", 20, FontWeight.BOLD, "white");
-        Label step = label("Step-by-step setup", 12, FontWeight.NORMAL, "#BDE3FF");
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(24);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = label("EventXpert", 20, FontWeight.BOLD, "white");
+        Label logoSub = label("EVENT MANAGEMENT", 9, FontWeight.NORMAL, "#BDE3FF");
+        brandTexts.getChildren().addAll(logo, logoSub);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        Label create = label("Create Event", 18, FontWeight.BOLD, "white");
+        Label step = label("Step-by-step setup", 11, FontWeight.NORMAL, "#BDE3FF");
         VBox title = new VBox(2, create, step);
         title.setPadding(new Insets(0, 20, 20, 25));
 
         VBox menu = new VBox();
         menu.getChildren().addAll(
-                sidebarItem("[1]", "Event Details", false),
-                sidebarItem("[2]", "Requirements", true),
-                sidebarItem("[3]", "Venue", false),
-                sidebarItem("[4]", "Budget", false),
-                sidebarItem("[5]", "Guest", false),
-                sidebarItem("[6]", "AI Planning", false),
-                sidebarItem("[7]", "Review", false)
+                sidebarItem("[1]", "Event Details", "fas-info-circle", false),
+                sidebarItem("[2]", "Requirements", "fas-list-ul", true),
+                sidebarItem("[3]", "Venue & Location", "fas-map-marker-alt", false),
+                sidebarItem("[4]", "Budget", "fas-wallet", false),
+                sidebarItem("[5]", "Guest", "fas-users", false),
+                sidebarItem("[6]", "AI Planning", "fas-magic", false),
+                sidebarItem("[7]", "Review", "fas-check-circle", false)
         );
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
-        sidebar.getChildren().addAll(brand, title, menu, sideSpace);
-
-        // TOP BAR
-        HBox topBar = new HBox();
-        topBar.setPrefHeight(60);
-        topBar.setAlignment(Pos.CENTER_RIGHT);
-        topBar.setPadding(new Insets(0, 30, 0, 30));
-        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:0 0 1 0;");
-
-        Label topLogo = label("EventXpert", 14, FontWeight.BOLD, NAVY);
-        Region topSpace = new Region();
-        HBox.setHgrow(topSpace, Priority.ALWAYS);
-
-        Label bell = label("Notifications", 11, FontWeight.NORMAL, NAVY);
-        Label help = label("?", 13, FontWeight.BOLD, NAVY);
-        help.setMinSize(28, 28);
-        help.setAlignment(Pos.CENTER);
-        help.setStyle("-fx-border-color:" + NAVY + ";-fx-border-radius:50;-fx-background-radius:50;");
-
-        topBar.getChildren().addAll(topLogo, topSpace, bell, help);
+        sidebar.getChildren().addAll(brandBox, title, menu, sideSpace);
 
         // CONTENT
         VBox content = new VBox(14);
-        content.setPadding(new Insets(20, 35, 18, 35));
+        content.setPadding(new Insets(28, 45, 20, 45));
         content.setStyle("-fx-background-color:" + BG + ";");
 
         Label stepText = label("STEP 2 OF 7", 10, FontWeight.BOLD, BLUE);
         Label heading = label("What do you need for your event?", 25, FontWeight.BOLD, NAVY);
         Label description = label("Select the core services and logistical requirements necessary for a successful execution.", 12, FontWeight.NORMAL, GREY);
 
-        // CORE SERVICES CONTAINER
         VBox servicesCard = new VBox(14);
         servicesCard.setPadding(new Insets(18));
-        servicesCard.setStyle("-fx-background-color:white;-fx-background-radius:9;-fx-border-color:" + BORDER + ";-fx-border-radius:9;");
+        servicesCard.setStyle("-fx-background-color:white;-fx-background-radius:10;-fx-border-color:" + BORDER + ";-fx-border-radius:10;");
 
-        Label servicesTitle = label("Core Services", 16, FontWeight.BOLD, TEXT);
+        Label servicesTitle = label("Core Services", 15, FontWeight.BOLD, TEXT);
 
         String reqs = ReviewPageC.EventData.requirements != null ? ReviewPageC.EventData.requirements : "";
 
-        // 8 Service Cards with Ikonli FontIcon
         cardDecoration = new ServiceCardBox("Decoration", "fas-archway", "#F3E8FF", "#7E22CE", reqs.contains("Decoration"));
         cardCatering = new ServiceCardBox("Catering", "fas-concierge-bell", "#FEF3C7", "#D97706", reqs.contains("Catering"));
         cardPhotography = new ServiceCardBox("Photography", "fas-camera", "#E0F2FE", "#0284C7", reqs.contains("Photography"));
@@ -152,10 +140,9 @@ public class RequirementsC {
 
         servicesCard.getChildren().addAll(servicesTitle, grid);
 
-        // ADDITIONAL REQUIREMENTS CONTAINER
         VBox additionalCard = new VBox(8);
         additionalCard.setPadding(new Insets(16));
-        additionalCard.setStyle("-fx-background-color:white;-fx-background-radius:9;-fx-border-color:" + BORDER + ";-fx-border-radius:9;");
+        additionalCard.setStyle("-fx-background-color:white;-fx-background-radius:10;-fx-border-color:" + BORDER + ";-fx-border-radius:10;");
 
         Label additionalTitle = label("Additional Requirements", 15, FontWeight.BOLD, TEXT);
         Label additionalDescription = label("Specify any unique logistical needs, accessibility requirements, or custom requests.", 11, FontWeight.NORMAL, BLUE);
@@ -168,7 +155,6 @@ public class RequirementsC {
         notes.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-font-size:12px;-fx-padding:8;");
 
         additionalCard.getChildren().addAll(additionalTitle, additionalDescription, customLabel, notes);
-
         content.getChildren().addAll(stepText, heading, description, servicesCard, additionalCard);
 
         // FOOTER
@@ -179,7 +165,7 @@ public class RequirementsC {
         footer.setPadding(new Insets(0, 35, 0, 35));
         footer.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:1 0 0 0;");
 
-        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.NORMAL, GREY);
+        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.BOLD, GREY);
         Region footerSpace = new Region();
         HBox.setHgrow(footerSpace, Priority.ALWAYS);
 
@@ -193,6 +179,7 @@ public class RequirementsC {
         next.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
 
         back.setOnAction(e -> {
+            ReviewPageC.EventData.saveDraft(1);
             CreateEventC createView = new CreateEventC(uid, idToken);
             LandingPage.landingPageStage.setScene(createView.getCreateEventScene());
         });
@@ -215,6 +202,7 @@ public class RequirementsC {
 
             ReviewPageC.EventData.requirements = result;
             ReviewPageC.EventData.notes = notes.getText().trim();
+            ReviewPageC.EventData.saveDraft(3);
 
             LocationC locationPage = new LocationC(uid, idToken);
             LandingPage.landingPageStage.setScene(locationPage.getLocationScene());
@@ -223,7 +211,7 @@ public class RequirementsC {
         footer.getChildren().addAll(copyright, footerSpace, back, next);
 
         VBox rightSide = new VBox();
-        rightSide.getChildren().addAll(topBar, content, footer);
+        rightSide.getChildren().addAll(content, footer);
         VBox.setVgrow(content, Priority.ALWAYS);
 
         HBox fullPage = new HBox();
@@ -238,24 +226,20 @@ public class RequirementsC {
     private static class ServiceCardBox {
         private final VBox card = new VBox(6);
         private final CheckBox checkBox = new CheckBox();
-        private final String title;
 
         public ServiceCardBox(String title, String iconLiteral, String circleBgColor, String iconColor, boolean initialSelected) {
-            this.title = title;
             card.setAlignment(Pos.CENTER);
             card.setPadding(new Insets(10, 10, 12, 10));
             card.setPrefHeight(135);
             card.setMinHeight(135);
             card.setCursor(javafx.scene.Cursor.HAND);
 
-            // Checkbox Header
             HBox topRow = new HBox();
             topRow.setAlignment(Pos.CENTER_RIGHT);
             topRow.setPadding(new Insets(0, 4, 0, 0));
             checkBox.setSelected(initialSelected);
             topRow.getChildren().add(checkBox);
 
-            // Circular Icon Badge
             StackPane iconCircle = new StackPane();
             Circle circle = new Circle(26, Color.web(circleBgColor));
             FontIcon fontIcon = new FontIcon(iconLiteral);
@@ -263,16 +247,14 @@ public class RequirementsC {
             fontIcon.setIconColor(Color.web(iconColor));
             iconCircle.getChildren().addAll(circle, fontIcon);
 
-            // Service Title
             Label titleLabel = new Label(title);
             titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-            titleLabel.setTextFill(Color.web(TEXT));
+            titleLabel.setStyle("-fx-text-fill:" + NAVY + " !important;");
             titleLabel.setAlignment(Pos.CENTER);
             titleLabel.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
             titleLabel.setWrapText(true);
 
             card.getChildren().addAll(topRow, iconCircle, titleLabel);
-
             updateStyle();
 
             card.setOnMouseClicked(e -> {
@@ -300,25 +282,33 @@ public class RequirementsC {
         }
     }
 
-    private HBox sidebarItem(String icon, String text, boolean active) {
-        HBox item = new HBox(12);
-        item.setPrefHeight(44);
-        item.setMinHeight(44);
+    private HBox sidebarItem(String stepNum, String text, String iconLiteral, boolean active) {
+        HBox item = new HBox(10);
+        item.setPrefHeight(42);
+        item.setMinHeight(42);
         item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(0, 18, 0, 25));
-        item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
+        item.setPadding(new Insets(0, 16, 0, 22));
 
-        item.getChildren().addAll(
-                label(icon, 13, FontWeight.NORMAL, "white"),
-                label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8")
-        );
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#B7C4D8"));
+
+        Label textLbl = label(stepNum + "  " + text, 12, active ? FontWeight.BOLD : FontWeight.NORMAL, active ? NAVY : "#B7C4D8");
+
+        if (active) {
+            item.setStyle("-fx-background-color: #E0F2FE; -fx-background-radius: 7px;");
+        } else {
+            item.setStyle("-fx-background-color: transparent;");
+        }
+
+        item.getChildren().addAll(icon, textLbl);
         return item;
     }
 
     private Label label(String text, double size, FontWeight weight, String color) {
         Label l = new Label(text);
         l.setFont(Font.font("Arial", weight, size));
-        l.setTextFill(Color.web(color));
+        l.setStyle("-fx-text-fill: " + color + " !important;");
         return l;
     }
 }

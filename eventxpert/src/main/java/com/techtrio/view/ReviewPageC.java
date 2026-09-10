@@ -13,6 +13,7 @@ import com.techtrio.model.budget.BudgetOptimizationResult;
 import com.techtrio.services.BudgetOptimizerService;
 import com.techtrio.session.UserSession;
 import com.techtrio.util.QRCodeUtil;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -32,7 +33,6 @@ public class ReviewPageC {
     private String uid;
     private String idToken;
 
-    // High Contrast NAVY & Blue Colors
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
     private static final String BG = "#F5F8FC";
@@ -62,6 +62,52 @@ public class ReviewPageC {
         public static String confirmedVenueName = "";
         public static String confirmedVenueAddress = "";
 
+        // DRAFT ENGINE
+        public static boolean isDraftSaved = false;
+        public static int currentStep = 1;
+
+        public static boolean hasActiveDraft() {
+            return isDraftSaved && (eventName != null && !eventName.isBlank());
+        }
+
+        public static void saveDraft(int step) {
+            currentStep = step;
+            isDraftSaved = true;
+        }
+
+        public static void resumeDraft(String userUid, String token) {
+            switch (currentStep) {
+                case 2 -> {
+                    RequirementsC view = new RequirementsC(userUid, token);
+                    LandingPage.landingPageStage.setScene(view.getRequirementsScene());
+                }
+                case 3 -> {
+                    LocationC view = new LocationC(userUid, token);
+                    LandingPage.landingPageStage.setScene(view.getLocationScene());
+                }
+                case 4 -> {
+                    BudgetC view = new BudgetC(userUid, token);
+                    LandingPage.landingPageStage.setScene(view.getBudgetScene());
+                }
+                case 5 -> {
+                    GuestManagementC view = new GuestManagementC(userUid, token);
+                    LandingPage.landingPageStage.setScene(view.getGuestManagementScene());
+                }
+                case 6 -> {
+                    AiPlanningC view = new AiPlanningC(userUid, token);
+                    LandingPage.landingPageStage.setScene(view.getAiPlanningScene());
+                }
+                case 7 -> {
+                    ReviewPageC view = new ReviewPageC(userUid, token);
+                    LandingPage.landingPageStage.setScene(view.getReviewScene());
+                }
+                default -> {
+                    CreateEventC view = new CreateEventC(userUid, token);
+                    LandingPage.landingPageStage.setScene(view.getCreateEventScene());
+                }
+            }
+        }
+
         public static void reset() {
             category = "Formal";
             eventName = "";
@@ -76,15 +122,18 @@ public class ReviewPageC {
             city = "";
             area = "";
             venue = "";
-            budget = "₹ 8,45,000";
+            budget = "";
             guestMode = "MANUAL";
             guestList = new ArrayList<>();
             aiEnabled = true;
             aiPlanJson = "";
             theme = "Classic Elegance";
 
-            confirmedVenueName = "Grand Convention Center";
-            confirmedVenueAddress = "Senapati Bapat Road, Pune";
+            confirmedVenueName = "";
+            confirmedVenueAddress = "";
+
+            isDraftSaved = false;
+            currentStep = 1;
         }
     }
 
@@ -94,6 +143,8 @@ public class ReviewPageC {
     }
 
     public Scene getReviewScene() {
+        EventData.saveDraft(7);
+
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
@@ -105,74 +156,55 @@ public class ReviewPageC {
         sidebar.setFillWidth(true);
         sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label logo = label("EventXpert", 22, FontWeight.BOLD, "#FFFFFF");
-        Label logoSub = label("EVENT MANAGEMENT", 10, FontWeight.NORMAL, "#BDE3FF");
-        VBox brand = new VBox(3, logo, logoSub);
-        brand.setPadding(new Insets(24, 20, 28, 25));
+        HBox brandBox = new HBox(10);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(24, 20, 20, 22));
 
-        Label createTitle = label("Create Event", 20, FontWeight.BOLD, "#FFFFFF");
-        Label step = label("Step-by-step setup", 12, FontWeight.NORMAL, "#BDE3FF");
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(24);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = label("EventXpert", 20, FontWeight.BOLD, "white");
+        Label logoSub = label("EVENT MANAGEMENT", 9, FontWeight.NORMAL, "#BDE3FF");
+        brandTexts.getChildren().addAll(logo, logoSub);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        Label createTitle = label("Create Event", 18, FontWeight.BOLD, "white");
+        Label step = label("Step-by-step setup", 11, FontWeight.NORMAL, "#BDE3FF");
         VBox titleBox = new VBox(2, createTitle, step);
         titleBox.setPadding(new Insets(0, 20, 20, 25));
 
         VBox menu = new VBox();
         menu.getChildren().addAll(
-                sidebarItem("[1]", "Event Details", false),
-                sidebarItem("[2]", "Requirements", false),
-                sidebarItem("[3]", "Venue", false),
-                sidebarItem("[4]", "Budget", false),
-                sidebarItem("[5]", "Guest", false),
-                sidebarItem("[6]", "AI Planning", false),
-                sidebarItem("[7]", "Review", true)
+                sidebarItem("[1]", "Event Details", "fas-info-circle", false),
+                sidebarItem("[2]", "Requirements", "fas-list-ul", false),
+                sidebarItem("[3]", "Venue & Location", "fas-map-marker-alt", false),
+                sidebarItem("[4]", "Budget", "fas-wallet", false),
+                sidebarItem("[5]", "Guest", "fas-users", false),
+                sidebarItem("[6]", "AI Planning", "fas-magic", false),
+                sidebarItem("[7]", "Review", "fas-check-circle", true)
         );
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
-        sidebar.getChildren().addAll(brand, titleBox, menu, sideSpace);
+        sidebar.getChildren().addAll(brandBox, titleBox, menu, sideSpace);
 
-        // 2. TOP BAR
-        HBox topBar = new HBox();
-        topBar.setPrefHeight(60);
-        topBar.setAlignment(Pos.CENTER_RIGHT);
-        topBar.setPadding(new Insets(0, 30, 0, 30));
-        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:0 0 1 0;");
-
-        Label topLogo = label("EventXpert", 14, FontWeight.BOLD, NAVY);
-        Region topSpace = new Region();
-        HBox.setHgrow(topSpace, Priority.ALWAYS);
-        Label notification = label("Notifications", 11, FontWeight.BOLD, NAVY);
-        Label help = label("?", 13, FontWeight.BOLD, NAVY);
-        help.setMinSize(28, 28);
-        help.setAlignment(Pos.CENTER);
-        help.setStyle("-fx-border-color:" + NAVY + ";-fx-border-radius:50;-fx-background-radius:50;-fx-text-fill:" + NAVY + ";");
-
-        topBar.getChildren().addAll(topLogo, topSpace, notification, help);
-
-        // 3. SCROLLABLE BODY
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
-
+        // 2. MAIN CONTENT (TopBar Removed)
         VBox page = new VBox(14);
-        page.setPadding(new Insets(20, 35, 20, 35));
+        page.setPadding(new Insets(28, 45, 20, 45));
 
-        Label stepText = label("STEP 7 OF 7", 11, FontWeight.BOLD, BLUE);
+        Label stepText = label("STEP 7 OF 7", 10, FontWeight.BOLD, BLUE);
         Label title = label("Review Your Event & Plan", 26, FontWeight.BOLD, NAVY);
-        Label subtitle = label("Please double-check your event setup and details before final submission.", 13, FontWeight.BOLD, NAVY);
+        Label subtitle = label("Please double-check your event setup and details before final submission.", 12, FontWeight.NORMAL, "#64748B");
         VBox titleBoxPage = new VBox(3, stepText, title, subtitle);
 
         GridPane grid = new GridPane();
         grid.setHgap(16);
         grid.setVgap(16);
 
-        ColumnConstraints col1 = new ColumnConstraints();
-        col1.setPercentWidth(50);
-        col1.setHgrow(Priority.ALWAYS);
-
-        ColumnConstraints col2 = new ColumnConstraints();
-        col2.setPercentWidth(50);
-        col2.setHgrow(Priority.ALWAYS);
-
+        ColumnConstraints col1 = new ColumnConstraints(); col1.setPercentWidth(50); col1.setHgrow(Priority.ALWAYS);
+        ColumnConstraints col2 = new ColumnConstraints(); col2.setPercentWidth(50); col2.setHgrow(Priority.ALWAYS);
         grid.getColumnConstraints().addAll(col1, col2);
 
         grid.add(eventDetailsCard(), 0, 0);
@@ -182,9 +214,12 @@ public class ReviewPageC {
 
         VBox aiPlanCard = aiPlanningSummaryCard();
         page.getChildren().addAll(titleBoxPage, grid, aiPlanCard);
-        scrollPane.setContent(page);
 
-        // 4. FOOTER
+        ScrollPane scrollPane = new ScrollPane(page);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
+
+        // 3. FOOTER
         HBox footer = new HBox(15);
         footer.setPrefHeight(60);
         footer.setMinHeight(60);
@@ -200,6 +235,7 @@ public class ReviewPageC {
         back.setPrefSize(82, 38);
         back.setStyle("-fx-background-color:white;-fx-border-color:" + BLUE + ";-fx-border-radius:7;-fx-background-radius:7;-fx-text-fill:" + BLUE + ";-fx-font-weight:bold;-fx-cursor:hand;");
         back.setOnAction(e -> {
+            EventData.saveDraft(6);
             AiPlanningC aiView = new AiPlanningC(uid, idToken);
             LandingPage.landingPageStage.setScene(aiView.getAiPlanningScene());
         });
@@ -237,13 +273,11 @@ public class ReviewPageC {
             event.setCategory(EventData.category.isBlank() ? "Formal" : EventData.category);
             event.setGuests(EventData.guests > 0 ? EventData.guests : 250);
 
-            // Complete event duration
             event.setStartDate(EventData.startDate.isBlank() ? "" : EventData.startDate);
             event.setEndDate(EventData.endDate.isBlank() ? "" : EventData.endDate);
             event.setStartTime(EventData.startTime.isBlank() ? "10:00 AM" : EventData.startTime);
             event.setEndTime(EventData.endTime.isBlank() ? "06:00 PM" : EventData.endTime);
 
-            // Backward compatibility
             event.setEventDate(event.getStartDate());
             event.setTime(event.getStartTime() + (!event.getEndTime().isBlank() ? " - " + event.getEndTime() : ""));
 
@@ -306,7 +340,7 @@ public class ReviewPageC {
 
                 boolean isSaved = saveTask.getValue();
                 if (isSaved) {
-                    EventData.reset();
+                    EventData.reset(); // DRAFT RESET ON SUBMISSION
                     showSuccessModal(finalUid, finalToken);
                 } else {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save event. Please check Firestore connection.");
@@ -331,7 +365,7 @@ public class ReviewPageC {
 
         footer.getChildren().addAll(copyright, fSpacer, back, submitBtn);
 
-        VBox rightSide = new VBox(topBar, scrollPane, footer);
+        VBox rightSide = new VBox(scrollPane, footer);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
         HBox fullPage = new HBox(sidebar, rightSide);
@@ -342,7 +376,6 @@ public class ReviewPageC {
         return scene;
     }
 
-    // ⭐ Beautiful In-App Modal Dialog (No extra separate OS Stage)
     private void showSuccessModal(String customerUid, String customerToken) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Event Submitted");
@@ -383,7 +416,6 @@ public class ReviewPageC {
         dialog.getDialogPane().setContent(content);
         dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
         
-        // Hide default dialog close button header
         dialog.getDialogPane().lookupButton(ButtonType.CLOSE).setVisible(false);
         dialog.getDialogPane().lookupButton(ButtonType.CLOSE).setManaged(false);
 
@@ -436,7 +468,6 @@ public class ReviewPageC {
         return card;
     }
 
-    // Dynamic Budget Review Card linked with BudgetOptimizerService
     private VBox budgetReviewCard() {
         VBox card = createCard();
         card.getChildren().add(cardTitle("💰", "Smart Budget Allocation"));
@@ -457,7 +488,6 @@ public class ReviewPageC {
         pb.setStyle("-fx-accent:" + BLUE + ";");
         card.getChildren().add(pb);
 
-        // Dynamically compute allocation breakdown based on selected requirements
         double parsedAmount = 845000;
         try {
             String clean = budgetVal.replaceAll("[^0-9.]", "").trim();
@@ -513,7 +543,7 @@ public class ReviewPageC {
 
         String summary = (EventData.notes != null && !EventData.notes.isBlank())
                 ? EventData.notes
-                : "This personalized plan has been generated and validated using Google Gemini AI and constraint solver.";
+                : "This personalized plan has been generated and validated using Timefold AI constraint solver.";
 
         Label sumLbl = label(summary, 12, FontWeight.BOLD, NAVY);
         sumLbl.setWrapText(true);
@@ -555,22 +585,33 @@ public class ReviewPageC {
         card.getChildren().add(row);
     }
 
-    private HBox sidebarItem(String icon, String text, boolean active) {
-        HBox item = new HBox(12);
-        item.setPrefHeight(44);
-        item.setMinHeight(44);
+    private HBox sidebarItem(String stepNum, String text, String iconLiteral, boolean active) {
+        HBox item = new HBox(10);
+        item.setPrefHeight(42);
+        item.setMinHeight(42);
         item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(0, 18, 0, 25));
-        item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
-        item.getChildren().addAll(label(icon, 13, FontWeight.NORMAL, "white"), label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8"));
+        item.setPadding(new Insets(0, 16, 0, 22));
+
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#B7C4D8"));
+
+        Label textLbl = label(stepNum + "  " + text, 12, active ? FontWeight.BOLD : FontWeight.NORMAL, active ? NAVY : "#B7C4D8");
+
+        if (active) {
+            item.setStyle("-fx-background-color: #E0F2FE; -fx-background-radius: 7px;");
+        } else {
+            item.setStyle("-fx-background-color: transparent;");
+        }
+
+        item.getChildren().addAll(icon, textLbl);
         return item;
     }
 
     private Label label(String text, double size, FontWeight weight, String color) {
         Label l = new Label(text != null ? text : "");
         l.setFont(Font.font("Arial", weight, size));
-        l.setTextFill(Color.web(color));
-        l.setStyle("-fx-text-fill: " + color + " !important; -fx-opacity: 1.0;");
+        l.setStyle("-fx-text-fill: " + color + " !important;");
         return l;
     }
 }
