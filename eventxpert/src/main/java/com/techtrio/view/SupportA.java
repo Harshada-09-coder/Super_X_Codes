@@ -340,7 +340,8 @@ public class SupportA {
                 createSidebarButton("Notifications", "fas-bell", false),
                 createSidebarButton("Profile", "fas-user", false),
                 createSidebarButton("Settings", "fas-cog", false),
-                createSidebarButton("Support", "fas-question-circle", activeTab.equals("Support"))
+                createSidebarButton("Support", "fas-question-circle", activeTab.equals("Support")),
+                createSidebarButton("About Us", "fas-info-circle", activeTab.equals("About Us"))
         );
 
         sidebar.getChildren().addAll(brandBox, menu, sidebarSpace, bottomMenu);
