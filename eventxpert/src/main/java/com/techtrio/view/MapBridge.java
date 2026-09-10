@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.scene.control.TextField;
 
 public class MapBridge {
+    
 
     private final TextField cityField;
     private final TextField localityField;
