@@ -56,6 +56,11 @@ public class VendorController {
         return vendorBookingService.getBookingsByVendorId(vendorId);
     }
 
+    // ⭐ हि मेथड ॲड केली आहे ज्यामुळे EarningsPaymentsV मधील एरर निघून जाईल
+    public List<VendorBooking> getVendorBookingsByVendorId(String vendorId) {
+        return vendorBookingService.getBookingsByVendorId(vendorId);
+    }
+
     public List<VendorBooking> getEventVendorBookings(String eventId) {
         return vendorBookingService.getBookingsByEventId(eventId);
     }

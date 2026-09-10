@@ -1,671 +1,377 @@
 package com.techtrio.view;
 
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
+import com.techtrio.controller.AdminController;
 import com.techtrio.controller.NavigationManager;
+import com.techtrio.model.AdminProfile;
+import com.techtrio.session.UserSession;
+import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Separator;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class SupportA {
-        private Scene supportScene;
 
-    // Colors
-    private final String NAVY = "#062B63";
-    private final String LIGHT_BLUE = "#BFE2FA";
-    private final String BG = "#F5F8FC";
-    private final String BORDER = "#D6DEE8";
-    private final String TEXT = "#14213D";
-    private final String GRAY = "#596579";  
+    private Scene supportScene;
 
-    public Scene getsupportScene(){
+    private final String PRIMARY = "#002A60";
+    private final String LIGHT = "#C2E0F4";
+    private final String BG = "#F8FAFC";
+    private final String BORDER = "#E2E8F0";
 
-        
+    private final AdminController adminController = new AdminController();
+    private String adminId;
+
+    private TextField nameField;
+    private TextField emailField;
+    private ComboBox<String> issueBox;
+    private TextField subjectField;
+    private TextArea descriptionArea;
+
+    private StackPane rootLayer;
+
+    public Scene getsupportScene() {
+        rootLayer = new StackPane();
+        rootLayer.setStyle("-fx-background-color:" + BG + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
+
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
-        // ================= SIDEBAR =================
-        VBox sidebar = new VBox();
-        sidebar.setPrefWidth(258);
-        sidebar.setMinWidth(258);
-        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
+        root.setLeft(createAdminSidebar("Support"));
 
-        // Logo
-        VBox logoBox = new VBox(2);
-        logoBox.setPadding(new Insets(25, 20, 25, 25));
-
-        Label logo = new Label("▣");
-        logo.setPrefSize(45, 45);
-        logo.setAlignment(Pos.CENTER);
-        logo.setStyle(
-                "-fx-background-color:" + LIGHT_BLUE + ";" +
-                "-fx-background-radius:50%;" +
-                "-fx-text-fill:" + NAVY + ";" +
-                "-fx-font-size:22px;"
-        );
-
-        Label brand = new Label("EventXpert");
-        brand.setTextFill(Color.WHITE);
-        brand.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-
-        Label admin = new Label("Admin Console");
-        admin.setTextFill(Color.web("#B8C7DC"));
-        admin.setFont(Font.font("Arial", FontWeight.NORMAL, 13));
-
-        HBox brandRow = new HBox(12, logo, new VBox(2, brand, admin));
-        brandRow.setAlignment(Pos.CENTER_LEFT);
-
-        logoBox.getChildren().add(brandRow);
-
-        // Main navigation
-        VBox mainNav = new VBox(7);
-        mainNav.setPadding(new Insets(5, 16, 10, 16));
-
-        String[] menu = {
-                "▦   Dashboard",
-                "▣   Event Requests",
-                "▣   Events",
-                "▦   Calendar",
-                "♙   Customers",
-                "♙   Organizers",
-                "▤   Vendors",
-                "△   Conflict Detection",
-                "▥   Reports & Analytics",
-                "♧   Notifications"
-        };
-
-
-
-for (String item : menu) {
-
-    Label nav = new Label(item);
-
-    nav.setMaxWidth(Double.MAX_VALUE);
-    nav.setPrefHeight(48);
-    nav.setAlignment(Pos.CENTER_LEFT);
-    nav.setPadding(new Insets(0, 12, 0, 10));
-    nav.setTextFill(Color.web("#9FB3CE"));
-    nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-
-    nav.setStyle("-fx-background-radius:8;");
-
-    nav.setOnMouseEntered(e ->
-            nav.setStyle(
-                    "-fx-background-color:#0C3975;" +
-                    "-fx-background-radius:8;"
-            )
-    );
-
-    nav.setOnMouseExited(e ->
-            nav.setStyle(
-                    "-fx-background-color:transparent;" +
-                    "-fx-background-radius:8;"
-            )
-    );
-
-    // Navigation
-    nav.setOnMouseClicked(e -> {
-
-        Stage stage =
-                (Stage) nav.getScene().getWindow();
-
-        String page = item
-                .replace("▦", "")
-                .replace("▣", "")
-                .replace("♙", "")
-                .replace("▤", "")
-                .replace("△", "")
-                .replace("▥", "")
-                .replace("♧", "")
-                .trim();
-
-        NavigationManager.navigate(page, stage);
-    });
-
-    mainNav.getChildren().add(nav);
-}
-
-        Region space = new Region();
-        VBox.setVgrow(space, Priority.ALWAYS);
-
-        VBox bottomNav = new VBox(7);
-        bottomNav.setPadding(new Insets(10, 16, 18, 16));
-
-        String[] bottom = {
-                "⚙   Settings",
-                "●   Profile"
-        };
-
-    for (String item : bottom) {
-
-    Label nav = new Label(item);
-
-    nav.setMaxWidth(Double.MAX_VALUE);
-    nav.setPrefHeight(48);
-    nav.setAlignment(Pos.CENTER_LEFT);
-    nav.setPadding(new Insets(0, 12, 0, 10));
-    nav.setTextFill(Color.web("#9FB3CE"));
-    nav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-
-    nav.setOnMouseClicked(e -> {
-
-        Stage stage =
-                (Stage) nav.getScene().getWindow();
-
-        String page = item
-                .replace("⚙", "")
-                .replace("●", "")
-                .trim();
-
-        NavigationManager.navigate(page, stage);
-    });
-
-    bottomNav.getChildren().add(nav);
-}
-
-        // Support active
-        Label supportNav = new Label("❔   Support");
-        supportNav.setMaxWidth(Double.MAX_VALUE);
-        supportNav.setPrefHeight(50);
-        supportNav.setAlignment(Pos.CENTER_LEFT);
-        supportNav.setPadding(new Insets(0, 12, 0, 10));
-        supportNav.setTextFill(Color.web(NAVY));
-        supportNav.setFont(Font.font("Arial", FontWeight.BOLD, 15));
-        supportNav.setStyle(
-                "-fx-background-color:" + LIGHT_BLUE + ";" +
-                "-fx-background-radius:8;"
-        );
-
-        bottomNav.getChildren().add(supportNav);
-
-        sidebar.getChildren().addAll(
-                logoBox,
-                mainNav,
-                space,
-                bottomNav
-        );
-
-        // ================= TOP BAR =================
-        BorderPane main = new BorderPane();
-
-        HBox topBar = new HBox();
-        topBar.setPrefHeight(70);
-        topBar.setPadding(new Insets(12, 25, 12, 25));
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:" + BORDER + ";" +
-                "-fx-border-width:0 0 1 0;"
-        );
-
-        TextField search = new TextField();
-        search.setPromptText("Search for help...");
-        search.setPrefWidth(410);
-        search.setPrefHeight(44);
-        search.setStyle(
-                "-fx-border-color:#C9D2DE;" +
-                "-fx-border-radius:7;" +
-                "-fx-background-radius:7;" +
-                "-fx-font-size:14px;" +
-                "-fx-padding:0 14;"
-        );
-
-        Button searchBtn = new Button("Search");
-        searchBtn.setPrefSize(88, 38);
-        searchBtn.setTextFill(Color.WHITE);
-        searchBtn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        searchBtn.setStyle(
-                "-fx-background-color:" + NAVY + ";" +
-                "-fx-background-radius:7;"
-        );
-
-        StackPane searchBox = new StackPane(search);
-        searchBox.setPrefWidth(410);
-
-        HBox searchArea = new HBox(searchBox, searchBtn);
-        searchArea.setAlignment(Pos.CENTER_LEFT);
-        searchArea.setSpacing(5);
-
-        Region topSpace = new Region();
-        HBox.setHgrow(topSpace, Priority.ALWAYS);
-
-        Label bell = new Label("♧");
-        bell.setFont(Font.font(25));
-        bell.setTextFill(Color.web("#26354A"));
-
-        Label question = new Label("?");
-        question.setPrefSize(25, 25);
-        question.setAlignment(Pos.CENTER);
-        question.setStyle(
-                "-fx-border-color:#26354A;" +
-                "-fx-border-radius:50%;" +
-                "-fx-text-fill:#26354A;" +
-                "-fx-font-weight:bold;"
-        );
-
-        Label profile = new Label("AD");
-        profile.setPrefSize(38, 38);
-        profile.setAlignment(Pos.CENTER);
-        profile.setStyle(
-                "-fx-background-color:" + NAVY + ";" +
-                "-fx-background-radius:50%;" +
-                "-fx-text-fill:white;" +
-                "-fx-font-weight:bold;"
-        );
-
-        topBar.getChildren().addAll(
-                searchArea,
-                topSpace,
-                bell,
-                question,
-                profile
-        );
-
-        main.setTop(topBar);
-
-        // ================= CONTENT =================
-        VBox content = new VBox(28);
-        content.setPadding(new Insets(28, 26, 35, 26));
+        VBox content = new VBox(18);
+        content.setPadding(new Insets(24, 32, 28, 32));
         content.setStyle("-fx-background-color:" + BG + ";");
 
-        // Heading
-        Label title = new Label("Support");
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 38));
-        title.setTextFill(Color.web(TEXT));
+        Label title = new Label("Admin Help & Support Center");
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        title.setTextFill(Color.web(PRIMARY));
 
-        Label subtitle = new Label(
-                "Get help, find answers, or contact our support team."
-        );
-        subtitle.setFont(Font.font("Arial", 18));
-        subtitle.setTextFill(Color.web(GRAY));
+        Label subtitle = new Label("Submit technical tickets, browse system documentation or get direct developer assistance.");
+        subtitle.setFont(Font.font("Arial", 13));
+        subtitle.setTextFill(Color.web("#64748B"));
 
-        VBox heading = new VBox(5, title, subtitle);
+        VBox heading = new VBox(2, title, subtitle);
 
-        // ================= HELP CARDS =================
-        HBox helpCards = new HBox(25);
-        helpCards.setFillHeight(true);
-        helpCards.setCursor(javafx.scene.Cursor.HAND);
-
-
-        VBox guide = helpCard(
-                "▤",
-                "User Guide",
-                "Learn how to use\nEventXpert"
-        );
-
-        VBox faq = helpCard(
-                "▣",
-                "FAQs",
-                "Find answers to common\nquestions"
-        );
-
-        VBox tutorial = helpCard(
-                "▥",
-                "System Tutorial",
-                "Learn the main features"
-        );
-
-        VBox contact = helpCard(
-                "♧",
-                "Contact Support",
-                "Get assistance from our\nsupport team"
-        );
-
-        HBox.setHgrow(guide, Priority.ALWAYS);
-        HBox.setHgrow(faq, Priority.ALWAYS);
-        HBox.setHgrow(tutorial, Priority.ALWAYS);
-        HBox.setHgrow(contact, Priority.ALWAYS);
-
+        HBox helpCards = new HBox(12);
         helpCards.getChildren().addAll(
-                guide, faq, tutorial, contact
+                createDocCard("User Guide", "Learn full EventXpert workflows", "fas-book-open"),
+                createDocCard("Knowledge Base", "Frequently asked technical questions", "fas-question-circle"),
+                createDocCard("System Architecture", "Timefold solver and Firebase rules", "fas-layer-group"),
+                createDocCard("Developer Contact", "Direct technical escalation channel", "fas-headset")
         );
 
-        // ================= LOWER SECTION =================
-        HBox lower = new HBox(26);
+        HBox lower = new HBox(18);
 
-        // ----- Support Request -----
-        VBox request = new VBox();
-        request.setStyle(cardStyle());
-        request.setPadding(new Insets(0));
-        HBox.setHgrow(request, Priority.ALWAYS);
+        VBox formCard = createCard();
+        Label fTitle = new Label("Submit Support / Bug Ticket");
+        fTitle.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+        fTitle.setTextFill(Color.web(PRIMARY));
 
-        Label requestTitle = new Label("Submit a Support Request");
-        requestTitle.setFont(Font.font("Arial", FontWeight.BOLD, 27));
-        requestTitle.setTextFill(Color.web(TEXT));
+        nameField = new TextField("Administrator");
+        emailField = new TextField("admin@eventxpert.com");
 
-        HBox titleBox = new HBox(requestTitle);
-        titleBox.setPadding(new Insets(26, 28, 22, 28));
+        issueBox = new ComboBox<>();
+        issueBox.getItems().addAll("Timefold Constraint Error", "Payment Webhook Issue", "Authentication / 2FA", "Database Connection", "General Query");
+        issueBox.setValue("Timefold Constraint Error");
+        issueBox.setMaxWidth(Double.MAX_VALUE);
 
-        Separator sep = new Separator();
+        subjectField = new TextField();
+        subjectField.setPromptText("Enter brief ticket summary...");
+
+        descriptionArea = new TextArea();
+        descriptionArea.setPromptText("Explain the incident, error stack or requirement in detail...");
+        descriptionArea.setPrefRowCount(3);
 
         GridPane form = new GridPane();
-        form.setHgap(25);
-        form.setVgap(18);
-        form.setPadding(new Insets(25, 28, 25, 28));
+        form.setHgap(14); form.setVgap(10);
+        form.add(new Label("Admin Name:"), 0, 0); form.add(nameField, 0, 1);
+        form.add(new Label("Contact Email:"), 1, 0); form.add(emailField, 1, 1);
+        form.add(new Label("Issue Classification:"), 0, 2); form.add(issueBox, 0, 3);
+        form.add(new Label("Subject:"), 1, 2); form.add(subjectField, 1, 3);
 
-        // Name
-        Label nameLabel = formLabel("Name");
-        TextField name = input("");
+        Button submitBtn = new Button("Submit Support Ticket");
+        submitBtn.setStyle("-fx-background-color:" + PRIMARY + "; -fx-text-fill:white; -fx-font-weight:bold; -fx-padding:8 18; -fx-background-radius:6; -fx-cursor:hand;");
+        submitBtn.setOnAction(e -> submitSupportTicket());
 
-        // Email
-        Label emailLabel = formLabel("Email");
-        TextField email = input("");
+        HBox btnRow = new HBox(submitBtn);
+        btnRow.setAlignment(Pos.CENTER_RIGHT);
 
-        // Issue
-        Label issueLabel = formLabel("Issue Type");
-        ComboBox<String> issue = new ComboBox<>();
-        issue.getItems().addAll(
-                "Technical Issue",
-                "Account Issue",
-                "Payment Issue",
-                "Event Issue",
-                "Other"
-        );
-        issue.setValue("Technical Issue");
-        issue.setPrefHeight(44);
-        issue.setMaxWidth(Double.MAX_VALUE);
-        issue.setStyle(
-                "-fx-border-color:#C9D2DE;" +
-                "-fx-border-radius:6;" +
-                "-fx-background-radius:6;" +
-                "-fx-font-size:15px;"
-        );
+        formCard.getChildren().addAll(fTitle, new Separator(), form, new Label("Description / Error Trace:"), descriptionArea, btnRow);
+        HBox.setHgrow(formCard, Priority.ALWAYS);
 
-        // Subject
-        Label subjectLabel = formLabel("Subject");
-        TextField subject = input("");
+        VBox infoCard = createCard();
+        infoCard.setPrefWidth(320);
+        Label iTitle = new Label("Platform Health & SLA");
+        iTitle.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+        iTitle.setTextFill(Color.web(PRIMARY));
 
-        VBox nameBox = new VBox(6, nameLabel, name);
-        VBox emailBox = new VBox(6, emailLabel, email);
-        VBox issueBox = new VBox(6, issueLabel, issue);
-        VBox subjectBox = new VBox(6, subjectLabel, subject);
-
-        form.add(nameBox, 0, 0);
-        form.add(emailBox, 1, 0);
-        form.add(issueBox, 0, 1);
-        form.add(subjectBox, 1, 1);
-
-        GridPane.setHgrow(nameBox, Priority.ALWAYS);
-        GridPane.setHgrow(emailBox, Priority.ALWAYS);
-        GridPane.setHgrow(issueBox, Priority.ALWAYS);
-        GridPane.setHgrow(subjectBox, Priority.ALWAYS);
-
-        // Description
-        Label descLabel = formLabel("Description");
-        TextArea description = new TextArea();
-        description.setPrefRowCount(3);
-        description.setWrapText(true);
-        description.setStyle(
-                "-fx-border-color:#C9D2DE;" +
-                "-fx-border-radius:6;" +
-                "-fx-background-radius:6;" +
-                "-fx-font-size:15px;"
+        infoCard.getChildren().addAll(
+                iTitle,
+                new Separator(),
+                infoRow("Version", "EventXpert v1.0.0"),
+                infoRow("Environment", "Production (Cloud)"),
+                infoRow("Backend", "Google Cloud Firestore"),
+                infoRow("Response SLA", "< 2 Hours Priority")
         );
 
-        VBox descBox = new VBox(6, descLabel, description);
-        descBox.setPadding(new Insets(0, 28, 0, 28));
+        lower.getChildren().addAll(formCard, infoCard);
+        content.getChildren().addAll(heading, helpCards, lower);
 
-        // Buttons
-        Button attach = new Button("📎   Attach\n      File");
-        attach.setPrefSize(138, 42);
-        attach.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:" + NAVY + ";" +
-                "-fx-border-radius:6;" +
-                "-fx-text-fill:" + NAVY + ";" +
-                "-fx-font-weight:bold;" +
-                "-fx-font-size:14px;"
-        );
-
-        Button submit = new Button("Submit Request");
-        submit.setPrefSize(170, 42);
-        submit.setTextFill(Color.WHITE);
-        submit.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        submit.setStyle(
-                "-fx-background-color:" + NAVY + ";" +
-                "-fx-background-radius:6;"
-        );
-
-        submit.setOnAction(e -> {
-            Alert alert = new Alert(
-                    Alert.AlertType.INFORMATION,
-                    "Your support request has been submitted."
-            );
-            alert.setHeaderText("Support Request");
-            alert.showAndWait();
-        });
-
-        Region buttonSpace = new Region();
-        HBox.setHgrow(buttonSpace, Priority.ALWAYS);
-
-        HBox buttons = new HBox(10, attach, buttonSpace, submit);
-        buttons.setPadding(new Insets(25, 28, 28, 28));
-        buttons.setAlignment(Pos.CENTER_LEFT);
-
-        request.getChildren().addAll(
-                titleBox,
-                sep,
-                form,
-                descBox,
-                buttons
-        );
-
-        // ----- Right Side -----
-        VBox right = new VBox(25);
-        right.setPrefWidth(340);
-        right.setMinWidth(320);
-
-        // Contact Information
-        VBox contactInfo = new VBox(17);
-        contactInfo.setPadding(new Insets(25));
-        contactInfo.setStyle(cardStyle());
-
-        Label contactTitle = sectionTitle("Contact Information");
-
-        contactInfo.getChildren().addAll(
-                contactTitle,
-                infoRow("✉", "Support Email", "support@eventxpert.com"),
-                infoRow("☎", "Phone", "+91 98765 43210"),
-                infoRow("◷", "Support Hours", "Mon – Sat, 9:00 AM – 6:00 PM"),
-                infoRow("ϟ", "Response Time", "Within 24 hours")
-        );
-
-        // System Information
-        VBox systemInfo = new VBox(17);
-        systemInfo.setPadding(new Insets(25));
-        systemInfo.setStyle(cardStyle());
-
-        Label systemTitle = sectionTitle("ⓘ  System Information");
-
-        HBox appRow = dataRow("Application", "EventXpert");
-        HBox versionRow = dataRow("Version", "1.0.0");
-        HBox envRow = dataRow("Environment", "Production");
-        HBox updatedRow = dataRow("Last Updated", "15 Aug 2026");
-
-        systemInfo.getChildren().addAll(
-                systemTitle,
-                appRow,
-                versionRow,
-                envRow,
-                updatedRow
-        );
-
-        right.getChildren().addAll(contactInfo, systemInfo);
-
-        lower.getChildren().addAll(request, right);
-
-        VBox.setVgrow(lower, Priority.ALWAYS);
-
-        content.getChildren().addAll(
-                heading,
-                helpCards,
-                lower
-        );
-
-        // ================= SCROLLPANE =================
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle(
-                "-fx-background-color:" + BG + ";" +
-                "-fx-border-color:transparent;"
-        );
+        scroll.setStyle("-fx-background-color:transparent; -fx-background:" + BG + "; -fx-border-color:transparent;");
 
-        main.setCenter(scroll);
+        root.setCenter(scroll);
+        rootLayer.getChildren().add(root);
 
-        root.setLeft(sidebar);
-        root.setCenter(main);
+        loadAdminProfileData();
 
-        // ================= SCENE =================
-        Scene scene = new Scene(root, 1550, 750);
-        supportScene = scene;
-
+        supportScene = new Scene(rootLayer, 1550, 785);
         return supportScene;
-        
-
     }
 
-    // ================= HELPER METHODS =================
+    private void submitSupportTicket() {
+        String sub = subjectField.getText().trim();
+        String desc = descriptionArea.getText().trim();
 
-    private VBox helpCard(String icon, String title, String text) {
+        if (sub.isEmpty() || desc.isEmpty()) {
+            showInAppModal("Validation Error", "Please provide a subject and detailed description before submitting.", false);
+            return;
+        }
 
-        Label iconLabel = new Label(icon);
-        iconLabel.setPrefSize(52, 52);
-        iconLabel.setAlignment(Pos.CENTER);
-        iconLabel.setStyle(
-                "-fx-background-color:#DFF1FC;" +
-                "-fx-background-radius:8;" +
-                "-fx-text-fill:" + NAVY + ";" +
-                "-fx-font-size:24px;"
+        String ticketId = "TICK-" + (System.currentTimeMillis() % 100000);
+
+        Thread thread = new Thread(() -> {
+            try {
+                Firestore db = FirestoreClient.getFirestore();
+                if (db != null) {
+                    Map<String, Object> ticket = new HashMap<>();
+                    ticket.put("ticketId", ticketId);
+                    ticket.put("name", nameField.getText().trim());
+                    ticket.put("email", emailField.getText().trim());
+                    ticket.put("issueType", issueBox.getValue());
+                    ticket.put("subject", sub);
+                    ticket.put("description", desc);
+                    ticket.put("status", "Open");
+                    ticket.put("createdAt", Instant.now().toString());
+
+                    db.collection("support_tickets").document(ticketId).set(ticket).get();
+                }
+
+                Platform.runLater(() -> {
+                    subjectField.clear();
+                    descriptionArea.clear();
+                    showInAppModal("Ticket Logged: #" + ticketId, "Your request has been logged successfully to Firestore. Our team will review it shortly.", true);
+                });
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void loadAdminProfileData() {
+        Thread thread = new Thread(() -> {
+            try {
+                adminId = UserSession.getUid();
+                AdminProfile profile = (adminId != null && !adminId.isBlank()) ? adminController.getAdminProfile(adminId) : null;
+                if (profile != null) {
+                    Platform.runLater(() -> {
+                        if (profile.getName() != null) nameField.setText(profile.getName());
+                        if (profile.getEmail() != null) emailField.setText(profile.getEmail());
+                    });
+                }
+            } catch (Exception ignored) {}
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /* ================= FIXED SLENDER RECTANGULAR POPUP ================= */
+    private void showInAppModal(String title, String message, boolean success) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(6, 42, 96, 0.45);");
+
+        HBox modal = new HBox(16);
+        modal.setMaxWidth(460);
+        modal.setPrefWidth(460);
+        modal.setMaxHeight(Region.USE_PREF_SIZE);
+        modal.setPrefHeight(75);
+        modal.setPadding(new Insets(14, 20, 14, 20));
+        modal.setAlignment(Pos.CENTER_LEFT);
+        modal.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: " + BORDER + "; -fx-border-radius: 8px;");
+        modal.setEffect(new DropShadow(18, Color.rgb(0, 0, 0, 0.22)));
+
+        Circle c = new Circle(18, Color.web(success ? "#DCFCE7" : "#FEE2E2"));
+        Label ic = new Label(success ? "✓" : "⚠");
+        ic.setStyle("-fx-font-size: 15px; -fx-text-fill: " + (success ? "#16A34A" : "#DC2626") + "; -fx-font-weight: bold;");
+        StackPane iconStack = new StackPane(c, ic);
+
+        VBox textCol = new VBox(2);
+        textCol.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(textCol, Priority.ALWAYS);
+
+        Label t = new Label(title);
+        t.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        t.setTextFill(Color.web(PRIMARY));
+
+        Label m = new Label(message);
+        m.setWrapText(true);
+        m.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748B;");
+
+        textCol.getChildren().addAll(t, m);
+
+        Button okBtn = new Button("Okay");
+        okBtn.setStyle("-fx-background-color: " + PRIMARY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 6 16; -fx-background-radius: 6; -fx-cursor: hand;");
+        okBtn.setOnAction(e -> rootLayer.getChildren().remove(overlay));
+
+        modal.getChildren().addAll(iconStack, textCol, okBtn);
+        StackPane.setAlignment(modal, Pos.CENTER);
+
+        overlay.getChildren().add(modal);
+        rootLayer.getChildren().add(overlay);
+    }
+
+    private VBox createDocCard(String title, String sub, String iconLit) {
+        VBox card = new VBox(6);
+        card.setPadding(new Insets(14));
+        card.setStyle("-fx-background-color:white; -fx-border-color:" + BORDER + "; -fx-border-radius:10; -fx-background-radius:10; -fx-cursor:hand;");
+        HBox.setHgrow(card, Priority.ALWAYS);
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(16);
+        icon.setIconColor(Color.web(PRIMARY));
+
+        Label t = new Label(title);
+        t.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        t.setTextFill(Color.web(PRIMARY));
+
+        Label s = new Label(sub);
+        s.setFont(Font.font("Arial", 11));
+        s.setTextFill(Color.web("#64748B"));
+        s.setWrapText(true);
+
+        card.getChildren().addAll(icon, t, s);
+        return card;
+    }
+
+    private HBox infoRow(String leftText, String rightText) {
+        Label l = new Label(leftText); l.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748B;");
+        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+        Label r = new Label(rightText); r.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY + ";");
+        return new HBox(l, sp, r);
+    }
+
+    private VBox createCard() {
+        VBox v = new VBox(10);
+        v.setPadding(new Insets(16));
+        v.setStyle("-fx-background-color:white; -fx-border-color:" + BORDER + "; -fx-border-radius:10; -fx-background-radius:10;");
+        return v;
+    }
+
+    private VBox createAdminSidebar(String activeTab) {
+        VBox sidebar = new VBox(6);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setPrefWidth(240);
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setStyle("-fx-background-color:" + PRIMARY + ";");
+
+        HBox brandBox = new HBox(8);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(0, 6, 12, 6));
+
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = new Label("EventXpert");
+        logo.setTextFill(Color.WHITE);
+        logo.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        Label adminLabel = new Label("ADMIN DASHBOARD");
+        adminLabel.setTextFill(Color.web(LIGHT));
+        adminLabel.setFont(Font.font("Arial", FontWeight.BOLD, 9));
+        brandTexts.getChildren().addAll(logo, adminLabel);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        VBox menu = new VBox(3);
+        String[][] menuItems = {
+                {"Dashboard", "fas-tachometer-alt"},
+                {"Event Requests", "fas-inbox"},
+                {"Events", "fas-calendar-check"},
+                {"Calendar", "fas-calendar"},
+                {"Customers", "fas-users"},
+                {"Organizers", "fas-user-tie"},
+                {"Vendors", "fas-truck"},
+                {"Conflict Detection", "fas-shield-alt"},
+                {"Reports & Analytics", "fas-chart-pie"}
+        };
+
+        for (String[] item : menuItems) {
+            String name = item[0];
+            String iconLit = item[1];
+            menu.getChildren().add(createSidebarButton(name, iconLit, name.equals(activeTab)));
+        }
+
+        Region sidebarSpace = new Region();
+        VBox.setVgrow(sidebarSpace, Priority.ALWAYS);
+
+        VBox bottomMenu = new VBox(3);
+        bottomMenu.getChildren().addAll(
+                createSidebarButton("Notifications", "fas-bell", false),
+                createSidebarButton("Profile", "fas-user", false),
+                createSidebarButton("Settings", "fas-cog", false),
+                createSidebarButton("Support", "fas-question-circle", activeTab.equals("Support"))
         );
 
-        Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        titleLabel.setTextFill(Color.web(TEXT));
-
-        Label desc = new Label(text);
-        desc.setFont(Font.font("Arial", 15));
-        desc.setTextFill(Color.web(GRAY));
-        desc.setWrapText(true);
-
-        VBox box = new VBox(17, iconLabel, titleLabel, desc);
-        box.setPadding(new Insets(25));
-        box.setPrefHeight(190);
-        box.setMinWidth(210);
-        box.setStyle(cardStyle());
-
-        return box;
+        sidebar.getChildren().addAll(brandBox, menu, sidebarSpace, bottomMenu);
+        return sidebar;
     }
 
-    private Label formLabel(String text) {
-        Label label = new Label(text);
-        label.setFont(Font.font("Arial", 14));
-        label.setTextFill(Color.web("#374151"));
-        return label;
+    private Button createSidebarButton(String name, String iconLit, boolean active) {
+        Button btn = new Button("  " + name);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(PRIMARY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (active) {
+            btn.setStyle("-fx-background-color:" + LIGHT + "; -fx-text-fill:" + PRIMARY + "; -fx-font-weight:bold; -fx-font-size:12px; -fx-background-radius:6;");
+        } else {
+            btn.setStyle("-fx-background-color:transparent; -fx-text-fill:#CBD5E1; -fx-font-size:12px; -fx-cursor:hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color:rgba(255,255,255,0.08); -fx-text-fill:white; -fx-font-size:12px; -fx-background-radius:6; -fx-cursor:hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color:transparent; -fx-text-fill:#CBD5E1; -fx-font-size:12px;"));
+        }
+
+        btn.setOnAction(e -> {
+            Stage stage = (Stage) btn.getScene().getWindow();
+            NavigationManager.navigate(name, stage);
+        });
+
+        return btn;
     }
-
-    private TextField input(String text) {
-        TextField field = new TextField(text);
-        field.setPrefHeight(44);
-        field.setMaxWidth(Double.MAX_VALUE);
-        field.setStyle(
-                "-fx-border-color:#C9D2DE;" +
-                "-fx-border-radius:6;" +
-                "-fx-background-radius:6;" +
-                "-fx-font-size:15px;" +
-                "-fx-padding:0 12;"
-        );
-        return field;
-    }
-
-    private Label sectionTitle(String text) {
-        Label label = new Label(text);
-        label.setFont(Font.font("Arial", FontWeight.BOLD, 21));
-        label.setTextFill(Color.web(TEXT));
-        return label;
-    }
-
-    private HBox infoRow(
-            String icon,
-            String title,
-            String value
-    ) {
-
-        Label iconLabel = new Label(icon);
-        iconLabel.setPrefWidth(28);
-        iconLabel.setFont(Font.font(20));
-        iconLabel.setTextFill(Color.web("#4B5563"));
-
-        Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Arial", 13));
-        titleLabel.setTextFill(Color.web(GRAY));
-
-        Label valueLabel = new Label(value);
-        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        valueLabel.setTextFill(Color.web(TEXT));
-        valueLabel.setWrapText(true);
-
-        VBox text = new VBox(2, titleLabel, valueLabel);
-
-        HBox row = new HBox(10, iconLabel, text);
-        row.setAlignment(Pos.CENTER_LEFT);
-
-        return row;
-    }
-
-    private HBox dataRow(String left, String right) {
-
-        Label l = new Label(left);
-        l.setFont(Font.font("Arial", 14));
-        l.setTextFill(Color.web(GRAY));
-
-        Label r = new Label(right);
-        r.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        r.setTextFill(Color.web(TEXT));
-
-        Region space = new Region();
-        HBox.setHgrow(space, Priority.ALWAYS);
-
-        HBox row = new HBox(l, space, r);
-        row.setAlignment(Pos.CENTER_LEFT);
-
-        return row;
-    }
-
-    private String cardStyle() {
-        return
-                "-fx-background-color:white;" +
-                "-fx-background-radius:10;" +
-                "-fx-border-color:#E0E5EC;" +
-                "-fx-border-radius:10;";
-    }
-
 }
-
-    
-    
-    
-    
-   
-   
-   
-   

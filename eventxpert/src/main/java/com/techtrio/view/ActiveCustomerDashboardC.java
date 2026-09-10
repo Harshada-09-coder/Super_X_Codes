@@ -6,10 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.techtrio.controller.CustomerController;
-import com.techtrio.controller.VendorController;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.model.Event;
-import com.techtrio.model.VendorBooking;
 import com.techtrio.model.WeatherData;
 import com.techtrio.services.WeatherService;
 import com.techtrio.session.UserSession;
@@ -48,6 +46,9 @@ public class ActiveCustomerDashboardC {
     // Header & Profile
     private Label welcomeHeadingLabel;
 
+    // Drafts Button UI
+    private Button draftsBtn;
+
     // Upcoming Event UI
     private Label upcomingEventNameLabel;
     private Label upcomingEventDateLabel;
@@ -78,6 +79,7 @@ public class ActiveCustomerDashboardC {
     private YearMonth currentCalendarMonth = YearMonth.now();
     private Label calendarMonthLabel;
     private GridPane calendarGrid;
+    private List<Event> cachedCustomerEvents = new ArrayList<>();
 
     public ActiveCustomerDashboardC() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -136,7 +138,7 @@ public class ActiveCustomerDashboardC {
         VBox navList = new VBox(5);
         navList.getChildren().addAll(
                 createSidebarItem("Dashboard", "fas-tachometer-alt", true, null),
-                createSidebarItem("Create Event", "fas-plus-circle", false, this::openCreateEvent),
+                createSidebarItem("Create Event", "fas-plus-circle", false, this::openCreateEventDirectly),
                 createSidebarItem("My Events", "fas-calendar-check", false, this::openMyEvents),
                 createSidebarItem("Notifications", "fas-bell", false, this::openNotifications),
                 createSidebarItem("Profile", "fas-user", false, this::openProfile),
@@ -191,44 +193,46 @@ public class ActiveCustomerDashboardC {
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
+        draftsBtn = new Button(" Drafts");
+        FontIcon draftIcon = new FontIcon("fas-file-alt");
+        draftIcon.setIconSize(12);
+        draftIcon.setIconColor(Color.web(NAVY));
+        draftsBtn.setGraphic(draftIcon);
+        draftsBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-text-fill:" + NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 8 16; -fx-background-radius: 8px; -fx-border-radius: 8px; -fx-cursor: hand;");
+        draftsBtn.setOnAction(e -> openDraftsDirectly());
+
         Button createEventBtn = new Button(" Create Event");
         FontIcon plusIcon = new FontIcon("fas-plus");
         plusIcon.setIconSize(12);
         plusIcon.setIconColor(Color.WHITE);
         createEventBtn.setGraphic(plusIcon);
         createEventBtn.setStyle("-fx-background-color:" + NAVY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 9 18; -fx-background-radius: 8px; -fx-cursor: hand;");
-        createEventBtn.setOnAction(e -> openCreateEvent());
+        createEventBtn.setOnAction(e -> openCreateEventDirectly());
 
-        headerRow.getChildren().addAll(titleBox, headerSpacer, createEventBtn);
+        HBox buttonGroup = new HBox(12, draftsBtn, createEventBtn);
+        buttonGroup.setAlignment(Pos.CENTER_RIGHT);
+
+        headerRow.getChildren().addAll(titleBox, headerSpacer, buttonGroup);
 
         HBox kpiRow = createKpiRow();
 
         HBox mainGrid = new HBox(20);
 
-        // Left Column (Upcoming Event + My Calendar)
         VBox leftColumn = new VBox(20);
-        VBox upcomingCard = createUpcomingEventCard();
-        VBox calendarCard = createCalendarCard();
-        leftColumn.getChildren().addAll(upcomingCard, calendarCard);
+        leftColumn.getChildren().addAll(
+                createUpcomingEventCard(),
+                createCalendarCard()
+        );
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
 
-        // Right Column (Budget Overview + Weather Alert)
         VBox rightColumn = new VBox(20);
         rightColumn.setPrefWidth(420);
         rightColumn.setMinWidth(400);
 
-        VBox budgetCard = createBudgetOverviewCard();
-        VBox weatherCard = createWeatherAlertCard();
-
-        // 1. रो १ ची उंची समान करणे (Upcoming Event आणि Budget Overview ची उंची तंतोतंत समान)
-        budgetCard.minHeightProperty().bind(upcomingCard.heightProperty());
-        budgetCard.prefHeightProperty().bind(upcomingCard.heightProperty());
-
-        // 2. रो २ ची उंची समान करणे (My Calendar आणि Weather Alert ची उंची तंतोतंत समान)
-        weatherCard.minHeightProperty().bind(calendarCard.heightProperty());
-        weatherCard.prefHeightProperty().bind(calendarCard.heightProperty());
-
-        rightColumn.getChildren().addAll(budgetCard, weatherCard);
+        rightColumn.getChildren().addAll(
+                createBudgetOverviewCard(),
+                createWeatherAlertCard()
+        );
 
         mainGrid.getChildren().addAll(leftColumn, rightColumn);
         content.getChildren().addAll(headerRow, kpiRow, mainGrid);
@@ -246,7 +250,7 @@ public class ActiveCustomerDashboardC {
         row.getChildren().addAll(
                 createKpiCard("My Events", totalEventsValLabel, "Total events", "fas-calendar-alt", "#0284C7"),
                 createKpiCard("Upcoming", upcomingEventsValLabel, "Next 30 days", "fas-calendar-check", "#4F46E5"),
-                createKpiCard("Completed", completedEventsValLabel, "Events done", "fas-check-circle", "#16A34A"),
+                createKpiCard("Completed", completedEventsValLabel, "Events executed", "fas-check-circle", "#16A34A"),
                 createKpiCard("Total Budget", totalSpentValLabel, "All events", "fas-wallet", "#0D3979")
         );
         return row;
@@ -288,8 +292,6 @@ public class ActiveCustomerDashboardC {
         VBox card = new VBox(14);
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
-        card.setPrefHeight(215);
-        card.setMinHeight(215);
 
         HBox header = new HBox(8);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -298,7 +300,7 @@ public class ActiveCustomerDashboardC {
         calIcon.setIconSize(16);
         calIcon.setIconColor(Color.web(PRIMARY_BLUE));
 
-        Label title = new Label("Upcoming Event");
+        Label title = new Label("Active Event Highlights");
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
 
         Region spacer = new Region();
@@ -380,9 +382,9 @@ public class ActiveCustomerDashboardC {
     private VBox createCalendarCard() {
         VBox card = new VBox(12);
         card.setPadding(new Insets(18));
+        card.setPrefHeight(270);
+        card.setMinHeight(270);
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
-        card.setPrefHeight(340);
-        card.setMinHeight(340);
 
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -439,7 +441,7 @@ public class ActiveCustomerDashboardC {
         legend.setPadding(new Insets(6, 0, 0, 0));
 
         HBox leg1 = new HBox(6, new Circle(4, Color.web(NAVY)), new Label("Upcoming Event"));
-        HBox leg2 = new HBox(6, new Circle(4, Color.web("#38BDF8")), new Label("Completed Event"));
+        HBox leg2 = new HBox(6, new Circle(4, Color.web("#16A34A")), new Label("Completed Event"));
         leg1.setStyle("-fx-font-size: 10px; -fx-text-fill:" + TEXT_MUTED + ";");
         leg2.setStyle("-fx-font-size: 10px; -fx-text-fill:" + TEXT_MUTED + ";");
         legend.getChildren().addAll(leg1, leg2);
@@ -475,13 +477,24 @@ public class ActiveCustomerDashboardC {
         int row = 1;
 
         for (int i = dayOfWeek - 1; i >= 0; i--) {
-            VBox box = createDateCell(String.valueOf(prevMonthDays - i), true, false, false);
+            VBox box = createDateCell(String.valueOf(prevMonthDays - i), true, false, null);
             calendarGrid.add(box, cell++, row);
         }
 
         for (int d = 1; d <= daysInMonth; d++) {
+            LocalDate currentDate = currentCalendarMonth.atDay(d);
             boolean isHighlighted = (d == LocalDate.now().getDayOfMonth() && currentCalendarMonth.getMonth() == LocalDate.now().getMonth());
-            VBox box = createDateCell(String.valueOf(d), false, isHighlighted, false);
+            
+            // Check if there is an event on this date
+            Color eventDotColor = null;
+            for (Event ev : cachedCustomerEvents) {
+                if (ev.getEventDate() != null && ev.getEventDate().equals(currentDate.toString())) {
+                    eventDotColor = "COMPLETED".equalsIgnoreCase(ev.getStatus()) ? Color.web("#16A34A") : Color.web(NAVY);
+                    break;
+                }
+            }
+
+            VBox box = createDateCell(String.valueOf(d), false, isHighlighted, eventDotColor);
             calendarGrid.add(box, cell++, row);
 
             if (cell == 7) {
@@ -492,12 +505,12 @@ public class ActiveCustomerDashboardC {
 
         int nextDay = 1;
         while (cell < 7 && row <= 6) {
-            VBox box = createDateCell(String.valueOf(nextDay++), true, false, false);
+            VBox box = createDateCell(String.valueOf(nextDay++), true, false, null);
             calendarGrid.add(box, cell++, row);
         }
     }
 
-    private VBox createDateCell(String text, boolean isOtherMonth, boolean isHighlighted, boolean hasDot) {
+    private VBox createDateCell(String text, boolean isOtherMonth, boolean isHighlighted, Color dotColor) {
         VBox dateCell = new VBox(2);
         dateCell.setAlignment(Pos.CENTER);
         dateCell.setPrefSize(44, 28);
@@ -514,20 +527,48 @@ public class ActiveCustomerDashboardC {
 
         dateCell.getChildren().add(dLbl);
 
-        if (hasDot && !isHighlighted) {
-            Circle dot = new Circle(3, Color.web("#38BDF8"));
+        if (dotColor != null && !isHighlighted) {
+            Circle dot = new Circle(3, dotColor);
             dateCell.getChildren().add(dot);
         }
 
         return dateCell;
     }
 
+    // ⭐ Customer Calendar Legend (स्पष्ट स्पष्टीकरण)
+    private HBox createCalendarLegendBox() {
+        HBox legendBox = new HBox(20);
+        legendBox.setAlignment(Pos.CENTER_LEFT);
+        legendBox.setPadding(new Insets(12, 16, 12, 16));
+        legendBox.setStyle("-fx-background-color: white; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+        Label title = new Label("Event Status Legend: ");
+        title.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #1E293B;");
+
+        // 🟢 Completed Dot + Label
+        HBox completedItem = new HBox(6);
+        completedItem.setAlignment(Pos.CENTER_LEFT);
+        Circle greenDot = new Circle(5, Color.web("#16A34A"));
+        Label greenText = new Label("Completed Event");
+        greenText.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #16A34A;");
+        completedItem.getChildren().addAll(greenDot, greenText);
+
+        // 🔵 Upcoming Dot + Label
+        HBox upcomingItem = new HBox(6);
+        upcomingItem.setAlignment(Pos.CENTER_LEFT);
+        Circle blueDot = new Circle(5, Color.web("#0284C7"));
+        Label blueText = new Label("Upcoming / Active Event");
+        blueText.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #0284C7;");
+        upcomingItem.getChildren().addAll(blueDot, blueText);
+
+        legendBox.getChildren().addAll(title, completedItem, upcomingItem);
+        return legendBox;
+    }
+
     private VBox createBudgetOverviewCard() {
         VBox card = new VBox(12);
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
-        card.setPrefHeight(215);
-        card.setMinHeight(215);
 
         HBox header = new HBox(8);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -576,10 +617,6 @@ public class ActiveCustomerDashboardC {
         budgetOverviewProgressPercent.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill:" + PRIMARY_BLUE + ";");
         progressRow.getChildren().addAll(budgetOverviewProgressBar, budgetOverviewProgressPercent);
 
-        // वरच्या कार्डसोबत अचूक तळाशी अलाइन राहण्यासाठी Spacer
-        Region budgetSpacer = new Region();
-        VBox.setVgrow(budgetSpacer, Priority.ALWAYS);
-
         HBox statsRow = new HBox(20);
         statsRow.setAlignment(Pos.CENTER_LEFT);
         statsRow.setPadding(new Insets(6, 0, 0, 0));
@@ -612,16 +649,16 @@ public class ActiveCustomerDashboardC {
 
         statsRow.getChildren().addAll(allocPill, remPill);
 
-        card.getChildren().addAll(header, totalBox, progressRow, budgetSpacer, statsRow);
+        card.getChildren().addAll(header, totalBox, progressRow, statsRow);
         return card;
     }
 
     private VBox createWeatherAlertCard() {
         VBox card = new VBox(14);
         card.setPadding(new Insets(18));
+        card.setPrefHeight(270);
+        card.setMinHeight(270);
         card.setStyle("-fx-background-color: white; -fx-border-color:" + BORDER + "; -fx-border-radius: 12px; -fx-background-radius: 12px;");
-        card.setPrefHeight(340);
-        card.setMinHeight(340);
 
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -630,7 +667,7 @@ public class ActiveCustomerDashboardC {
         cloudSunIcon.setIconSize(22);
         cloudSunIcon.setIconColor(Color.web("#F59E0B"));
 
-        VBox titleBox = new VBox(2);
+        VBox titleBox = new VBox(1);
         Label title = new Label("Weather Alert");
         title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
         weatherLocationLabel = new Label("📍 Pune, Maharashtra");
@@ -646,24 +683,16 @@ public class ActiveCustomerDashboardC {
 
         header.getChildren().addAll(cloudSunIcon, titleBox, spacer, sunGraphic);
 
-        // Temperature & Condition Row - मोठा व स्पष्ट फॉन्ट
-        HBox tempRow = new HBox(14);
+        HBox tempRow = new HBox(12);
         tempRow.setAlignment(Pos.BASELINE_LEFT);
-        tempRow.setPadding(new Insets(4, 0, 2, 0));
-
         weatherTempLabel = new Label("32°C");
-        weatherTempLabel.setStyle("-fx-font-size: 34px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
-
+        weatherTempLabel.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
         weatherConditionLabel = new Label("Partly Cloudy");
         weatherConditionLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_MUTED + ";");
-        weatherConditionLabel.setWrapText(true);
-
         tempRow.getChildren().addAll(weatherTempLabel, weatherConditionLabel);
 
-        // Metrics Row - व्यवस्थित स्पेसिंग असलेले आकर्षक Pill Cards
         HBox metricsRow = new HBox(12);
         metricsRow.setAlignment(Pos.CENTER_LEFT);
-        metricsRow.setPadding(new Insets(4, 0, 4, 0));
 
         weatherHumidityLabel = new Label("60%");
         weatherWindLabel = new Label("12 km/h");
@@ -675,11 +704,7 @@ public class ActiveCustomerDashboardC {
                 createWeatherMetric("fas-thermometer-half", "#DC2626", "Feels like", weatherFeelsLikeLabel)
         );
 
-        // तळाशी अलाइन राहण्यासाठी Flex Spacer
-        Region cardSpacer = new Region();
-        VBox.setVgrow(cardSpacer, Priority.ALWAYS);
-
-        HBox alertBanner = new HBox(10);
+        HBox alertBanner = new HBox(8);
         alertBanner.setAlignment(Pos.CENTER_LEFT);
         alertBanner.setPadding(new Insets(10, 14, 10, 14));
         alertBanner.setStyle("-fx-background-color: #F8FAFC; -fx-border-color:" + BORDER + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
@@ -688,32 +713,31 @@ public class ActiveCustomerDashboardC {
         infoIco.setIconSize(13);
         infoIco.setIconColor(Color.web(NAVY));
 
-        weatherAlertTextLabel = new Label("No alerts for today. Enjoy your day!");
-        weatherAlertTextLabel.setStyle("-fx-font-size: 12px; -fx-text-fill:" + TEXT_DARK + ";");
+        weatherAlertTextLabel = new Label("No weather alerts for event date. Enjoy your day!");
+        weatherAlertTextLabel.setStyle("-fx-font-size: 11px; -fx-text-fill:" + TEXT_DARK + ";");
         alertBanner.getChildren().addAll(infoIco, weatherAlertTextLabel);
 
-        card.getChildren().addAll(header, tempRow, metricsRow, cardSpacer, alertBanner);
+        card.getChildren().addAll(header, tempRow, metricsRow, alertBanner);
         return card;
     }
 
     private HBox createWeatherMetric(String iconLit, String colorHex, String labelText, Label valLabel) {
-        HBox item = new HBox(8);
+        HBox item = new HBox(6);
         item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(8, 12, 8, 12));
-        item.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: " + BORDER + "; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+        item.setPadding(new Insets(4, 8, 4, 8));
+        item.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 6px; -fx-background-radius: 6px;");
 
         FontIcon icon = new FontIcon(iconLit);
-        icon.setIconSize(14);
+        icon.setIconSize(13);
         icon.setIconColor(Color.web(colorHex));
 
         VBox texts = new VBox(1);
         Label l = new Label(labelText);
-        l.setStyle("-fx-font-size: 10px; -fx-text-fill:" + TEXT_MUTED + ";");
-        valLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
+        l.setStyle("-fx-font-size: 9px; -fx-text-fill:" + TEXT_MUTED + ";");
+        valLabel.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_DARK + ";");
         texts.getChildren().addAll(l, valLabel);
 
         item.getChildren().addAll(icon, texts);
-        HBox.setHgrow(item, Priority.ALWAYS);
         return item;
     }
 
@@ -746,7 +770,10 @@ public class ActiveCustomerDashboardC {
         t.start();
     }
 
+    // ⭐ ACCURATE EVENT STATUS AND COMPLETED EVENT CALCULATION
     private void renderDynamicDashboardData(List<Event> events) {
+        cachedCustomerEvents = (events != null) ? new ArrayList<>(events) : new ArrayList<>();
+
         if (events == null || events.isEmpty()) {
             totalEventsValLabel.setText("0");
             upcomingEventsValLabel.setText("0");
@@ -759,25 +786,22 @@ public class ActiveCustomerDashboardC {
 
         totalEventsValLabel.setText(String.valueOf(events.size()));
 
-        List<Event> sortedEvents = new ArrayList<>(events);
-        sortedEvents.sort((a, b) -> {
-            String idA = a.getEventId() != null ? a.getEventId() : "";
-            String idB = b.getEventId() != null ? b.getEventId() : "";
-            return idB.compareTo(idA);
-        });
-
-        latestUpcomingEvent = sortedEvents.get(0);
-
         int upcomingCount = 0;
         int completedCount = 0;
         double sumAllBudgets = 0.0;
 
+        Event chosenActiveEvent = null;
+        Event fallbackCompletedEvent = null;
+
         for (Event ev : events) {
-            String st = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "PLANNING";
+            String st = ev.getStatus() != null ? ev.getStatus().trim().toUpperCase() : "PLANNING";
+            
             if ("COMPLETED".equals(st)) {
                 completedCount++;
+                if (fallbackCompletedEvent == null) fallbackCompletedEvent = ev;
             } else {
                 upcomingCount++;
+                if (chosenActiveEvent == null) chosenActiveEvent = ev;
             }
 
             double budgetAmt = 0;
@@ -788,9 +812,14 @@ public class ActiveCustomerDashboardC {
             sumAllBudgets += budgetAmt;
         }
 
+        // प्राधान्य: आधी Active/Planning इव्हेंट दाखवणे; जर सर्व पूर्ण झाले असतील तर Completed इव्हेंट दाखवणे
+        latestUpcomingEvent = (chosenActiveEvent != null) ? chosenActiveEvent : fallbackCompletedEvent;
+
         upcomingEventsValLabel.setText(String.valueOf(upcomingCount));
         completedEventsValLabel.setText(String.valueOf(completedCount));
         totalSpentValLabel.setText("₹ " + String.format("%,.0f", sumAllBudgets));
+
+        renderCalendarTable();
 
         if (latestUpcomingEvent != null) {
             String name = latestUpcomingEvent.getEventName() != null ? latestUpcomingEvent.getEventName() : "Upcoming Event";
@@ -798,7 +827,7 @@ public class ActiveCustomerDashboardC {
             String time = latestUpcomingEvent.getTime() != null ? latestUpcomingEvent.getTime() : "10:00 AM";
             String loc = latestUpcomingEvent.getCity() != null ? latestUpcomingEvent.getCity() + ", Maharashtra" : "Pune, Maharashtra";
             int guests = latestUpcomingEvent.getGuests() > 0 ? latestUpcomingEvent.getGuests() : 0;
-            String status = latestUpcomingEvent.getStatus() != null ? latestUpcomingEvent.getStatus().toUpperCase() : "PLANNING";
+            String status = latestUpcomingEvent.getStatus() != null ? latestUpcomingEvent.getStatus().trim().toUpperCase() : "PLANNING";
 
             upcomingEventNameLabel.setText(name);
             upcomingEventDateLabel.setText("📅 " + date);
@@ -807,7 +836,13 @@ public class ActiveCustomerDashboardC {
             upcomingEventGuestsLabel.setText("👥 " + guests + " Guests");
             upcomingEventStatusBadge.setText("Status : " + status);
 
-            // Live Real-Time Budget Overview Binding
+            // Badge Color based on status
+            if ("COMPLETED".equals(status)) {
+                upcomingEventStatusBadge.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-padding: 4 10; -fx-background-radius: 6px; -fx-font-size: 11px; -fx-font-weight: bold;");
+            } else {
+                upcomingEventStatusBadge.setStyle("-fx-background-color: #E0F2FE; -fx-text-fill: #0284C7; -fx-padding: 4 10; -fx-background-radius: 6px; -fx-font-size: 11px; -fx-font-weight: bold;");
+            }
+
             double eventBudget = 0.0;
             try {
                 String clean = latestUpcomingEvent.getBudget() != null ? latestUpcomingEvent.getBudget().replaceAll("[^0-9.]", "") : "0";
@@ -858,7 +893,22 @@ public class ActiveCustomerDashboardC {
         }).start();
     }
 
-    private void openCreateEvent() {
+    private void openDraftsDirectly() {
+        if (ReviewPageC.EventData.hasActiveDraft()) {
+            ReviewPageC.EventData.resumeDraft(uid, idToken);
+        } else {
+            Alert a = new Alert(Alert.AlertType.INFORMATION);
+            a.setTitle("Drafts");
+            a.setHeaderText("No Saved Drafts");
+            a.setContentText("You do not have any unfinished event drafts.");
+            if (LandingPage.landingPageStage != null) {
+                a.initOwner(LandingPage.landingPageStage);
+            }
+            a.showAndWait();
+        }
+    }
+
+    private void openCreateEventDirectly() {
         CreateEventC createView = new CreateEventC(uid, idToken);
         if (LandingPage.landingPageStage != null) {
             LandingPage.landingPageStage.setScene(createView.getCreateEventScene(this::returnToDashboard));

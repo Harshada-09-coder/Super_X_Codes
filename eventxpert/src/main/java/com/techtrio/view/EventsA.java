@@ -101,7 +101,7 @@ public class EventsA {
 
         sidebar.getChildren().addAll(brandBox, menu, space, bottomMenu);
 
-        // MAIN CONTENT (TOPBAR REMOVED)
+        // MAIN CONTENT
         VBox content = new VBox(16);
         content.setPadding(new Insets(24, 32, 28, 32));
         content.setStyle("-fx-background-color:" + BACKGROUND + ";");
@@ -268,6 +268,7 @@ public class EventsA {
         return c;
     }
 
+    // ⭐ 100% RECONCILED EVENTS STATUS COUNT
     private void loadEventsDataAsync() {
         Task<Void> task = new Task<>() {
             @Override
@@ -282,28 +283,30 @@ public class EventsA {
                     int ongoing = 0;
                     int completed = 0;
 
-                    for (Event ev : events) {
-                        String st = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "PENDING";
-                        if ("COMPLETED".equals(st)) {
-                            completed++;
-                        } else if ("CONFIRMED".equals(st) || "ASSIGNED".equals(st)) {
-                            upcoming++;
-                        } else {
-                            ongoing++;
+                    if (events != null) {
+                        for (Event ev : events) {
+                            String st = ev.getStatus() != null ? ev.getStatus().trim().toUpperCase() : "PENDING";
+                            if ("COMPLETED".equals(st)) {
+                                completed++;
+                            } else if ("CONFIRMED".equals(st) || "PAID".equals(st)) {
+                                upcoming++;
+                            } else {
+                                ongoing++;
+                            }
+
+                            CustomerProfile cust = customers != null ? customers.stream()
+                                    .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
+                                    .findFirst().orElse(null) : null;
+
+                            if (cust != null && cust.getName() != null && !cust.getName().isBlank()) {
+                                ev.setCustomerId(cust.getName());
+                            }
+
+                            eventDataList.add(ev);
                         }
-
-                        CustomerProfile cust = customers.stream()
-                                .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
-                                .findFirst().orElse(null);
-
-                        if (cust != null && cust.getName() != null && !cust.getName().isBlank()) {
-                            ev.setCustomerId(cust.getName());
-                        }
-
-                        eventDataList.add(ev);
                     }
 
-                    totalEventsVal.setText(String.valueOf(events.size()));
+                    totalEventsVal.setText(String.valueOf(events != null ? events.size() : 0));
                     upcomingEventsVal.setText(String.valueOf(upcoming));
                     ongoingEventsVal.setText(String.valueOf(ongoing));
                     completedEventsVal.setText(String.valueOf(completed));

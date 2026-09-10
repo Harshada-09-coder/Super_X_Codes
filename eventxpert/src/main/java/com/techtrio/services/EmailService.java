@@ -114,4 +114,64 @@ public class EmailService {
             return false;
         }
     }
+
+    /* 
+
+     private static final String SENDER_EMAIL1 = "kirtinarkhede03@gmail.com"; 
+    private static final String SENDER_APP_PASSWORD = "etsh opei mnax stwj"; 
+     public boolean sendEmail(String toEmail, String subject, String body) {
+        try {
+            Properties props = new Properties();
+            props.put("mail.smtp.host", "smtp.gmail.com");
+            props.put("mail.smtp.port", "465");
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.socketFactory.port", "465");
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            props.put("mail.smtp.ssl.checkserveridentity", "true");
+
+            Session session = Session.getInstance(props, new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(SENDER_EMAIL, SENDER_APP_PASSWORD.replace(" ", ""));
+                }
+            });
+
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(SENDER_EMAIL, "EventXpert Support"));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+            message.setSubject(subject);
+            
+            // HTML Formatted सुंदर ईमेल
+            message.setContent(
+                "<div style='font-family:Arial,sans-serif;max-width:550px;margin:auto;padding:25px;border:1px solid #e2e8f0;border-radius:10px;'>"
+                + "<h2 style='color:#0D3979;margin-top:0;'>EventXpert Payment Verification</h2>"
+                + "<p style='font-size:15px;color:#334155;'>Dear Customer,</p>"
+                + "<p style='font-size:15px;color:#334155;'>Your One-Time Password (OTP) to approve your Event Payment is:</p>"
+                + "<div style='text-align:center;margin:30px 0;'>"
+                + "<span style='font-size:32px;font-weight:bold;letter-spacing:6px;color:#16A34A;background:#DCFCE7;padding:12px 28px;border-radius:8px;display:inline-block;'>" 
+                + body 
+                + "</span>"
+                + "</div>"
+                + "<p style='font-size:13px;color:#64748b;'>This OTP is valid for 10 minutes. Please do not share it with anyone.</p>"
+                + "<hr style='border:none;border-top:1px solid #f1f5f9;margin:20px 0;'>"
+                + "<p style='font-size:12px;color:#94a3b8;margin:0;'>Regards,<br><b>Team EventXpert</b></p>"
+                + "</div>", 
+                "text/html; charset=utf-8"
+            );
+
+            Transport.send(message);
+            System.out.println("✅ REAL EMAIL DELIVERED to: " + toEmail);
+            return true;
+
+        } catch (AuthenticationFailedException e) {
+            System.err.println("❌ Login Error: Gmail App Password चुकीचा आहे. कृपया नवीन App Password टाका.");
+            return false;
+        } catch (Exception e) {
+            System.err.println("❌ Email Send Error: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+        */
+
 }

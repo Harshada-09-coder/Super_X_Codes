@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
 import com.techtrio.controller.VendorController;
 import com.techtrio.model.VendorBooking;
 import com.techtrio.session.UserSession;
@@ -51,10 +54,11 @@ public class ServiceRequestsV {
         public String budget;
         public String status;
         public VendorBooking rawBooking;
+        public boolean isEventCompleted; // ⭐ इव्हेंट पूर्ण झाला आहे का तपासण्यासाठी
 
         public RequestData(String id, String organizer, String phone, String eventName,
-                    String date, String location, String guests, String service,
-                    String budget, String status, VendorBooking rawBooking) {
+                           String date, String location, String guests, String service,
+                           String budget, String status, VendorBooking rawBooking, boolean isEventCompleted) {
             this.id = id;
             this.organizer = organizer;
             this.phone = phone;
@@ -66,13 +70,14 @@ public class ServiceRequestsV {
             this.budget = budget;
             this.status = status;
             this.rawBooking = rawBooking;
+            this.isEventCompleted = isEventCompleted;
         }
     }
 
     private final List<RequestData> requestList = new ArrayList<>();
     private VBox cardsContainer;
     private String activeTabFilter = "All";
-    
+
     private Label totalReqValLbl;
     private Label newReqValLbl;
     private Label acceptedValLbl;
@@ -80,7 +85,6 @@ public class ServiceRequestsV {
     private HBox tabsRowContainer;
     private TextField searchInput;
 
-    // In-Scene Modal Overlay Container (Replaces new Stage)
     private StackPane modalOverlayPane;
 
     public ServiceRequestsV() {
@@ -123,7 +127,6 @@ public class ServiceRequestsV {
         scrollPane.setContent(mainContent);
         mainLayout.setCenter(scrollPane);
 
-        // Modal Overlay Layer (Hidden by default)
         modalOverlayPane = new StackPane();
         modalOverlayPane.setStyle("-fx-background-color: rgba(6, 27, 65, 0.45);");
         modalOverlayPane.setVisible(false);
@@ -137,6 +140,7 @@ public class ServiceRequestsV {
         return serviceRequestVScene;
     }
 
+    // ⭐ Event Completed तपासणारे लॉजिक
     private void loadFirestoreRequestsAsync() {
         if (uid == null || uid.isBlank()) return;
 
@@ -150,17 +154,43 @@ public class ServiceRequestsV {
 
         task.setOnSucceeded(evt -> {
             List<VendorBooking> bookings = task.getValue();
-            Platform.runLater(() -> {
-                requestList.clear();
+            new Thread(() -> {
+                Firestore db = FirestoreClient.getFirestore();
+                List<RequestData> tempList = new ArrayList<>();
+
                 if (bookings != null) {
                     for (VendorBooking b : bookings) {
                         String rawStatus = b.getStatus() != null ? b.getStatus().toUpperCase() : "PENDING";
-                        String uiStatus = "Pending";
-                        if ("PENDING".equals(rawStatus) || "NEW".equals(rawStatus)) uiStatus = "New";
-                        else if ("CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus) || "PAID".equals(rawStatus)) uiStatus = "Accepted";
-                        else if ("REJECTED".equals(rawStatus) || "CANCELLED".equals(rawStatus)) uiStatus = "Rejected";
+                        boolean isEventCompleted = false;
 
-                        requestList.add(new RequestData(
+                        // इव्हेंटचे मूळ स्टेटस तपासणे
+                        if (db != null && b.getEventId() != null && !b.getEventId().isBlank()) {
+                            try {
+                                DocumentSnapshot evSnap = db.collection("events").document(b.getEventId().trim()).get().get();
+                                if (evSnap.exists()) {
+                                    String evSt = evSnap.getString("status");
+                                    if ("COMPLETED".equalsIgnoreCase(evSt)) {
+                                        isEventCompleted = true;
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        }
+
+                        if ("COMPLETED".equalsIgnoreCase(rawStatus)) {
+                            isEventCompleted = true;
+                        }
+
+                        String uiStatus;
+                        // ⭐ जर इव्हेंट पूर्ण झाला असेल किंवा कन्फर्म असेल तर तो आपोआप "Accepted" मध्ये जाईल!
+                        if (isEventCompleted || "CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus) || "PAID".equals(rawStatus)) {
+                            uiStatus = isEventCompleted ? "Completed" : "Accepted";
+                        } else if ("REJECTED".equals(rawStatus) || "CANCELLED".equals(rawStatus)) {
+                            uiStatus = "Rejected";
+                        } else {
+                            uiStatus = "New";
+                        }
+
+                        tempList.add(new RequestData(
                                 b.getBookingId() != null ? b.getBookingId() : "",
                                 b.getOrganizerName() != null ? b.getOrganizerName() : "Organizer",
                                 b.getCustomerPhone() != null ? b.getCustomerPhone() : "N/A",
@@ -171,14 +201,20 @@ public class ServiceRequestsV {
                                 b.getServiceCategory() != null ? b.getServiceCategory() : "Service",
                                 b.getAmount() != null ? b.getAmount() : "₹ 0",
                                 uiStatus,
-                                b
+                                b,
+                                isEventCompleted
                         ));
                     }
                 }
-                updateSummaryCounts();
-                buildTabs(tabsRowContainer);
-                renderRequestCards();
-            });
+
+                Platform.runLater(() -> {
+                    requestList.clear();
+                    requestList.addAll(tempList);
+                    updateSummaryCounts();
+                    buildTabs(tabsRowContainer);
+                    renderRequestCards();
+                });
+            }).start();
         });
 
         Thread t = new Thread(task);
@@ -189,7 +225,7 @@ public class ServiceRequestsV {
     private void updateSummaryCounts() {
         int total = requestList.size();
         int newCount = (int) requestList.stream().filter(r -> "New".equalsIgnoreCase(r.status)).count();
-        int accepted = (int) requestList.stream().filter(r -> "Accepted".equalsIgnoreCase(r.status)).count();
+        int accepted = (int) requestList.stream().filter(r -> "Accepted".equalsIgnoreCase(r.status) || "Completed".equalsIgnoreCase(r.status)).count();
         int rejected = (int) requestList.stream().filter(r -> "Rejected".equalsIgnoreCase(r.status)).count();
 
         if (totalReqValLbl != null) totalReqValLbl.setText(String.valueOf(total));
@@ -294,7 +330,7 @@ public class ServiceRequestsV {
 
         int allCount = requestList.size();
         long newCount = requestList.stream().filter(r -> "New".equalsIgnoreCase(r.status)).count();
-        long acceptedCount = requestList.stream().filter(r -> "Accepted".equalsIgnoreCase(r.status)).count();
+        long acceptedCount = requestList.stream().filter(r -> "Accepted".equalsIgnoreCase(r.status) || "Completed".equalsIgnoreCase(r.status)).count();
         long rejectedCount = requestList.stream().filter(r -> "Rejected".equalsIgnoreCase(r.status)).count();
 
         String[] tabs = {
@@ -339,9 +375,12 @@ public class ServiceRequestsV {
         cardsContainer.getChildren().clear();
 
         List<RequestData> filtered = requestList.stream().filter(r -> {
-            if (!"All".equalsIgnoreCase(activeTabFilter) && !r.status.equalsIgnoreCase(activeTabFilter)) {
+            if ("Accepted".equalsIgnoreCase(activeTabFilter)) {
+                if (!"Accepted".equalsIgnoreCase(r.status) && !"Completed".equalsIgnoreCase(r.status)) return false;
+            } else if (!"All".equalsIgnoreCase(activeTabFilter) && !r.status.equalsIgnoreCase(activeTabFilter)) {
                 return false;
             }
+
             if (searchInput != null && !searchInput.getText().isBlank()) {
                 String q = searchInput.getText().toLowerCase().trim();
                 return r.eventName.toLowerCase().contains(q) || r.service.toLowerCase().contains(q) || r.organizer.toLowerCase().contains(q);
@@ -365,6 +404,7 @@ public class ServiceRequestsV {
         }
     }
 
+    // ⭐ Event Completed असल्यास Accept/Reject बटणे लपवणारे लॉजिक
     private VBox createRequestCard(RequestData req) {
         VBox card = createCardContainer();
 
@@ -396,10 +436,12 @@ public class ServiceRequestsV {
         serviceBox.setPrefWidth(140);
 
         Label statusBadge = new Label(req.status);
-        if ("New".equalsIgnoreCase(req.status)) {
-            statusBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 3 8; -fx-background-radius: 10px;");
+        if ("Completed".equalsIgnoreCase(req.status)) {
+            statusBadge.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 3 8; -fx-background-radius: 10px;");
         } else if ("Accepted".equalsIgnoreCase(req.status)) {
             statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 3 8; -fx-background-radius: 10px;");
+        } else if ("New".equalsIgnoreCase(req.status)) {
+            statusBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 3 8; -fx-background-radius: 10px;");
         } else {
             statusBadge.setStyle("-fx-background-color: " + RED_BG + "; -fx-text-fill: " + RED_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 3 8; -fx-background-radius: 10px;");
         }
@@ -416,7 +458,10 @@ public class ServiceRequestsV {
             LandingPage.landingPageStage.setScene(detailsView.getserviceRequestDetailsScene(LandingPage.landingPageStage, this::backToServiceRequestsV));
         });
 
-        if ("New".equalsIgnoreCase(req.status) || "Pending".equalsIgnoreCase(req.status)) {
+        // ⭐ केवळ आणि केवळ जर इव्हेंट पूर्ण झालेला नसेल आणि स्टेटस 'New' असेल तरच Accept/Reject दिसेल!
+        boolean canShowActions = "New".equalsIgnoreCase(req.status) && !req.isEventCompleted;
+
+        if (canShowActions) {
             Button acceptBtn = new Button("Accept");
             acceptBtn.setStyle("-fx-background-color: " + GREEN_TEXT + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-padding: 5 14; -fx-cursor: hand;");
             acceptBtn.setOnAction(e -> showInAppAcceptModal(req));
@@ -431,6 +476,7 @@ public class ServiceRequestsV {
 
             btnRow.getChildren().addAll(detailsBtn, acceptBtn, rejectBtn);
         } else {
+            // Completed किंवा Accepted झाल्यावर फक्त View Details बटण राहील
             btnRow.getChildren().add(detailsBtn);
         }
 
@@ -438,14 +484,13 @@ public class ServiceRequestsV {
         return card;
     }
 
-    // ⭐ Compact Horizontal Rectangle Pop-up for Service Requests List
     private void showInAppAcceptModal(RequestData req) {
         modalOverlayPane.getChildren().clear();
         modalOverlayPane.setAlignment(Pos.CENTER);
 
         VBox card = new VBox(14);
         card.setMaxWidth(460);
-        card.setMaxHeight(Region.USE_PREF_SIZE); // 🎯 Height
+        card.setMaxHeight(Region.USE_PREF_SIZE);
         card.setPadding(new Insets(20, 24, 20, 24));
         card.setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.22), 16, 0, 0, 4);");
 

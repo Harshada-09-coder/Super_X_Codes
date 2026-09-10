@@ -1,33 +1,37 @@
 package com.techtrio.view;
 
-import java.util.Map;
-
-import com.techtrio.controller.CustomerController;
-import com.techtrio.controller.CustomerEventController;
-import com.techtrio.model.CustomerProfile;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.ListenerRegistration;
+import com.google.firebase.cloud.FirestoreClient;
+import com.techtrio.controller.VendorController;
 import com.techtrio.model.Event;
+import com.techtrio.model.VendorBooking;
+import com.techtrio.services.TrackerService;
 import com.techtrio.session.UserSession;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import javafx.application.Platform;
-import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MyEventDetails {
 
-    private String uid;
-    private String idToken;
+    private final String uid;
+    private final String idToken;
     private Event event;
-    private Runnable backCallback;
+    private Runnable backAction;
 
-    // BRAND PALETTE
     private static final String NAVY = "#061B41";
     private static final String PRIMARY_BLUE = "#0D3979";
     private static final String ACTIVE_NAV_BLUE = "#2563EB";
@@ -36,22 +40,37 @@ public class MyEventDetails {
     private static final String TEXT_MUTED = "#64748B";
     private static final String BORDER = "#E2E8F0";
 
-    // Dynamic UI Labels (Real-time Database Data)
-    private Label eventTitleLabel;
-    private Label eventTypeBadge;
-    private Label eventIdLabel;
-    private Label eventDateKpiVal;
-    private Label eventTimeKpiVal;
-    private Label guestCountKpiVal;
-    private Label organizerKpiVal;
-    private Label eventTypeVal;
-    private Label locationVal;
-    private Label notesVal;
-    private Label userNameLabel;
-    private Label userEmailLabel;
-    private Label statusBadgeLabel;
+    private static final String GREEN_BG = "#E6F4EA";
+    private static final String GREEN_TEXT = "#16A34A";
+    private static final String ORANGE_BG = "#FEF7E0";
+    private static final String ORANGE_TEXT = "#B06000";
 
-    private BorderPane rootPane;
+    private StackPane rootLayer;
+    private ListenerRegistration eventSnapshotListener;
+    private boolean completionModalShown = false;
+
+    // UI Dynamic Controls
+    private Label topStatusBadge;
+    private Button topPayNowBtn;
+
+    private Label dateValLabel;
+    private Label daySubLabel;
+    private Label timeValLabel;
+    private Label guestCountLabel;
+    private Label organizerNameLabel;
+    private Label progressPercentLabel;
+
+    private Label summaryEventType;
+    private Label summaryLocation;
+    private Label summaryCreatedOn;
+    private Label summaryLastUpdated;
+    private Label summaryAiPlanning;
+    private Label summaryPaymentStatus;
+
+    private VBox timelineContainer;
+    private Label descriptionNotesLabel;
+
+    private final TrackerService trackerService = new TrackerService();
 
     public MyEventDetails() {
         this(UserSession.getUid(), UserSession.getIdToken(), null);
@@ -63,31 +82,447 @@ public class MyEventDetails {
         this.event = event;
     }
 
-    public Scene getMyEventDetailsScene() {
-        return getMyEventDetailsScene(null);
+    public Scene getMyEventDetailsScene(Runnable backAction) {
+        this.backAction = backAction;
+
+        rootLayer = new StackPane();
+        rootLayer.setStyle("-fx-background-color: " + BG + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
+
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color: " + BG + ";");
+
+        root.setLeft(createCommonSidebar("Overview"));
+
+        ScrollPane scroll = new ScrollPane();
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
+
+        VBox content = createOverviewContent();
+        scroll.setContent(content);
+        root.setCenter(scroll);
+
+        rootLayer.getChildren().add(root);
+
+        initCustomerRealtimeListener();
+
+        return new Scene(rootLayer, 1550, 785);
     }
 
-    public Scene getMyEventDetailsScene(Runnable backCallback) {
-        this.backCallback = backCallback;
+    private void initCustomerRealtimeListener() {
+        if (event == null || event.getEventId() == null) return;
 
-        rootPane = new BorderPane();
-        rootPane.setStyle("-fx-background-color: " + BG + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
+        new Thread(() -> {
+            try {
+                Firestore db = FirestoreClient.getFirestore();
+                DocumentReference docRef = db.collection("events").document(event.getEventId());
 
-        // 1. Sidebar
-        rootPane.setLeft(createCommonSidebar("Overview"));
+                if (eventSnapshotListener != null) eventSnapshotListener.remove();
 
-        // 2. Main Scrollable Overview Content
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
+                eventSnapshotListener = docRef.addSnapshotListener((snapshot, error) -> {
+                    if (error != null || snapshot == null || !snapshot.exists()) return;
+                    Event ev = snapshot.toObject(Event.class);
+                    if (ev != null) {
+                        this.event = ev;
+                        VendorController vc = new VendorController();
+                        List<VendorBooking> bookings = vc.getEventVendorBookings(ev.getEventId());
+                        Platform.runLater(() -> renderDynamicOverviewUI(ev, bookings));
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
 
-        VBox mainContent = createOverviewContent();
-        scrollPane.setContent(mainContent);
-        rootPane.setCenter(scrollPane);
+    private void renderDynamicOverviewUI(Event ev, List<VendorBooking> bookings) {
+        if (ev == null) return;
 
-        loadRealtimeEventDataAsync();
+        TrackerService.EventMilestoneProgress p = trackerService.calculateProgress(ev);
 
-        return new Scene(rootPane, 1550, 785);
+        // ⭐ १. तंतोतंत पेमेंट तपासणी: फक्त प्रत्यक्ष भरलेली रक्कम (paidAmount > 0)
+        boolean isPaid = ev.getPaidAmount() > 0;
+        boolean isCompleted = "COMPLETED".equalsIgnoreCase(ev.getStatus());
+
+        if (topStatusBadge != null) {
+            topStatusBadge.setText(isCompleted ? "COMPLETED" : (isPaid ? "CONFIRMED" : (ev.getStatus() != null ? ev.getStatus().toUpperCase() : "APPROVED")));
+            if (isCompleted) {
+                topStatusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-padding: 5 12; -fx-background-radius: 6px;");
+            }
+        }
+
+        // ⭐ २. Pay Now फक्त तेव्हाच अनलॉक होईल जेव्हा व्हेन्यू आणि व्हेंडर्स फायनल झाले आहेत आणि पैसे भरलेले नाहीत
+        boolean canPay = (p.isVenueConfirmed && p.areVendorsLocked);
+
+        if (topPayNowBtn != null) {
+            if (isPaid || isCompleted) {
+                topPayNowBtn.setVisible(false);
+                topPayNowBtn.setManaged(false);
+            } else {
+                topPayNowBtn.setVisible(true);
+                topPayNowBtn.setManaged(true);
+                topPayNowBtn.setDisable(!canPay);
+
+                if (!canPay) {
+                    topPayNowBtn.setStyle("-fx-background-color: #CBD5E1; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 7 16; -fx-background-radius: 6px;");
+                    topPayNowBtn.setTooltip(new Tooltip("Locked: Payment unlocks only after Venue AND all Vendors are finalized."));
+                } else {
+                    topPayNowBtn.setStyle("-fx-background-color: #16A34A; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 7 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+                    topPayNowBtn.setTooltip(null);
+                }
+            }
+        }
+
+        // Top 5 Metric Values
+        String dateStr = ev.getEventDate() != null ? ev.getEventDate() : (ev.getStartDate() != null ? ev.getStartDate() : "2026-09-05");
+        if (dateValLabel != null) dateValLabel.setText(dateStr);
+
+        String timeStr = (ev.getStartTime() != null && !ev.getStartTime().isBlank())
+                ? ev.getStartTime() + " - " + (ev.getEndTime() != null ? ev.getEndTime() : "1:00")
+                : "10:00 - 1:00";
+        if (timeValLabel != null) timeValLabel.setText(timeStr);
+
+        int guests = ev.getGuests() > 0 ? ev.getGuests() : 10;
+        int checkedIn = ev.getCheckedInCount();
+        if (guestCountLabel != null) {
+            guestCountLabel.setText(checkedIn > 0 ? (checkedIn + "/" + guests + " Expected") : (guests + " Expected"));
+        }
+
+        String org = ev.getOrganizerName() != null && !ev.getOrganizerName().isBlank() ? ev.getOrganizerName() : "Assigned Team";
+        if (organizerNameLabel != null) organizerNameLabel.setText(org);
+
+        // Progress Calculation (पेमेंट झाल्यावरच ७५% च्या पुढे जाईल)
+        int progress = isCompleted ? 100 : (isPaid ? 85 : (p.areVendorsLocked ? 68 : (p.isVenueConfirmed ? 50 : 25)));
+        if (progressPercentLabel != null) progressPercentLabel.setText(progress + "%");
+
+        // Event Summary
+        if (summaryEventType != null) summaryEventType.setText(ev.getEventType() != null ? ev.getEventType() : "Corporate Event");
+        String loc = (ev.getArea() != null && !ev.getArea().isBlank() ? ev.getArea() + ", " : "") + (ev.getCity() != null ? ev.getCity() : "Maharashtra");
+        if (summaryLocation != null) summaryLocation.setText(loc);
+        if (summaryPaymentStatus != null) {
+            summaryPaymentStatus.setText(isPaid ? "Fully Paid" : (canPay ? "Payment Unlocked" : "Awaiting Venue & Vendors"));
+        }
+
+        // ⭐ ३. १००% रिअल-टाइम टाइमलाइन रेंडरिंग
+        renderDynamicTimeline(p, isPaid, isCompleted, canPay);
+
+        // Description
+        if (descriptionNotesLabel != null) {
+            String notes = ev.getRequirements() != null && !ev.getRequirements().isBlank()
+                    ? "Timefold-optimized plan for " + ev.getEventName() + " (" + ev.getEventType() + ") covering: " + ev.getRequirements() + " for " + guests + " guests across the event duration."
+                    : "Timefold-optimized event plan and schedule execution tracking.";
+            descriptionNotesLabel.setText(notes);
+        }
+
+        // Completion Modal
+        if (isCompleted && !completionModalShown) {
+            completionModalShown = true;
+            showEventCompletedSuccessModal(ev.getEventName());
+        }
+    }
+
+    // ⭐ १००% रिअल-टाइम आणि अचूक ६-स्टेप्स टाइमलाइन
+    private void renderDynamicTimeline(TrackerService.EventMilestoneProgress p, boolean isPaid, boolean isCompleted, boolean canPay) {
+        if (timelineContainer == null) return;
+        timelineContainer.getChildren().clear();
+
+        // १. Event Created (नेहमी Completed)
+        timelineContainer.getChildren().add(createTimelineStep("Event Created", "Completed", true, false));
+
+        // २. Requirements Submitted (नेहमी Completed)
+        timelineContainer.getChildren().add(createTimelineStep("Requirements Submitted", "Completed", true, false));
+
+        // ३. Organizer Assigned
+        timelineContainer.getChildren().add(createTimelineStep(
+                "Organizer Assigned",
+                p.isOrganizerAssigned ? "Active" : "Pending",
+                p.isOrganizerAssigned,
+                !p.isOrganizerAssigned
+        ));
+
+        // ४. Venue Confirmed
+        timelineContainer.getChildren().add(createTimelineStep(
+                "Venue Confirmed",
+                p.isVenueConfirmed ? "Confirmed" : "In Progress",
+                p.isVenueConfirmed,
+                p.isOrganizerAssigned && !p.isVenueConfirmed
+        ));
+
+        // ५. Payments Status (केवळ प्रत्यक्ष पैसे भरल्यावरच Completed!)
+        String payStatusText;
+        boolean payDone = false;
+        boolean payActive = false;
+
+        if (isPaid) {
+            payStatusText = "Completed";
+            payDone = true;
+        } else if (canPay) {
+            payStatusText = "Unlocked";
+            payActive = true;
+        } else {
+            payStatusText = "Pending";
+        }
+        timelineContainer.getChildren().add(createTimelineStep("Payments Status", payStatusText, payDone, payActive));
+
+        // ६. Event Completion
+        String eventCompletionStatus;
+        boolean compDone = false;
+        boolean compActive = false;
+
+        if (isCompleted) {
+            eventCompletionStatus = "Completed";
+            compDone = true;
+        } else if (isPaid) {
+            eventCompletionStatus = "In Execution";
+            compActive = true;
+        } else {
+            eventCompletionStatus = "Pending";
+        }
+        timelineContainer.getChildren().add(createTimelineStep("Event Completion", eventCompletionStatus, compDone, compActive));
+    }
+
+    private HBox createTimelineStep(String title, String statusText, boolean isDone, boolean isActive) {
+        HBox row = new HBox(12);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(7, 0, 7, 0));
+
+        FontIcon dot = new FontIcon("fas-circle");
+        dot.setIconSize(8);
+
+        String dotColor = isDone ? GREEN_TEXT : (isActive ? "#0284C7" : "#CBD5E1");
+        dot.setIconColor(Color.web(dotColor));
+
+        Label t = new Label(title);
+        t.setStyle("-fx-font-size: 12.5px; -fx-text-fill: " + (isDone || isActive ? TEXT_DARK : TEXT_MUTED) + ";");
+
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
+
+        Label s = new Label(statusText);
+        String textColor = isDone ? GREEN_TEXT : (isActive ? "#0284C7" : TEXT_MUTED);
+        s.setStyle("-fx-font-size: 11.5px; -fx-font-weight: bold; -fx-text-fill: " + textColor + ";");
+
+        row.getChildren().addAll(dot, t, sp, s);
+        return row;
+    }
+
+    private void showEventCompletedSuccessModal(String eventName) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(6, 42, 96, 0.45);");
+
+        HBox modal = new HBox(16);
+        modal.setMaxWidth(480);
+        modal.setPrefWidth(480);
+        modal.setMaxHeight(Region.USE_PREF_SIZE);
+        modal.setPrefHeight(80);
+        modal.setPadding(new Insets(14, 20, 14, 20));
+        modal.setAlignment(Pos.CENTER_LEFT);
+        modal.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: " + BORDER + "; -fx-border-radius: 8px;");
+        modal.setEffect(new DropShadow(18, Color.rgb(0, 0, 0, 0.22)));
+
+        Circle c = new Circle(20, Color.web("#DCFCE7"));
+        Label ic = new Label("🎉");
+        ic.setStyle("-fx-font-size: 18px;");
+        StackPane iconStack = new StackPane(c, ic);
+
+        VBox textCol = new VBox(2);
+        textCol.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(textCol, Priority.ALWAYS);
+
+        Label t = new Label("Event Successfully Executed!");
+        t.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + NAVY + ";");
+
+        Label m = new Label("[" + eventName + "] has concluded. All deliverables and guest check-ins completed.");
+        m.setWrapText(true);
+        m.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
+
+        textCol.getChildren().addAll(t, m);
+
+        Button okBtn = new Button("Great!");
+        okBtn.setStyle("-fx-background-color: " + NAVY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 6 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        okBtn.setOnAction(e -> rootLayer.getChildren().remove(overlay));
+
+        modal.getChildren().addAll(iconStack, textCol, okBtn);
+        StackPane.setAlignment(modal, Pos.CENTER);
+
+        overlay.getChildren().add(modal);
+        rootLayer.getChildren().add(overlay);
+    }
+
+    private VBox createOverviewContent() {
+        VBox mainBox = new VBox(18);
+        mainBox.setPadding(new Insets(24, 32, 32, 32));
+
+        Hyperlink backLink = new Hyperlink("← Back to My Events");
+        backLink.setStyle("-fx-text-fill: " + TEXT_MUTED + "; -fx-font-size: 12px; -fx-underline: false;");
+        backLink.setOnAction(e -> handleBack());
+
+        HBox headerRow = new HBox(12);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        String eventName = (event != null && event.getEventName() != null) ? event.getEventName() : "Annual Tech Summit";
+        Label title = new Label(eventName);
+        title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
+
+        Label typeTag = new Label(event != null && event.getEventType() != null ? event.getEventType() : "Corporate Event");
+        typeTag.setStyle("-fx-background-color: #EDE9FE; -fx-text-fill: #6D28D9; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 6px;");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        topPayNowBtn = new Button("💳 Pay Now");
+        topPayNowBtn.setStyle("-fx-background-color: #CBD5E1; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 7 16; -fx-background-radius: 6px;");
+        topPayNowBtn.setDisable(true); // Locked initially
+        topPayNowBtn.setOnAction(e -> goPayment());
+
+        topStatusBadge = new Label("APPROVED");
+        topStatusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-padding: 5 12; -fx-background-radius: 6px;");
+
+        headerRow.getChildren().addAll(title, typeTag, spacer, topPayNowBtn, topStatusBadge);
+
+        HBox topCards = new HBox(14);
+        dateValLabel = new Label("2026-09-05");
+        daySubLabel = new Label("Saturday");
+        timeValLabel = new Label("10:00 - 1:00");
+        guestCountLabel = new Label("10 Expected");
+        organizerNameLabel = new Label("Harshada Kurumkar");
+        progressPercentLabel = new Label("68%");
+
+        topCards.getChildren().addAll(
+                createTopMetricCard("Event Date", dateValLabel, daySubLabel, "fas-calendar-alt"),
+                createTopMetricCard("Event Time", timeValLabel, new Label("Onwards"), "fas-clock"),
+                createTopMetricCard("Guest Count", guestCountLabel, new Label("Expected"), "fas-users"),
+                createTopMetricCard("Organizer", organizerNameLabel, new Label("Assigned Team"), "fas-user-tie"),
+                createProgressCard(progressPercentLabel)
+        );
+
+        HBox middleGrid = new HBox(20);
+
+        VBox summaryCard = createEventSummaryCard();
+        HBox.setHgrow(summaryCard, Priority.ALWAYS);
+
+        VBox timelineCard = createTimelineCard();
+        timelineCard.setPrefWidth(380);
+        timelineCard.setMinWidth(360);
+
+        middleGrid.getChildren().addAll(summaryCard, timelineCard);
+
+        VBox descriptionCard = createDescriptionCard();
+
+        mainBox.getChildren().addAll(backLink, headerRow, topCards, middleGrid, descriptionCard);
+        return mainBox;
+    }
+
+    private VBox createTopMetricCard(String title, Label valLbl, Label subLbl, String iconLit) {
+        VBox card = new VBox(6);
+        card.setPadding(new Insets(14, 16, 14, 16));
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+        HBox.setHgrow(card, Priority.ALWAYS);
+
+        HBox top = new HBox(6);
+        top.setAlignment(Pos.CENTER_LEFT);
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(Color.web(PRIMARY_BLUE));
+        Label t = new Label(title);
+        t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
+        top.getChildren().addAll(icon, t);
+
+        valLbl.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
+        subLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
+
+        card.getChildren().addAll(top, valLbl, subLbl);
+        return card;
+    }
+
+    private VBox createProgressCard(Label pctLbl) {
+        VBox card = new VBox(6);
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(14, 16, 14, 16));
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+        HBox.setHgrow(card, Priority.ALWAYS);
+
+        Label t = new Label("Progress");
+        t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
+        pctLbl.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + GREEN_TEXT + ";");
+        Label sub = new Label("Completed");
+        sub.setStyle("-fx-font-size: 11px; -fx-text-fill: " + GREEN_TEXT + ";");
+
+        card.getChildren().addAll(t, pctLbl, sub);
+        return card;
+    }
+
+    private VBox createEventSummaryCard() {
+        VBox card = new VBox(12);
+        card.setPadding(new Insets(18));
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+
+        Label title = new Label("Event Summary");
+        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
+
+        summaryEventType = new Label("Corporate Event");
+        summaryLocation = new Label("Maharashtra");
+        summaryCreatedOn = new Label("Recently");
+        summaryLastUpdated = new Label("Live Updated");
+        summaryAiPlanning = new Label("Enabled");
+        summaryPaymentStatus = new Label("Pending");
+
+        GridPane g = new GridPane();
+        g.setHgap(40); g.setVgap(12);
+
+        g.add(createSummaryRow("Event Type", summaryEventType), 0, 0);
+        g.add(createSummaryRow("Location", summaryLocation), 0, 1);
+        g.add(createSummaryRow("Created On", summaryCreatedOn), 0, 2);
+        g.add(createSummaryRow("Last Updated", summaryLastUpdated), 0, 3);
+        g.add(createSummaryRow("AI Planning", summaryAiPlanning), 0, 4);
+        g.add(createSummaryRow("Payment Status", summaryPaymentStatus), 0, 5);
+
+        ColumnConstraints c1 = new ColumnConstraints(); c1.setPercentWidth(100);
+        g.getColumnConstraints().add(c1);
+
+        card.getChildren().addAll(title, new Separator(), g);
+        return card;
+    }
+
+    private HBox createSummaryRow(String field, Label valLbl) {
+        HBox row = new HBox();
+        row.setAlignment(Pos.CENTER_LEFT);
+        Label f = new Label(field);
+        f.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MUTED + ";");
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
+        valLbl.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
+        row.getChildren().addAll(f, sp, valLbl);
+        return row;
+    }
+
+    private VBox createTimelineCard() {
+        VBox card = new VBox(12);
+        card.setPadding(new Insets(18));
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+
+        Label title = new Label("Timeline");
+        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
+
+        timelineContainer = new VBox(4);
+
+        card.getChildren().addAll(title, new Separator(), timelineContainer);
+        return card;
+    }
+
+    private VBox createDescriptionCard() {
+        VBox card = new VBox(10);
+        card.setPadding(new Insets(18));
+        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+
+        Label title = new Label("Event Description / Notes");
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
+
+        descriptionNotesLabel = new Label("Timefold-optimized plan for your event.");
+        descriptionNotesLabel.setWrapText(true);
+        descriptionNotesLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MUTED + ";");
+
+        card.getChildren().addAll(title, descriptionNotesLabel);
+        return card;
     }
 
     private VBox createCommonSidebar(String activeTab) {
@@ -100,7 +535,7 @@ public class MyEventDetails {
 
         HBox brandBox = new HBox(8);
         brandBox.setAlignment(Pos.CENTER_LEFT);
-        brandBox.setPadding(new Insets(0, 8, 8, 8));
+        brandBox.setPadding(new Insets(0, 8, 14, 8));
 
         FontIcon logoIcon = new FontIcon("fas-calendar-alt");
         logoIcon.setIconSize(18);
@@ -110,28 +545,15 @@ public class MyEventDetails {
         brandTitle.setStyle("-fx-text-fill: white; -fx-font-size: 17px; -fx-font-weight: bold;");
         brandBox.getChildren().addAll(logoIcon, brandTitle);
 
-        HBox userBox = new HBox(8);
-        userBox.setAlignment(Pos.CENTER_LEFT);
-        userBox.setPadding(new Insets(4, 8, 10, 8));
-
-        Circle userAvatar = new Circle(14, Color.web("#DBEAFE"));
-        VBox userDetails = new VBox(0);
-        userNameLabel = new Label("Customer");
-        userNameLabel.setStyle("-fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold;");
-        userEmailLabel = new Label("user@email.com");
-        userEmailLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 9px;");
-        userDetails.getChildren().addAll(userNameLabel, userEmailLabel);
-        userBox.getChildren().addAll(userAvatar, userDetails);
-
         VBox mainNav = new VBox(2);
         mainNav.getChildren().addAll(
                 createNavItem("Dashboard", "fas-tachometer-alt", false, this::goDashboard),
                 createNavItem("Create Event", "fas-plus-circle", false, this::goCreateEvent),
-                createNavItem("My Events", "fas-calendar-check", false, this::navigateBack)
+                createNavItem("My Events", "fas-calendar-check", false, this::handleBack)
         );
 
         Label sectionLabel = new Label("EVENT DETAILS");
-        sectionLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 8 8 3 8;");
+        sectionLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 10 8 4 8;");
 
         VBox eventNav = new VBox(2);
         eventNav.getChildren().addAll(
@@ -140,19 +562,13 @@ public class MyEventDetails {
                 createNavItem("Budget", "fas-wallet", "Budget".equals(activeTab), this::goBudget),
                 createNavItem("Guest Management", "fas-users", "Guest Management".equals(activeTab), this::goGuest),
                 createNavItem("Payments", "fas-credit-card", "Payments".equals(activeTab), this::goPayment),
-                createNavItem("Requirements", "fas-clipboard-list", "Requirements".equals(activeTab), this::goRequirement)
+                createNavItem("Requirements", "fas-clipboard-list", "Requirements".equals(activeTab), this::goRequirements)
         );
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        VBox bottomNav = new VBox(2);
-        bottomNav.getChildren().addAll(
-                createNavItem("Support", "fas-life-ring", false, null),
-                createNavItem("Settings", "fas-cog", false, this::goSettings)
-        );
-
-        sidebar.getChildren().addAll(brandBox, userBox, mainNav, sectionLabel, eventNav, spacer, bottomNav);
+        sidebar.getChildren().addAll(brandBox, mainNav, sectionLabel, eventNav, spacer);
         return sidebar;
     }
 
@@ -173,311 +589,51 @@ public class MyEventDetails {
         } else {
             btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #CBD5E1; -fx-font-size: 11px; -fx-cursor: hand;");
             btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-text-fill: white; -fx-font-size: 11px; -fx-background-radius: 6px; -fx-cursor: hand;"));
-            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #CBD5E1; -fx-font-size: 11px; -fx-cursor: hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #CBD5E1; -fx-font-size: 11px;"));
         }
 
         if (action != null) btn.setOnAction(e -> action.run());
         return btn;
     }
 
-    // ================= 2. OVERVIEW MAIN CONTENT =================
-    private VBox createOverviewContent() {
-        VBox page = new VBox(16);
-        page.setPadding(new Insets(24, 32, 32, 32));
-
-        HBox headerRow = new HBox(12);
-        headerRow.setAlignment(Pos.CENTER_LEFT);
-
-        Hyperlink backLink = new Hyperlink("← Back to My Events");
-        backLink.setStyle("-fx-text-fill: " + TEXT_MUTED + "; -fx-font-size: 12px; -fx-underline: false; -fx-cursor: hand;");
-        backLink.setOnAction(e -> navigateBack());
-
-        VBox titleCol = new VBox(2);
-        HBox tRow = new HBox(8);
-        tRow.setAlignment(Pos.CENTER_LEFT);
-
-        eventTitleLabel = new Label("Loading Event...");
-        eventTitleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-
-        eventTypeBadge = new Label("General");
-        eventTypeBadge.setStyle("-fx-background-color: #E0E7FF; -fx-text-fill: #4338CA; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 12px;");
-        tRow.getChildren().addAll(eventTitleLabel, eventTypeBadge);
-
-        eventIdLabel = new Label("Event ID: EVT12345");
-        eventIdLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
-        titleCol.getChildren().addAll(tRow, eventIdLabel);
-
-        Region sp = new Region();
-        HBox.setHgrow(sp, Priority.ALWAYS);
-
-        statusBadgeLabel = new Label("Planning");
-        statusBadgeLabel.setStyle("-fx-background-color: #FEF3C7; -fx-text-fill: #B45309; -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 5 12; -fx-background-radius: 6px;");
-
-        headerRow.getChildren().addAll(backLink, new Label("|"), titleCol, sp, statusBadgeLabel);
-
-        // ⭐ 5 Top Cards Arranged with "Progress" Card
-        HBox kpiRow = new HBox(14);
-        eventDateKpiVal = new Label("Date TBD");
-        eventTimeKpiVal = new Label("10:00 AM");
-        guestCountKpiVal = new Label("100");
-        organizerKpiVal = new Label("Aman Events");
-
-        kpiRow.getChildren().addAll(
-                createKpiPill("Event Date", eventDateKpiVal, "Saturday", "fas-calendar-alt"),
-                createKpiPill("Event Time", eventTimeKpiVal, "Onwards", "fas-clock"),
-                createKpiPill("Guest Count", guestCountKpiVal, "Expected", "fas-users"),
-                createKpiPill("Organizer", organizerKpiVal, "Assigned Team", "fas-user-tie"),
-                createProgressDialCard("68%", "Progress")
-        );
-
-        HBox bodyRow = new HBox(20);
-
-        VBox summaryCard = createWhiteCard();
-        HBox.setHgrow(summaryCard, Priority.ALWAYS);
-        Label sumTitle = new Label("Event Summary");
-        sumTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-
-        eventTypeVal = new Label("General");
-        locationVal = new Label("Pune, Maharashtra");
-
-        VBox sumRows = new VBox(10);
-        sumRows.setPadding(new Insets(10, 0, 10, 0));
-        sumRows.getChildren().addAll(
-                createKeyValueRow("Event Type", eventTypeVal),
-                createKeyValueRow("Location", locationVal),
-                createKeyValueRow("Created On", new Label("Recently")),
-                createKeyValueRow("Last Updated", new Label("Live Updated")),
-                createKeyValueRow("AI Planning", new Label("Enabled")),
-                createKeyValueRow("Payment Status", new Label("Partially Paid"))
-        );
-        summaryCard.getChildren().addAll(sumTitle, sumRows);
-
-        VBox timelineCard = createWhiteCard();
-        timelineCard.setPrefWidth(420);
-        Label tlTitle = new Label("Timeline");
-        tlTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-
-        VBox tlList = new VBox(12);
-        tlList.setPadding(new Insets(10, 0, 0, 0));
-        tlList.getChildren().addAll(
-                createTimelineRow("Event Created", "Completed", true),
-                createTimelineRow("Requirements Submitted", "Completed", true),
-                createTimelineRow("Organizer Assigned", "Active", true),
-                createTimelineRow("Venue Confirmed", "Confirmed", true),
-                createTimelineRow("Payments In Progress", "In Progress", false),
-                createTimelineRow("Event Completion", "Pending", false)
-        );
-        timelineCard.getChildren().addAll(tlTitle, tlList);
-
-        bodyRow.getChildren().addAll(summaryCard, timelineCard);
-
-        VBox notesCard = createWhiteCard();
-        Label notesTitle = new Label("Event Description / Notes");
-        notesTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-
-        notesVal = new Label("Standard event requirements with quality catering and venue coordination.");
-        notesVal.setWrapText(true);
-        notesVal.setStyle("-fx-text-fill: " + TEXT_MUTED + "; -fx-font-size: 12px;");
-        notesCard.getChildren().addAll(notesTitle, notesVal);
-
-        page.getChildren().addAll(headerRow, kpiRow, bodyRow, notesCard);
-        return page;
+    private void handleBack() {
+        if (eventSnapshotListener != null) eventSnapshotListener.remove();
+        if (backAction != null) backAction.run();
+        else goDashboard();
     }
-
-    private void loadRealtimeEventDataAsync() {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() {
-                CustomerController customerController = new CustomerController();
-                CustomerProfile profile = customerController.getCustomerProfile(uid);
-
-                CustomerEventController eventController = new CustomerEventController();
-                String eventId = (event != null) ? event.getEventId() : null;
-                Map<String, String> orgDetails = eventController.getOrganizerDetailsForEvent(eventId);
-
-                Platform.runLater(() -> {
-                    if (profile != null && profile.getName() != null) {
-                        userNameLabel.setText(profile.getName());
-                        userEmailLabel.setText(profile.getEmail() != null ? profile.getEmail() : "user@email.com");
-                    }
-
-                    if (event != null) {
-                        String name = (event.getEventName() != null) ? event.getEventName() : "Event Overview";
-                        String type = (event.getEventType() != null) ? event.getEventType() : "General";
-                        String date = (event.getEventDate() != null) ? event.getEventDate() : "TBD";
-                        String time = (event.getTime() != null) ? event.getTime() : "10:00 AM";
-                        String loc = (event.getCity() != null) ? event.getCity() + ", Maharashtra" : "Pune, Maharashtra";
-                        String status = (event.getStatus() != null) ? event.getStatus().toUpperCase() : "PLANNING";
-                        int guests = event.getGuests() > 0 ? event.getGuests() : 100;
-
-                        eventTitleLabel.setText(name);
-                        eventTypeBadge.setText(type);
-                        eventIdLabel.setText("Event ID: " + (event.getEventId() != null ? event.getEventId() : "EVT12345"));
-                        eventDateKpiVal.setText(date);
-                        eventTimeKpiVal.setText(time);
-                        guestCountKpiVal.setText(String.valueOf(guests));
-                        eventTypeVal.setText(type);
-                        locationVal.setText(loc);
-                        statusBadgeLabel.setText(status);
-
-                        if (event.getNotes() != null && !event.getNotes().isBlank()) {
-                            notesVal.setText(event.getNotes());
-                        }
-                    }
-
-                    if (orgDetails != null && orgDetails.containsKey("name")) {
-                        organizerKpiVal.setText(orgDetails.get("name"));
-                    } else if (event != null && event.getOrganizerName() != null) {
-                        organizerKpiVal.setText(event.getOrganizerName());
-                    }
-                });
-                return null;
-            }
-        };
-
-        Thread t = new Thread(task);
-        t.setDaemon(true);
-        t.start();
-    }
-
-    private VBox createWhiteCard() {
-        VBox card = new VBox(10);
-        card.setPadding(new Insets(16));
-        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
-        return card;
-    }
-
-    private HBox createKpiPill(String title, Label valLbl, String subVal, String iconLit) {
-        HBox pill = new HBox(10);
-        pill.setAlignment(Pos.CENTER_LEFT);
-        pill.setPadding(new Insets(12, 14, 12, 14));
-        pill.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
-        HBox.setHgrow(pill, Priority.ALWAYS);
-
-        FontIcon icon = new FontIcon(iconLit);
-        icon.setIconSize(16);
-        icon.setIconColor(Color.web(PRIMARY_BLUE));
-
-        VBox texts = new VBox(1);
-        Label t = new Label(title);
-        t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
-        valLbl.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-        Label s = new Label(subVal);
-        s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + TEXT_MUTED + ";");
-        texts.getChildren().addAll(t, valLbl, s);
-
-        pill.getChildren().addAll(icon, texts);
-        return pill;
-    }
-
-    private VBox createProgressDialCard(String percent, String title) {
-        VBox card = new VBox(2);
-        card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(10, 16, 10, 16));
-        card.setPrefWidth(160);
-        card.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
-
-        Label tLbl = new Label(title);
-        tLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + "; -fx-font-weight: bold;");
-
-        Label pLbl = new Label(percent);
-        pLbl.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
-
-        Label sLbl = new Label("Completed");
-        sLbl.setStyle("-fx-font-size: 10px; -fx-text-fill: #16A34A;");
-
-        card.getChildren().addAll(tLbl, pLbl, sLbl);
-        return card;
-    }
-
-    private HBox createKeyValueRow(String key, Label valLabel) {
-        HBox row = new HBox();
-        Label k = new Label(key);
-        k.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MUTED + ";");
-        Region sp = new Region();
-        HBox.setHgrow(sp, Priority.ALWAYS);
-        valLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_DARK + ";");
-        row.getChildren().addAll(k, sp, valLabel);
-        return row;
-    }
-
-    private HBox createTimelineRow(String title, String date, boolean isDone) {
-        HBox row = new HBox(10);
-        row.setAlignment(Pos.CENTER_LEFT);
-
-        Circle dot = new Circle(5, isDone ? Color.web("#16A34A") : Color.web("#CBD5E1"));
-        Label t = new Label(title);
-        t.setStyle("-fx-font-size: 12px; -fx-text-fill: " + (isDone ? TEXT_DARK : TEXT_MUTED) + ";");
-
-        Region sp = new Region();
-        HBox.setHgrow(sp, Priority.ALWAYS);
-
-        Label d = new Label(date);
-        d.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MUTED + ";");
-
-        row.getChildren().addAll(dot, t, sp, d);
-        return row;
-    }
-
-    private void setAppScene(Scene newScene) {
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(newScene);
-        } else if (rootPane != null && rootPane.getScene() != null && rootPane.getScene().getWindow() instanceof Stage) {
-            Stage currentStage = (Stage) rootPane.getScene().getWindow();
-            currentStage.setScene(newScene);
-        }
-    }
-
-    private void navigateBack() {
-        if (backCallback != null) {
-            backCallback.run();
-        } else {
-            goMyEvents();
-        }
-    }
-
     private void goDashboard() {
+        if (eventSnapshotListener != null) eventSnapshotListener.remove();
         ActiveCustomerDashboardC dash = new ActiveCustomerDashboardC(uid, idToken);
-        setAppScene(dash.getactiveCustomerScene(null));
+        LandingPage.landingPageStage.setScene(dash.getactiveCustomerScene(null));
     }
-
     private void goCreateEvent() {
+        if (eventSnapshotListener != null) eventSnapshotListener.remove();
         CreateEventC create = new CreateEventC(uid, idToken);
-        setAppScene(create.getCreateEventScene(this::goDashboard));
+        LandingPage.landingPageStage.setScene(create.getCreateEventScene(this::goDashboard));
     }
-
-    private void goMyEvents() {
-        MyEvents myEvents = new MyEvents(uid, idToken);
-        setAppScene(myEvents.getMyEventsScene(this::goDashboard));
-    }
-
     private void goVenue() {
+        if (eventSnapshotListener != null) eventSnapshotListener.remove();
         Venue view = new Venue(uid, idToken, event);
-        setAppScene(view.getVenueScene(this::navigateBack));
+        LandingPage.landingPageStage.setScene(view.getVenueScene(this::handleBack));
     }
-
     private void goBudget() {
+        if (eventSnapshotListener != null) eventSnapshotListener.remove();
         Budget view = new Budget(uid, idToken, event);
-        setAppScene(view.getBudgetScene(this::navigateBack));
+        LandingPage.landingPageStage.setScene(view.getBudgetScene(this::handleBack));
     }
-
     private void goGuest() {
+        if (eventSnapshotListener != null) eventSnapshotListener.remove();
         Guest view = new Guest(uid, idToken, event);
-        setAppScene(view.getGuestScene(this::navigateBack));
+        LandingPage.landingPageStage.setScene(view.getGuestScene(this::handleBack));
     }
-
     private void goPayment() {
+        if (eventSnapshotListener != null) eventSnapshotListener.remove();
         Payment view = new Payment(uid, idToken, event);
-        setAppScene(view.getPaymentScene(this::navigateBack));
+        LandingPage.landingPageStage.setScene(view.getPaymentScene(this::handleBack));
     }
-
-    private void goRequirement() {
+    private void goRequirements() {
+        if (eventSnapshotListener != null) eventSnapshotListener.remove();
         Requirement view = new Requirement(uid, idToken, event);
-        setAppScene(view.getRequirementScene(this::navigateBack));
-    }
-
-    private void goSettings() {
-        SettingC s = new SettingC();
-        setAppScene(s.getSettingScene(this::navigateBack));
+        LandingPage.landingPageStage.setScene(view.getRequirementScene(this::handleBack));
     }
 }

@@ -52,6 +52,8 @@ public class BudgetC {
     }
 
     public Scene getBudgetScene(Runnable backAction, Runnable nextAction) {
+        ReviewPageC.EventData.currentStep = 4;
+
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
@@ -63,62 +65,53 @@ public class BudgetC {
         sidebar.setFillWidth(true);
         sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label logo = label("EventXpert", 22, FontWeight.BOLD, "#FFFFFF");
-        Label logoSub = label("EVENT MANAGEMENT", 10, FontWeight.NORMAL, "#BDE3FF");
-        VBox brand = new VBox(3, logo, logoSub);
-        brand.setPadding(new Insets(24, 20, 28, 25));
+        HBox brandBox = new HBox(10);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(24, 20, 20, 22));
 
-        Label createTitle = label("Create Event", 20, FontWeight.BOLD, "#FFFFFF");
-        Label step = label("Step-by-step setup", 12, FontWeight.NORMAL, "#BDE3FF");
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(24);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = label("EventXpert", 20, FontWeight.BOLD, "white");
+        Label logoSub = label("EVENT MANAGEMENT", 9, FontWeight.NORMAL, "#BDE3FF");
+        brandTexts.getChildren().addAll(logo, logoSub);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        Label createTitle = label("Create Event", 18, FontWeight.BOLD, "white");
+        Label step = label("Step-by-step setup", 11, FontWeight.NORMAL, "#BDE3FF");
         VBox titleBox = new VBox(2, createTitle, step);
         titleBox.setPadding(new Insets(0, 20, 20, 25));
 
         VBox menu = new VBox();
         menu.getChildren().addAll(
-                sidebarItem("[1]", "Event Details", false),
-                sidebarItem("[2]", "Requirements", false),
-                sidebarItem("[3]", "Venue", false),
-                sidebarItem("[4]", "Budget", true),
-                sidebarItem("[5]", "Guest", false),
-                sidebarItem("[6]", "AI Planning", false),
-                sidebarItem("[7]", "Review", false)
+                sidebarItem("[1]", "Event Details", "fas-info-circle", false),
+                sidebarItem("[2]", "Requirements", "fas-list-ul", false),
+                sidebarItem("[3]", "Venue & Location", "fas-map-marker-alt", false),
+                sidebarItem("[4]", "Budget", "fas-wallet", true),
+                sidebarItem("[5]", "Guest", "fas-users", false),
+                sidebarItem("[6]", "AI Planning", "fas-magic", false),
+                sidebarItem("[7]", "Review", "fas-check-circle", false)
         );
 
         Region sideSpace = new Region();
         VBox.setVgrow(sideSpace, Priority.ALWAYS);
-        sidebar.getChildren().addAll(brand, titleBox, menu, sideSpace);
+        sidebar.getChildren().addAll(brandBox, titleBox, menu, sideSpace);
 
-        // 2. TOP BAR
-        HBox topBar = new HBox();
-        topBar.setPrefHeight(60);
-        topBar.setAlignment(Pos.CENTER_RIGHT);
-        topBar.setPadding(new Insets(0, 30, 0, 30));
-        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:0 0 1 0;");
-
-        Label topLogo = label("EventXpert", 14, FontWeight.BOLD, NAVY);
-        Region topSpace = new Region();
-        HBox.setHgrow(topSpace, Priority.ALWAYS);
-        Label bell = label("Notifications", 11, FontWeight.BOLD, NAVY);
-        Label help = label("?", 13, FontWeight.BOLD, NAVY);
-        help.setMinSize(28, 28);
-        help.setAlignment(Pos.CENTER);
-        help.setStyle("-fx-border-color:" + NAVY + ";-fx-border-radius:50;-fx-background-radius:50;");
-        topBar.getChildren().addAll(topLogo, topSpace, bell, help);
-
-        // 3. CONTENT
+        // 2. CONTENT (TopBar Removed)
         VBox content = new VBox(14);
-        content.setPadding(new Insets(20, 35, 18, 35));
+        content.setPadding(new Insets(28, 45, 20, 45));
         content.setStyle("-fx-background-color:" + BG + ";");
 
-        Label stepText = label("STEP 4 OF 7", 11, FontWeight.BOLD, BLUE);
+        Label stepText = label("STEP 4 OF 7", 10, FontWeight.BOLD, BLUE);
         Label heading = label("Set Your Event Budget", 26, FontWeight.BOLD, NAVY);
-        Label description = label("Define your total spend and let our engine optimize the recommended distribution.", 13, FontWeight.BOLD, NAVY);
+        Label description = label("Define your total spend and let our engine optimize the recommended distribution.", 12, FontWeight.NORMAL, "#667085");
 
         // LEFT COLUMN - Input & Toggle
         VBox estimated = card();
         estimated.getChildren().add(label("Estimated Total Budget", 14, FontWeight.BOLD, NAVY));
 
-        // ⭐ Dynamic value from Previous Step or empty
         String initialBudget = (ReviewPageC.EventData.budget != null && !ReviewPageC.EventData.budget.isBlank())
                 ? ReviewPageC.EventData.budget
                 : "";
@@ -186,16 +179,14 @@ public class BudgetC {
         allocationCard.getChildren().addAll(allocationHeader, new Separator(), allocationRowsContainer, disclaimer);
         HBox.setHgrow(allocationCard, Priority.ALWAYS);
 
-        // Safe Recalculation Engine
+        // Recalculation Engine
         Runnable recalculate = () -> {
             double parsedVal = 0.0;
             try {
                 String text = amountField.getText();
                 if (text != null) {
                     String clean = text.replaceAll("[^0-9.]", "").trim();
-                    if (!clean.isEmpty()) {
-                        parsedVal = Double.parseDouble(clean);
-                    }
+                    if (!clean.isEmpty()) parsedVal = Double.parseDouble(clean);
                 }
             } catch (Exception ignored) {}
 
@@ -271,7 +262,7 @@ public class BudgetC {
         footer.setPadding(new Insets(0, 35, 0, 35));
         footer.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:1 0 0 0;");
 
-        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.BOLD, NAVY);
+        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.BOLD, "#667085");
         Region footerSpace = new Region();
         HBox.setHgrow(footerSpace, Priority.ALWAYS);
 
@@ -285,6 +276,7 @@ public class BudgetC {
         next.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
 
         back.setOnAction(e -> {
+            ReviewPageC.EventData.saveDraft(3);
             if (backAction != null) {
                 backAction.run();
             } else {
@@ -296,6 +288,7 @@ public class BudgetC {
         next.setOnAction(e -> {
             String val = amountField.getText() != null ? amountField.getText().trim() : "";
             ReviewPageC.EventData.budget = !val.isBlank() ? (val.startsWith("₹") ? val : "₹ " + val) : "₹ 0";
+            ReviewPageC.EventData.saveDraft(5);
 
             if (nextAction != null) {
                 nextAction.run();
@@ -308,7 +301,7 @@ public class BudgetC {
         footer.getChildren().addAll(copyright, footerSpace, back, next);
 
         VBox rightSide = new VBox();
-        rightSide.getChildren().addAll(topBar, content, footer);
+        rightSide.getChildren().addAll(content, footer);
         VBox.setVgrow(content, Priority.ALWAYS);
 
         HBox fullPage = new HBox();
@@ -369,26 +362,37 @@ public class BudgetC {
     private VBox card() {
         VBox v = new VBox(12);
         v.setPadding(new Insets(16));
-        v.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:9;-fx-background-radius:9;");
+        v.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
         return v;
     }
 
-    private HBox sidebarItem(String icon, String text, boolean active) {
-        HBox item = new HBox(12);
-        item.setPrefHeight(44);
-        item.setMinHeight(44);
+    private HBox sidebarItem(String stepNum, String text, String iconLiteral, boolean active) {
+        HBox item = new HBox(10);
+        item.setPrefHeight(42);
+        item.setMinHeight(42);
         item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(0, 18, 0, 25));
-        item.setStyle(active ? "-fx-background-color:" + BLUE + ";-fx-border-color:#9DD8FF;-fx-border-width:0 0 0 3;" : "-fx-background-color:transparent;");
-        item.getChildren().addAll(label(icon, 13, FontWeight.NORMAL, "white"), label(text, 13, FontWeight.BOLD, active ? "white" : "#B7C4D8"));
+        item.setPadding(new Insets(0, 16, 0, 22));
+
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#B7C4D8"));
+
+        Label textLbl = label(stepNum + "  " + text, 12, active ? FontWeight.BOLD : FontWeight.NORMAL, active ? NAVY : "#B7C4D8");
+
+        if (active) {
+            item.setStyle("-fx-background-color: #E0F2FE; -fx-background-radius: 7px;");
+        } else {
+            item.setStyle("-fx-background-color: transparent;");
+        }
+
+        item.getChildren().addAll(icon, textLbl);
         return item;
     }
 
     private Label label(String text, double size, FontWeight weight, String color) {
         Label l = new Label(text != null ? text : "");
         l.setFont(Font.font("Arial", weight, size));
-        l.setTextFill(Color.web(color));
-        l.setStyle("-fx-text-fill: " + color + " !important; -fx-opacity: 1.0;");
+        l.setStyle("-fx-text-fill: " + color + " !important;");
         return l;
     }
 }

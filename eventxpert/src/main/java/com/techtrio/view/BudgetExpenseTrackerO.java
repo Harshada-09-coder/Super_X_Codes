@@ -8,7 +8,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -50,6 +49,8 @@ public class BudgetExpenseTrackerO {
     private static final String GREEN_TEXT = "#137333";
     private static final String PENDING_BG = "#FEF7E0";
     private static final String PENDING_TEXT = "#B06000";
+    private static final String BLUE_BG = "#E0F2FE";
+    private static final String BLUE_TEXT = "#0369A1";
 
     private double approvedBudget = 15000.0;
     private double allocatedBudget = 14800.0;
@@ -212,7 +213,7 @@ public class BudgetExpenseTrackerO {
                 currentEvent != null ? currentEvent.getEventType() : "Birthday",
                 guests,
                 selectedReqs,
-                currentEvent != null ? currentEvent.getCity() : "Surat"
+                currentEvent != null ? currentEvent.getCity() : "Pune"
         );
 
         BudgetOptimizationResult optResult = optimizerService.optimizeBudget(req);
@@ -223,7 +224,7 @@ public class BudgetExpenseTrackerO {
             }
         }
     }
-
+// ⭐ महत्त्वाचा बदल: 'Contingency & Other' Organizer च्या खात्यात जमा झाल्याने खालील लिस्टमध्ये समाविष्ट केले आहे!
     private void fetchAcceptedVendorExpenses(String eventId) {
         if (eventId == null || eventId.isBlank()) return;
 
@@ -232,21 +233,32 @@ public class BudgetExpenseTrackerO {
             List<VendorBooking> bookings = vendorController.getEventVendorBookings(eventId.trim());
             expenseList.clear();
 
-            // ⭐ 1. Add Confirmed Venue as Expense automatically
+            // कस्टमरने प्रत्यक्ष पैसे भरले आहेत का ते तपासणे
+            double actualCustomerPaid = (currentEvent != null) ? currentEvent.getPaidAmount() : 0.0;
+            boolean isPaidByCustomer = actualCustomerPaid > 0 
+                    || (currentEvent != null && ("PAID".equalsIgnoreCase(currentEvent.getStatus()) || "CONFIRMED".equalsIgnoreCase(currentEvent.getStatus())));
+
+            String eventDt = (currentEvent != null && currentEvent.getEventDate() != null) 
+                    ? currentEvent.getEventDate() 
+                    : (currentEvent != null && currentEvent.getStartDate() != null ? currentEvent.getStartDate() : "2026-09-07");
+
+            String orgName = (currentEvent != null && currentEvent.getOrganizerName() != null && !currentEvent.getOrganizerName().isBlank())
+                    ? currentEvent.getOrganizerName() : "Organizer Partner";
+
+            // १. Venue Expense
             if (currentEvent != null && "CONFIRMED".equalsIgnoreCase(currentEvent.getVenueStatus())) {
-                double venueCost = 4395.0;
+                double venueCost = 23180.0;
                 try {
-                    String clean = currentEvent.getConfirmedVenueCost() != null ? currentEvent.getConfirmedVenueCost().replaceAll("[^0-9.]", "") : "4395";
+                    String clean = currentEvent.getConfirmedVenueCost() != null ? currentEvent.getConfirmedVenueCost().replaceAll("[^0-9.]", "") : "23180";
                     if (!clean.isEmpty()) venueCost = Double.parseDouble(clean);
                 } catch (Exception ignored) {}
 
                 String vName = currentEvent.getConfirmedVenueName() != null ? currentEvent.getConfirmedVenueName() : "Confirmed Venue";
-                String dt = currentEvent.getEventDate() != null ? currentEvent.getEventDate() : (currentEvent.getStartDate() != null ? currentEvent.getStartDate() : "Confirmed");
-
-                expenseList.add(new ExpenseItem("Venue", vName, dt, venueCost, "Paid"));
+                String venueExpenseStatus = isPaidByCustomer ? "Paid" : "Pending";
+                expenseList.add(new ExpenseItem("Venue", vName, eventDt, venueCost, venueExpenseStatus));
             }
 
-            // ⭐ 2. Add Confirmed Vendor Bookings
+            // २. Vendor Expenses (Decoration, Catering, इ.)
             if (bookings != null && !bookings.isEmpty()) {
                 for (VendorBooking vb : bookings) {
                     double amt = 0.0;
@@ -257,26 +269,62 @@ public class BudgetExpenseTrackerO {
 
                     String vName = vb.getVendorName() != null && !vb.getVendorName().isBlank() ? vb.getVendorName() : "Vendor Partner";
                     String cat = vb.getServiceCategory() != null ? vb.getServiceCategory() : "Service";
-                    String dt = vb.getEventDate() != null ? vb.getEventDate() : "Upcoming";
+                    String dt = vb.getEventDate() != null ? vb.getEventDate() : eventDt;
                     
                     String rawStatus = vb.getStatus() != null ? vb.getStatus().toUpperCase() : "PENDING";
-                    String st = ("CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus) || "PAID".equals(rawStatus)) ? "Paid" : "Pending";
+                    
+                    String displayStatus = "Pending";
+                    if (isPaidByCustomer || "PAID".equals(rawStatus)) {
+                        displayStatus = "Paid";
+                    } else if ("CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus)) {
+                        displayStatus = "Confirmed";
+                    }
 
-                    expenseList.add(new ExpenseItem(cat, vName, dt, amt, st));
+                    expenseList.add(new ExpenseItem(cat, vName, dt, amt, displayStatus));
                 }
             }
+
+            // ⭐ ३. Contingency & Other (Organizer कडे थेट जाणारा राखीव फंड खालील लिस्टमध्ये ॲड करणे)
+            double contingencyAmt = 0.0;
+            if (currentEvent != null && currentEvent.getBudgetRecommendation() != null) {
+                for (Map.Entry<String, Object> entry : currentEvent.getBudgetRecommendation().entrySet()) {
+                    String k = entry.getKey().toLowerCase();
+                    if (k.contains("contingency") || k.contains("other") || k.contains("misc")) {
+                        try {
+                            contingencyAmt += Double.parseDouble(entry.getValue().toString());
+                        } catch (Exception ignored) {}
+                    }
+                }
+            }
+
+            // जर बजेट मॅपमधून मिळाले नाही तर ॲलोकेशनमधून शोधणे
+            if (contingencyAmt == 0.0 && currentAllocations != null) {
+                for (BudgetAllocation a : currentAllocations) {
+                    String cName = a.getCategory().toLowerCase();
+                    if (cName.contains("contingency") || cName.contains("other") || cName.contains("misc")) {
+                        contingencyAmt += a.getRecommendedAmount();
+                    }
+                }
+            }
+
+            // जर Contingency रक्कम असेल तर ती Organizer च्या नावासह खालील लिस्टमध्ये दिसेल:
+            if (contingencyAmt > 0) {
+                String contingencyStatus = isPaidByCustomer ? "Paid" : "Pending";
+                expenseList.add(new ExpenseItem("Contingency & Other", orgName, eventDt, contingencyAmt, contingencyStatus));
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     private void renderDynamicBudgetData() {
-        String eventName = (currentEvent != null && currentEvent.getEventName() != null) ? currentEvent.getEventName() : "Birthday Party";
-        String eventDate = (currentEvent != null && currentEvent.getEventDate() != null) ? currentEvent.getEventDate() : "2026-09-04";
-        int guests = (currentEvent != null && currentEvent.getGuests() > 0) ? currentEvent.getGuests() : 10;
+        String eventName = (currentEvent != null && currentEvent.getEventName() != null) ? currentEvent.getEventName() : "Annual Tech Summit";
+        String eventDate = (currentEvent != null && currentEvent.getEventDate() != null) ? currentEvent.getEventDate() : "2026-09-05";
+        int guests = (currentEvent != null && currentEvent.getGuests() > 0) ? currentEvent.getGuests() : 200;
         String venue = (currentEvent != null && currentEvent.getConfirmedVenueName() != null && !currentEvent.getConfirmedVenueName().startsWith("Pending"))
                 ? currentEvent.getConfirmedVenueName()
-                : (currentEvent != null && currentEvent.getVenueType() != null ? currentEvent.getVenueType() : "Hotel");
+                : (currentEvent != null && currentEvent.getVenueType() != null ? currentEvent.getVenueType() : "Royal Heritage Conference Center");
         String budgetStr = "₹ " + String.format("%,.0f", approvedBudget);
 
         allocatedBudget = 0.0;
@@ -316,7 +364,7 @@ public class BudgetExpenseTrackerO {
             }
         }
 
-        // 2. Interactive Editable Breakdown Card
+        // 2. Interactive Editable Allocations Card
         if (budgetBreakdownItemsContainer != null) {
             budgetBreakdownItemsContainer.getChildren().clear();
             for (int i = 0; i < currentAllocations.size(); i++) {
@@ -548,7 +596,7 @@ public class BudgetExpenseTrackerO {
                 handleBack(LandingPage.landingPageStage);
                 break;
             case "Schedule":
-                ScheduleO sched = new ScheduleO();
+                ScheduleO sched = new ScheduleO(uid, idToken);
                 LandingPage.landingPageStage.setScene(sched.getScene(LandingPage.landingPageStage, null));
                 break;
             case "Notifications":
@@ -692,7 +740,7 @@ public class BudgetExpenseTrackerO {
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
         HBox.setHgrow(card, Priority.ALWAYS);
 
-        Label t = new Label("Spent"); t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label t = new Label("Total Committed"); t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         spentValLabel = new Label("₹ 0"); spentValLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + BRIGHT_BLUE + ";");
 
         card.getChildren().addAll(t, spentValLabel);
@@ -705,7 +753,7 @@ public class BudgetExpenseTrackerO {
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
         HBox.setHgrow(card, Priority.ALWAYS);
 
-        Label t = new Label("Remaining"); t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label t = new Label("Remaining Balance"); t.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         remainingValLabel = new Label("₹ 15,000"); remainingValLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
 
         card.getChildren().addAll(t, remainingValLabel);
@@ -787,9 +835,9 @@ public class BudgetExpenseTrackerO {
         Label title = new Label("Event Details");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
-        eventDateDetailLabel = new Label("2026-09-04");
-        eventGuestsDetailLabel = new Label("10 Expected");
-        eventVenueDetailLabel = new Label("Hotel");
+        eventDateDetailLabel = new Label("2026-09-05");
+        eventGuestsDetailLabel = new Label("200 Expected");
+        eventVenueDetailLabel = new Label("Venue");
 
         VBox details = new VBox(6);
         details.getChildren().addAll(
@@ -923,8 +971,11 @@ public class BudgetExpenseTrackerO {
             row.add(amtLbl, 3, 0);
 
             Label statusBadge = new Label(item.status);
-            if (item.status.equalsIgnoreCase("Paid") || item.status.equalsIgnoreCase("Confirmed") || item.status.equalsIgnoreCase("Accepted")) {
+            // ⭐ Paid असेल तर हिरवा, Confirmed असेल तर निळा आणि Pending असेल तर पिवळा
+            if (item.status.equalsIgnoreCase("Paid")) {
                 statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
+            } else if (item.status.equalsIgnoreCase("Confirmed") || item.status.equalsIgnoreCase("Accepted")) {
+                statusBadge.setStyle("-fx-background-color: " + BLUE_BG + "; -fx-text-fill: " + BLUE_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
             } else {
                 statusBadge.setStyle("-fx-background-color: " + PENDING_BG + "; -fx-text-fill: " + PENDING_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
             }
@@ -945,16 +996,16 @@ public class BudgetExpenseTrackerO {
     }
 
     private void recalculateBudget() {
-        double totalSpent = 0;
+        double totalCommitted = 0;
         for (ExpenseItem item : expenseList) {
             if ("Paid".equalsIgnoreCase(item.status) || "Confirmed".equalsIgnoreCase(item.status) || "Accepted".equalsIgnoreCase(item.status)) {
-                totalSpent += item.amount;
+                totalCommitted += item.amount;
             }
         }
-        double remaining = approvedBudget - totalSpent;
+        double remaining = approvedBudget - totalCommitted;
         if (remaining < 0) remaining = 0;
 
-        if (spentValLabel != null) spentValLabel.setText("₹ " + String.format("%,.0f", totalSpent));
+        if (spentValLabel != null) spentValLabel.setText("₹ " + String.format("%,.0f", totalCommitted));
         if (remainingValLabel != null) remainingValLabel.setText("₹ " + String.format("%,.0f", remaining));
     }
 

@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -68,6 +69,8 @@ public class GuestManagementO {
     private final List<Guest> filteredGuestList = new ArrayList<>();
     private ListenerRegistration firestoreListener;
 
+    private StackPane rootLayer;
+
     // Dynamic UI Metrics
     private Label lblEntryMode;
     private Label lblTotalLimit;
@@ -105,8 +108,11 @@ public class GuestManagementO {
         this.backAction = backAction;
         this.currentEventId = (eventId != null && !eventId.isBlank()) ? eventId : AdminContext.getSelectedEventId();
 
+        rootLayer = new StackPane();
+        rootLayer.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
+
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
+        root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
         // 1. Sidebar (Matched with My Events)
         root.setLeft(createCommonOrganizerSidebar("My Events"));
@@ -120,11 +126,12 @@ public class GuestManagementO {
         scrollPane.setContent(mainContent);
 
         root.setCenter(scrollPane);
+        rootLayer.getChildren().add(root);
 
         // Load Real-time Firestore Listener
         initRealtimeFirestoreListener();
 
-        return new Scene(root, 1550, 785);
+        return new Scene(rootLayer, 1550, 785);
     }
 
     // ==========================================
@@ -654,8 +661,51 @@ public class GuestManagementO {
     }
 
     // ==========================================
-    // IN-SCENE POPUP DIALOG (No Standalone Window & No Payload String)
+    // IN-APP RECTANGULAR COMPACT MODAL
     // ==========================================
+    private void showInAppModal(String title, String message, boolean isSuccess) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(6, 42, 96, 0.45);");
+
+        HBox modal = new HBox(16);
+        modal.setMaxWidth(460);
+        modal.setPrefWidth(460);
+        modal.setMaxHeight(Region.USE_PREF_SIZE);
+        modal.setPrefHeight(75);
+        modal.setPadding(new Insets(14, 20, 14, 20));
+        modal.setAlignment(Pos.CENTER_LEFT);
+        modal.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px;");
+        modal.setEffect(new DropShadow(18, Color.rgb(0, 0, 0, 0.22)));
+
+        Circle c = new Circle(18, Color.web(isSuccess ? "#DCFCE7" : "#FEE2E2"));
+        Label ic = new Label(isSuccess ? "✓" : "⚠");
+        ic.setStyle("-fx-font-size: 15px; -fx-text-fill: " + (isSuccess ? "#16A34A" : "#DC2626") + "; -fx-font-weight: bold;");
+        StackPane iconStack = new StackPane(c, ic);
+
+        VBox textCol = new VBox(2);
+        textCol.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(textCol, Priority.ALWAYS);
+
+        Label t = new Label(title);
+        t.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + NAVY + ";");
+
+        Label m = new Label(message);
+        m.setWrapText(true);
+        m.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+
+        textCol.getChildren().addAll(t, m);
+
+        Button okBtn = new Button("Okay");
+        okBtn.setStyle("-fx-background-color: " + NAVY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 6 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        okBtn.setOnAction(e -> rootLayer.getChildren().remove(overlay));
+
+        modal.getChildren().addAll(iconStack, textCol, okBtn);
+        StackPane.setAlignment(modal, Pos.CENTER);
+
+        overlay.getChildren().add(modal);
+        rootLayer.getChildren().add(overlay);
+    }
+
     private void showInSceneQrDialog(String guestName, String payload) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("QR Pass");
@@ -698,9 +748,7 @@ public class GuestManagementO {
                         }
                     }
                     ImageIO.write(bImage, "png", file);
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "QR Code saved successfully to: " + file.getName(), ButtonType.OK);
-                    alert.initOwner(dialog.getDialogPane().getScene().getWindow());
-                    alert.showAndWait();
+                    showInAppModal("Downloaded", "QR Code saved successfully to: " + file.getName(), true);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -815,7 +863,11 @@ public class GuestManagementO {
                     GuestService.CheckInResult result = guestService.processQREntryCheckIn(currentEvent.getEventId(), token);
                     Platform.runLater(() -> {
                         if (result.isSuccess()) {
-                            lblScanResult.setText("Entry Allowed ✓ (" + result.getCurrentCheckedIn() + " / " + currentEvent.getGuestLimit() + ")");
+                            // Update local and firestore checkedIn count
+                            int newChecked = result.getCurrentCheckedIn();
+                            currentEvent.setCheckedInCount(newChecked);
+
+                            lblScanResult.setText("Entry Allowed ✓ (" + newChecked + " / " + currentEvent.getGuestLimit() + ")");
                             lblScanResult.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + GREEN_TEXT + ";");
                         } else {
                             lblScanResult.setText("Entry Denied ✕ " + result.getMessage());
@@ -828,7 +880,6 @@ public class GuestManagementO {
             }).start();
 
         } else {
-            // Manual Mode: Exact Match by ID, Mobile, or Scanned Payload
             Guest target = null;
             for (Guest g : currentGuestList) {
                 if (g.getId().equalsIgnoreCase(input) || 
@@ -859,6 +910,19 @@ public class GuestManagementO {
                     if (result.isSuccess()) {
                         guest.setCheckedIn(true);
                         guest.setCheckInTime(System.currentTimeMillis());
+
+                        // ⭐ Sync checkedInCount directly with Event Document in Firestore
+                        int newCheckedCount = currentEvent.getCheckedInCount() + 1;
+                        currentEvent.setCheckedInCount(newCheckedCount);
+
+                        new Thread(() -> {
+                            try {
+                                FirestoreClient.getFirestore().collection("events")
+                                        .document(currentEvent.getEventId())
+                                        .update("checkedInCount", newCheckedCount);
+                            } catch (Exception ignored) {}
+                        }).start();
+
                         renderRosterRows();
                         lblScanResult.setText("Checked In: " + guest.getName() + " ✓");
                         lblScanResult.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + GREEN_TEXT + ";");
@@ -875,9 +939,7 @@ public class GuestManagementO {
 
     private void handleSendSingleQrPass(Guest guest) {
         if (guest.getEmail() == null || guest.getEmail().isBlank()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "This guest does not have an email address.", ButtonType.OK);
-            alert.initOwner(LandingPage.landingPageStage);
-            alert.showAndWait();
+            showInAppModal("Missing Contact", "This guest does not have a registered email address.", false);
             return;
         }
 
@@ -892,10 +954,11 @@ public class GuestManagementO {
                     payload
             );
             Platform.runLater(() -> {
-                Alert a = new Alert(sent ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR,
-                        sent ? "QR Pass sent successfully to " + guest.getEmail() : "Failed to send QR pass.", ButtonType.OK);
-                a.initOwner(LandingPage.landingPageStage);
-                a.showAndWait();
+                if (sent) {
+                    showInAppModal("Pass Dispatched", "QR Entry Pass sent successfully to " + guest.getEmail(), true);
+                } else {
+                    showInAppModal("Delivery Failed", "Failed to send QR pass email.", false);
+                }
             });
         }).start();
     }
@@ -912,11 +975,7 @@ public class GuestManagementO {
                 String customerEmail = (profile != null && profile.getEmail() != null) ? profile.getEmail() : UserSession.getUserEmail();
 
                 if (customerEmail == null || customerEmail.isBlank()) {
-                    Platform.runLater(() -> {
-                        Alert a = new Alert(Alert.AlertType.WARNING, "Customer email not found for this event.");
-                        a.initOwner(LandingPage.landingPageStage);
-                        a.showAndWait();
-                    });
+                    Platform.runLater(() -> showInAppModal("Missing Contact", "Customer email not found for this event.", false));
                     return;
                 }
 
@@ -931,10 +990,11 @@ public class GuestManagementO {
                 );
 
                 Platform.runLater(() -> {
-                    Alert a = new Alert(sent ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR,
-                            sent ? "Event QR Pass sent successfully to Customer (" + customerEmail + ")!" : "Failed to send QR email.", ButtonType.OK);
-                    a.initOwner(LandingPage.landingPageStage);
-                    a.showAndWait();
+                    if (sent) {
+                        showInAppModal("Pass Dispatched", "Event QR Pass sent successfully to Customer (" + customerEmail + ")!", true);
+                    } else {
+                        showInAppModal("Delivery Failed", "Failed to send QR email.", false);
+                    }
                 });
             }).start();
             return;
@@ -942,38 +1002,29 @@ public class GuestManagementO {
 
         // 2. MANUAL GUEST LIST MODE -> Send to each individual Guest
         if (currentGuestList.isEmpty()) {
-            new Alert(Alert.AlertType.INFORMATION, "No guests to send passes to.", ButtonType.OK).showAndWait();
+            showInAppModal("No Attendees", "No guests found on list to send passes to.", false);
             return;
         }
 
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Send individual QR Entry Passes to all " + currentGuestList.size() + " guests via email?", ButtonType.YES, ButtonType.NO);
-        confirm.initOwner(LandingPage.landingPageStage);
-        confirm.showAndWait();
-        if (confirm.getResult() == ButtonType.YES) {
-            new Thread(() -> {
-                int count = 0;
-                for (Guest g : currentGuestList) {
-                    if (g.getEmail() != null && !g.getEmail().isBlank()) {
-                        String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), g.getId());
-                        EmailService.sendGuestQrPass(
-                                g.getEmail(),
-                                g.getName(),
-                                currentEvent.getEventName(),
-                                currentEvent.getEventDate(),
-                                currentEvent.getCity(),
-                                payload
-                        );
-                        count++;
-                    }
+        new Thread(() -> {
+            int count = 0;
+            for (Guest g : currentGuestList) {
+                if (g.getEmail() != null && !g.getEmail().isBlank()) {
+                    String payload = QRCodeUtil.formatPayload(currentEvent.getEventId(), g.getId());
+                    EmailService.sendGuestQrPass(
+                            g.getEmail(),
+                            g.getName(),
+                            currentEvent.getEventName(),
+                            currentEvent.getEventDate(),
+                            currentEvent.getCity(),
+                            payload
+                    );
+                    count++;
                 }
-                final int finalCount = count;
-                Platform.runLater(() -> {
-                    Alert a = new Alert(Alert.AlertType.INFORMATION, "QR Entry Passes sent to " + finalCount + " guests!", ButtonType.OK);
-                    a.initOwner(LandingPage.landingPageStage);
-                    a.showAndWait();
-                });
-            }).start();
-        }
+            }
+            final int finalCount = count;
+            Platform.runLater(() -> showInAppModal("Batch Dispatched", "QR Entry Passes sent successfully to " + finalCount + " guests!", true));
+        }).start();
     }
 
     private void handleAddGuestDialog() {
@@ -1018,13 +1069,11 @@ public class GuestManagementO {
                 int newLimit = currentEvent.getGuestList().size();
                 currentEvent.setGuestLimit(newLimit);
 
-                // Update UI instantly
                 currentGuestList.add(newGuest);
                 filterGuestList(filterInput != null ? filterInput.getText() : "");
                 lblTotalLimit.setText(String.valueOf(newLimit));
                 lblRemaining.setText(String.valueOf(Math.max(0, newLimit - currentEvent.getCheckedInCount())));
 
-                // Update in Firestore
                 new Thread(() -> {
                     try {
                         FirestoreClient.getFirestore().collection("events")
@@ -1035,15 +1084,8 @@ public class GuestManagementO {
                     }
                 }).start();
 
-                // विचारणा: नवीन पाहुण्याला ईमेल पाठवायचा का?
                 if (newGuest.getEmail() != null && !newGuest.getEmail().isBlank()) {
-                    Alert sendPassConfirm = new Alert(Alert.AlertType.CONFIRMATION, "Send QR Entry Pass to " + newGuest.getName() + " (" + newGuest.getEmail() + ") now?", ButtonType.YES, ButtonType.NO);
-                    sendPassConfirm.initOwner(LandingPage.landingPageStage);
-                    sendPassConfirm.showAndWait().ifPresent(ans -> {
-                        if (ans == ButtonType.YES) {
-                            handleSendSingleQrPass(newGuest);
-                        }
-                    });
+                    handleSendSingleQrPass(newGuest);
                 }
             }
         });

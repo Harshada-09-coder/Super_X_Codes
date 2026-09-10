@@ -3,6 +3,7 @@ package com.techtrio.view;
 import com.techtrio.controller.CustomerController;
 import com.techtrio.model.CustomerProfile;
 import com.techtrio.session.UserSession;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -12,19 +13,15 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 
 public class SettingC {
 
-    private static final String NAVY = "#082E6B";
-    private static final String BLUE = "#174A88";
-    private static final String LIGHT_BLUE = "#C7E7FA";
-    private static final String LIGHT = "#F5F8FC";
-    private static final String TEXT = "#082E6B";
-    private static final String GRAY = "#526071";
-    private static final String BORDER = "#DCE3EC";
+    private static final String NAVY = "#061B41";
+    private static final String PRIMARY_BLUE = "#0D3979";
+    private static final String BG = "#F4F7FC";
+    private static final String BORDER = "#E2E8F0";
+    private static final String TEXT_DARK = "#101828";
+    private static final String TEXT_MUTED = "#64748B";
 
     private TextField fullNameField;
     private TextField emailField;
@@ -32,117 +29,46 @@ public class SettingC {
     private TextField locationField;
 
     public Scene getSettingScene(Runnable backAction) {
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color:" + BG + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        VBox sidebar = new VBox(18);
-        sidebar.setPrefWidth(285);
-        sidebar.setPadding(new Insets(28, 0, 20, 0));
-        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
+        // 1. Unified Sidebar
+        root.setLeft(createSidebar());
 
-        Circle profileCircle = new Circle(33); profileCircle.setFill(Color.web("#E7E7E7"));
-        Label initial = new Label("C"); initial.setFont(Font.font("Arial", FontWeight.BOLD, 25)); initial.setTextFill(Color.web(NAVY));
-        StackPane profile = new StackPane(profileCircle, initial);
+        // 2. Main Content
+        VBox mainContent = new VBox(20);
+        mainContent.setPadding(new Insets(24, 35, 30, 35));
+        mainContent.setStyle("-fx-background-color:" + BG + ";");
 
-        Label logo = new Label("EventXpert"); logo.setFont(Font.font("Arial", FontWeight.BOLD, 29)); logo.setTextFill(Color.WHITE);
-        Label dashboardText = new Label("Customer Dashboard"); dashboardText.setFont(Font.font("Arial", 17)); dashboardText.setTextFill(Color.web("#B8D0EE"));
+        HBox header = new HBox(16);
+        header.setAlignment(Pos.CENTER_LEFT);
 
-        VBox brand = new VBox(5, profile, logo, dashboardText);
-        brand.setAlignment(Pos.CENTER);
-        brand.setPadding(new Insets(0, 0, 20, 0));
-        sidebar.getChildren().add(brand);
+        Button backBtn = new Button("← Back to Dashboard");
+        backBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-border-color: " + BORDER + "; -fx-border-radius: 7px; -fx-background-radius: 7px; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 8 16; -fx-cursor: hand;");
+        backBtn.setOnAction(e -> {
+            if (backAction != null) backAction.run();
+            else returnToDashboard();
+        });
 
-        sidebar.getChildren().addAll(
-                navItem("▦", "Dashboard", false),
-                navItem("⊕", "Create Event", false),
-                navItem("♧", "Notifications", false)
-        );
+        VBox headingText = new VBox(2);
+        Label title = new Label("Account Settings");
+        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
+        Label subtitle = new Label("Manage your personal preferences, contact details, and notifications.");
+        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill:" + TEXT_MUTED + ";");
+        headingText.getChildren().addAll(title, subtitle);
 
-        Region sideSpace = new Region(); VBox.setVgrow(sideSpace, Priority.ALWAYS);
-
-        sidebar.getChildren().addAll(
-                sideSpace,
-                navItem("♙", "Profile", false),
-                navItem("⚙", "Settings", true),
-                navItem("?", "Support", false)
-        );
-
-        HBox topBar = new HBox(18);
-        topBar.setAlignment(Pos.CENTER_RIGHT);
-        topBar.setPadding(new Insets(14, 25, 14, 25));
-        topBar.setPrefHeight(72);
-        topBar.setStyle("-fx-background-color:white;-fx-border-color:#E0E5EC;-fx-border-width:0 0 1 0;");
-
-        Region topSpace = new Region(); HBox.setHgrow(topSpace, Priority.ALWAYS);
-        Label notification = new Label("♧"); notification.setFont(Font.font("Arial", 22)); notification.setTextFill(Color.web(GRAY));
-
-        Circle topProfile = new Circle(20); topProfile.setFill(Color.web("#D7EAF8"));
-        Label topInitial = new Label("C"); topInitial.setFont(Font.font("Arial", FontWeight.BOLD, 15)); topInitial.setTextFill(Color.web(NAVY));
-        StackPane topUser = new StackPane(topProfile, topInitial);
-
-        topBar.getChildren().addAll(topSpace, notification, topUser);
-
-        VBox content = new VBox(20);
-        content.setPadding(new Insets(25, 32, 35, 32));
-        content.setStyle("-fx-background-color:" + LIGHT + ";");
-
-        Label heading = new Label("Settings");
-        heading.setFont(Font.font("Arial", FontWeight.BOLD, 30));
-        heading.setTextFill(Color.web(TEXT));
-
-        Label subtitle = new Label("Manage your account, preferences and notification settings.");
-        subtitle.setFont(Font.font("Arial", 15));
-        subtitle.setTextFill(Color.web(GRAY));
-
-        VBox headingBox = new VBox(3, heading, subtitle);
-        HBox settingsArea = new HBox(20);
-
-        VBox settingsMenu = new VBox(5);
-        settingsMenu.setPrefWidth(245);
-        settingsMenu.setPadding(new Insets(18));
-        settingsMenu.setStyle(cardStyle());
-
-        Label menuTitle = new Label("Settings");
-        menuTitle.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        menuTitle.setTextFill(Color.web(TEXT));
-
-        Button profileBtn = settingButton("👤  Profile", true);
-        Button accountBtn = settingButton("▣  Account", false);
-        Button notificationBtn = settingButton("♧  Notifications", false);
-        Button preferenceBtn = settingButton("⚙  Preferences", false);
-        Button privacyBtn = settingButton("🔒  Privacy", false);
-
-        settingsMenu.getChildren().addAll(menuTitle, new Separator(), profileBtn, accountBtn, notificationBtn, preferenceBtn, privacyBtn);
+        header.getChildren().addAll(backBtn, headingText);
 
         VBox settingsCard = new VBox(18);
-        settingsCard.setPadding(new Insets(25));
-        settingsCard.setStyle(cardStyle());
-        HBox.setHgrow(settingsCard, Priority.ALWAYS);
+        settingsCard.setPadding(new Insets(24));
+        settingsCard.setStyle("-fx-background-color:white; -fx-border-color:" + BORDER + "; -fx-border-radius:12px; -fx-background-radius:12px;");
 
         Label profileTitle = new Label("Profile Information");
-        profileTitle.setFont(Font.font("Arial", FontWeight.BOLD, 21));
-        profileTitle.setTextFill(Color.web(TEXT));
-
-        Label profileDescription = new Label("Update your personal information and account details.");
-        profileDescription.setFont(Font.font("Arial", 13));
-        profileDescription.setTextFill(Color.web(GRAY));
-        VBox profileHeading = new VBox(3, profileTitle, profileDescription);
-
-        HBox profileSection = new HBox(20);
-        profileSection.setAlignment(Pos.CENTER_LEFT);
-
-        Circle largeProfile = new Circle(42); largeProfile.setFill(Color.web("#D7EAF8"));
-        Label largeInitial = new Label("C"); largeInitial.setFont(Font.font("Arial", FontWeight.BOLD, 30)); largeInitial.setTextFill(Color.web(NAVY));
-        StackPane largeProfilePane = new StackPane(largeProfile, largeInitial);
-
-        VBox profileInfo = new VBox(7);
-        Label profileName = new Label("Loading..."); profileName.setFont(Font.font("Arial", FontWeight.BOLD, 17)); profileName.setTextFill(Color.web(TEXT));
-        Label profileEmail = new Label("Loading..."); profileEmail.setFont(Font.font("Arial", 13)); profileEmail.setTextFill(Color.web(GRAY));
-        Button changePhoto = new Button("Change Photo"); changePhoto.setStyle(secondaryButtonStyle());
-
-        profileInfo.getChildren().addAll(profileName, profileEmail, changePhoto);
-        profileSection.getChildren().addAll(largeProfilePane, profileInfo);
+        profileTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
 
         GridPane form = new GridPane();
-        form.setHgap(18); form.setVgap(15);
+        form.setHgap(20);
+        form.setVgap(14);
 
         fullNameField = formInput("Loading...");
         emailField = formInput("Loading...");
@@ -154,37 +80,104 @@ public class SettingC {
         form.add(fieldBox("Phone Number", phoneField), 0, 1);
         form.add(fieldBox("Location", locationField), 1, 1);
 
+        ColumnConstraints col1 = new ColumnConstraints(); col1.setPercentWidth(50);
+        ColumnConstraints col2 = new ColumnConstraints(); col2.setPercentWidth(50);
+        form.getColumnConstraints().addAll(col1, col2);
+
         VBox notificationSection = new VBox(10);
         Label notificationTitle = new Label("Notification Settings");
-        notificationTitle.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        notificationTitle.setTextFill(Color.web(TEXT));
+        notificationTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
 
-        CheckBox eventNotification = new CheckBox("Receive notifications about my events"); eventNotification.setSelected(true);
-        CheckBox reminderNotification = new CheckBox("Receive event reminders"); reminderNotification.setSelected(true);
-        CheckBox promotionalNotification = new CheckBox("Receive EventXpert updates and offers");
+        CheckBox eventNotification = new CheckBox("Receive notifications about my events");
+        eventNotification.setSelected(true);
+        CheckBox reminderNotification = new CheckBox("Receive event reminders");
+        reminderNotification.setSelected(true);
+        CheckBox promotionalNotification = new CheckBox("Receive EventXpert updates and feature recommendations");
+        promotionalNotification.setSelected(true);
+
         notificationSection.getChildren().addAll(notificationTitle, eventNotification, reminderNotification, promotionalNotification);
 
-        HBox buttonRow = new HBox(12);
-        buttonRow.setAlignment(Pos.CENTER_RIGHT);
+        settingsCard.getChildren().addAll(profileTitle, new Separator(), form, new Separator(), notificationSection);
 
-        Button backButton = new Button("Back");
-        backButton.setPrefHeight(40); backButton.setPrefWidth(85); backButton.setStyle(secondaryButtonStyle());
-        backButton.setOnAction(e -> {
-            if (backAction != null) backAction.run();
-        });
+        mainContent.getChildren().addAll(header, settingsCard);
 
-        buttonRow.getChildren().add(backButton);
-        settingsCard.getChildren().addAll(profileHeading, new Separator(), profileSection, new Separator(), form, new Separator(), notificationSection, new Separator(), buttonRow);
-        settingsArea.getChildren().addAll(settingsMenu, settingsCard);
-        content.getChildren().addAll(headingBox, settingsArea);
+        ScrollPane scrollPane = new ScrollPane(mainContent);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BG + "; -fx-border-color: transparent;");
 
-        BorderPane mainArea = new BorderPane();
-        mainArea.setTop(topBar);
-        mainArea.setCenter(content);
+        root.setCenter(scrollPane);
 
-        HBox root = new HBox(sidebar, mainArea);
-        HBox.setHgrow(mainArea, Priority.ALWAYS);
+        loadCustomerProfileAsync();
 
+        return new Scene(root, 1550, 785);
+    }
+
+    private VBox createSidebar() {
+        VBox sidebar = new VBox(8);
+        sidebar.setPrefWidth(245);
+        sidebar.setMinWidth(245);
+        sidebar.setMaxWidth(245);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
+
+        HBox brandBox = new HBox(10);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(6, 10, 14, 10));
+
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(24);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label brandTitle = new Label("EventXpert");
+        brandTitle.setStyle("-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;");
+        Label brandSub = new Label("Plan. Manage. Celebrate.");
+        brandSub.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 10px;");
+        brandTexts.getChildren().addAll(brandTitle, brandSub);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        VBox navList = new VBox(5);
+        navList.getChildren().addAll(
+                createSidebarItem("Dashboard", "fas-tachometer-alt", false, this::returnToDashboard),
+                createSidebarItem("Create Event", "fas-plus-circle", false, this::openCreateEvent),
+                createSidebarItem("My Events", "fas-calendar-check", false, this::openMyEvents),
+                createSidebarItem("Notifications", "fas-bell", false, this::openNotifications),
+                createSidebarItem("Profile", "fas-user", false, this::openProfile),
+                createSidebarItem("Settings", "fas-cog", true, null)
+        );
+
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        sidebar.getChildren().addAll(brandBox, navList, spacer);
+        return sidebar;
+    }
+
+    private Button createSidebarItem(String title, String iconLiteral, boolean active, Runnable action) {
+        Button btn = new Button("  " + title);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(38);
+        btn.setPadding(new Insets(0, 12, 0, 12));
+
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (active) {
+            btn.setStyle("-fx-background-color: #E0F2FE; -fx-text-fill:" + NAVY + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-background-radius: 7px;");
+        } else {
+            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 12px; -fx-cursor: hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-text-fill: white; -fx-font-size: 12px; -fx-background-radius: 7px; -fx-cursor: hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #E2E8F0; -fx-font-size: 12px; -fx-cursor: hand;"));
+        }
+
+        if (action != null) btn.setOnAction(e -> action.run());
+        return btn;
+    }
+
+    private void loadCustomerProfileAsync() {
         Task<CustomerProfile> task = new Task<>() {
             @Override
             protected CustomerProfile call() {
@@ -201,8 +194,6 @@ public class SettingC {
                     String email = p.getEmail() != null && !p.getEmail().isBlank() ? p.getEmail() : UserSession.getUserEmail();
                     String mobile = p.getMobileNo() != null && !p.getMobileNo().isBlank() ? p.getMobileNo() : "Not Provided";
 
-                    profileName.setText(name);
-                    profileEmail.setText(email);
                     fullNameField.setText(name);
                     emailField.setText(email);
                     phoneField.setText(mobile);
@@ -210,51 +201,59 @@ public class SettingC {
             }
         });
 
-        Thread thread = new Thread(task); thread.setDaemon(true); thread.start();
-
-        Scene scene = new Scene(root, 1550, 750);
-        return scene;
-    }
-
-    private HBox navItem(String icon, String text, boolean active) {
-        Label iconLabel = new Label(icon); iconLabel.setFont(Font.font("Arial", 17)); iconLabel.setTextFill(Color.WHITE);
-        Label textLabel = new Label(text); textLabel.setFont(Font.font("Arial", FontWeight.BOLD, 15)); textLabel.setTextFill(active ? Color.WHITE : Color.web("#B8D0EE"));
-        HBox item = new HBox(15, iconLabel, textLabel); item.setAlignment(Pos.CENTER_LEFT); item.setPadding(new Insets(12, 25, 12, 35)); item.setMaxWidth(Double.MAX_VALUE);
-        if (active) item.setStyle("-fx-background-color:" + BLUE + ";");
-        return item;
-    }
-
-    private Button settingButton(String text, boolean active) {
-        Button button = new Button(text);
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setAlignment(Pos.CENTER_LEFT);
-        button.setStyle(active
-                ? "-fx-background-color:" + LIGHT_BLUE + ";-fx-text-fill:" + NAVY + ";-fx-font-weight:bold;-fx-font-size:14;-fx-background-radius:7;-fx-padding:11 14;"
-                : "-fx-background-color:transparent;-fx-text-fill:" + TEXT + ";-fx-font-size:14;-fx-padding:11 14;");
-        return button;
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private TextField formInput(String text) {
         TextField field = new TextField(text);
-        field.setPrefHeight(40);
+        field.setPrefHeight(38);
         field.setEditable(false);
-        field.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:7;-fx-background-radius:7;-fx-padding:0 12;-fx-font-size:13;");
+        field.setStyle("-fx-background-color:#F8FAFC; -fx-border-color:" + BORDER + "; -fx-border-radius:6px; -fx-background-radius:6px; -fx-padding:0 12; -fx-font-size:12px; -fx-text-fill:" + TEXT_DARK + ";");
         return field;
     }
 
     private VBox fieldBox(String title, Control control) {
-        VBox box = new VBox(6);
-        Label label = new Label(title); label.setFont(Font.font("Arial", FontWeight.BOLD, 12)); label.setTextFill(Color.web(GRAY));
+        VBox box = new VBox(4);
+        Label label = new Label(title);
+        label.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill:" + TEXT_MUTED + ";");
         box.getChildren().addAll(label, control);
-        GridPane.setHgrow(box, Priority.ALWAYS);
         return box;
     }
 
-    private String cardStyle() {
-        return "-fx-background-color:white;-fx-background-radius:10;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.08),5,0,0,2);";
+    private void returnToDashboard() {
+        ActiveCustomerDashboardC dash = new ActiveCustomerDashboardC(UserSession.getUid(), UserSession.getIdToken());
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(dash.getactiveCustomerScene(null));
+        }
     }
 
-    private String secondaryButtonStyle() {
-        return "-fx-background-color:white;-fx-text-fill:" + NAVY + ";-fx-border-color:" + BORDER + ";-fx-border-radius:7;-fx-background-radius:7;-fx-font-size:13;-fx-padding:0 18;-fx-cursor:hand;";
+    private void openCreateEvent() {
+        CreateEventC createView = new CreateEventC(UserSession.getUid(), UserSession.getIdToken());
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(createView.getCreateEventScene(this::returnToDashboard));
+        }
+    }
+
+    private void openMyEvents() {
+        MyEvents myEventsPage = new MyEvents(UserSession.getUid(), UserSession.getIdToken());
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(myEventsPage.getMyEventsScene(this::returnToDashboard));
+        }
+    }
+
+    private void openNotifications() {
+        Notification notifPage = new Notification();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(notifPage.getNotificationScene());
+        }
+    }
+
+    private void openProfile() {
+        ProfilePageC profilePage = new ProfilePageC();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(profilePage.getProfileScene(this::returnToDashboard));
+        }
     }
 }
