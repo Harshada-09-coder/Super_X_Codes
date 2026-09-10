@@ -2,6 +2,7 @@ package com.techtrio.view;
 
 import com.techtrio.model.VendorProfile;
 import com.techtrio.services.VendorProfileService;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -11,25 +12,23 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class InactiveVendorDash {
     private Scene inactiveVendorScene;
-    private VendorProfile profileV;
     private final String uid;
     private final String idToken;
 
-    // Preserve exact theme constants
-    private static final String NAVY = "#062653";
-    private static final String BLUE = "#092F70";
-    private static final String BG = "#F5F7FB";
-    private static final String BORDER = "#DCE2EA";
-    private static final String TEXT = "#15171B";
-    private static final String MUTED = "#667085";
+    private static final String NAVY = "#062A60";
+    private static final String PRIMARY_BLUE = "#0B4EA2";
+    private static final String LIGHT_BLUE = "#EAF3FF";
+    private static final String BACKGROUND = "#F8FAFC";
+    private static final String BORDER_COLOR = "#DCE5F0";
+    private static final String SECONDARY_TEXT = "#64748B";
 
-    // Dynamic UI Labels
     private Label vendorBusinessNameLabel;
     private Label vendorCategoryLabel;
 
@@ -40,237 +39,189 @@ public class InactiveVendorDash {
 
     public Scene getinactiveVendorScene() {
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color:" + BG + ";");
+        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        // ================= SIDEBAR =================
-        VBox side = new VBox(8);
-        side.setPrefWidth(252);
-        side.setPadding(new Insets(24, 16, 18, 16));
-        side.setStyle("-fx-background-color:" + NAVY + ";");
+        // Sidebar
+        root.setLeft(createVendorSidebar());
 
-        HBox logo = new HBox(12);
-        logo.setAlignment(Pos.CENTER_LEFT);
-
-        Label e = new Label("E");
-        e.setMinSize(44, 44);
-        e.setAlignment(Pos.CENTER);
-        e.setStyle("-fx-background-color:white;-fx-text-fill:" + NAVY +
-                ";-fx-font-size:22px;-fx-font-weight:bold;-fx-background-radius:8px;");
-
-        VBox brand = new VBox(0);
-        brand.getChildren().addAll(
-                lbl("EventXpert", 21, Color.WHITE, true),
-                lbl("VENDOR PORTAL", 11, Color.LIGHTGRAY, false)
-        );
-
-        logo.getChildren().addAll(e, brand);
-
-        Button add = sideBtn("＋  Add Service", false);
-        add.setStyle("-fx-background-color:white;-fx-text-fill:" + NAVY +
-                ";-fx-font-size:16px;-fx-background-radius:8px;");
-
-        side.getChildren().addAll(
-                logo, gap(16), add,
-                sideBtn("▦   Dashboard", true, () -> backToInactVendorDashboard()),
-                sideBtn("▣   Service Requests", false, this::openServiceRequests),
-                sideBtn("▣   My Bookings", false, this::openMyBookings),
-                sideBtn("▤   Services & Packages", false, this::openServicesPackages),
-                sideBtn("▦   Calendar", false, this::openCalenderV),
-                sideBtn("▣   Earnings & Payments", false, this::openEarningsPaymentsV),
-                sideBtn("♧   Notifications", false, this::openNotificationsV),
-                sideBtn("♙   Settings", false, this::openSettingsV),
-                sideBtn("□   Support", false, this::openSupportV)
-        );
-
-        Region grow = new Region();
-        VBox.setVgrow(grow, Priority.ALWAYS);
-
-        HBox profile = new HBox(10);
-        profile.setAlignment(Pos.CENTER_LEFT);
-        profile.setPadding(new Insets(12, 8, 0, 8));
-        profile.setStyle("-fx-cursor: hand;");
-
-        Label vp = new Label("VP");
-        vp.setMinSize(44, 44);
-        vp.setAlignment(Pos.CENTER);
-        vp.setStyle("-fx-background-color:white;-fx-text-fill:" + NAVY +
-                ";-fx-font-weight:bold;-fx-background-radius:50%;");
-
-        vendorBusinessNameLabel = lbl("Loading...", 14, Color.WHITE, true);
-        vendorCategoryLabel = lbl("Vendor", 11, Color.LIGHTGRAY, false);
-
-        VBox p = new VBox(2);
-        p.getChildren().addAll(
-                vendorBusinessNameLabel,
-                vendorCategoryLabel,
-                lbl("● Inactive", 11, Color.web("#FF7777"), false)
-        );
-
-        profile.getChildren().addAll(vp, p);
-        profile.setOnMouseClicked(event -> openProfileView());
-
-        side.getChildren().addAll(grow, profile);
-        root.setLeft(side);
-
-        // ================= MAIN CONTENT =================
-        VBox content = new VBox(16);
-        content.setPadding(new Insets(20));
-        content.setFillWidth(true);
+        // Main Content
+        VBox content = new VBox(20);
+        content.setPadding(new Insets(24, 32, 28, 32));
+        content.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
         // Welcome Header
-        HBox welcome = new HBox(12);
-        welcome.setAlignment(Pos.CENTER_LEFT);
+        Label welcomeTitle = new Label("Welcome Back, Partner 👋");
+        welcomeTitle.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        welcomeTitle.setTextFill(Color.web(NAVY));
 
-        VBox welcomeText = new VBox(3);
-        HBox title = new HBox(10);
-        title.setAlignment(Pos.CENTER_LEFT);
+        Label badge = new Label("● PENDING VERIFICATION");
+        badge.setStyle("-fx-background-color: #FEF3C7; -fx-text-fill: #D97706; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 4 10; -fx-background-radius: 12px;");
 
-        title.getChildren().addAll(
-                lbl("Welcome Back 👋", 32, Color.web(TEXT), true),
-                inactiveBadge()
-        );
+        HBox titleRow = new HBox(10, welcomeTitle, badge);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        welcomeText.getChildren().addAll(
-                title,
-                lbl("Your vendor account is currently inactive. Activate your account to start managing events and receiving requests.",
-                        14, Color.web(TEXT), false)
-        );
+        Label sub = new Label("Your vendor account is pending profile activation. Complete your business information to receive customer service bookings.");
+        sub.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        VBox titleBox = new VBox(4, titleRow, sub);
 
-        Region wg = new Region();
-        HBox.setHgrow(wg, Priority.ALWAYS);
+        // Activation Card
+        VBox activateCard = new VBox(14);
+        activateCard.setPadding(new Insets(20));
+        activateCard.setStyle("-fx-background-color: white; -fx-border-color: #FCD34D; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
-        Button profileBtn = action("View Profile", false);
-        profileBtn.setOnAction(evt -> openProfileView());
+        HBox topH = new HBox(14);
+        topH.setAlignment(Pos.CENTER_LEFT);
 
-        Button activateBtn = action("⏻  Activate Account", true);
-        activateBtn.setOnAction(evt -> openProfileView());
+        StackPane warnCircle = new StackPane();
+        Circle c = new Circle(22, Color.web("#FEF3C7"));
+        Label wIcon = new Label("⚡");
+        wIcon.setStyle("-fx-font-size: 20px; -fx-text-fill: #D97706;");
+        warnCircle.getChildren().addAll(c, wIcon);
 
-        welcome.getChildren().addAll(welcomeText, wg, profileBtn, activateBtn);
+        VBox info = new VBox(3);
+        Label h = new Label("Complete Your Vendor Portfolio");
+        h.setFont(Font.font("Arial", FontWeight.BOLD, 17));
+        h.setTextFill(Color.web(NAVY));
+        Label desc = new Label("List your pricing, service categories and operational areas to be visible in the Organizer Find Vendors directory.");
+        desc.setStyle("-fx-font-size: 12px; -fx-text-fill: #475569;");
+        info.getChildren().addAll(h, desc);
 
-        // Inactive Card
-        HBox inactive = new HBox(20);
-        inactive.setAlignment(Pos.CENTER_LEFT);
-        inactive.setPadding(new Insets(20));
-        inactive.setMinHeight(145);
-        inactive.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:#FFB5B5;" +
-                "-fx-border-radius:12px;" +
-                "-fx-background-radius:12px;"
-        );
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
 
-        Label warning = lbl("⚠", 28, Color.web("#C62828"), true);
-        StackPane wi = new StackPane(warning);
-        wi.setMinSize(65, 65);
-        wi.setStyle(
-                "-fx-background-color:#FFF0F0;" +
-                "-fx-border-color:#FFBBBB;" +
-                "-fx-border-radius:50%;" +
-                "-fx-background-radius:50%;"
-        );
+        Button actBtn = new Button("Activate Vendor Profile →");
+        actBtn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 9 18; -fx-background-radius: 6px; -fx-cursor: hand;");
+        actBtn.setOnAction(e -> openProfileView());
 
-        VBox info = new VBox(6);
-        info.getChildren().addAll(
-                lbl("Vendor Account Inactive", 23, Color.web(TEXT), true),
-                lbl("Your vendor profile is incomplete or pending activation. To receive event requests, manage bookings, and access vendor services, please complete the activation process.",
-                        13, Color.web(TEXT), false)
-        );
+        topH.getChildren().addAll(warnCircle, info, sp, actBtn);
+        activateCard.getChildren().add(topH);
 
-        HBox infoButtons = new HBox(10);
-        infoButtons.setPadding(new Insets(4, 0, 0, 0));
-        Button completeActivationBtn = action("Complete Activation", true);
-        completeActivationBtn.setOnAction(event -> openProfileView());
-
-        Button learnMoreBtn = action("Learn More", false);
-        infoButtons.getChildren().addAll(completeActivationBtn, learnMoreBtn);
-        info.getChildren().add(infoButtons);
-
-        inactive.getChildren().addAll(wi, info);
-
-        // Summary Cards
-        HBox stats = new HBox(14);
+        // KPI Summary Cards
+        HBox stats = new HBox(12);
         stats.getChildren().addAll(
-                stat("Active Events", "00", "Account inactive", "▣"),
-                stat("Pending Requests", "00", "Account inactive", "✉"),
-                stat("Upcoming Events", "00", "Account inactive", "▦"),
-                stat("Tasks Due Today", "00", "Account inactive", "▤")
+                createCard("Active Bookings", "00", "fas-calendar-check", "#16A34A"),
+                createCard("Service Requests", "00", "fas-inbox", "#D97706"),
+                createCard("Scheduled Events", "00", "fas-calendar-alt", PRIMARY_BLUE),
+                createCard("Total Released Revenue", "₹0.00", "fas-wallet", NAVY)
         );
 
-        // Lower Area
-        HBox lower = new HBox(16);
+        content.getChildren().addAll(titleBox, activateCard, stats);
 
-        VBox upcoming = new VBox();
-        upcoming.setStyle(card());
-        HBox.setHgrow(upcoming, Priority.ALWAYS);
-
-        Label upTitle = lbl("Upcoming Events", 19, Color.web(TEXT), true);
-        upTitle.setPadding(new Insets(18, 20, 14, 20));
-
-        Separator sep = new Separator();
-
-        VBox empty = new VBox(10);
-        empty.setAlignment(Pos.CENTER);
-        empty.setPadding(new Insets(25));
-
-        Button proceedBtn = action("Activate Account to Proceed", true);
-        proceedBtn.setOnAction(event -> openProfileView());
-
-        empty.getChildren().addAll(
-                lbl("▣", 35, Color.web("#C4CAD4"), true),
-                lbl("No Upcoming Events", 24, Color.web(TEXT), true),
-                centerText(
-                        "Your calendar is empty because your vendor account is not active.\n" +
-                        "Activate your account to start receiving bookings."
-                ),
-                proceedBtn
-        );
-
-        VBox.setVgrow(empty, Priority.ALWAYS);
-        upcoming.getChildren().addAll(upTitle, sep, empty);
-
-        // Right column
-        VBox right = new VBox(16);
-        right.setPrefWidth(320);
-
-        VBox tasks = new VBox(12);
-        tasks.setPadding(new Insets(18));
-        tasks.setStyle(card());
-        tasks.getChildren().addAll(
-                lbl("Today's Tasks", 19, Color.web(TEXT), true),
-                emptyBox("▧", "No tasks available")
-        );
-
-        VBox account = new VBox(13);
-        account.setPadding(new Insets(18));
-        account.setStyle(card());
-
-        account.getChildren().addAll(
-                lbl("Account Status", 19, Color.web(TEXT), true),
-                progress("Profile Completion", "25%", 0.25),
-                progress("Vendor Verification", "0%", 0),
-                status("Current Status", "Inactive")
-        );
-
-        right.getChildren().addAll(tasks, account);
-        lower.getChildren().addAll(upcoming, right);
-
-        content.getChildren().addAll(welcome, inactive, stats, lower);
-
-        // ScrollPane Setup
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
-        scroll.setFitToHeight(false);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle("-fx-background-color:" + BG + ";-fx-border-color:transparent;");
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
 
         root.setCenter(scroll);
 
-        // Load Vendor Profile Data Asynchronously
         loadVendorDataAsync();
 
-        inactiveVendorScene = new Scene(root, 1550, 750);
+        inactiveVendorScene = new Scene(root, 1550, 785);
         return inactiveVendorScene;
+    }
+
+    private VBox createCard(String title, String val, String iconLit, String iconColorHex) {
+        VBox card = new VBox(6);
+        card.setPadding(new Insets(14));
+        card.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER_COLOR + ";-fx-border-radius:10;-fx-background-radius:10;");
+        HBox.setHgrow(card, Priority.ALWAYS);
+
+        HBox top = new HBox(8);
+        top.setAlignment(Pos.CENTER_LEFT);
+
+        StackPane iconCircle = new StackPane();
+        Circle c = new Circle(14, Color.web(iconColorHex).deriveColor(0, 1, 1, 0.15));
+        FontIcon fontIcon = new FontIcon(iconLit);
+        fontIcon.setIconSize(13);
+        fontIcon.setIconColor(Color.web(iconColorHex));
+        iconCircle.getChildren().addAll(c, fontIcon);
+
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #64748B;");
+        top.getChildren().addAll(iconCircle, titleLabel);
+
+        Label valueLabel = new Label(val);
+        valueLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: " + NAVY + ";");
+
+        card.getChildren().addAll(top, valueLabel);
+        return card;
+    }
+
+    private VBox createVendorSidebar() {
+        VBox sidebar = new VBox(6);
+        sidebar.setPrefWidth(240);
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
+
+        HBox brandBox = new HBox(8);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(0, 6, 12, 6));
+
+        FontIcon logoIcon = new FontIcon("fas-truck");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        vendorBusinessNameLabel = new Label("EventXpert");
+        vendorBusinessNameLabel.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        vendorCategoryLabel = new Label("VENDOR PORTAL (INACTIVE)");
+        vendorCategoryLabel.setStyle("-fx-text-fill: #FDE68A; -fx-font-size: 9px; -fx-font-weight: bold;");
+        brandTexts.getChildren().addAll(vendorBusinessNameLabel, vendorCategoryLabel);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
+
+        VBox menu = new VBox(3);
+        menu.getChildren().addAll(
+                createSideBtn("Dashboard", "fas-tachometer-alt", true, this::backToInactVendorDashboard),
+                createSideBtn("Service Requests", "fas-inbox", false, this::openServiceRequests),
+                createSideBtn("My Bookings", "fas-calendar-check", false, this::openMyBookings),
+                createSideBtn("Services & Packages", "fas-boxes", false, this::openServicesPackages),
+                createSideBtn("Calendar", "fas-calendar-alt", false, this::openCalenderV),
+                createSideBtn("Earnings & Payments", "fas-wallet", false, this::openEarningsPaymentsV)
+        );
+
+        Region space = new Region();
+        VBox.setVgrow(space, Priority.ALWAYS);
+
+        Button actBtn = new Button("⚡ Activate Portfolio");
+        actBtn.setMaxWidth(Double.MAX_VALUE);
+        actBtn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9; -fx-background-radius: 6; -fx-cursor: hand;");
+        actBtn.setOnAction(e -> openProfileView());
+
+        VBox bottomMenu = new VBox(3);
+        bottomMenu.getChildren().addAll(
+                actBtn,
+                new Region(),
+                createSideBtn("Notifications", "fas-bell", false, this::openNotificationsV),
+                createSideBtn("Profile", "fas-user", false, this::openProfileView),
+                createSideBtn("Settings", "fas-cog", false, this::openSettingsV),
+                createSideBtn("Support", "fas-question-circle", false, this::openSupportV)
+        );
+
+        sidebar.getChildren().addAll(brandBox, menu, space, bottomMenu);
+        return sidebar;
+    }
+
+    private Button createSideBtn(String name, String iconLit, boolean active, Runnable action) {
+        Button btn = new Button("  " + name);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (active) {
+            btn.setStyle("-fx-background-color:" + LIGHT_BLUE + ";-fx-text-fill:" + NAVY + ";-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:6;");
+        } else {
+            btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-cursor:hand;");
+        }
+
+        if (action != null) btn.setOnAction(e -> action.run());
+        return btn;
     }
 
     private void loadVendorDataAsync() {
@@ -285,7 +236,7 @@ public class InactiveVendorDash {
         };
 
         task.setOnSucceeded(e -> {
-            profileV = task.getValue();
+            VendorProfile profileV = task.getValue();
             if (profileV != null) {
                 Platform.runLater(() -> {
                     if (vendorBusinessNameLabel != null) {
@@ -295,7 +246,7 @@ public class InactiveVendorDash {
                         vendorBusinessNameLabel.setText(bName);
                     }
                     if (vendorCategoryLabel != null && profileV.getCategory() != null) {
-                        vendorCategoryLabel.setText(profileV.getCategory());
+                        vendorCategoryLabel.setText(profileV.getCategory().toUpperCase());
                     }
                 });
             }
@@ -307,10 +258,6 @@ public class InactiveVendorDash {
     }
 
     private void openProfileView() {
-        if (uid == null || uid.isBlank()) {
-            showToast(LandingPage.landingPageStage, "User session not found.");
-            return;
-        }
         ProfileV profilePage = new ProfileV(uid, idToken);
         profilePage.setInactiveVendorDash(this);
         LandingPage.landingPageStage.setScene(profilePage.getprofileVScene());
@@ -318,246 +265,42 @@ public class InactiveVendorDash {
 
     private void openServiceRequests() {
         ServiceRequestsV serviceRequestsV = new ServiceRequestsV();
-        Scene serviceScene = serviceRequestsV.getserviceRequestVScene();
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(serviceScene);
-        }
+        LandingPage.landingPageStage.setScene(serviceRequestsV.getserviceRequestVScene());
     }
 
     private void openMyBookings() {
         MyBookingsV myBookingsV = new MyBookingsV();
-        Scene bookingScene = myBookingsV.getmyBookingScene();
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(bookingScene);
-        }
+        LandingPage.landingPageStage.setScene(myBookingsV.getmyBookingScene());
     }
 
     private void openServicesPackages() {
         ServicesPackagesV servicesPackagesV = new ServicesPackagesV();
-        Scene packagesScene = servicesPackagesV.getservicesPackagesVScene(null, null);
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(packagesScene);
-        }
+        LandingPage.landingPageStage.setScene(servicesPackagesV.getservicesPackagesVScene(null, null));
     }
 
     private void openCalenderV() {
         CalendarV calendarV = new CalendarV();
-        Scene calenderScene = calendarV.getcalendarVScene(null, null);
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(calenderScene);
-        }
+        LandingPage.landingPageStage.setScene(calendarV.getcalendarVScene(null, null));
     }
 
     private void openEarningsPaymentsV() {
         EarningsPaymentsV earningsPaymentsV = new EarningsPaymentsV();
-        Scene earningScene = earningsPaymentsV.getearningsPaymentsScene(null);
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(earningScene);
-        }
+        LandingPage.landingPageStage.setScene(earningsPaymentsV.getearningsPaymentsScene(null));
     }
 
     private void openNotificationsV() {
         NotificationsV notificationsV = new NotificationsV();
-        Scene notificationScene = notificationsV.getnotificationsScene(null);
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(notificationScene);
-        }
+        LandingPage.landingPageStage.setScene(notificationsV.getnotificationsScene(null));
     }
 
     private void openSettingsV() {
         SettingsV settingsV = new SettingsV();
-        Scene settingsVScene = settingsV.getsettingsVScene(null);
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(settingsVScene);
-        }
+        LandingPage.landingPageStage.setScene(settingsV.getsettingsVScene(null));
     }
 
     private void openSupportV() {
         SupportV supportV = new SupportV();
-        Scene supportVScene = supportV.getsupportVScene(null);
-        if (LandingPage.landingPageStage != null) {
-            LandingPage.landingPageStage.setScene(supportVScene);
-        }
-    }
-
-    // ================= HELPERS =================
-    private void showToast(Stage owner, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Notice");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        if (owner != null) {
-            alert.initOwner(owner);
-        }
-        alert.show();
-    }
-
-    private Label lbl(String text, double size, Color color, boolean bold) {
-        Label l = new Label(text);
-        l.setFont(Font.font("Arial", bold ? FontWeight.BOLD : FontWeight.NORMAL, size));
-        l.setTextFill(color);
-        l.setWrapText(true);
-        return l;
-    }
-
-    private Label centerText(String text) {
-        Label l = lbl(text, 14, Color.web(TEXT), false);
-        l.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        l.setAlignment(Pos.CENTER);
-        return l;
-    }
-
-    private Button sideBtn(String text, boolean active) {
-        return sideBtn(text, active, null);
-    }
-
-    private Button sideBtn(String text, boolean active, Runnable action) {
-        Button b = new Button(text);
-        b.setMaxWidth(Double.MAX_VALUE);
-        b.setPrefHeight(45);
-        b.setAlignment(Pos.CENTER_LEFT);
-        b.setPadding(new Insets(0, 8, 0, 8));
-        b.setStyle(
-                "-fx-background-color:" + (active ? "white" : "transparent") + ";" +
-                "-fx-text-fill:" + (active ? NAVY : "#D5DCEC") + ";" +
-                "-fx-font-size:15px;" +
-                "-fx-background-radius:7px;"
-        );
-        if (action != null) {
-            b.setOnAction(e -> action.run());
-        }
-        return b;
-    }
-
-    private Label inactiveBadge() {
-        Label l = lbl("ⓘ INACTIVE", 12, Color.web("#C62828"), true);
-        l.setStyle(
-                "-fx-background-color:#FFE4E4;" +
-                "-fx-border-color:#FFAAAA;" +
-                "-fx-border-radius:14px;" +
-                "-fx-background-radius:14px;" +
-                "-fx-padding:5 11 5 11;"
-        );
-        return l;
-    }
-
-    private Button action(String text, boolean primary) {
-        Button b = new Button(text);
-        b.setPrefHeight(40);
-        b.setPadding(new Insets(0, 17, 0, 17));
-        b.setStyle(primary ?
-                "-fx-background-color:" + BLUE + ";" +
-                "-fx-text-fill:white;" +
-                "-fx-font-size:14px;" +
-                "-fx-font-weight:bold;" +
-                "-fx-background-radius:8px;"
-                :
-                "-fx-background-color:white;" +
-                "-fx-text-fill:#20242A;" +
-                "-fx-border-color:#AEB5C0;" +
-                "-fx-border-radius:8px;" +
-                "-fx-background-radius:8px;" +
-                "-fx-font-size:14px;"
-        );
-        return b;
-    }
-
-    private VBox stat(String title, String value, String sub, String icon) {
-        VBox box = new VBox(7);
-        box.setPadding(new Insets(16));
-        box.setPrefHeight(135);
-        box.setStyle(card());
-        HBox.setHgrow(box, Priority.ALWAYS);
-
-        HBox top = new HBox();
-        top.setAlignment(Pos.CENTER_LEFT);
-
-        Label t = lbl(title, 14, Color.web(MUTED), false);
-        Region r = new Region();
-        HBox.setHgrow(r, Priority.ALWAYS);
-
-        top.getChildren().addAll(t, r, lbl(icon, 19, Color.web("#C1C7D2"), false));
-
-        box.getChildren().addAll(
-                top,
-                lbl(value, 38, Color.web("#9095A1"), true),
-                lbl(sub, 12, Color.web("#C1C6D1"), false)
-        );
-
-        return box;
-    }
-
-    private String card() {
-        return "-fx-background-color:white;" +
-                "-fx-border-color:" + BORDER + ";" +
-                "-fx-border-radius:12px;" +
-                "-fx-background-radius:12px;";
-    }
-
-    private VBox emptyBox(String icon, String text) {
-        VBox b = new VBox(7);
-        b.setAlignment(Pos.CENTER);
-        b.setPrefHeight(100);
-        b.setStyle(
-                "-fx-background-color:#FAFBFC;" +
-                "-fx-border-color:#D8DDE5;" +
-                "-fx-border-style:dashed;" +
-                "-fx-border-radius:8px;" +
-                "-fx-background-radius:8px;"
-        );
-
-        b.getChildren().addAll(
-                lbl(icon, 22, Color.web("#B9C0CC"), true),
-                lbl(text, 13, Color.web("#B9C0CC"), false)
-        );
-        return b;
-    }
-
-    private VBox progress(String name, String value, double amount) {
-        VBox box = new VBox(5);
-        HBox row = new HBox();
-        Label n = lbl(name, 13, Color.web(TEXT), false);
-        Region r = new Region();
-        HBox.setHgrow(r, Priority.ALWAYS);
-
-        row.getChildren().addAll(n, r, lbl(value, 13, Color.web(TEXT), false));
-
-        ProgressBar bar = new ProgressBar(amount);
-        bar.setMaxWidth(Double.MAX_VALUE);
-        bar.setPrefHeight(7);
-
-        box.getChildren().addAll(row, bar);
-        return box;
-    }
-
-    private HBox status(String name, String value) {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(11));
-
-        Region r = new Region();
-        HBox.setHgrow(r, Priority.ALWAYS);
-
-        row.getChildren().addAll(
-                lbl(name, 13, Color.web(TEXT), false),
-                r,
-                lbl(value, 13, Color.web("#687080"), false)
-        );
-
-        row.setStyle(
-                "-fx-background-color:#F7F8FA;" +
-                "-fx-border-color:#E0E3E8;" +
-                "-fx-border-radius:8px;" +
-                "-fx-background-radius:8px;"
-        );
-
-        return row;
-    }
-
-    private Region gap(double h) {
-        Region r = new Region();
-        r.setMinHeight(h);
-        return r;
+        LandingPage.landingPageStage.setScene(supportV.getsupportVScene(null));
     }
 
     public void backToInactVendorDashboard() {

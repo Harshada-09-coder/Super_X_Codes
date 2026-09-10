@@ -4,9 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.techtrio.context.AdminContext;
-import com.techtrio.controller.OrganizerController;
 import com.techtrio.model.Event;
-import com.techtrio.model.OrganizerProfile;
 import com.techtrio.model.WeatherData;
 import com.techtrio.services.EventService;
 import com.techtrio.services.WeatherService;
@@ -23,7 +21,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.stage.Stage;
 
 public class OrganizerDashboardO {
 
@@ -43,6 +40,7 @@ public class OrganizerDashboardO {
     private Label pendingRequestsValLabel;
     private Label upcomingEventsValLabel;
     private Label tasksDueValLabel;
+    private Label totalEarningsValLabel;
 
     private TableView<Event> eventsTable;
     private VBox weatherBox;
@@ -63,10 +61,8 @@ public class OrganizerDashboardO {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        // 1. Unified Sidebar on Left
         root.setLeft(createCommonOrganizerSidebar("Dashboard"));
 
-        // 2. Main Content (Top Bar Removed)
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -81,7 +77,6 @@ public class OrganizerDashboardO {
         return organizerDashboardScene;
     }
 
-    // ⭐ THIS METHOD FIXES THE PROFILEO COMPILATION ERROR
     public void backToOrganizerDashboard() {
         if (LandingPage.landingPageStage != null) {
             LandingPage.landingPageStage.setScene(getorganizerDashboardScene(null));
@@ -176,14 +171,6 @@ public class OrganizerDashboardO {
                 MyEventsO myEvents = new MyEventsO(uid, idToken);
                 LandingPage.landingPageStage.setScene(myEvents.getMyEventsOScene(null));
             }
-            case "Venue" -> {
-                VenueManagementO venue = new VenueManagementO();
-                LandingPage.landingPageStage.setScene(venue.getScene(LandingPage.landingPageStage, null));
-            }
-            case "Vendors" -> {
-                VendorManagementO vendor = new VendorManagementO(uid, idToken);
-                LandingPage.landingPageStage.setScene(vendor.getvendorManagementOScene(null));
-            }
             case "Schedule" -> {
                 ScheduleO sched = new ScheduleO();
                 LandingPage.landingPageStage.setScene(sched.getScene(LandingPage.landingPageStage, null));
@@ -216,26 +203,26 @@ public class OrganizerDashboardO {
         Label title = new Label("Organizer Dashboard");
         title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
-        Label subtitle = new Label("Live overview of event assignments, planning milestones, and weather alerts.");
+        Label subtitle = new Label("Live overview of event assignments, planning milestones, and customer payment wallet.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748B;");
 
         VBox titleBox = new VBox(2, title, subtitle);
 
-        // 4 KPI CARDS
-        HBox cards = new HBox(14);
+        HBox cards = new HBox(12);
         activeEventsValLabel = new Label("00");
         pendingRequestsValLabel = new Label("00");
         upcomingEventsValLabel = new Label("00");
         tasksDueValLabel = new Label("00");
+        totalEarningsValLabel = new Label("₹0.00");
 
         cards.getChildren().addAll(
                 createCard("Active Events", activeEventsValLabel, "fas-calendar-check", "#16A34A"),
                 createCard("Assigned Requests", pendingRequestsValLabel, "fas-inbox", "#D97706"),
                 createCard("Upcoming Events", upcomingEventsValLabel, "fas-calendar-alt", "#0284C7"),
-                createCard("Tasks In Progress", tasksDueValLabel, "fas-tasks", "#7C3AED")
+                createCard("Tasks In Progress", tasksDueValLabel, "fas-tasks", "#7C3AED"),
+                createCard("My Revenue (15%)", totalEarningsValLabel, "fas-wallet", "#062A60")
         );
 
-        // TABLE VIEW FOR ASSIGNED EVENTS
         VBox tableCard = new VBox(10);
         tableCard.setPadding(new Insets(16));
         tableCard.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
@@ -290,7 +277,6 @@ public class OrganizerDashboardO {
         eventsTable.setPrefHeight(240);
         tableCard.getChildren().addAll(tableTitle, eventsTable);
 
-        // WEATHER & SCHEDULE ALERTS
         HBox bottomWidgets = new HBox(16);
 
         weatherBox = new VBox(6);
@@ -320,6 +306,7 @@ public class OrganizerDashboardO {
         return content;
     }
 
+    // ⭐ Event Completed झाल्यावर Upcoming Events मधून काढणे
     private void loadOrganizerDashboardDataAsync() {
         if (uid == null || uid.isBlank()) return;
 
@@ -337,6 +324,7 @@ public class OrganizerDashboardO {
                 int activeCount = 0;
                 int pendingCount = 0;
                 int upcomingCount = 0;
+                double totalOrganizerRevenue = 0.0;
                 String city = "Pune";
                 String eventDate = null;
 
@@ -347,11 +335,22 @@ public class OrganizerDashboardO {
                         String oStatus = ev.getOrganizerStatus() != null ? ev.getOrganizerStatus().toUpperCase() : "";
                         String st = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "";
 
+                        // कमिशन कायम मोजले जाईल (कस्टमरच्या paidAmount वर 15%)
+                        double actualPaidByCustomer = ev.getPaidAmount();
+                        if (actualPaidByCustomer > 0) {
+                            totalOrganizerRevenue += (actualPaidByCustomer * 0.15);
+                        }
+
+                        // ⭐ जर इव्हेंट पूर्ण (COMPLETED) झाला असेल, तर तो Upcoming Events मध्ये मोजला जाणार नाही आणि प्लॅनिंग टेबलमधूनही निघून जाईल
+                        if ("COMPLETED".equals(st)) {
+                            continue; 
+                        }
+
                         if ("PENDING".equals(oStatus)) {
                             pendingCount++;
                         } else if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(st)) {
                             activeCount++;
-                            upcomingCount++;
+                            upcomingCount++; // ⭐ फक्त चालू/न संपलेले इव्हेंट्सच Upcoming मध्ये येतील
                             if (eventsTable != null) eventsTable.getItems().add(ev);
                             if (eventDate == null && ev.getStartDate() != null) {
                                 eventDate = ev.getStartDate();
@@ -365,6 +364,7 @@ public class OrganizerDashboardO {
                 pendingRequestsValLabel.setText(String.format("%02d", pendingCount));
                 upcomingEventsValLabel.setText(String.format("%02d", upcomingCount));
                 tasksDueValLabel.setText("00");
+                totalEarningsValLabel.setText("₹" + String.format("%,.0f", totalOrganizerRevenue));
 
                 if (eventDate == null) eventDate = LocalDate.now().toString();
                 fetchWeatherAsync(city, eventDate);
@@ -391,7 +391,7 @@ public class OrganizerDashboardO {
 
     private VBox createCard(String title, Label valueLabel, String iconLit, String iconColorHex) {
         VBox card = new VBox(6);
-        card.setPrefWidth(220);
+        card.setPrefWidth(200);
         card.setPadding(new Insets(14));
         card.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER_COLOR + ";-fx-border-radius:10;-fx-background-radius:10;");
         HBox.setHgrow(card, Priority.ALWAYS);
@@ -410,7 +410,7 @@ public class OrganizerDashboardO {
         titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #64748B;");
         top.getChildren().addAll(iconCircle, titleLabel);
 
-        valueLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 22px; -fx-text-fill: " + NAVY + ";");
+        valueLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: " + NAVY + ";");
         card.getChildren().addAll(top, valueLabel);
         return card;
     }

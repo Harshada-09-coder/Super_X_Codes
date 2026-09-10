@@ -79,6 +79,7 @@ public class ActiveCustomerDashboardC {
     private YearMonth currentCalendarMonth = YearMonth.now();
     private Label calendarMonthLabel;
     private GridPane calendarGrid;
+    private List<Event> cachedCustomerEvents = new ArrayList<>();
 
     public ActiveCustomerDashboardC() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -192,11 +193,6 @@ public class ActiveCustomerDashboardC {
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        // =========================================================
-        // 🌟 TWO DISTINCT BUTTONS: 1. DRAFTS  &  2. CREATE EVENT
-        // =========================================================
-        
-        // 1. DRAFTS BUTTON (Opens the exact unfinished step)
         draftsBtn = new Button(" Drafts");
         FontIcon draftIcon = new FontIcon("fas-file-alt");
         draftIcon.setIconSize(12);
@@ -205,7 +201,6 @@ public class ActiveCustomerDashboardC {
         draftsBtn.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER + "; -fx-text-fill:" + NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 8 16; -fx-background-radius: 8px; -fx-border-radius: 8px; -fx-cursor: hand;");
         draftsBtn.setOnAction(e -> openDraftsDirectly());
 
-        // 2. CREATE EVENT BUTTON (Starts a clean fresh event)
         Button createEventBtn = new Button(" Create Event");
         FontIcon plusIcon = new FontIcon("fas-plus");
         plusIcon.setIconSize(12);
@@ -255,7 +250,7 @@ public class ActiveCustomerDashboardC {
         row.getChildren().addAll(
                 createKpiCard("My Events", totalEventsValLabel, "Total events", "fas-calendar-alt", "#0284C7"),
                 createKpiCard("Upcoming", upcomingEventsValLabel, "Next 30 days", "fas-calendar-check", "#4F46E5"),
-                createKpiCard("Completed", completedEventsValLabel, "Events done", "fas-check-circle", "#16A34A"),
+                createKpiCard("Completed", completedEventsValLabel, "Events executed", "fas-check-circle", "#16A34A"),
                 createKpiCard("Total Budget", totalSpentValLabel, "All events", "fas-wallet", "#0D3979")
         );
         return row;
@@ -305,7 +300,7 @@ public class ActiveCustomerDashboardC {
         calIcon.setIconSize(16);
         calIcon.setIconColor(Color.web(PRIMARY_BLUE));
 
-        Label title = new Label("Upcoming Event");
+        Label title = new Label("Active Event Highlights");
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill:" + NAVY + ";");
 
         Region spacer = new Region();
@@ -446,7 +441,7 @@ public class ActiveCustomerDashboardC {
         legend.setPadding(new Insets(6, 0, 0, 0));
 
         HBox leg1 = new HBox(6, new Circle(4, Color.web(NAVY)), new Label("Upcoming Event"));
-        HBox leg2 = new HBox(6, new Circle(4, Color.web("#38BDF8")), new Label("Completed Event"));
+        HBox leg2 = new HBox(6, new Circle(4, Color.web("#16A34A")), new Label("Completed Event"));
         leg1.setStyle("-fx-font-size: 10px; -fx-text-fill:" + TEXT_MUTED + ";");
         leg2.setStyle("-fx-font-size: 10px; -fx-text-fill:" + TEXT_MUTED + ";");
         legend.getChildren().addAll(leg1, leg2);
@@ -482,13 +477,24 @@ public class ActiveCustomerDashboardC {
         int row = 1;
 
         for (int i = dayOfWeek - 1; i >= 0; i--) {
-            VBox box = createDateCell(String.valueOf(prevMonthDays - i), true, false, false);
+            VBox box = createDateCell(String.valueOf(prevMonthDays - i), true, false, null);
             calendarGrid.add(box, cell++, row);
         }
 
         for (int d = 1; d <= daysInMonth; d++) {
+            LocalDate currentDate = currentCalendarMonth.atDay(d);
             boolean isHighlighted = (d == LocalDate.now().getDayOfMonth() && currentCalendarMonth.getMonth() == LocalDate.now().getMonth());
-            VBox box = createDateCell(String.valueOf(d), false, isHighlighted, false);
+            
+            // Check if there is an event on this date
+            Color eventDotColor = null;
+            for (Event ev : cachedCustomerEvents) {
+                if (ev.getEventDate() != null && ev.getEventDate().equals(currentDate.toString())) {
+                    eventDotColor = "COMPLETED".equalsIgnoreCase(ev.getStatus()) ? Color.web("#16A34A") : Color.web(NAVY);
+                    break;
+                }
+            }
+
+            VBox box = createDateCell(String.valueOf(d), false, isHighlighted, eventDotColor);
             calendarGrid.add(box, cell++, row);
 
             if (cell == 7) {
@@ -499,12 +505,12 @@ public class ActiveCustomerDashboardC {
 
         int nextDay = 1;
         while (cell < 7 && row <= 6) {
-            VBox box = createDateCell(String.valueOf(nextDay++), true, false, false);
+            VBox box = createDateCell(String.valueOf(nextDay++), true, false, null);
             calendarGrid.add(box, cell++, row);
         }
     }
 
-    private VBox createDateCell(String text, boolean isOtherMonth, boolean isHighlighted, boolean hasDot) {
+    private VBox createDateCell(String text, boolean isOtherMonth, boolean isHighlighted, Color dotColor) {
         VBox dateCell = new VBox(2);
         dateCell.setAlignment(Pos.CENTER);
         dateCell.setPrefSize(44, 28);
@@ -521,12 +527,42 @@ public class ActiveCustomerDashboardC {
 
         dateCell.getChildren().add(dLbl);
 
-        if (hasDot && !isHighlighted) {
-            Circle dot = new Circle(3, Color.web("#38BDF8"));
+        if (dotColor != null && !isHighlighted) {
+            Circle dot = new Circle(3, dotColor);
             dateCell.getChildren().add(dot);
         }
 
         return dateCell;
+    }
+
+    // ⭐ Customer Calendar Legend (स्पष्ट स्पष्टीकरण)
+    private HBox createCalendarLegendBox() {
+        HBox legendBox = new HBox(20);
+        legendBox.setAlignment(Pos.CENTER_LEFT);
+        legendBox.setPadding(new Insets(12, 16, 12, 16));
+        legendBox.setStyle("-fx-background-color: white; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+
+        Label title = new Label("Event Status Legend: ");
+        title.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #1E293B;");
+
+        // 🟢 Completed Dot + Label
+        HBox completedItem = new HBox(6);
+        completedItem.setAlignment(Pos.CENTER_LEFT);
+        Circle greenDot = new Circle(5, Color.web("#16A34A"));
+        Label greenText = new Label("Completed Event");
+        greenText.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #16A34A;");
+        completedItem.getChildren().addAll(greenDot, greenText);
+
+        // 🔵 Upcoming Dot + Label
+        HBox upcomingItem = new HBox(6);
+        upcomingItem.setAlignment(Pos.CENTER_LEFT);
+        Circle blueDot = new Circle(5, Color.web("#0284C7"));
+        Label blueText = new Label("Upcoming / Active Event");
+        blueText.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #0284C7;");
+        upcomingItem.getChildren().addAll(blueDot, blueText);
+
+        legendBox.getChildren().addAll(title, completedItem, upcomingItem);
+        return legendBox;
     }
 
     private VBox createBudgetOverviewCard() {
@@ -734,7 +770,10 @@ public class ActiveCustomerDashboardC {
         t.start();
     }
 
+    // ⭐ ACCURATE EVENT STATUS AND COMPLETED EVENT CALCULATION
     private void renderDynamicDashboardData(List<Event> events) {
+        cachedCustomerEvents = (events != null) ? new ArrayList<>(events) : new ArrayList<>();
+
         if (events == null || events.isEmpty()) {
             totalEventsValLabel.setText("0");
             upcomingEventsValLabel.setText("0");
@@ -747,25 +786,22 @@ public class ActiveCustomerDashboardC {
 
         totalEventsValLabel.setText(String.valueOf(events.size()));
 
-        List<Event> sortedEvents = new ArrayList<>(events);
-        sortedEvents.sort((a, b) -> {
-            String idA = a.getEventId() != null ? a.getEventId() : "";
-            String idB = b.getEventId() != null ? b.getEventId() : "";
-            return idB.compareTo(idA);
-        });
-
-        latestUpcomingEvent = sortedEvents.get(0);
-
         int upcomingCount = 0;
         int completedCount = 0;
         double sumAllBudgets = 0.0;
 
+        Event chosenActiveEvent = null;
+        Event fallbackCompletedEvent = null;
+
         for (Event ev : events) {
-            String st = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "PLANNING";
+            String st = ev.getStatus() != null ? ev.getStatus().trim().toUpperCase() : "PLANNING";
+            
             if ("COMPLETED".equals(st)) {
                 completedCount++;
+                if (fallbackCompletedEvent == null) fallbackCompletedEvent = ev;
             } else {
                 upcomingCount++;
+                if (chosenActiveEvent == null) chosenActiveEvent = ev;
             }
 
             double budgetAmt = 0;
@@ -776,9 +812,14 @@ public class ActiveCustomerDashboardC {
             sumAllBudgets += budgetAmt;
         }
 
+        // प्राधान्य: आधी Active/Planning इव्हेंट दाखवणे; जर सर्व पूर्ण झाले असतील तर Completed इव्हेंट दाखवणे
+        latestUpcomingEvent = (chosenActiveEvent != null) ? chosenActiveEvent : fallbackCompletedEvent;
+
         upcomingEventsValLabel.setText(String.valueOf(upcomingCount));
         completedEventsValLabel.setText(String.valueOf(completedCount));
         totalSpentValLabel.setText("₹ " + String.format("%,.0f", sumAllBudgets));
+
+        renderCalendarTable();
 
         if (latestUpcomingEvent != null) {
             String name = latestUpcomingEvent.getEventName() != null ? latestUpcomingEvent.getEventName() : "Upcoming Event";
@@ -786,7 +827,7 @@ public class ActiveCustomerDashboardC {
             String time = latestUpcomingEvent.getTime() != null ? latestUpcomingEvent.getTime() : "10:00 AM";
             String loc = latestUpcomingEvent.getCity() != null ? latestUpcomingEvent.getCity() + ", Maharashtra" : "Pune, Maharashtra";
             int guests = latestUpcomingEvent.getGuests() > 0 ? latestUpcomingEvent.getGuests() : 0;
-            String status = latestUpcomingEvent.getStatus() != null ? latestUpcomingEvent.getStatus().toUpperCase() : "PLANNING";
+            String status = latestUpcomingEvent.getStatus() != null ? latestUpcomingEvent.getStatus().trim().toUpperCase() : "PLANNING";
 
             upcomingEventNameLabel.setText(name);
             upcomingEventDateLabel.setText("📅 " + date);
@@ -794,6 +835,13 @@ public class ActiveCustomerDashboardC {
             upcomingEventLocationLabel.setText("📍 " + loc);
             upcomingEventGuestsLabel.setText("👥 " + guests + " Guests");
             upcomingEventStatusBadge.setText("Status : " + status);
+
+            // Badge Color based on status
+            if ("COMPLETED".equals(status)) {
+                upcomingEventStatusBadge.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-padding: 4 10; -fx-background-radius: 6px; -fx-font-size: 11px; -fx-font-weight: bold;");
+            } else {
+                upcomingEventStatusBadge.setStyle("-fx-background-color: #E0F2FE; -fx-text-fill: #0284C7; -fx-padding: 4 10; -fx-background-radius: 6px; -fx-font-size: 11px; -fx-font-weight: bold;");
+            }
 
             double eventBudget = 0.0;
             try {
@@ -845,9 +893,6 @@ public class ActiveCustomerDashboardC {
         }).start();
     }
 
-    // =========================================================================
-    // 🌟 1. DRAFTS BUTTON ACTION (Directly resumes exact step)
-    // =========================================================================
     private void openDraftsDirectly() {
         if (ReviewPageC.EventData.hasActiveDraft()) {
             ReviewPageC.EventData.resumeDraft(uid, idToken);
@@ -863,9 +908,6 @@ public class ActiveCustomerDashboardC {
         }
     }
 
-    // =========================================================================
-    // 🌟 2. CREATE EVENT BUTTON ACTION (Directly starts a fresh new event)
-    // =========================================================================
     private void openCreateEventDirectly() {
         CreateEventC createView = new CreateEventC(uid, idToken);
         if (LandingPage.landingPageStage != null) {
