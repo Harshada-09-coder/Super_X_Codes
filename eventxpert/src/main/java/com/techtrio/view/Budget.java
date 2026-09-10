@@ -1,4 +1,5 @@
 package com.techtrio.view;
+
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.ListenerRegistration;
@@ -16,6 +17,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import java.util.*;
+
 public class Budget {
 
 private String uid;
@@ -117,7 +119,6 @@ private void loadVendorExpensesAndRender(Event ev) {
     }).start();
 }
 
-// ⭐ Organizer सोबत १००% तंतोतंत मॅच करणारे फायनल कॅल्क्युलेशन
 private void renderDynamicBudgetData(Event ev, List<VendorBooking> bookings) {
     if (ev == null) return;
 
@@ -132,7 +133,7 @@ private void renderDynamicBudgetData(Event ev, List<VendorBooking> bookings) {
         totalApproved = ev.getTotalBudget();
     }
 
-    // २. केवळ आणि केवळ Organizer चे budgetRecommendation वाचणे
+    // २. Organizer चे budgetRecommendation
     Map<String, Double> allocationMap = new LinkedHashMap<>();
     if (ev.getBudgetRecommendation() != null && !ev.getBudgetRecommendation().isEmpty()) {
         for (Map.Entry<String, Object> entry : ev.getBudgetRecommendation().entrySet()) {
@@ -148,7 +149,7 @@ private void renderDynamicBudgetData(Event ev, List<VendorBooking> bookings) {
         allocationMap.put("Decoration", (double) Math.round(totalApproved * 0.40));
     }
 
-    // ३. Allocated मोजणे (₹ 48,580)
+    // ३. Allocated मोजणे
     double totalAllocated = 0.0;
     for (double val : allocationMap.values()) {
         totalAllocated += val;
@@ -182,12 +183,10 @@ private void renderDynamicBudgetData(Event ev, List<VendorBooking> bookings) {
         }
     }
 
-    // Customer पेमेंट स्टेटस तपासणे
-    String evtStatus = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "";
+    // ⭐ कडक अट: केवळ paidAmount > 0 किंवा paymentStatus == 'PAID' असेल तरच पैसे भरले मानले जातील
     String payStatus = ev.getPaymentStatus() != null ? ev.getPaymentStatus().toUpperCase() : "";
-    boolean isCustomerActuallyPaid = (ev.getPaidAmount() > 0) || "PAID".equals(evtStatus) || "CONFIRMED".equals(evtStatus) || "PAID".equals(payStatus);
+    boolean isCustomerActuallyPaid = (ev.getPaidAmount() > 0) || "PAID".equals(payStatus);
 
-    // ⭐ महत्त्वाचा बदल: जर कस्टमरने पैसे भरले असतील तर 'Contingency & Other' चे पैसेही Spent मानले जातील!
     double contingencyAmt = 0.0;
     for (Map.Entry<String, Double> entry : allocationMap.entrySet()) {
         String k = entry.getKey().toLowerCase();
@@ -198,10 +197,9 @@ private void renderDynamicBudgetData(Event ev, List<VendorBooking> bookings) {
     }
 
     if (isCustomerActuallyPaid && contingencyAmt > 0) {
-        totalSpent += contingencyAmt; // यामुळे Spent = 40,780 + 7,800 = 48,580 होईल!
+        totalSpent += contingencyAmt;
     }
 
-    // ५. Remaining Balance = Approved Budget - Total Spent = 50,000 - 48,580 = 1,420 (Organizer शी १००% मॅच)
     double remaining = Math.max(0.0, totalApproved - totalSpent);
 
     lblTotalBudget.setText("₹ " + String.format("%,.0f", totalApproved));
@@ -214,7 +212,7 @@ private void renderDynamicBudgetData(Event ev, List<VendorBooking> bookings) {
     String orgName = (ev.getOrganizerName() != null && !ev.getOrganizerName().isBlank()) 
             ? ev.getOrganizerName() : "Organizer";
 
-    // ६. टेबलमधील ओळी तयार करणे
+    // ६. टेबलमधील ओळी
     for (Map.Entry<String, Double> entry : allocationMap.entrySet()) {
         String category = entry.getKey().trim();
         double allocatedAmt = entry.getValue();
@@ -227,15 +225,15 @@ private void renderDynamicBudgetData(Event ev, List<VendorBooking> bookings) {
 
         String catLower = category.toLowerCase();
 
-        // ⭐ Contingency & Other: पैसे भरल्यावर Spent = 7,800 आणि Remaining = 0
+        // Contingency & Other
         if (catLower.contains("contingency") || catLower.contains("other") || catLower.contains("misc")) {
             assignedName = orgName;
             spentAmt = isCustomerActuallyPaid ? allocatedAmt : 0.0;
-            isConfirmedOrPaid = true;
+            isConfirmedOrPaid = isCustomerActuallyPaid;
             isActuallyPaid = isCustomerActuallyPaid;
             status = isActuallyPaid ? "Paid" : "Allocated";
         }
-        // Venue
+        // ⭐ Venue: Customer ने प्रत्यक्ष पैसे भरेपर्यंत 'Confirmed', पैसे भरल्यावरच 'Paid'
         else if (catLower.contains("venue") && isVenueConfirmed) {
             assignedName = (ev.getConfirmedVenueName() != null && !ev.getConfirmedVenueName().isBlank()) 
                     ? ev.getConfirmedVenueName() : "Confirmed Venue";
@@ -259,9 +257,18 @@ private void renderDynamicBudgetData(Event ev, List<VendorBooking> bookings) {
                             spentAmt = Double.parseDouble(vb.getAmount().replaceAll("[^0-9.]", "").trim()); 
                         } catch (Exception ignored) {}
 
-                        isConfirmedOrPaid = true;
-                        isActuallyPaid = "PAID".equals(bSt) || isCustomerActuallyPaid;
-                        status = isActuallyPaid ? "Paid" : ("COMPLETED".equals(bSt) ? "Completed" : "Confirmed");
+                        boolean isAccepted = "CONFIRMED".equals(bSt) || "ACCEPTED".equals(bSt) || "COMPLETED".equals(bSt);
+                        isActuallyPaid = "PAID".equals(bSt) || (isCustomerActuallyPaid && isAccepted);
+                        isConfirmedOrPaid = isAccepted || isActuallyPaid;
+
+                        // ⭐ Vendor Request असताना Pending, Accept झाल्यावर Confirmed, आणि Customer ने पैसे भरल्यावरच Paid!
+                        if (isActuallyPaid) {
+                            status = "Paid";
+                        } else if (isAccepted) {
+                            status = "COMPLETED".equals(bSt) ? "Completed" : "Confirmed";
+                        } else {
+                            status = "Pending";
+                        }
                         break;
                     }
                 }
@@ -506,36 +513,43 @@ private void handleBack() {
     if (backAction != null) backAction.run();
     else goOverview();
 }
+
 private void goDashboard() {
     detachListener();
     ActiveCustomerDashboardC dash = new ActiveCustomerDashboardC(uid, idToken);
     LandingPage.landingPageStage.setScene(dash.getactiveCustomerScene(null));
 }
+
 private void goCreateEvent() {
     detachListener();
     CreateEventC create = new CreateEventC(uid, idToken);
     LandingPage.landingPageStage.setScene(create.getCreateEventScene(this::goDashboard));
 }
+
 private void goOverview() {
     detachListener();
     MyEventDetails view = new MyEventDetails(uid, idToken, event);
     LandingPage.landingPageStage.setScene(view.getMyEventDetailsScene(this::handleBack));
 }
+
 private void goVenue() {
     detachListener();
     Venue view = new Venue(uid, idToken, event);
     LandingPage.landingPageStage.setScene(view.getVenueScene(this::handleBack));
 }
+
 private void goGuest() {
     detachListener();
     Guest view = new Guest(uid, idToken, event);
     LandingPage.landingPageStage.setScene(view.getGuestScene(this::handleBack));
 }
+
 private void goPayment() {
     detachListener();
     Payment view = new Payment(uid, idToken, event);
     LandingPage.landingPageStage.setScene(view.getPaymentScene(this::handleBack));
 }
+
 private void goRequirement() {
     detachListener();
     Requirement view = new Requirement(uid, idToken, event);

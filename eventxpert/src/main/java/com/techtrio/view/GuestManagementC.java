@@ -1,6 +1,8 @@
 package com.techtrio.view;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -278,12 +280,15 @@ public class GuestManagementC {
         table.setPrefHeight(200);
         table.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;");
 
-        TableColumn<GuestRow, String> colName = new TableColumn<>("Guest");
+        // Header Labels in NAVY Color with Bold weight
+        TableColumn<GuestRow, String> colName = new TableColumn<>();
+        colName.setGraphic(createHeaderLabel("Guest"));
         colName.setCellValueFactory(new PropertyValueFactory<>("name"));
         colName.setPrefWidth(200);
         styleColumnCell(colName);
 
-        TableColumn<GuestRow, String> colContact = new TableColumn<>("Contact");
+        TableColumn<GuestRow, String> colContact = new TableColumn<>();
+        colContact.setGraphic(createHeaderLabel("Contact"));
         colContact.setCellValueFactory(cellData -> {
             GuestRow g = cellData.getValue();
             String cText = (g.getEmail() != null && !g.getEmail().isBlank()) ? g.getEmail() : g.getMobile();
@@ -292,7 +297,8 @@ public class GuestManagementC {
         colContact.setPrefWidth(220);
         styleColumnCell(colContact);
 
-        TableColumn<GuestRow, String> colType = new TableColumn<>("Type");
+        TableColumn<GuestRow, String> colType = new TableColumn<>();
+        colType.setGraphic(createHeaderLabel("Type"));
         colType.setPrefWidth(110);
         colType.setCellFactory(column -> new TableCell<>() {
             @Override
@@ -309,12 +315,14 @@ public class GuestManagementC {
             }
         });
 
-        TableColumn<GuestRow, String> colStatus = new TableColumn<>("Status");
+        TableColumn<GuestRow, String> colStatus = new TableColumn<>();
+        colStatus.setGraphic(createHeaderLabel("Status"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
         colStatus.setPrefWidth(120);
         styleColumnCell(colStatus);
 
-        TableColumn<GuestRow, Void> colAction = new TableColumn<>("Action");
+        TableColumn<GuestRow, Void> colAction = new TableColumn<>();
+        colAction.setGraphic(createHeaderLabel("Action"));
         colAction.setPrefWidth(100);
         colAction.setCellFactory(param -> new TableCell<>() {
             private final Button btnDelete = new Button(" Delete");
@@ -408,6 +416,12 @@ public class GuestManagementC {
         return scene;
     }
 
+    private Label createHeaderLabel(String text) {
+        Label l = new Label(text);
+        l.setStyle("-fx-text-fill: " + NAVY + " !important; -fx-font-weight: bold; -fx-font-size: 12px; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
+        return l;
+    }
+
     private void styleColumnCell(TableColumn<GuestRow, String> column) {
         column.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -471,13 +485,69 @@ public class GuestManagementC {
         txtEmail.clear();
     }
 
+    // ⭐ डायनॅमिक CSV Import: फाईलमधील सर्व पाहुणे आपोआप वाचून टेबलमध्ये लोड होतात
     private void handleImportCsv() {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Select CSV File");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files (*.csv)", "*.csv"));
         File file = chooser.showOpenDialog(LandingPage.landingPageStage);
         if (file != null) {
-            guestMasterList.add(new GuestRow("Imported Guest", "+91 9988776655", "imported@event.com", "General"));
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                boolean isFirstLine = true;
+                int count = 0;
+
+                while ((line = br.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+
+                    // जर पहिली ओळ Header असेल (जसे Name, Mobile, Email) तर ती वगळा
+                    if (isFirstLine) {
+                        isFirstLine = false;
+                        String lower = line.toLowerCase();
+                        if (lower.contains("name") || lower.contains("email") || lower.contains("mobile") || lower.contains("contact")) {
+                            continue;
+                        }
+                    }
+
+                    String[] parts = line.split(",");
+                    if (parts.length >= 2) {
+                        String name = parts[0].trim();
+                        String col1 = parts.length > 1 ? parts[1].trim() : "";
+                        String col2 = parts.length > 2 ? parts[2].trim() : "";
+                        String type = parts.length > 3 ? parts[3].trim() : "General";
+
+                        String mobile = "";
+                        String email = "";
+
+                        // स्मार्ट चेकिंग: ईमेल आणि मोबाईल मागे-पुढे असले तरी ओळखणे
+                        if (col1.contains("@")) {
+                            email = col1;
+                            mobile = col2;
+                        } else {
+                            mobile = col1;
+                            email = col2;
+                        }
+
+                        if (type.isBlank()) type = "General";
+
+                        if (!name.isEmpty()) {
+                            guestMasterList.add(new GuestRow(name, mobile, email, type));
+                            count++;
+                        }
+                    }
+                }
+
+                if (count > 0) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Total " + count + " guests successfully imported from CSV!");
+                    alert.setHeaderText("CSV Import Complete");
+                    alert.showAndWait();
+                }
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Could not read CSV file: " + ex.getMessage());
+                alert.showAndWait();
+            }
         }
     }
 
