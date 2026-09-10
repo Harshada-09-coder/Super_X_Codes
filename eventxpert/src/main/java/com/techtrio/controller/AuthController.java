@@ -4,6 +4,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.techtrio.firebase.FirebaseConfig;
 import org.json.JSONObject;
 
 import com.techtrio.session.UserSession;
@@ -89,8 +92,9 @@ public class AuthController {
             if (role.equalsIgnoreCase("customer")) {
                 collection = "Customers";
             } else if (role.equalsIgnoreCase("organizer")) {
-           fields.put("profileCompleted", new JSONObject().put("booleanValue", false));
-           fields.put("onboardingStatus", new JSONObject().put("stringValue", "NEW"));
+                collection = "Organizers";
+                fields.put("profileCompleted", new JSONObject().put("booleanValue", false));
+                fields.put("onboardingStatus", new JSONObject().put("stringValue", "NEW"));
             } else if (role.equalsIgnoreCase("vendor")) {
                 collection = "Vendors";
             } else {
@@ -218,10 +222,33 @@ public boolean changePassword(
 
 
 public String getUserRole(String uid, String idToken) {
+        if (uid == null || uid.isBlank()) {
+            return null;
+        }
+
+        String[] collections = {"Admin", "Customers", "Organizers", "Vendors"};
+
+        // Prefer the Admin SDK. Unlike the REST request below, this is not blocked by
+        // client Firestore rules, so a valid Firebase Auth user is not incorrectly
+        // shown as having no role.
+        try {
+            Firestore db = FirebaseConfig.getFirestore();
+            if (db != null) {
+                for (String collection : collections) {
+                    DocumentSnapshot document = db.collection(collection).document(uid.trim()).get().get();
+                    if (document.exists()) {
+                        String role = roleForCollection(collection);
+                        UserSession.setSession(uid, idToken, null, role);
+                        return role;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Admin SDK role lookup failed; trying REST fallback: " + e.getMessage());
+        }
+
         try {
             String projectId = "eventxpert-6f453";
-            String[] collections = {"Admin", "Customers", "Organizers", "Vendors"};
-
             HttpClient client = HttpClient.newHttpClient();
 
             for (String collection : collections) {
@@ -243,9 +270,7 @@ public String getUserRole(String uid, String idToken) {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() == 200) {
-                    String role = collection.equalsIgnoreCase("Customers") ? "Customer" :
-                                 collection.equalsIgnoreCase("Admin") ? "Admin" :
-                                 collection.equalsIgnoreCase("Organizers") ? "Organizer" : "Vendor";
+                    String role = roleForCollection(collection);
 
                     UserSession.setSession(uid, idToken, null, role);
                     return role;
@@ -255,6 +280,12 @@ public String getUserRole(String uid, String idToken) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private String roleForCollection(String collection) {
+        return collection.equalsIgnoreCase("Customers") ? "Customer" :
+                collection.equalsIgnoreCase("Admin") ? "Admin" :
+                collection.equalsIgnoreCase("Organizers") ? "Organizer" : "Vendor";
     }
 }
 
