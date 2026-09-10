@@ -1,20 +1,26 @@
 package com.techtrio.view;
 
-import com.techtrio.controller.OrganizerController;
-import com.techtrio.model.OrganizerProfile;
-import com.techtrio.session.UserSession;
+import java.util.List;
 
+import com.techtrio.controller.OrganizerController;
+import com.techtrio.model.Event;
+import com.techtrio.model.OrganizerProfile;
+import com.techtrio.services.EventService;
+import com.techtrio.session.UserSession;
+import org.kordamp.ikonli.javafx.FontIcon;
+
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
+import javafx.stage.Stage;
 
 public class NotificationsO {
 
-    // COLOR PALETTE CONSTANTS
     private static final String NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
     private static final String LIGHT_BLUE = "#EAF3FF";
@@ -23,13 +29,14 @@ public class NotificationsO {
     private static final String TEXT_MAIN = "#102A43";
     private static final String SECONDARY_TEXT = "#52677D";
     private static final String BORDER_COLOR = "#DCE5F0";
-
-    // Alert Callout Colors
-    private static final String RED_BG = "#FCE8E6";
-    private static final String RED_TEXT = "#C5221F";
+    private static final String GREEN_BG = "#E6F4EA";
+    private static final String GREEN_TEXT = "#16A34A";
 
     private final String uid;
     private final String idToken;
+
+    private VBox notificationsListContainer;
+    private Label unreadCountLabel;
 
     public NotificationsO() {
         this(UserSession.getUid(), UserSession.getIdToken());
@@ -43,179 +50,152 @@ public class NotificationsO {
 
     public Scene getNotificationScene() {
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
+        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        root.setTop(createTopBar());
-        root.setLeft(createSidebar());
+        root.setLeft(createCommonOrganizerSidebar("Notifications"));
 
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
 
         VBox mainContent = new VBox(20);
-        mainContent.setPadding(new Insets(24, 30, 30, 30));
+        mainContent.setPadding(new Insets(24, 32, 32, 32));
         mainContent.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // Page Title Row
         HBox titleRow = new HBox();
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox titleBox = new VBox(4);
         Label title = new Label("Notifications");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
-        Label subtitle = new Label("Stay updated with your events, vendors, guests, schedules and important alerts.");
+        title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+        Label subtitle = new Label("Live updates on customer advance payments, escrow payouts, and event planning alerts.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
         titleBox.getChildren().addAll(title, subtitle);
 
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
 
-        Button markReadBtn = createSecondaryButton("✓ Mark all as read");
+        Button markReadBtn = new Button("✓ Mark all as read");
+        markReadBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 7 14; -fx-cursor: hand;");
+        markReadBtn.setOnAction(e -> {
+            if (unreadCountLabel != null) unreadCountLabel.setText("0");
+        });
+
         titleRow.getChildren().addAll(titleBox, headerSpacer, markReadBtn);
 
-        // Filter Pills Row
-        HBox filterPillsRow = createFilterPillsRow();
-
-        // Main Content Split Grid
         HBox mainGrid = new HBox(20);
 
         VBox leftColumn = new VBox(12);
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
 
-        // Notification Cards List
-        leftColumn.getChildren().addAll(
-                createNotifCard("📋", "New Event Request", "TechVision Annual Summit submitted for review.", "10m ago", true, false, "Review Request", () -> {
-                    EventRequestsO view = new EventRequestsO(uid, idToken);
-                    LandingPage.landingPageStage.setScene(view.geteventRequestsOScene(this::returnToDashboard));
-                }),
-                createNotifCard("⚙️", "AI Planner Optimization", "Resource overlap detected in the main hall schedule.", "32m ago", true, false, "View Recommendation", () -> {
-                    AIEventPlannerO view = new AIEventPlannerO();
-                    LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, this::returnToDashboard));
-                }),
-                createNotifCard("💳", "Budget Alert", "Catering for TechVision is 8% above estimate.", "1h ago", true, true, "Review Budget", () -> {
-                    BudgetExpenseTrackerO view = new BudgetExpenseTrackerO();
-                    LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, this::returnToDashboard));
-                }),
-                createNotifCard("⚠️", "Schedule Conflict", "AV Setup overlap detected in Room B.", "Today", true, false, "Resolve Conflict", () -> {
-                    ScheduleO view = new ScheduleO();
-                    LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, this::returnToDashboard));
-                }),
-                createNotifCard("📄", "Vendor Quote Received", "VisionPro AV has submitted their initial quote.", "2h ago", false, false, "View Quote", () -> {
-                    VendorManagementO view = new VendorManagementO(uid, idToken);
-                    LandingPage.landingPageStage.setScene(view.getvendorManagementOScene(this::returnToDashboard));
-                })
-        );
+        notificationsListContainer = new VBox(12);
+        leftColumn.getChildren().add(notificationsListContainer);
 
-        // Right Column Side Widgets
-        VBox rightColumn = new VBox(20);
+        VBox rightColumn = new VBox(16);
         rightColumn.setPrefWidth(330);
         rightColumn.setMinWidth(310);
-
-        rightColumn.getChildren().addAll(
-                createConflictDetailWidget(),
-                createOverviewWidget()
-        );
+        rightColumn.getChildren().addAll(createOverviewWidget());
 
         mainGrid.getChildren().addAll(leftColumn, rightColumn);
 
-        mainContent.getChildren().addAll(titleRow, filterPillsRow, mainGrid);
+        mainContent.getChildren().addAll(titleRow, mainGrid);
         scrollPane.setContent(mainContent);
         root.setCenter(scrollPane);
+
+        loadLiveNotificationsAsync();
 
         return new Scene(root, 1550, 785);
     }
 
-    private HBox createFilterPillsRow() {
-        HBox row = new HBox(8);
-        row.setAlignment(Pos.CENTER_LEFT);
+    private void loadLiveNotificationsAsync() {
+        Task<List<Event>> task = new Task<>() {
+            @Override
+            protected List<Event> call() {
+                EventService eventService = new EventService();
+                return eventService.getEventsByOrganizerId(uid);
+            }
+        };
 
-        Button pAll = createPillButton("All", true);
-        Button pUnread = createPillButton("Unread (7)", false);
-        Button pRequests = createPillButton("Event Requests", false);
-        Button pPlanning = createPillButton("Planning", false);
-        Button pVendors = createPillButton("Vendors", false);
-        Button pGuests = createPillButton("Guests", false);
-        Button pAlerts = createPillButton("Alerts", false);
+        task.setOnSucceeded(e -> {
+            List<Event> events = task.getValue();
+            Platform.runLater(() -> {
+                notificationsListContainer.getChildren().clear();
+                int unread = 0;
 
-        row.getChildren().addAll(pAll, pUnread, pRequests, pPlanning, pVendors, pGuests, pAlerts);
-        return row;
+                if (events != null && !events.isEmpty()) {
+                    for (Event ev : events) {
+                        double paidAmt = ev.getPaidAmount();
+
+                        // ⭐ अचूक बदल: केवळ आणि केवळ कस्टमरने पैसे भरले (paidAmt > 0) तरच पेमेंट क्रेडिटचे नोटिफिकेशन येईल!
+                        if (paidAmt > 0) {
+                            double orgCommission = paidAmt * 0.15;
+                            unread++;
+                            notificationsListContainer.getChildren().add(
+                                    createNotifCard("💳", "Payment Credited to Escrow!",
+                                            "Customer made payment for [" + ev.getEventName() + "]. Your 15% management commission (₹ " + String.format("%,.0f", orgCommission) + ") is secured in Escrow.",
+                                            "Live Sync", GREEN_BG, GREEN_TEXT, "View Budget & Wallet", () -> {
+                                                BudgetExpenseTrackerO view = new BudgetExpenseTrackerO(uid, idToken);
+                                                LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, this::returnToDashboard));
+                                            })
+                            );
+                        }
+
+                        // Vendor Milestone Notification
+                        unread++;
+                        notificationsListContainer.getChildren().add(
+                                createNotifCard("📋", "Event Assignment Active",
+                                        "[" + ev.getEventName() + "] is ready in workspace. Check verified vendor assignments and schedules.",
+                                        "Recently", LIGHT_BLUE, PRIMARY_BLUE, "Open Planning Workspace", () -> {
+                                            ViewEventO view = new ViewEventO(uid, idToken);
+                                            LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, this::returnToDashboard));
+                                        })
+                        );
+                    }
+                }
+
+                if (unreadCountLabel != null) {
+                    unreadCountLabel.setText(String.valueOf(unread));
+                }
+            });
+        });
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
     }
 
-    private Button createPillButton(String text, boolean active) {
-        Button btn = new Button(text);
-        btn.setStyle(active ? "-fx-background-color: " + NAVY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 5 14; -fx-background-radius: 16px;"
-                : "-fx-background-color: " + WHITE + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 16px; -fx-background-radius: 16px; -fx-padding: 5 14; -fx-cursor: hand;");
-        return btn;
-    }
-
-    private VBox createNotifCard(String iconStr, String title, String desc, String time, boolean isUnread, boolean isAlert, String actionText, Runnable action) {
+    private VBox createNotifCard(String iconStr, String title, String desc, String time, String bgHex, String titleColor, String actionText, Runnable action) {
         VBox card = new VBox(8);
-        card.setPadding(new Insets(14, 16, 14, 16));
-        card.setStyle("-fx-background-color: " + (isAlert ? RED_BG : (isUnread ? LIGHT_BLUE : WHITE)) + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
+        card.setPadding(new Insets(14, 18, 14, 18));
+        card.setStyle("-fx-background-color: " + bgHex + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
         HBox topRow = new HBox(12);
         topRow.setAlignment(Pos.CENTER_LEFT);
 
         Label icon = new Label(iconStr);
-        icon.setStyle("-fx-font-size: 16px;");
+        icon.setStyle("-fx-font-size: 18px;");
 
-        VBox textGroup = new VBox(2);
+        VBox textGroup = new VBox(3);
         Label t = new Label(title);
-        t.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + (isAlert ? RED_TEXT : NAVY) + ";");
+        t.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + titleColor + ";");
         Label d = new Label(desc);
-        d.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
+        d.setWrapText(true);
+        d.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
         textGroup.getChildren().addAll(t, d);
 
-        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
 
         Label timeLbl = new Label(time);
-        timeLbl.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        timeLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         topRow.getChildren().addAll(icon, textGroup, sp, timeLbl);
 
-        Button linkBtn = new Button(actionText);
-        linkBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 0; -fx-cursor: hand;");
+        Button linkBtn = new Button(actionText + " →");
+        linkBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 11.5px; -fx-padding: 0; -fx-cursor: hand;");
         if (action != null) linkBtn.setOnAction(e -> action.run());
 
         card.getChildren().addAll(topRow, linkBtn);
-        return card;
-    }
-
-    private VBox createConflictDetailWidget() {
-        VBox card = new VBox(12);
-        card.setPadding(new Insets(18));
-        card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
-
-        Label title = new Label("📅 Schedule Conflict Detected");
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
-
-        Label sub = new Label("The system identified an overlap in physical resources for TechVision Annual Summit.");
-        sub.setWrapText(true);
-        sub.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        VBox detailsBox = new VBox(4);
-        detailsBox.setPadding(new Insets(10));
-        detailsBox.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 6px;");
-
-        Label room = new Label("📍 Grand Ballroom - Section A");
-        room.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: " + TEXT_MAIN + ";");
-
-        Label v1 = new Label("VisionPro AV Setup: 1:00 PM - 3:00 PM");
-        v1.setStyle("-fx-font-size: 10px; -fx-text-fill: " + RED_TEXT + ";");
-
-        Label v2 = new Label("Catering Delivery: 2:30 PM - 3:30 PM");
-        v2.setStyle("-fx-font-size: 10px; -fx-text-fill: " + RED_TEXT + ";");
-
-        detailsBox.getChildren().addAll(room, v1, v2);
-
-        Button adjustBtn = createPrimaryButton("Adjust Schedule");
-        adjustBtn.setMaxWidth(Double.MAX_VALUE);
-        adjustBtn.setOnAction(e -> {
-            ScheduleO view = new ScheduleO();
-            LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, this::returnToDashboard));
-        });
-
-        card.getChildren().addAll(title, sub, detailsBox, adjustBtn);
         return card;
     }
 
@@ -224,108 +204,133 @@ public class NotificationsO {
         card.setPadding(new Insets(18));
         card.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
-        Label title = new Label("Overview");
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
+        Label title = new Label("Notification Summary");
+        title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
-        VBox rows = new VBox(8);
-        rows.getChildren().addAll(
-                createMetricProgressRow("Unread", "7", 0.70, PRIMARY_BLUE),
-                createMetricProgressRow("Action Required", "3", 0.30, RED_TEXT)
-        );
+        unreadCountLabel = new Label("0");
+        unreadCountLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
 
-        card.getChildren().addAll(title, rows);
+        HBox r1 = new HBox(8);
+        Label l1 = new Label("Unread Alerts:");
+        l1.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
+        r1.getChildren().addAll(l1, sp, unreadCountLabel);
+
+        card.getChildren().addAll(title, r1);
         return card;
     }
 
-    private VBox createMetricProgressRow(String label, String val, double progress, String colorHex) {
-        VBox box = new VBox(4);
-
-        HBox topRow = new HBox();
-        Label l = new Label(label); l.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
-        Label v = new Label(val); v.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-        topRow.getChildren().addAll(l, sp, v);
-
-        ProgressBar pb = new ProgressBar(progress);
-        pb.setMaxWidth(Double.MAX_VALUE);
-        pb.setStyle("-fx-accent: " + colorHex + "; -fx-pref-height: 6;");
-
-        box.getChildren().addAll(topRow, pb);
-        return box;
-    }
-
-    private VBox createSidebar() {
-        VBox sidebar = new VBox(10);
+    private VBox createCommonOrganizerSidebar(String activeTab) {
+        VBox sidebar = new VBox(6);
         sidebar.setPrefWidth(240);
-        sidebar.setStyle("-fx-background-color: " + NAVY + ";");
-        sidebar.setPadding(new Insets(20, 12, 20, 12));
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label brand = new Label("EventXpert");
-        brand.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
+        HBox brandBox = new HBox(8);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(0, 6, 12, 6));
 
-        VBox menu = new VBox(6);
-        menu.getChildren().add(createNavBtn("Dashboard", false, this::returnToDashboard));
-        menu.getChildren().add(createNavBtn("Notifications", true, () -> {}));
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
 
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
+        VBox brandTexts = new VBox(1);
+        Label logo = new Label("EventXpert");
+        logo.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        Label portal = new Label("ORGANIZER PORTAL");
+        portal.setStyle("-fx-text-fill: " + LIGHT_BLUE + "; -fx-font-size: 9px; -fx-font-weight: bold;");
+        brandTexts.getChildren().addAll(logo, portal);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
 
-        sidebar.getChildren().addAll(brand, new Separator(), menu, spacer);
+        VBox menu = new VBox(3);
+        String[][] menuItems = {
+                {"Dashboard", "fas-tachometer-alt"},
+                {"Event Requests", "fas-inbox"},
+                {"My Events", "fas-calendar-check"},
+                {"Schedule", "fas-calendar-alt"}
+        };
+
+        for (String[] item : menuItems) {
+            String name = item[0];
+            String iconLit = item[1];
+            menu.getChildren().add(createSidebarButton(name, iconLit, name.equals(activeTab), () -> handleNav(name)));
+        }
+
+        Region space = new Region();
+        VBox.setVgrow(space, Priority.ALWAYS);
+
+        VBox bottomMenu = new VBox(3);
+        bottomMenu.getChildren().addAll(
+                createSidebarButton("Notifications", "fas-bell", activeTab.equals("Notifications"), () -> handleNav("Notifications")),
+                createSidebarButton("Profile", "fas-user", false, () -> handleNav("Profile")),
+                createSidebarButton("Settings", "fas-cog", false, () -> handleNav("Settings")),
+                createSidebarButton("Support", "fas-question-circle", false, () -> handleNav("Support"))
+        );
+
+        sidebar.getChildren().addAll(brandBox, menu, space, bottomMenu);
         return sidebar;
     }
 
-    private Button createNavBtn(String title, boolean active, Runnable action) {
-        Button b = new Button(title);
-        b.setMaxWidth(Double.MAX_VALUE);
-        b.setAlignment(Pos.CENTER_LEFT);
-        b.setStyle(active ? "-fx-background-color: #EAF3FF; -fx-text-fill: #0B4EA2; -fx-font-weight: bold; -fx-padding: 8 12; -fx-background-radius: 6px;"
-                : "-fx-background-color: transparent; -fx-text-fill: white; -fx-padding: 8 12; -fx-cursor: hand;");
-        if (action != null) b.setOnAction(e -> action.run());
-        return b;
-    }
+    private Button createSidebarButton(String name, String iconLit, boolean active, Runnable action) {
+        Button btn = new Button("  " + name);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
 
-    private HBox createTopBar() {
-        HBox bar = new HBox();
-        bar.setPrefHeight(65);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setPadding(new Insets(0, 30, 0, 30));
-        bar.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
 
-        Label l = new Label("Notification Center");
-        l.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
-        bar.getChildren().add(l);
-        return bar;
-    }
-
-    private void returnToDashboard() {
-        OrganizerController controller = new OrganizerController();
-        OrganizerProfile profile = controller.getOrganizerProfile(uid);
-
-        if (profile != null && profile.isProfileCompleted()) {
-            OrganizerDashboardO activeDash = new OrganizerDashboardO(uid, idToken);
-            LandingPage.landingPageStage.setScene(activeDash.getorganizerDashboardScene(null));
+        if (active) {
+            btn.setStyle("-fx-background-color:" + LIGHT_BLUE + ";-fx-text-fill:" + NAVY + ";-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:6;");
         } else {
-            InactiveOrgDash inactiveDash = new InactiveOrgDash(uid, idToken);
-            LandingPage.landingPageStage.setScene(inactiveDash.getinactiveOrganizerScene());
+            btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-cursor:hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color:rgba(255,255,255,0.08);-fx-text-fill:white;-fx-font-size:12px;-fx-background-radius:6;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;"));
+        }
+
+        if (action != null) btn.setOnAction(e -> action.run());
+        return btn;
+    }
+
+    private void handleNav(String screen) {
+        switch (screen) {
+            case "Dashboard" -> returnToDashboard();
+            case "Event Requests" -> {
+                EventRequestsO reqs = new EventRequestsO(uid, idToken);
+                LandingPage.landingPageStage.setScene(reqs.geteventRequestsOScene(null));
+            }
+            case "My Events" -> {
+                MyEventsO myEvents = new MyEventsO(uid, idToken);
+                LandingPage.landingPageStage.setScene(myEvents.getMyEventsOScene(null));
+            }
+            case "Schedule" -> {
+                ScheduleO sched = new ScheduleO(uid, idToken);
+                LandingPage.landingPageStage.setScene(sched.getScene(LandingPage.landingPageStage, null));
+            }
+            case "Notifications" -> {}
+            case "Profile" -> {
+                ProfileO prof = new ProfileO(uid, idToken);
+                LandingPage.landingPageStage.setScene(prof.getProfileScene());
+            }
+            case "Settings" -> {
+                SettingsO set = new SettingsO(uid, idToken);
+                LandingPage.landingPageStage.setScene(set.getSettingScene(null));
+            }
+            case "Support" -> {
+                SupportO supp = new SupportO(uid, idToken);
+                LandingPage.landingPageStage.setScene(supp.getSupportOScene(null));
+            }
         }
     }
 
-    private VBox createCardContainer() {
-        VBox card = new VBox(12);
-        card.setPadding(new Insets(18));
-        card.setStyle("-fx-background-color: " + WHITE + "; -fx-background-radius: 12px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 12px;");
-        return card;
-    }
-
-    private Button createPrimaryButton(String text) {
-        Button btn = new Button(text);
-        btn.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: " + WHITE + "; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-padding: 8 16; -fx-cursor: hand;");
-        return btn;
-    }
-
-    private Button createSecondaryButton(String text) {
-        Button btn = new Button(text);
-        btn.setStyle("-fx-background-color: " + WHITE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-border-color: " + PRIMARY_BLUE + "; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 6 12; -fx-cursor: hand;");
-        return btn;
+    private void returnToDashboard() {
+        OrganizerDashboardO activeDash = new OrganizerDashboardO(uid, idToken);
+        LandingPage.landingPageStage.setScene(activeDash.getorganizerDashboardScene(null));
     }
 }

@@ -117,13 +117,20 @@
           <version>12.4.0</version>
         </dependency>
 
+        <!--Source: https://mvnrepository.com/artifact/com.cloudinary/cloudinary-http5 -->
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http5</artifactId>
+            <version>2.3.2</version>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>com.razorpay</groupId>
             <artifactId>razorpay-java</artifactId>
             <version>1.4.3</version>
         </dependency>
 
-<!-- iText PDF for Real-time Receipt Generation -->
+        <!-- iText PDF for Real-time Receipt Generation -->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itextpdf</artifactId>

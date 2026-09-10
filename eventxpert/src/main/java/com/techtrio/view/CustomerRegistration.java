@@ -6,530 +6,264 @@ import com.techtrio.controller.SignUpResult;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Hyperlink;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
 
-public class CustomerRegistration{
+public class CustomerRegistration {
 
     private Scene CustomerRegistrationScene;
-    private final String NAVY = "#082E6B";
+    private StackPane rootLayer;
+
+    private static final String NAVY = "#062A60";
+    private static final String PRIMARY_BLUE = "#0B4EA2";
+    private static final String BORDER_COLOR = "#DCE5F0";
 
     Scene getCustomerRegistrationScene(Runnable callBackAction) {
-
-            HBox root = new HBox();
-
-            root.setPrefSize(1550, 785);
-
-            VBox leftSide = new VBox();
-
-            leftSide.setPrefWidth(500);
-            leftSide.setPrefHeight(900);
-
-            leftSide.setAlignment(Pos.TOP_LEFT);
-
-            leftSide.setPadding(
-                            new Insets(25, 35, 30, 35));
-
-            leftSide.setStyle("-fx-background-color:  #082E6B");
-
-            Image logoImage = new Image("assets\\images\\logo .png");
-            ImageView logoView = new ImageView(logoImage);
-
-            logoView.setFitWidth(70);
-            logoView.setFitHeight(70);
-
-            logoView.setPreserveRatio(true);
-
-            logoView.setSmooth(true);
-
-            Label eventXpertText = new Label("EventXpert");
-
-            eventXpertText.setFont( Font.font("Arial",FontWeight.BOLD,25));
-
-            eventXpertText.setTextFill(Color.WHITE);
-
-            HBox logoBox = new HBox();
-
-            logoBox.setAlignment(Pos.CENTER_LEFT);
-
-            logoBox.setSpacing(1);
-
-            logoBox.getChildren().addAll(logoView,eventXpertText);
-
-            VBox.setMargin(logoBox, new Insets( 30, 0, 20, 40));
-
-            Image registrationImage = new Image("assets\\images\\reg image.png");
-
-            ImageView registrationImageView = new ImageView(registrationImage);
-
-            registrationImageView.setFitWidth(420);
-            registrationImageView.setFitHeight(400);
-
-            registrationImageView.setPreserveRatio(true);
-
-            registrationImageView.setSmooth(true);
-
-            StackPane imageBox = new StackPane();
-
-            imageBox.setPrefWidth(420);
-            imageBox.setPrefHeight(400);
-
-            imageBox.setAlignment(Pos.CENTER);
-
-            imageBox.getChildren().add(registrationImageView);
-
-            VBox.setMargin(imageBox,new Insets( 5, 0,10,0));
-
-            Label joinCustomer = new Label("Join as Customer");
-
-            joinCustomer.setFont(Font.font( "Arial",FontWeight.BOLD, 24));
-
-            joinCustomer.setTextFill( Color.WHITE);
-
-            VBox.setMargin(joinCustomer,new Insets(5,0,8,0));
-
-            Label customerDescription = new Label("Book events, explore services,\nand manage your bookings easily.");
-
-            customerDescription.setFont( Font.font("Arial",15));
-
-            customerDescription.setTextFill(Color.web("#D9E2F2"));
-
-            customerDescription.setLineSpacing(5);
-
-            leftSide.getChildren().addAll(logoBox, imageBox, joinCustomer, customerDescription);
-
-            VBox rightSide = new VBox();
-
-            rightSide.setPrefWidth(865);
-
-            rightSide.setPadding(new Insets(55,85,40,85));
-
-            rightSide.setStyle( "-fx-background-color: white;");
-
-            Label rightLogo = new Label("EventXpert");
-
-            rightLogo.setFont( Font.font( "Arial",FontWeight.BOLD,27));
-
-            rightLogo.setTextFill(Color.web(NAVY));
-
-            Label heading = new Label("Create your EventXpert\naccount");
-
-            heading.setFont( Font.font( "Arial",FontWeight.BOLD,32));
-
-            heading.setTextFill(Color.web("#111111"));
-
-            VBox.setMargin( heading, new Insets(28,0,7,0));
-
-            Label subtitle = new Label( "Plan, manage and organize your events effortlessly.");
-
-            subtitle.setTextFill(
-                            Color.web("#303746"));
-
-            VBox.setMargin(
-                            subtitle,
-                            new Insets(0,0,22,0));
-
-            Label fullNameLabel = createLabel("Full Name");
-
-            TextField fullNameField = createTextField("Harshada Kurumkar");
-
-            VBox.setMargin(
-                            fullNameField,
-                            new Insets(6,0,12,0));
-
-            Label emailLabel = createLabel("Email Address");
-
-            TextField emailField = createTextField("harshada@example.com");
-
-            VBox.setMargin(
-                            emailField,
-                            new Insets(6,0,12,0));
-
-            Label mobileLabel = createLabel("Mobile Number");
-
-            TextField mobileField = createTextField(
-                            "+1 (555) 000-0000");
-
-            VBox.setMargin(
-                            mobileField,
-                            new Insets(6,0,12,0));
-
-            Label passwordLabel = createLabel("Password");
-
-            PasswordField passwordField = createPasswordField(
-                            "Enter your password");
-
-            Button passwordEye = createEyeButton();
-
-            StackPane passwordBox = createPasswordBox(
-                            passwordField,
-                            passwordEye);
-
-            VBox.setMargin(
-                            passwordBox,
-                            new Insets(6,0,12,0));
-
-            Label confirmPasswordLabel = createLabel(
-                            "Confirm Password");
-
-            PasswordField confirmPasswordField = createPasswordField(
-                            "Confirm your password");
-
-            Button confirmEye = createEyeButton();
-
-            StackPane confirmPasswordBox = createPasswordBox(
-                            confirmPasswordField,
-                            confirmEye);
-
-            VBox.setMargin(
-                            confirmPasswordBox,
-                            new Insets(6,0,20,0));
-
-            CheckBox termsCheckBox = new CheckBox();
-
-            Label termsLabel = new Label(
-                            "I agree to the Terms of Service and Privacy Policy");
-
-            termsLabel.setFont(
-                            Font.font(
-                                            "Arial",
-                                            15));
-
-            termsLabel.setTextFill(
-                            Color.web("#20242B"));
-
-            HBox termsBox = new HBox();
-
-            termsBox.setAlignment(Pos.CENTER_LEFT);
-
-            termsBox.setSpacing(10);
-
-            termsBox.getChildren().addAll(termsCheckBox,termsLabel);
-
-            VBox.setMargin(termsBox,new Insets( 0, 0,22, 0));
-
-            Button createAccountButton = new Button("Create Account");
-            Text output = new Text();
-            output.setStyle("-fx-fill: white");
-            AuthController controller = new AuthController();
-
-            createAccountButton.setPrefHeight(45);
-
-            createAccountButton.setMaxWidth(
-                            Double.MAX_VALUE);
-
-            createAccountButton.setFont(
-                            Font.font(
-                                            "Arial",
-                                            FontWeight.BOLD,
-                                            16));
-
-            createAccountButton.setTextFill(
-                            Color.WHITE);
-
-            createAccountButton.setStyle(
-                            "-fx-background-color: #082E6B;" +
-                                            "-fx-background-radius: 6;" +
-                                            "-fx-cursor: hand;");
-
-            createAccountButton.setOnMouseEntered(
-                            event -> {
-
-                                    createAccountButton.setStyle(
-                                                    "-fx-background-color: #0D3E87;" +
-                                                                    "-fx-background-radius: 6;" +
-                                                                    "-fx-cursor: hand;");
-
-                            });
-
-            createAccountButton.setOnMouseExited(
-                            event -> {
-
-                                    createAccountButton.setStyle(
-                                                    "-fx-background-color: #082E6B;" +
-                                                                    "-fx-background-radius: 6;" +
-                                                                    "-fx-cursor: hand;");
-
-                            });
-
-            createAccountButton.setOnAction(
-                            event -> {
-
-                                    String name = fullNameField
-                                                    .getText()
-                                                    .trim();
-
-                                    String email = emailField
-                                                    .getText()
-                                                    .trim();
-
-                                    String mobile = mobileField
-                                                    .getText()
-                                                    .trim();
-
-                                    String password = passwordField
-                                                    .getText();
-
-                                    String confirmPasswordText = confirmPasswordField
-                                                    .getText();
-
-                                    if (name.isEmpty()
-                                                    || name.isEmpty()
-                                                    || email.isEmpty()
-                                                    || mobile.isEmpty()
-                                                    || password.isEmpty()
-                                                    || confirmPasswordText.isEmpty()) {
-
-                                            showAlert(
-                                                            "Please fill all the fields.");
-
-                                            return;
-                                    }
-
-                                    if (!password.equals(confirmPasswordText)) {
-
-                                            showAlert(
-                                                            "Passwords do not match.");
-
-                                            return;
-                                    }
-
-                                    if (!termsCheckBox.isSelected()) {
-
-                                            showAlert(
-                                                            "Please accept Terms of Service and Privacy Policy.");
-
-                                            return;
-                                    }
-            SignUpResult result =
-            controller.signUp(
-                    name,
-                    email,
-                    mobile,
-                    password,
-                    "customer"
-            );
-
-    if (result != null) {
-
-        System.out.println("Registration successful");
-        showAlert("Account created successfully!");
-        
-         NewCustomerDashboard customerDashboardC = new NewCustomerDashboard();
-         Runnable callBackAction1 = new Runnable() {
-          public void run(){
-            backToCustomerRegistration();
-          }
-        };
-
-        LandingPage.landingPageStage.setScene(customerDashboardC.getnewCustomerScene(callBackAction1));
-     
-    }else {
-        showAlert("Registration failed.");
-    }
- });
-
-            Label alreadyAccount = new Label("Already have an account?");
-
-            alreadyAccount.setFont(Font.font("Arial",16));
-
-            alreadyAccount.setTextFill(Color.web("#303746"));
-
-            Hyperlink signIn = new Hyperlink("Sign In");
-
-            signIn.setFont(Font.font("Arial",FontWeight.BOLD,16));
-
-            signIn.setTextFill(Color.web(NAVY));
-
-            signIn.setStyle( "-fx-background-color: transparent;" +
-                                            "-fx-border-color: transparent;" +
-                                            "-fx-cursor: hand;");
-
-            HBox signInBox = new HBox();
-
-            signInBox.setAlignment(
-                            Pos.CENTER);
-
-            signInBox.setSpacing(5);
-
-            signInBox.getChildren().addAll(
-                            alreadyAccount,
-                            signIn);
-           signIn.setOnAction(e -> {
-            System.out.println("Go To Login Page");
-            LoginPage backToLoginPage = new LoginPage();
-            Runnable callBackAction1 = new Runnable() {
-                        public void run(){
-                                backToCustomerRegistration();
-                        }
-                };
-
-                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction1));
-      
+        rootLayer = new StackPane();
+        rootLayer.setStyle("-fx-background-color: white; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
+
+        HBox root = new HBox();
+        root.setPrefSize(1550, 785);
+        root.setStyle("-fx-background-color: white;");
+
+        // 1. LEFT BRANDING PANEL
+        VBox leftSide = new VBox(20);
+        leftSide.setPrefWidth(480);
+        leftSide.setAlignment(Pos.CENTER_LEFT);
+        leftSide.setPadding(new Insets(40, 45, 40, 45));
+        leftSide.setStyle("-fx-background-color: " + NAVY + ";");
+
+        Label brand = new Label("EventXpert");
+        brand.setFont(Font.font("Arial", FontWeight.BOLD, 30));
+        brand.setTextFill(Color.WHITE);
+
+        Image regImg = new Image("assets\\images\\reg image.png");
+        ImageView imgView = new ImageView(regImg);
+        imgView.setFitWidth(380);
+        imgView.setFitHeight(340);
+        imgView.setPreserveRatio(true);
+
+        Label joinCustomer = new Label("Join as Customer");
+        joinCustomer.setFont(Font.font("Arial", FontWeight.BOLD, 26));
+        joinCustomer.setTextFill(Color.WHITE);
+
+        Label customerDescription = new Label("Plan events, discover venues & verified vendors, and track your bookings with live Escrow security.");
+        customerDescription.setWrapText(true);
+        customerDescription.setFont(Font.font("Arial", 14));
+        customerDescription.setTextFill(Color.web("#CBD5E1"));
+
+        leftSide.getChildren().addAll(brand, imgView, joinCustomer, customerDescription);
+
+        // 2. RIGHT FORM PANEL
+        VBox rightSide = new VBox(12);
+        rightSide.setPadding(new Insets(40, 80, 40, 80));
+        HBox.setHgrow(rightSide, Priority.ALWAYS);
+
+        Label heading = new Label("Create your Customer Account");
+        heading.setFont(Font.font("Arial", FontWeight.BOLD, 32));
+        heading.setTextFill(Color.web(NAVY));
+
+        Label subtitle = new Label("Plan, manage and organize your events effortlessly.");
+        subtitle.setStyle("-fx-font-size: 14px; -fx-text-fill: #64748B;");
+
+        TextField fullNameField = createTextField("Harshada Kurumkar");
+        TextField emailField = createTextField("harshada@example.com");
+        TextField mobileField = createTextField("+91 98765 43210");
+
+        PasswordEyeBox passBox = new PasswordEyeBox("Enter your password");
+        PasswordEyeBox confPassBox = new PasswordEyeBox("Confirm your password");
+
+        CheckBox termsCheckBox = new CheckBox("I agree to the Terms of Service and Privacy Policy");
+        termsCheckBox.setStyle("-fx-font-size: 12.5px; -fx-text-fill: #334155;");
+
+        Button createAccountButton = new Button("Create Customer Account →");
+        createAccountButton.setMaxWidth(Double.MAX_VALUE);
+        createAccountButton.setPrefHeight(46);
+        createAccountButton.setStyle("-fx-background-color: " + PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-background-radius: 6px; -fx-cursor: hand;");
+
+        AuthController controller = new AuthController();
+
+        createAccountButton.setOnAction(event -> {
+            String name = fullNameField.getText().trim();
+            String email = emailField.getText().trim();
+            String mobile = mobileField.getText().trim();
+            String password = passBox.getText();
+            String confirmPasswordText = confPassBox.getText();
+
+            if (name.isEmpty() || email.isEmpty() || mobile.isEmpty() || password.isEmpty() || confirmPasswordText.isEmpty()) {
+                showCompactModal("Incomplete Form", "Please fill in all the required fields.", false);
+                return;
+            }
+
+            if (!password.equals(confirmPasswordText)) {
+                showCompactModal("Password Mismatch", "Passwords do not match. Please re-enter.", false);
+                return;
+            }
+
+            if (password.length() < 6) {
+                showCompactModal("Weak Password", "Password must contain at least 6 characters.", false);
+                return;
+            }
+
+            if (!termsCheckBox.isSelected()) {
+                showCompactModal("Terms Required", "Please accept the Terms of Service to register.", false);
+                return;
+            }
+
+            SignUpResult result = controller.signUp(name, email, mobile, password, "customer");
+
+            if (result != null) {
+                NewCustomerDashboard customerDashboardC = new NewCustomerDashboard();
+                LandingPage.landingPageStage.setScene(customerDashboardC.getnewCustomerScene(this::backToCustomerRegistration));
+            } else {
+                showCompactModal("Registration Failed (400)", "Email may already exist or is invalid. Please check.", false);
+            }
         });
 
-            VBox.setMargin(signInBox,new Insets( 25, 0, 0, 0));
+        HBox signInBox = new HBox(6);
+        signInBox.setAlignment(Pos.CENTER);
+        Label already = new Label("Already have an account?");
+        already.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748B;");
+        Hyperlink signIn = new Hyperlink("Sign In");
+        signIn.setStyle("-fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-border-color: transparent;");
+        signIn.setOnAction(e -> {
+            LoginPage loginPage = new LoginPage();
+            LandingPage.landingPageStage.setScene(loginPage.getloginPageScene(this::backToCustomerRegistration));
+        });
+        signInBox.getChildren().addAll(already, signIn);
 
-            rightSide.getChildren().addAll(
+        rightSide.getChildren().addAll(
+                heading, subtitle,
+                new Label("Full Name:"), fullNameField,
+                new Label("Email Address:"), emailField,
+                new Label("Mobile Number:"), mobileField,
+                new Label("Password:"), passBox.getContainer(),
+                new Label("Confirm Password:"), confPassBox.getContainer(),
+                termsCheckBox,
+                createAccountButton,
+                signInBox
+        );
 
-                            rightLogo,
-                            heading,
-                            subtitle,
-                            fullNameLabel,
-                            fullNameField,
-                            emailLabel,
-                            emailField,
-                            mobileLabel,
-                            mobileField,
-                            passwordLabel,
-                            passwordBox,
-                            confirmPasswordLabel,
-                            confirmPasswordBox,
-                            termsBox,
-                            createAccountButton,
-                            signInBox
-                        );
+        ScrollPane rightScroll = new ScrollPane(rightSide);
+        rightScroll.setFitToWidth(true);
+        rightScroll.setStyle("-fx-background-color: white; -fx-background: white; -fx-border-color: transparent;");
+        HBox.setHgrow(rightScroll, Priority.ALWAYS);
 
-            root.getChildren().addAll(leftSide,rightSide);
+        root.getChildren().addAll(leftSide, rightScroll);
+        rootLayer.getChildren().add(root);
 
-            Scene scene = new Scene(root,1550,750);
-            CustomerRegistrationScene = scene;
-            return CustomerRegistrationScene;
-
+        CustomerRegistrationScene = new Scene(rootLayer, 1550, 785);
+        return CustomerRegistrationScene;
     }
 
-    private Label createLabel(String text) {
-
-            Label label = new Label(text);
-
-            label.setFont(Font.font("Arial", FontWeight.BOLD,15));
-
-            label.setTextFill(Color.web("#111111"));
-
-            return label;
+    private TextField createTextField(String prompt) {
+        TextField field = new TextField();
+        field.setPromptText(prompt);
+        field.setPrefHeight(42);
+        field.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 0 12;");
+        return field;
     }
 
-    private TextField createTextField(
-                    String prompt) {
+    private static class PasswordEyeBox {
+        private final PasswordField pwdField = new PasswordField();
+        private final TextField txtField = new TextField();
+        private final StackPane pane = new StackPane();
 
-            TextField field = new TextField();
+        public PasswordEyeBox(String prompt) {
+            pwdField.setPromptText(prompt);
+            txtField.setPromptText(prompt);
+            txtField.setVisible(false);
 
-            field.setPromptText( prompt);
+            String style = "-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 0 38 0 12;";
+            pwdField.setStyle(style);
+            txtField.setStyle(style);
+            pwdField.setPrefHeight(42);
+            txtField.setPrefHeight(42);
 
-            field.setPrefHeight(48);
+            pwdField.textProperty().bindBidirectional(txtField.textProperty());
 
-            field.setFont(Font.font( "Arial", 15));
+            Button eyeBtn = new Button("👁");
+            eyeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-size: 14px; -fx-cursor: hand;");
 
-            field.setStyle(
-                            "-fx-background-color: white;" +
-                                            "-fx-border-color: #C7CED8;" +
-                                            "-fx-border-width: 1;" +
-                                            "-fx-border-radius: 7;" +
-                                            "-fx-background-radius: 7;" +
-                                            "-fx-padding: 0 15;");
+            eyeBtn.setOnAction(e -> {
+                if (pwdField.isVisible()) {
+                    pwdField.setVisible(false);
+                    txtField.setVisible(true);
+                    eyeBtn.setText("🙈");
+                } else {
+                    txtField.setVisible(false);
+                    pwdField.setVisible(true);
+                    eyeBtn.setText("👁");
+                }
+            });
 
-            return field;
+            pane.getChildren().addAll(pwdField, txtField, eyeBtn);
+            StackPane.setAlignment(eyeBtn, Pos.CENTER_RIGHT);
+            StackPane.setMargin(eyeBtn, new Insets(0, 8, 0, 0));
+        }
+
+        public StackPane getContainer() { return pane; }
+        public String getText() { return pwdField.getText(); }
     }
 
-    private PasswordField createPasswordField(
-                    String prompt) {
+    // ⭐ COMPACT RECTANGULAR IN-APP POPUP (SMALL HEIGHT)
+    private void showCompactModal(String title, String message, boolean success) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(6, 42, 96, 0.40);");
 
-            PasswordField field = new PasswordField();
+        VBox modal = new VBox(10);
+        modal.setPrefWidth(400);
+        modal.setMaxWidth(420);
+        modal.setMaxHeight(Region.USE_PREF_SIZE);
+        modal.setPadding(new Insets(16, 20, 16, 20));
+        modal.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: " + (success ? "#86EFAC" : "#FCA5A5") + "; -fx-border-width: 1px; -fx-border-radius: 8px;");
+        modal.setEffect(new DropShadow(18, Color.rgb(0, 0, 0, 0.20)));
 
-            field.setPromptText(
-                            prompt);
+        HBox topH = new HBox(10);
+        topH.setAlignment(Pos.CENTER_LEFT);
 
-            field.setPrefHeight(48);
+        Label ic = new Label(success ? "✓" : "⚠");
+        ic.setStyle("-fx-font-size: 15px; -fx-text-fill: " + (success ? "#16A34A" : "#DC2626") + "; -fx-font-weight: bold;");
 
-            field.setFont(
-                            Font.font(
-                                            "Arial",15));
+        Label t = new Label(title);
+        t.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        t.setTextFill(Color.web(NAVY));
 
-            field.setStyle(
-                            "-fx-background-color: white;" +
-                                            "-fx-border-color: #C7CED8;" +
-                                            "-fx-border-width: 1;" +
-                                            "-fx-border-radius: 7;" +
-                                            "-fx-background-radius: 7;" +
-                                            "-fx-padding: 0 45 0 15;");
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
 
-            return field;
+        Button closeX = new Button("✕");
+        closeX.setStyle("-fx-background-color: transparent; -fx-text-fill: #94A3B8; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 0;");
+        closeX.setOnAction(e -> rootLayer.getChildren().remove(overlay));
+
+        topH.getChildren().addAll(ic, t, sp, closeX);
+
+        Label m = new Label(message);
+        m.setWrapText(true);
+        m.setStyle("-fx-font-size: 12px; -fx-text-fill: #475569;");
+
+        HBox bRow = new HBox();
+        bRow.setAlignment(Pos.CENTER_RIGHT);
+        Button okBtn = new Button("OK");
+        okBtn.setStyle("-fx-background-color: " + (success ? "#16A34A" : PRIMARY_BLUE) + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11.5px; -fx-padding: 5 18; -fx-background-radius: 4px; -fx-cursor: hand;");
+        okBtn.setOnAction(e -> rootLayer.getChildren().remove(overlay));
+        bRow.getChildren().add(okBtn);
+
+        modal.getChildren().addAll(topH, m, bRow);
+        overlay.getChildren().add(modal);
+        rootLayer.getChildren().add(overlay);
     }
 
-    private Button createEyeButton() {
-
-            Button eye = new Button("◉");
-
-            eye.setPrefWidth(40);
-            eye.setPrefHeight(40);
-
-            eye.setStyle(
-                            "-fx-background-color: transparent;" +
-                                            "-fx-border-color: transparent;" +
-                                            "-fx-text-fill: #687080;" +
-                                            "-fx-font-size: 16;" +
-                                            "-fx-cursor: hand;");
-
-            return eye;
-    }
-
-    private StackPane createPasswordBox(
-                    PasswordField passwordField,
-                    Button eyeButton) {
-
-            StackPane box = new StackPane();
-
-            box.setPrefHeight(48);
-
-            box.getChildren().addAll(
-                            passwordField,
-                            eyeButton);
-
-            StackPane.setAlignment(
-                            eyeButton,
-                            Pos.CENTER_RIGHT);
-
-            StackPane.setMargin(
-                            eyeButton,
-                            new Insets( 0, 3, 0, 0));
-
-            return box;
-    }
-
-    private void showAlert(
-                    String message) {
-
-            Alert alert = new Alert(
-                            Alert.AlertType.INFORMATION);
-
-            alert.setTitle(
-                            "EventXpert");
-
-            alert.setHeaderText(
-                            null);
-
-            alert.setContentText(
-                            message);
-
-            alert.showAndWait();
-    }
-
-    public void backToCustomerRegistration(){
-
-        LandingPage.landingPageStage.setScene(CustomerRegistrationScene);
+    public void backToCustomerRegistration() {
+        if (CustomerRegistrationScene != null && LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(CustomerRegistrationScene);
+        }
     }
 }

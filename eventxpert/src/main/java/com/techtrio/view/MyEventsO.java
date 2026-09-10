@@ -53,7 +53,7 @@ public class MyEventsO {
         // 1. Unified Sidebar on Left
         root.setLeft(createCommonOrganizerSidebar("My Events"));
 
-        // 2. Main Content (Top Bar Removed)
+        // 2. Main Content
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -64,7 +64,7 @@ public class MyEventsO {
         Label title = new Label("My Events (Planning & Execution)");
         title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
-        Label subtitle = new Label("Manage confirmed customer events, monitor Timefold timelines, and execute services.");
+        Label subtitle = new Label("Manage confirmed customer events, monitor Timefold timelines, and execute live services.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748B;");
         VBox titleBox = new VBox(2, title, subtitle);
 
@@ -80,12 +80,12 @@ public class MyEventsO {
                 createCard("Completed", lblCompletedEvents, "fas-award", "#7C3AED")
         );
 
-        // ⭐ CONFIRMED EVENTS TABLE VIEW
+        // CONFIRMED EVENTS TABLE VIEW
         VBox tableCard = new VBox(10);
         tableCard.setPadding(new Insets(16));
         tableCard.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 10px; -fx-background-radius: 10px;");
 
-        Label tableTitle = new Label("Active Confirmed Events");
+        Label tableTitle = new Label("Active Confirmed & Completed Events");
         tableTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
         confirmedEventsTable = new TableView<>();
@@ -145,6 +145,7 @@ public class MyEventsO {
         return MyEventsOScene;
     }
 
+    // ⭐ ACCURATE EVENT COUNT CALCULATION
     private void loadAcceptedEventsFromFirestoreAsync() {
         if (uid == null || uid.isBlank()) return;
 
@@ -164,12 +165,13 @@ public class MyEventsO {
 
                 if (assignedList != null) {
                     for (Event ev : assignedList) {
-                        String oStatus = ev.getOrganizerStatus() != null ? ev.getOrganizerStatus().toUpperCase() : "";
-                        String status = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "";
+                        String oStatus = ev.getOrganizerStatus() != null ? ev.getOrganizerStatus().trim().toUpperCase() : "";
+                        String status = ev.getStatus() != null ? ev.getStatus().trim().toUpperCase() : "";
 
                         if ("ACCEPTED".equals(oStatus) || "CONFIRMED".equals(status) || "COMPLETED".equals(status)) {
-                            if ("COMPLETED".equals(status)) completedCount++;
-                            else {
+                            if ("COMPLETED".equals(status)) {
+                                completedCount++;
+                            } else {
                                 activeCount++;
                                 upcomingCount++;
                             }

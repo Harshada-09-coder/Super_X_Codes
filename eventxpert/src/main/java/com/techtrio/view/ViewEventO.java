@@ -59,20 +59,22 @@ public class ViewEventO {
     }
 
     public Scene getScene(Stage stage, Runnable backAction) {
+        return getScene(backAction);
+    }
+
+    public Scene getScene(Runnable backAction) {
         this.backAction = backAction;
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', sans-serif;");
 
-        // 1. Sidebar (Matched with Organizer Dashboard)
         root.setLeft(createCommonOrganizerSidebar("My Events"));
 
-        // 2. Main Content inside ScrollPane (Top Bar Removed)
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
 
-        VBox mainContent = createMainContent(stage);
+        VBox mainContent = createMainContent();
         scrollPane.setContent(mainContent);
         root.setCenter(scrollPane);
 
@@ -81,6 +83,7 @@ public class ViewEventO {
         return new Scene(root, 1550, 785);
     }
 
+    // ⭐ Event Completed झाल्यावर बॅजवर "Completed" दाखवणारे लॉजिक
     private void loadSelectedEventFromFirestoreAsync() {
         String selectedEvtId = AdminContext.getSelectedEventId();
         if (selectedEvtId == null || selectedEvtId.isBlank()) return;
@@ -88,41 +91,60 @@ public class ViewEventO {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                AdminController adminController = new AdminController();
-                Event event = adminController.getEventById(selectedEvtId);
+                try {
+                    AdminController adminController = new AdminController();
+                    Event event = adminController.getEventById(selectedEvtId);
 
-                if (event != null) {
-                    CustomerProfile cust = adminController.getCustomerProfile(event.getCustomerId());
+                    if (event != null) {
+                        CustomerProfile cust = null;
+                        try {
+                            cust = adminController.getCustomerProfile(event.getCustomerId());
+                        } catch (Exception ignored) {}
 
-                    Platform.runLater(() -> {
-                        if (pageTitleLabel != null) pageTitleLabel.setText(event.getEventName() != null ? event.getEventName() : "Event Planning");
-                        if (metaTypeLabel != null) metaTypeLabel.setText(event.getEventType() != null ? event.getEventType() : "General");
+                        final CustomerProfile fCust = cust;
 
-                        String dateRange = (event.getStartDate() != null && !event.getStartDate().isBlank())
-                                ? event.getStartDate() + (event.getEndDate() != null && !event.getEndDate().isBlank() && !event.getStartDate().equals(event.getEndDate()) ? " to " + event.getEndDate() : "")
-                                : (event.getEventDate() != null ? event.getEventDate() : "TBD");
-                        if (metaDateLabel != null) metaDateLabel.setText(dateRange);
+                        Platform.runLater(() -> {
+                            if (pageTitleLabel != null) pageTitleLabel.setText(event.getEventName() != null ? event.getEventName() : "Event Planning");
+                            if (metaTypeLabel != null) metaTypeLabel.setText(event.getEventType() != null ? event.getEventType() : "General");
 
-                        String timeRange = (event.getStartTime() != null && !event.getStartTime().isBlank())
-                                ? event.getStartTime() + (event.getEndTime() != null && !event.getEndTime().isBlank() ? " - " + event.getEndTime() : "")
-                                : (event.getTime() != null ? event.getTime() : "09:00 AM – 05:00 PM");
-                        if (metaTimeLabel != null) metaTimeLabel.setText(timeRange);
+                            String dateRange = (event.getStartDate() != null && !event.getStartDate().isBlank())
+                                    ? event.getStartDate() + (event.getEndDate() != null && !event.getEndDate().isBlank() && !event.getStartDate().equals(event.getEndDate()) ? " to " + event.getEndDate() : "")
+                                    : (event.getEventDate() != null ? event.getEventDate() : "TBD");
+                            if (metaDateLabel != null) metaDateLabel.setText(dateRange);
 
-                        if (metaCityLabel != null) metaCityLabel.setText(event.getCity() != null ? event.getCity() : "India");
-                        if (metaGuestsLabel != null) metaGuestsLabel.setText(event.getGuests() + " Guests");
+                            String timeRange = (event.getStartTime() != null && !event.getStartTime().isBlank())
+                                    ? event.getStartTime() + (event.getEndTime() != null && !event.getEndTime().isBlank() ? " - " + event.getEndTime() : "")
+                                    : (event.getTime() != null ? event.getTime() : "09:00 AM – 05:00 PM");
+                            if (metaTimeLabel != null) metaTimeLabel.setText(timeRange);
 
-                        if (statusBadgeLabel != null) {
-                            String st = event.getStatus() != null ? event.getStatus() : "CONFIRMED";
-                            statusBadgeLabel.setText("● " + ("CONFIRMED".equalsIgnoreCase(st) ? "Confirmed" : "In Planning"));
-                            statusBadgeLabel.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-padding: 4 12; -fx-background-radius: 12px; -fx-font-size: 11px;");
-                        }
+                            if (metaCityLabel != null) metaCityLabel.setText(event.getCity() != null ? event.getCity() : "Pune");
+                            if (metaGuestsLabel != null) metaGuestsLabel.setText(String.valueOf(event.getGuests()) + " Guests");
 
-                        if (cust != null) {
-                            if (custClientLabel != null) custClientLabel.setText("Client: " + (cust.getName() != null ? cust.getName() : "Customer"));
-                            if (custEmailLabel != null) custEmailLabel.setText("Email: " + (cust.getEmail() != null ? cust.getEmail() : "N/A"));
-                            if (custPhoneLabel != null) custPhoneLabel.setText("Phone: " + (cust.getMobileNo() != null ? cust.getMobileNo() : "N/A"));
-                        }
-                    });
+                            // ⭐ महत्त्वाचा बदल: Completed असेल तर "● Completed" दिसेल
+                            if (statusBadgeLabel != null) {
+                                String st = event.getStatus() != null ? event.getStatus().trim().toUpperCase() : "CONFIRMED";
+                                
+                                if ("COMPLETED".equals(st)) {
+                                    statusBadgeLabel.setText("● Completed");
+                                    statusBadgeLabel.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-padding: 4 14; -fx-background-radius: 12px; -fx-font-size: 11px;");
+                                } else if ("CONFIRMED".equals(st) || "PAID".equals(st)) {
+                                    statusBadgeLabel.setText("● Confirmed");
+                                    statusBadgeLabel.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-padding: 4 14; -fx-background-radius: 12px; -fx-font-size: 11px;");
+                                } else {
+                                    statusBadgeLabel.setText("● In Planning");
+                                    statusBadgeLabel.setStyle("-fx-background-color: #FEF3C7; -fx-text-fill: #92400E; -fx-font-weight: bold; -fx-padding: 4 14; -fx-background-radius: 12px; -fx-font-size: 11px;");
+                                }
+                            }
+
+                            if (fCust != null) {
+                                if (custClientLabel != null) custClientLabel.setText("Client: " + (fCust.getName() != null ? fCust.getName() : "Customer"));
+                                if (custEmailLabel != null) custEmailLabel.setText("Email: " + (fCust.getEmail() != null ? fCust.getEmail() : "N/A"));
+                                if (custPhoneLabel != null) custPhoneLabel.setText("Phone: " + (fCust.getMobileNo() != null ? fCust.getMobileNo() : "N/A"));
+                            }
+                        });
+                    }
+                } catch (Exception ex) {
+                    System.err.println("[ViewEventO] Error loading event details: " + ex.getMessage());
                 }
                 return null;
             }
@@ -212,46 +234,39 @@ public class ViewEventO {
 
     private void handleNav(String screen) {
         switch (screen) {
-            case "Dashboard":
+            case "Dashboard" -> {
                 OrganizerDashboardO dash = new OrganizerDashboardO(uid, idToken);
                 LandingPage.landingPageStage.setScene(dash.getorganizerDashboardScene(null));
-                break;
-            case "Event Requests":
+            }
+            case "Event Requests" -> {
                 EventRequestsO reqs = new EventRequestsO(uid, idToken);
                 LandingPage.landingPageStage.setScene(reqs.geteventRequestsOScene(null));
-                break;
-            case "My Events":
-                handleBack(LandingPage.landingPageStage);
-                break;
-            case "Venue":
-                openVenue(LandingPage.landingPageStage);
-                break;
-            case "Vendors":
-                openVendors(LandingPage.landingPageStage);
-                break;
-            case "Schedule":
-                openSchedule(LandingPage.landingPageStage);
-                break;
-            case "Notifications":
+            }
+            case "My Events" -> handleBack();
+            case "Schedule" -> {
+                ScheduleO view = new ScheduleO(uid, idToken);
+                LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, () -> LandingPage.landingPageStage.setScene(getScene(backAction))));
+            }
+            case "Notifications" -> {
                 NotificationsO notif = new NotificationsO(uid, idToken);
                 LandingPage.landingPageStage.setScene(notif.getNotificationScene());
-                break;
-            case "Profile":
+            }
+            case "Profile" -> {
                 ProfileO prof = new ProfileO(uid, idToken);
                 LandingPage.landingPageStage.setScene(prof.getProfileScene());
-                break;
-            case "Settings":
+            }
+            case "Settings" -> {
                 SettingsO set = new SettingsO(uid, idToken);
                 LandingPage.landingPageStage.setScene(set.getSettingScene(null));
-                break;
-            case "Support":
+            }
+            case "Support" -> {
                 SupportO supp = new SupportO(uid, idToken);
                 LandingPage.landingPageStage.setScene(supp.getSupportOScene(null));
-                break;
+            }
         }
     }
 
-    private VBox createMainContent(Stage stage) {
+    private VBox createMainContent() {
         VBox mainBox = new VBox(18);
         mainBox.setPadding(new Insets(24, 30, 30, 30));
 
@@ -260,7 +275,7 @@ public class ViewEventO {
 
         Label bc1 = new Label("My Events  /  ");
         bc1.setStyle("-fx-text-fill: " + SECONDARY_TEXT + "; -fx-font-size: 13px; -fx-cursor: hand;");
-        bc1.setOnMouseClicked(e -> handleBack(stage));
+        bc1.setOnMouseClicked(e -> handleBack());
 
         Label bc2 = new Label("Event Planning Hub");
         bc2.setStyle("-fx-text-fill: " + TEXT_MAIN + "; -fx-font-weight: bold; -fx-font-size: 13px;");
@@ -270,7 +285,7 @@ public class ViewEventO {
 
         Button backBtn = new Button("← Back to My Events");
         backBtn.setStyle("-fx-background-color: white; -fx-border-color: " + PRIMARY_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 6 12; -fx-border-radius: 6px; -fx-cursor: hand;");
-        backBtn.setOnAction(e -> handleBack(stage));
+        backBtn.setOnAction(e -> handleBack());
 
         breadcrumbs.getChildren().addAll(bc1, bc2, bcSpacer, backBtn);
 
@@ -313,7 +328,7 @@ public class ViewEventO {
         Label modulesTitle = new Label("Planning & Execution Modules");
         modulesTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + NAVY + ";");
 
-        GridPane modulesGrid = createModulesGrid(stage);
+        GridPane modulesGrid = createModulesGrid();
         leftCol.getChildren().addAll(modulesTitle, modulesGrid);
 
         VBox rightCol = new VBox(16);
@@ -341,17 +356,17 @@ public class ViewEventO {
         return chip;
     }
 
-    private GridPane createModulesGrid(Stage stage) {
+    private GridPane createModulesGrid() {
         GridPane grid = new GridPane();
         grid.setHgap(16);
         grid.setVgap(16);
 
-        grid.add(createModuleCard("fas-brain", "AI Event Planner", "Timefold Synced", "View and regenerate optimized timeline, tasks, and vendor picks.", "Open AI Planner →", () -> openAiPlanner(stage)), 0, 0);
-        grid.add(createModuleCard("fas-wallet", "Budget & Expenses", "On Track", "Track and finalize approved budget across all vendor categories.", "View Budget →", () -> openBudget(stage)), 1, 0);
-        grid.add(createModuleCard("fas-hotel", "Venue Management", "Venue Selected", "Manage venue floor plans, layout arrangements, and reservations.", "View Venue →", () -> openVenue(stage)), 0, 1);
-        grid.add(createModuleCard("fas-truck", "Vendor Management", "Active", "Coordinate required service vendors, quotes, and contract status.", "Manage Vendors →", () -> openVendors(stage)), 1, 1);
-        grid.add(createModuleCard("fas-calendar-alt", "Schedule & Agenda", "Timefold Slots", "Monitor real-time agenda slots and resolve scheduling conflicts.", "Open Schedule →", () -> openSchedule(stage)), 0, 2);
-        grid.add(createModuleCard("fas-qrcode", "Guest & QR Check-In", "In Progress", "Manage attendee list, invitations, and live QR gate check-in.", "Manage Guests →", () -> openGuests(stage)), 1, 2);
+        grid.add(createModuleCard("fas-brain", "AI Event Planner", "Timefold Synced", "View and regenerate optimized timeline, tasks, and vendor picks.", "Open AI Planner →", this::openAiPlanner), 0, 0);
+        grid.add(createModuleCard("fas-wallet", "Budget & Expenses", "On Track", "Track and finalize approved budget across all vendor categories.", "View Budget →", this::openBudget), 1, 0);
+        grid.add(createModuleCard("fas-hotel", "Venue Management", "Venue Selected", "Manage venue floor plans, layout arrangements, and reservations.", "View Venue →", this::openVenue), 0, 1);
+        grid.add(createModuleCard("fas-truck", "Vendor Management", "Active", "Coordinate required service vendors, quotes, and contract status.", "Manage Vendors →", this::openVendors), 1, 1);
+        grid.add(createModuleCard("fas-broadcast-tower", "Live Event Operations", "Real-Time Tracking", "Monitor live attendee check-ins, sessions, alerts, and vendor operations.", "Open Live Dashboard →", this::openLiveDashboard), 0, 2);
+        grid.add(createModuleCard("fas-qrcode", "Guest & QR Check-In", "In Progress", "Manage attendee list, invitations, and live QR gate check-in.", "Manage Guests →", this::openGuests), 1, 2);
 
         ColumnConstraints col1 = new ColumnConstraints(); col1.setPercentWidth(50);
         ColumnConstraints col2 = new ColumnConstraints(); col2.setPercentWidth(50);
@@ -423,48 +438,48 @@ public class ViewEventO {
         return card;
     }
 
-    private void handleBack(Stage stage) {
+    private void handleBack() {
         if (backAction != null) {
             backAction.run();
         } else {
             MyEventsO view = new MyEventsO(uid, idToken);
-            LandingPage.landingPageStage.setScene(view.getMyEventsOScene(() -> goDashboard(stage)));
+            LandingPage.landingPageStage.setScene(view.getMyEventsOScene(this::goDashboard));
         }
     }
 
-    private void goDashboard(Stage stage) {
+    private void goDashboard() {
         OrganizerDashboardO dash = new OrganizerDashboardO(uid, idToken);
         LandingPage.landingPageStage.setScene(dash.getorganizerDashboardScene(null));
     }
 
-    private void openAiPlanner(Stage stage) {
+    private void openAiPlanner() {
         AIEventPlannerO view = new AIEventPlannerO(uid, idToken);
-        LandingPage.landingPageStage.setScene(view.getScene(stage, () -> LandingPage.landingPageStage.setScene(getScene(stage, backAction))));
+        LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, () -> LandingPage.landingPageStage.setScene(getScene(backAction))));
     }
 
-    private void openBudget(Stage stage) {
+    private void openBudget() {
         BudgetExpenseTrackerO view = new BudgetExpenseTrackerO();
-        LandingPage.landingPageStage.setScene(view.getScene(stage, () -> LandingPage.landingPageStage.setScene(getScene(stage, backAction))));
+        LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, () -> LandingPage.landingPageStage.setScene(getScene(backAction))));
     }
 
-    private void openVenue(Stage stage) {
+    private void openVenue() {
         VenueManagementO view = new VenueManagementO();
-        LandingPage.landingPageStage.setScene(view.getScene(stage, () -> LandingPage.landingPageStage.setScene(getScene(stage, backAction))));
+        LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, () -> LandingPage.landingPageStage.setScene(getScene(backAction))));
     }
 
-    private void openVendors(Stage stage) {
+    private void openVendors() {
         VendorManagementO view = new VendorManagementO(uid, idToken);
-        LandingPage.landingPageStage.setScene(view.getvendorManagementOScene(() -> LandingPage.landingPageStage.setScene(getScene(stage, backAction))));
+        LandingPage.landingPageStage.setScene(view.getvendorManagementOScene(() -> LandingPage.landingPageStage.setScene(getScene(backAction))));
     }
 
-    private void openSchedule(Stage stage) {
-        ScheduleO view = new ScheduleO();
-        LandingPage.landingPageStage.setScene(view.getScene(stage, () -> LandingPage.landingPageStage.setScene(getScene(stage, backAction))));
+    private void openLiveDashboard() {
+        LiveEventDashboardO view = new LiveEventDashboardO(uid, idToken);
+        LandingPage.landingPageStage.setScene(view.getScene(() -> LandingPage.landingPageStage.setScene(getScene(backAction))));
     }
 
-    private void openGuests(Stage stage) {
+    private void openGuests() {
         String selectedEvtId = AdminContext.getSelectedEventId();
         GuestManagementO view = new GuestManagementO(uid, idToken);
-        LandingPage.landingPageStage.setScene(view.getScene(stage, selectedEvtId, () -> LandingPage.landingPageStage.setScene(getScene(stage, backAction))));
+        LandingPage.landingPageStage.setScene(view.getScene(LandingPage.landingPageStage, selectedEvtId, () -> LandingPage.landingPageStage.setScene(getScene(backAction))));
     }
 }

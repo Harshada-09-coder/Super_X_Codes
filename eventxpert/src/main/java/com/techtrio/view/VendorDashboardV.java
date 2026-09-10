@@ -2,6 +2,9 @@ package com.techtrio.view;
 
 import java.util.List;
 
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
 import com.techtrio.controller.VendorController;
 import com.techtrio.model.VendorBooking;
 import com.techtrio.session.UserSession;
@@ -15,8 +18,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.text.Text;
 
 public class VendorDashboardV {
 
@@ -26,8 +27,6 @@ public class VendorDashboardV {
 
     private static final String SIDEBAR_NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
-    private static final String BRIGHT_BLUE = "#2563C7";
-    private static final String LIGHT_BLUE = "#EAF3FF";
     private static final String BACKGROUND = "#F7FAFE";
     private static final String WHITE = "#FFFFFF";
     private static final String TEXT_MAIN = "#102A43";
@@ -60,10 +59,8 @@ public class VendorDashboardV {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        // Common Sidebar (Add service button removed)
         root.setLeft(createCommonVendorSidebar("Dashboard"));
 
-        // Main Content ScrollPane (TopBar Removed)
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
@@ -95,6 +92,7 @@ public class VendorDashboardV {
         }
     }
 
+    // ⭐ कडक अट: केवळ आणि केवळ Customer Paid Amount > 0 असेल तरच Earnings मोजले जातील!
     private void loadVendorRequestsFromFirestoreAsync() {
         if (uid == null || uid.isBlank()) return;
 
@@ -116,9 +114,11 @@ public class VendorDashboardV {
 
                 int pendingCount = 0;
                 int confirmedCount = 0;
-                double totalEarnings = 0.0;
-                double pendingPayments = 0.0;
+                double totalEarningsNet = 0.0;
+                double pendingPaymentsGross = 0.0;
                 int tableRow = 1;
+
+                Firestore db = FirestoreClient.getFirestore();
 
                 if (bookings != null) {
                     for (VendorBooking b : bookings) {
@@ -130,17 +130,41 @@ public class VendorDashboardV {
                             if (!clean.isEmpty()) amt = Double.parseDouble(clean);
                         } catch (Exception ignored) {}
 
+                        // ⭐ कडक तपासणी: इव्हेंटमध्ये कस्टमरने प्रत्यक्ष भरलेली रक्कम (paidAmount > 0) आहे का?
+                        boolean isCustomerActuallyPaid = false;
+                        if (db != null && b.getEventId() != null && !b.getEventId().isBlank()) {
+                            try {
+                                DocumentSnapshot evSnap = db.collection("events").document(b.getEventId().trim()).get().get();
+                                if (evSnap.exists()) {
+                                    Double paidAmt = evSnap.getDouble("paidAmount");
+                                    // केवळ आणि केवळ प्रत्यक्ष पैसे भरले असतील तरच (paidAmount > 0)
+                                    if (paidAmt != null && paidAmt > 0) {
+                                        isCustomerActuallyPaid = true;
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        }
+
                         if ("PENDING".equals(st) || "NEW".equals(st)) {
                             pendingCount++;
-                            pendingPayments += amt;
+                            pendingPaymentsGross += amt;
                             if (requestsContainerBox != null) {
                                 requestsContainerBox.getChildren().add(createRequestBox(b));
                             }
-                        } else if ("CONFIRMED".equals(st) || "ACCEPTED".equals(st) || "PAID".equals(st)) {
+                        } else {
                             confirmedCount++;
-                            totalEarnings += amt;
+                            if (isCustomerActuallyPaid) {
+                                // कस्टमरने पैसे भरले असल्याने ३% फी वजा करून ९७% कमाई जमा होईल
+                                double netPayout = amt * 0.97;
+                                totalEarningsNet += netPayout;
+                            } else {
+                                // कस्टमरने पैसे न भरल्यामुळे ही रक्कम अजून Pending राहील
+                                pendingPaymentsGross += amt;
+                            }
+
                             if (upcomingTableGrid != null && tableRow <= 5) {
-                                addTableRow(upcomingTableGrid, tableRow++, b.getEventName(), b.getEventDate(), b.getServiceCategory(), b.getAmount(), "Confirmed");
+                                String tableStatus = isCustomerActuallyPaid ? "Paid" : "Confirmed (Unpaid)";
+                                addTableRow(upcomingTableGrid, tableRow++, b.getEventName(), b.getEventDate(), b.getServiceCategory(), b.getAmount(), tableStatus);
                             }
                         }
                     }
@@ -148,8 +172,8 @@ public class VendorDashboardV {
 
                 if (newReqValLbl != null) newReqValLbl.setText(String.valueOf(pendingCount));
                 if (upcomingValLbl != null) upcomingValLbl.setText(String.valueOf(confirmedCount));
-                if (totalEarningsValLbl != null) totalEarningsValLbl.setText("₹ " + String.format("%,.0f", totalEarnings));
-                if (pendingPaymentsValLbl != null) pendingPaymentsValLbl.setText("₹ " + String.format("%,.0f", pendingPayments));
+                if (totalEarningsValLbl != null) totalEarningsValLbl.setText("₹ " + String.format("%,.0f", totalEarningsNet));
+                if (pendingPaymentsValLbl != null) pendingPaymentsValLbl.setText("₹ " + String.format("%,.0f", pendingPaymentsGross));
 
                 if (requestsContainerBox != null && requestsContainerBox.getChildren().isEmpty()) {
                     Label empty = new Label("No new service requests currently in Firestore.");
@@ -309,8 +333,8 @@ public class VendorDashboardV {
         row.getChildren().addAll(
                 createStatCard("New Requests", newReqValLbl, "Needs Response", "fas-inbox", PRIMARY_BLUE),
                 createStatCard("Confirmed Bookings", upcomingValLbl, "Active Assignments", "fas-calendar-check", GREEN_TEXT),
-                createStatCard("Total Earnings", totalEarningsValLbl, "From Paid Bookings", "fas-wallet", PRIMARY_BLUE),
-                createStatCard("Pending Requests", pendingPaymentsValLbl, "Unconfirmed Amount", "fas-hourglass-half", WARNING_TEXT)
+                createStatCard("Total Earnings (Net)", totalEarningsValLbl, "Released Payout (97%)", "fas-wallet", PRIMARY_BLUE),
+                createStatCard("Pending Requests", pendingPaymentsValLbl, "Unpaid Amount", "fas-hourglass-half", WARNING_TEXT)
         );
         return row;
     }
@@ -405,7 +429,7 @@ public class VendorDashboardV {
         Label aLbl = new Label(amount); aLbl.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Label statusBadge = new Label(status);
-        if (status.equalsIgnoreCase("Confirmed") || status.equalsIgnoreCase("Accepted")) {
+        if (status.equalsIgnoreCase("Paid")) {
             statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
         } else {
             statusBadge.setStyle("-fx-background-color: " + WARNING_BG + "; -fx-text-fill: " + WARNING_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
@@ -458,9 +482,6 @@ public class VendorDashboardV {
         return card;
     }
 
-    // ==========================================
-    // STANDARDIZED VENDOR SIDEBAR (MATCHES ALL SCREENS)
-    // ==========================================
     public VBox createCommonVendorSidebar(String activeTab) {
         VBox sidebar = new VBox(6);
         sidebar.setPrefWidth(240);
@@ -481,7 +502,7 @@ public class VendorDashboardV {
         Label logo = new Label("EventXpert");
         logo.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
         Label portal = new Label("VENDOR PORTAL");
-        portal.setStyle("-fx-text-fill: " + LIGHT_BLUE + "; -fx-font-size: 9px; -fx-font-weight: bold;");
+        portal.setStyle("-fx-text-fill: #EAF3FF; -fx-font-size: 9px; -fx-font-weight: bold;");
         brandTexts.getChildren().addAll(logo, portal);
         logoBox.getChildren().addAll(logoIcon, brandTexts);
 
@@ -529,7 +550,7 @@ public class VendorDashboardV {
         btn.setGraphic(icon);
 
         if (isActive) {
-            btn.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-background-radius: 6px;");
+            btn.setStyle("-fx-background-color: #EAF3FF; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-background-radius: 6px;");
         } else {
             btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #CBD5E1; -fx-font-size: 12px; -fx-cursor: hand;");
             btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-text-fill: white; -fx-font-size: 12px; -fx-background-radius: 6px;"));
@@ -542,24 +563,12 @@ public class VendorDashboardV {
 
     private void handleVendorNav(String screen) {
         switch (screen) {
-            case "Dashboard":
-                LandingPage.landingPageStage.setScene(getvendorDashboardScene());
-                break;
-            case "Service Requests":
-                openServiceRequests();
-                break;
-            case "My Bookings":
-                openMyBookings();
-                break;
-            case "Services & Packages":
-                openServicesPackages();
-                break;
-            case "Calendar":
-                openCalenderV();
-                break;
-            case "Earnings & Payments":
-                openEarningsPaymentsV();
-                break;
+            case "Dashboard" -> LandingPage.landingPageStage.setScene(getvendorDashboardScene());
+            case "Service Requests" -> openServiceRequests();
+            case "My Bookings" -> openMyBookings();
+            case "Services & Packages" -> openServicesPackages();
+            case "Calendar" -> openCalenderV();
+            case "Earnings & Payments" -> openEarningsPaymentsV();
         }
     }
 

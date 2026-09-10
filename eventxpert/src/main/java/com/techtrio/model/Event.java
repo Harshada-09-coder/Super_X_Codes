@@ -33,7 +33,7 @@ public class Event {
     private String venueType;
     private String budget;
     private boolean aiEnabled;
-    private String status; // PENDING, ASSIGNED, CONFIRMED, REJECTED
+    private String status; // PENDING, ASSIGNED, CONFIRMED, REJECTED, PAID
     private String createdAt;
     private String updatedAt;
 
@@ -62,6 +62,12 @@ public class Event {
     private double allocatedBudget;
     private Map<String, Object> budgetRecommendation;
     private String budgetOptimizationStatus;
+
+    // ⭐ PAYMENT TRACKING EXTENSIONS
+    private double paidAmount = 0.0;
+    private double totalBudget = 0.0;
+    private String paymentStatus = "PENDING"; // PENDING, ADVANCE_PAID, PARTIAL, PAID
+    private String lastPaymentId;
 
     // --- VENUE MANAGEMENT EXTENSIONS ---
     private String venueStatus; // PENDING_SUGGESTION, SUGGESTED, CONFIRMED, CHANGE_REQUESTED
@@ -172,7 +178,6 @@ public class Event {
         this.endTime = endTime;
     }
 
-    // --- BACKWARD COMPATIBILITY GETTERS & SETTERS ---
     public String getEventDate() {
         if (eventDate != null && !eventDate.isBlank()) {
             return eventDate;
@@ -236,7 +241,6 @@ public class Event {
         this.locality = locality;
     }
 
-    // Area mapping for compatibility with LocationC & ReviewPageC
     public String getArea() {
         return locality != null ? locality : "";
     }
@@ -253,7 +257,6 @@ public class Event {
         this.venueType = venueType;
     }
 
-    // Venue alias mapping
     public String getVenue() {
         if (confirmedVenueName != null && !confirmedVenueName.isBlank()) {
             return confirmedVenueName;
@@ -450,6 +453,39 @@ public class Event {
 
     public void setBudgetOptimizationStatus(String budgetOptimizationStatus) {
         this.budgetOptimizationStatus = budgetOptimizationStatus;
+    }
+
+    // ⭐ PAYMENT GETTERS & SETTERS
+    public double getPaidAmount() {
+        return paidAmount;
+    }
+
+    public void setPaidAmount(double paidAmount) {
+        this.paidAmount = paidAmount;
+    }
+
+    public double getTotalBudget() {
+        return totalBudget;
+    }
+
+    public void setTotalBudget(double totalBudget) {
+        this.totalBudget = totalBudget;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus != null ? paymentStatus : "PENDING";
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getLastPaymentId() {
+        return lastPaymentId;
+    }
+
+    public void setLastPaymentId(String lastPaymentId) {
+        this.lastPaymentId = lastPaymentId;
     }
 
     // --- VENUE MANAGEMENT GETTERS & SETTERS ---

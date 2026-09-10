@@ -99,7 +99,7 @@ public class EventRequestA {
 
         sidebar.getChildren().addAll(brandBox, menu, space, bottomMenu);
 
-        // MAIN CONTENT (TOPBAR REMOVED)
+        // MAIN CONTENT
         VBox contentBox = new VBox(16);
         contentBox.setPadding(new Insets(24, 32, 28, 32));
         contentBox.setStyle("-fx-background-color:" + BACKGROUND + ";");
@@ -149,12 +149,33 @@ public class EventRequestA {
                 return ev.getStartTime() + (ev.getEndTime() != null && !ev.getEndTime().isBlank() ? " - " + ev.getEndTime() : "");
             }
             return ev.getTime() != null ? ev.getTime() : "TBD";
-    });
+        });
 
         TableColumn<Event, String> guestsCol = col("Guests", ev -> String.valueOf(ev.getGuests()));
         TableColumn<Event, String> locationCol = col("Location", ev -> ev.getCity() != null ? ev.getCity() : "N/A");
         TableColumn<Event, String> budgetCol = col("Budget", Event::getBudget);
+        
+        // Status Column with color coding
         TableColumn<Event, String> statusCol = col("Status", Event::getStatus);
+        statusCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String status, boolean empty) {
+                super.updateItem(status, empty);
+                if (empty || status == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(status);
+                    if ("COMPLETED".equalsIgnoreCase(status)) {
+                        setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold;");
+                    } else if ("CONFIRMED".equalsIgnoreCase(status) || "ASSIGNED".equalsIgnoreCase(status)) {
+                        setStyle("-fx-text-fill: #0284C7; -fx-font-weight: bold;");
+                    } else {
+                        setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold;");
+                    }
+                }
+            }
+        });
 
         TableColumn<Event, Void> action = new TableColumn<>("Action");
         action.setPrefWidth(100);
@@ -231,6 +252,7 @@ public class EventRequestA {
         return btn;
     }
 
+    // ⭐ Event Completed झाल्यावर "Assigned & Done" मध्ये मोजणे
     private void loadEventsDataAsync() {
         Task<Void> task = new Task<>() {
             @Override
@@ -244,30 +266,41 @@ public class EventRequestA {
                     int pending = 0;
                     int underReview = 0;
                     int assignment = 0;
-                    int assigned = 0;
+                    int assignedAndDone = 0;
 
-                    for (Event ev : events) {
-                        String st = ev.getStatus() != null ? ev.getStatus().toUpperCase() : "PENDING";
-                        if ("PENDING".equals(st)) pending++;
-                        else if ("UNDER_REVIEW".equals(st)) underReview++;
-                        else if ("ASSIGNMENT_PENDING".equals(st)) assignment++;
-                        else if ("ASSIGNED".equals(st) || "CONFIRMED".equals(st)) assigned++;
+                    if (events != null) {
+                        for (Event ev : events) {
+                            String st = ev.getStatus() != null ? ev.getStatus().toUpperCase().trim() : "PENDING";
 
-                        CustomerProfile cust = customers.stream()
-                                .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
-                                .findFirst().orElse(null);
+                            if ("PENDING".equals(st)) {
+                                pending++;
+                            } else if ("UNDER_REVIEW".equals(st)) {
+                                underReview++;
+                            } else if ("ASSIGNMENT_PENDING".equals(st)) {
+                                assignment++;
+                            } else if ("ASSIGNED".equals(st) || "CONFIRMED".equals(st) || "COMPLETED".equals(st) || "PAID".equals(st)) {
+                                // ⭐ Event Complete झाल्यावर किंवा Confirmed असल्यास Assigned & Done कार्डमध्ये मोजले जाईल!
+                                assignedAndDone++;
+                            }
 
-                        if (cust != null && cust.getName() != null) {
-                            ev.setCustomerId(cust.getName());
+                            if (customers != null) {
+                                CustomerProfile cust = customers.stream()
+                                        .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
+                                        .findFirst().orElse(null);
+
+                                if (cust != null && cust.getName() != null) {
+                                    ev.setCustomerId(cust.getName());
+                                }
+                            }
+
+                            table.getItems().add(ev);
                         }
-
-                        table.getItems().add(ev);
                     }
 
                     pendingCardVal.setText(String.valueOf(pending));
                     underReviewCardVal.setText(String.valueOf(underReview));
                     assignmentCardVal.setText(String.valueOf(assignment));
-                    assignedCardVal.setText(String.valueOf(assigned));
+                    assignedCardVal.setText(String.valueOf(assignedAndDone));
                 });
                 return null;
             }
