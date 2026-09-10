@@ -20,6 +20,7 @@ import com.techtrio.view.CustomerA;
 import com.techtrio.view.CustomerDetailsA;
 import com.techtrio.view.EventDetailsA;
 import com.techtrio.view.EventRequesReviewA;
+import com.techtrio.view.AboutUsA;
 
 public class NavigationManager {
 
@@ -134,6 +135,10 @@ public class NavigationManager {
             case "Support":
                 stage.setScene(
                     new SupportA().getsupportScene());
+                break;
+
+            case "About Us":
+                stage.setScene(new AboutUsA().getAboutUsScene());
                 break;
             
             

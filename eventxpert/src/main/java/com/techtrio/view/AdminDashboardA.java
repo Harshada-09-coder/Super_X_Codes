@@ -99,7 +99,8 @@ public class AdminDashboardA {
                 createSidebarButton("Notifications", "fas-bell", false),
                 createSidebarButton("Profile", "fas-user", false),
                 createSidebarButton("Settings", "fas-cog", false),
-                createSidebarButton("Support", "fas-question-circle", false)
+                createSidebarButton("Support", "fas-question-circle", false),
+                createSidebarButton("About Us", "fas-info-circle", false)
         );
 
         sidebar.getChildren().addAll(brandBox, menu, sidebarSpace, bottomMenu);

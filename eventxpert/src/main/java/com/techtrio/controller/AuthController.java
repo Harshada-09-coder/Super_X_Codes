@@ -288,3 +288,6 @@ public String getUserRole(String uid, String idToken) {
                 collection.equalsIgnoreCase("Organizers") ? "Organizer" : "Vendor";
     }
 }
+
+
+    

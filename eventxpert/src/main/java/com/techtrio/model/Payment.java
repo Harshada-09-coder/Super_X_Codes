@@ -20,7 +20,7 @@ public class Payment {
     private String transactionId;
     private String paymentDate;
 
-    // Default Constructor (Firestore साठी अनिवार्य)
+   
     public Payment() {
     }
 
