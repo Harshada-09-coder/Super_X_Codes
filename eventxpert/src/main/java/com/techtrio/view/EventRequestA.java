@@ -1,440 +1,348 @@
 package com.techtrio.view;
 
+import java.util.List;
 
+import com.techtrio.context.AdminContext;
+import com.techtrio.controller.AdminController;
+import com.techtrio.controller.NavigationManager;
+import com.techtrio.model.CustomerProfile;
+import com.techtrio.model.Event;
+import org.kordamp.ikonli.javafx.FontIcon;
 
-import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class EventRequestA extends Application {
+public class EventRequestA {
+    private Scene eventRequstScene;
 
-   
     private final String PRIMARY = "#002A60";
-
     private final String LIGHT = "#C2E0F4";
-  
+    private final String BACKGROUND = "#F8FAFC";
+    private final String BORDER = "#E2E8F0";
 
-    @Override
-    public void start(Stage stage) {
+    private Label pendingCardVal;
+    private Label underReviewCardVal;
+    private Label assignmentCardVal;
+    private Label assignedCardVal;
 
-        VBox sidebar=new VBox(12);
-        sidebar.setPrefWidth(235);
-        sidebar.setMinWidth(235);
-        sidebar.setMaxWidth(235);
-        sidebar.setPadding(new Insets(25,15,20,15));
-        sidebar.setStyle("-fx-background-color:"+PRIMARY+";");
+    private TableView<Event> table = new TableView<>();
 
-        Label logo=new Label("EventXpert");
+    public Scene geteventRequestScene() {
+
+        // SIDEBAR
+        VBox sidebar = new VBox(6);
+        sidebar.setPrefWidth(240);
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setStyle("-fx-background-color:" + PRIMARY + ";");
+
+        HBox brandBox = new HBox(8);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(0, 6, 12, 6));
+
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = new Label("EventXpert");
         logo.setTextFill(Color.WHITE);
-        logo.setFont(Font.font("Arial",FontWeight.BOLD,24));
-
-        Label admin=new Label("ADMIN DASHBOARD");
+        logo.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        Label admin = new Label("ADMIN DASHBOARD");
         admin.setTextFill(Color.web(LIGHT));
-        admin.setFont(Font.font("Arial",FontWeight.BOLD,11));
+        admin.setFont(Font.font("Arial", FontWeight.BOLD, 9));
+        brandTexts.getChildren().addAll(logo, admin);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
 
-        VBox logoBox=new VBox(2,logo,admin);
-        VBox menu=new VBox(7);
+        VBox menu = new VBox(3);
+        String[][] items = {
+                {"Dashboard", "fas-tachometer-alt"},
+                {"Event Requests", "fas-inbox"},
+                {"Events", "fas-calendar-check"},
+                {"Calendar", "fas-calendar"},
+                {"Customers", "fas-users"},
+                {"Organizers", "fas-user-tie"},
+                {"Vendors", "fas-truck"},
+                {"Conflict Detection", "fas-shield-alt"},
+                {"Reports & Analytics", "fas-chart-pie"}
+        };
 
-        String[] items={"Dashboard","Event Requests","Events","Calendar","Customers","Organizers","Vendors","Conflict Detection","Reports"};
-
-        for(String item:items){
-            Label l=new Label(item);
-            l.setMaxWidth(Double.MAX_VALUE);
-            l.setPadding(new Insets(10,12,10,12));
-            l.setFont(Font.font("Arial",FontWeight.BOLD,13));
-            l.setTextFill(Color.WHITE);
-
-            if(item.equals("Event Requests"))
-                l.setStyle("-fx-background-color:#084A8F;-fx-text-fill:white;-fx-background-radius:4;");
-
-            menu.getChildren().add(l);
+        for (String[] item : items) {
+            String name = item[0];
+            String iconLit = item[1];
+            menu.getChildren().add(createSidebarButton(name, iconLit, name.equals("Event Requests")));
         }
 
-        Region space=new Region();
-        VBox.setVgrow(space,Priority.ALWAYS);
+        Region space = new Region();
+        VBox.setVgrow(space, Priority.ALWAYS);
 
-        Label notification=new Label("🔔  Notifications");
-        Label settings=new Label("⚙  Settings");
-        Label profile=new Label("👤  Profile");
-        Label support=new Label("? Support ");
+        // SIDEBAR BOTTOM ITEMS WITH NAVIGATION
+        VBox bottomMenu = new VBox(3);
+        bottomMenu.getChildren().addAll(
+                createSidebarButton("Notifications", "fas-bell", false),
+                createSidebarButton("Profile", "fas-user", false),
+                createSidebarButton("Settings", "fas-cog", false),
+                createSidebarButton("Support", "fas-question-circle", false)
+        );
 
-        for(Label l:new Label[]{notification,settings,profile,support}){
-            l.setTextFill(Color.WHITE);
-            l.setFont(Font.font("Arial",FontWeight.BOLD,13));
-            l.setPadding(new Insets(7,10,7,10));
-        }
+        sidebar.getChildren().addAll(brandBox, menu, space, bottomMenu);
 
-        sidebar.getChildren().addAll(
-                logoBox,menu,space,notification,settings,profile,support);
+        // MAIN CONTENT
+        VBox contentBox = new VBox(16);
+        contentBox.setPadding(new Insets(24, 32, 28, 32));
+        contentBox.setStyle("-fx-background-color:" + BACKGROUND + ";");
 
-        
-        HBox top=new HBox();
-        top.setPadding(new Insets(10,25,10,35));
-        top.setAlignment(Pos.CENTER_LEFT);
-        top.setPrefHeight(65);
-        top.setStyle("-fx-background-color:#FFFFFF;-fx-border-color:#E5EAF0;-fx-border-width:0 0 1 0;");
-
-        TextField searchTop=new TextField();
-        searchTop.setPromptText("Search event requests, organizers, customers...");
-        searchTop.setPrefWidth(430);
-        searchTop.setPrefHeight(38);
-
-        Region topSpace=new Region();
-        HBox.setHgrow(topSpace,Priority.ALWAYS);
-
-        Label bell=new Label("🔔");
-        Label question=new Label("?");
-        Label gear=new Label("⚙");
-        Label user=new Label("👤");
-
-        for(Label l:new Label[]{bell,question,gear,user}){
-            l.setFont(Font.font("Arial",18));
-            l.setPadding(new Insets(0,8,0,8));
-        }
-
-        top.getChildren().addAll(searchTop,topSpace,bell,question,gear,user);
-
-        Label title=new Label("Event Requests");
-        title.setFont(Font.font("Arial",FontWeight.BOLD,30));
+        Label title = new Label("Event Requests");
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
         title.setTextFill(Color.web(PRIMARY));
 
-        Label subtitle=new Label( "Review customer event requests and assign the right organizer.");
-        subtitle.setFont(Font.font("Arial",16));
-        subtitle.setTextFill(Color.web("#303746"));
+        Label subtitle = new Label("Review live customer event requests and assign the right organizer.");
+        subtitle.setFont(Font.font("Arial", 13));
+        subtitle.setTextFill(Color.web("#64748B"));
 
-        VBox heading=new VBox(5,title,subtitle);
+        VBox heading = new VBox(2, title, subtitle);
 
-        // Create Event moved here
-        Button create=new Button(" + Create");
-        create.setPrefHeight(40);
-        create.setPadding(new Insets(9,18,9,18));
-        create.setStyle(
-                "-fx-background-color:"+PRIMARY+";"+
-                "-fx-text-fill:white;"+
-                "-fx-font-weight:bold;"+
-                "-fx-background-radius:7;"
-        );
-
-        Region titleSpace=new Region();
-        HBox.setHgrow(titleSpace,Priority.ALWAYS);
-
-      
-        HBox titleRow=new HBox(15,heading,titleSpace,create);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
-
-        VBox headingBox=new VBox(titleRow);
-        headingBox.setPadding(new Insets(15,30,15,30));
-
-        HBox cards=new HBox(25);
-        cards.setPadding(new Insets(5,30,20,30));
+        // STATS CARDS
+        HBox cards = new HBox(16);
+        pendingCardVal = new Label("0");
+        underReviewCardVal = new Label("0");
+        assignmentCardVal = new Label("0");
+        assignedCardVal = new Label("0");
 
         cards.getChildren().addAll(
-                card("","Pending","24 Need Review"),
-                card("","Under Review","8 Currently Reviewing"),
-                card("","Organizer Assignment","5 Waiting for Organizer"),
-                card("","Assigned","12 Organizer Assigned")
+                card("Pending Requests", pendingCardVal, "fas-clock", "#DC2626"),
+                card("Under Review", underReviewCardVal, "fas-search", "#D97706"),
+                card("Ready to Assign", assignmentCardVal, "fas-user-check", "#0284C7"),
+                card("Assigned & Done", assignedCardVal, "fas-check-circle", "#16A34A")
         );
 
-        // ================= FILTERS =================
-        HBox filters=new HBox(18);
-        filters.setPadding(new Insets(20));
-        filters.setAlignment(Pos.CENTER_LEFT);
-        filters.setStyle(
-                "-fx-background-color:#FFFFFF;"+
-                "-fx-border-color:#D0D8E2;"+
-                "-fx-border-radius:10;"+
-                "-fx-background-radius:10;"
-        );
-
-        TextField search=new TextField();
-        search.setPromptText("Search event requests...");
-        search.setPrefWidth(255);
-        search.setPrefHeight(42);
-
-        ComboBox<String> status=combo("Status","Pending","Under Review","Assigned");
-        ComboBox<String> type=combo("Event Types","Educational","Birthday","Corporate","Family");
-        ComboBox<String> date=combo("Dates","Today","This Week","This Month");
-        ComboBox<String> location=combo("Locations","Pune","Mumbai","Nashik");
-
-     
-
-        Button clear=new Button("Clear Filters");
-        clear.setPrefHeight(42);
-        clear.setStyle(
-                "-fx-background-color:#FFFFFF;"+
-                "-fx-border-color:#C8D1DC;"+
-                "-fx-border-radius:7;"+
-                "-fx-font-weight:bold;"
-        );
-
-        clear.setOnAction(e->{
-            search.clear();
-
-            status.getSelectionModel().selectFirst();
-            type.getSelectionModel().selectFirst();
-            date.getSelectionModel().selectFirst();
-            location.getSelectionModel().selectFirst();
-
-        });
-
-        filters.getChildren().addAll(search,status,type,date,location,clear);
-
-        // ================= TABLE =================
-        TableView<Event> table=new TableView<>();
+        // TABLE
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        TableColumn<Event,String> customer=col("Customer",Event::getCustomer);
-        TableColumn<Event,String> event=col("Event",Event::getEvent);
-        TableColumn<Event,String> eventType=col("Type",Event::getType);
-        TableColumn<Event,String> eventDate=col("Event Date",Event::getDate);
-        TableColumn<Event,String> guests=col("Guests",Event::getGuests);
-        TableColumn<Event,String> locationCol=col("Location",Event::getLocation);
-        TableColumn<Event,String> budget=col("Budget",Event::getBudget);
-        TableColumn<Event,String> statusCol=col("Status",Event::getStatus);
+        TableColumn<Event, String> customer = col("Customer", Event::getCustomerId);
+        TableColumn<Event, String> eventCol = col("Event Name", Event::getEventName);
+        TableColumn<Event, String> eventTypeCol = col("Type", Event::getEventType);
 
-        TableColumn<Event,Void> action=new TableColumn<>("Action");
+        // Live Start - End Date
+        TableColumn<Event, String> dateCol = col("Event Duration", ev -> {
+            if (ev.getStartDate() != null && !ev.getStartDate().isBlank()) {
+                return ev.getStartDate() + (ev.getEndDate() != null && !ev.getEndDate().isBlank() && !ev.getStartDate().equals(ev.getEndDate()) ? " to " + ev.getEndDate() : "");
+            }
+            return ev.getEventDate() != null ? ev.getEventDate() : "TBD";
+        });
+
+        // Live Start - End Time
+        TableColumn<Event, String> timeCol = col("Time", ev -> {
+            if (ev.getStartTime() != null && !ev.getStartTime().isBlank()) {
+                return ev.getStartTime() + (ev.getEndTime() != null && !ev.getEndTime().isBlank() ? " - " + ev.getEndTime() : "");
+            }
+            return ev.getTime() != null ? ev.getTime() : "TBD";
+        });
+
+        TableColumn<Event, String> guestsCol = col("Guests", ev -> String.valueOf(ev.getGuests()));
+        TableColumn<Event, String> locationCol = col("Location", ev -> ev.getCity() != null ? ev.getCity() : "N/A");
+        TableColumn<Event, String> budgetCol = col("Budget", Event::getBudget);
+        
+        // Status Column with color coding
+        TableColumn<Event, String> statusCol = col("Status", Event::getStatus);
+        statusCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String status, boolean empty) {
+                super.updateItem(status, empty);
+                if (empty || status == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(status);
+                    if ("COMPLETED".equalsIgnoreCase(status)) {
+                        setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold;");
+                    } else if ("CONFIRMED".equalsIgnoreCase(status) || "ASSIGNED".equalsIgnoreCase(status)) {
+                        setStyle("-fx-text-fill: #0284C7; -fx-font-weight: bold;");
+                    } else {
+                        setStyle("-fx-text-fill: #D97706; -fx-font-weight: bold;");
+                    }
+                }
+            }
+        });
+
+        TableColumn<Event, Void> action = new TableColumn<>("Action");
         action.setPrefWidth(100);
 
-        action.setCellFactory(c->new TableCell<>(){
-
-            Button review=new Button("Review");
-
+        action.setCellFactory(c -> new TableCell<>() {
+            Button review = new Button("Review →");
             {
-                review.setStyle(
-                        "-fx-background-color:#FFFFFF;"+
-                        "-fx-border-color:"+PRIMARY+";"+
-                        "-fx-text-fill:"+PRIMARY+";"+
-                        "-fx-border-radius:7;"
-                );
-
-                review.setOnAction(e->{
-                    Event selected=getTableView().getItems().get(getIndex());
-                    showReview(selected);
+                review.setStyle("-fx-background-color:" + PRIMARY + ";-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:11px;-fx-padding:5 12;-fx-background-radius:6;-fx-cursor:hand;");
+                review.setOnAction(e -> {
+                    Event selected = getTableView().getItems().get(getIndex());
+                    AdminContext.setSelectedEventId(selected.getEventId());
+                    Stage stage = (Stage) review.getScene().getWindow();
+                    EventRequesReviewA reviewPage = new EventRequesReviewA();
+                    stage.setScene(reviewPage.geteventRequestReviewScene());
                 });
             }
 
             @Override
-            protected void updateItem(Void item,boolean empty){
-                super.updateItem(item,empty);
-                setGraphic(empty?null:review);
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : review);
             }
         });
 
-        table.getColumns().addAll(customer,event,eventType,eventDate,guests,locationCol,budget,statusCol,action);
+        table.getColumns().addAll(customer, eventCol, eventTypeCol, dateCol, timeCol, guestsCol, locationCol, budgetCol, statusCol, action);
 
-        table.getItems().addAll(
-                new Event("SKNSCOE","College Seminar","Educational",
-                        "18 August 2026","200","Pune","₹40,000","Pending"),
+        VBox tableBox = new VBox(table);
+        tableBox.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;-fx-padding:14;");
+        VBox.setVgrow(table, Priority.ALWAYS);
 
-                new Event("Rahul K.","Birthday Celebration","Birthday",
-                        "27 August 2026","100","Nashik","₹30,000","Under Review"),
+        contentBox.getChildren().addAll(heading, cards, tableBox);
+        VBox.setVgrow(contentBox, Priority.ALWAYS);
 
-                new Event("ABC Corporation","Corporate Workshop","Corporate",
-                        "17 August 2026","200","Mumbai","₹60,000"," Organizer Assigned"),
-
-                new Event("Priya M.","Family Reunion","Family",
-                        "7 Sept 2026","75","Pune","₹25,000","Pending")
-        );
-
-       
-        Button previous=new Button("Previous");
-        Button next=new Button("Next");
-
-        previous.setPrefWidth(90);
-        next.setPrefWidth(70);
-        previous.setPrefHeight(35);
-        next.setPrefHeight(35);
-
-        previous.setStyle(
-                "-fx-background-color:#FFFFFF;"+
-                "-fx-border-color:#C9D4E0;"+
-                "-fx-border-radius:6;"
-        );
-
-        next.setStyle(
-                "-fx-background-color:"+PRIMARY+";"+
-                "-fx-text-fill:white;"+
-                "-fx-font-weight:bold;"+
-                "-fx-background-radius:6;"
-        );
-
-        previous.setOnAction(e->{
-            Alert a=new Alert(Alert.AlertType.INFORMATION);
-            a.setTitle("Pagination");
-            a.setHeaderText(null);
-            a.setContentText("Previous requests");
-            a.showAndWait();
-        });
-
-        next.setOnAction(e->{
-            Alert a=new Alert(Alert.AlertType.INFORMATION);
-            a.setTitle("Pagination");
-            a.setHeaderText(null);
-            a.setContentText("Next requests");
-            a.showAndWait();
-        });
-
-        Region pageSpace=new Region();
-        HBox.setHgrow(pageSpace,Priority.ALWAYS);
-
-        HBox pagination=new HBox(10,previous,pageSpace,next);
-        pagination.setAlignment(Pos.CENTER_RIGHT);
-        pagination.setPadding(new Insets(10,0,5,0));
-
-        // ================= CONTENT =================
-        VBox tableBox=new VBox(5,table,pagination);
-        tableBox.setPadding(new Insets(20,30,10,30));
-        VBox.setVgrow(table,Priority.ALWAYS);
-
-        VBox content=new VBox(headingBox,cards,filters,tableBox);
-        content.setStyle("-fx-background-color:#F8FAFC;");
-        VBox.setVgrow(tableBox,Priority.ALWAYS);
-
-        BorderPane right=new BorderPane();
-        right.setTop(top);
-        right.setCenter(content);
-
-        HBox root=new HBox(sidebar,right);
-        HBox.setHgrow(right,Priority.ALWAYS);
-
-        ScrollPane scroll=new ScrollPane(root);
+        ScrollPane scroll = new ScrollPane(contentBox);
         scroll.setFitToHeight(true);
         scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setStyle("-fx-background-color:transparent;-fx-background:" + BACKGROUND + ";-fx-border-color:transparent;");
 
-        Scene scene=new Scene(scroll,1550,750);
+        BorderPane root = new BorderPane();
+        root.setLeft(sidebar);
+        root.setCenter(scroll);
 
-        stage.setTitle("EventXpert - Event Requests");
-        stage.setScene(scene);
-        stage.setWidth(1550);
-        stage.setHeight(750);
-        stage.show();
+        loadEventsDataAsync();
+
+        eventRequstScene = new Scene(root, 1550, 785);
+        return eventRequstScene;
     }
 
-    private VBox card(String icon,String title,String value){
+    private Button createSidebarButton(String name, String iconLit, boolean active) {
+        Button btn = new Button("  " + name);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
 
-        Label i=new Label(icon);
-        i.setFont(Font.font("Arial",20));
-        i.setTextFill(Color.web(PRIMARY));
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(PRIMARY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
 
-        Label t=new Label(title);
-        t.setFont(Font.font("Arial",FontWeight.BOLD,21));
-        t.setTextFill(Color.web("#111827"));
-
-        Label v=new Label(value);
-        v.setFont(Font.font("Arial",15));
-        v.setTextFill(Color.web("#303746"));
-
-        VBox box=new VBox(10,i,t,v);
-        box.setPadding(new Insets(22));
-        box.setPrefHeight(140);
-        box.setMinWidth(240);
-        box.setMaxWidth(Double.MAX_VALUE);
-        box.setStyle(
-                "-fx-background-color:#FFFFFF;"+
-                "-fx-border-color:#C9D4E0;"+
-                "-fx-border-radius:10;"+
-                "-fx-background-radius:10;"
-        );
-
-        HBox.setHgrow(box,Priority.ALWAYS);
-        return box;
-    }
-
-    
-    private ComboBox<String> combo(String first,String... values){
-
-        ComboBox<String> box=new ComboBox<>();
-        box.getItems().add(first);
-        box.getItems().addAll(values);
-        box.setValue(first);
-        box.setPrefWidth(200);
-        box.setPrefHeight(42);
-        return box;
-    }
-
-    private TableColumn<Event,String> col(
-            String name,
-            java.util.function.Function<Event,String> value){
-
-        TableColumn<Event,String> column=new TableColumn<>(name);
-
-        column.setCellValueFactory(
-                data->new SimpleStringProperty(
-                        value.apply(data.getValue())
-                )
-        );
-
-        return column;
-    }
-
-    private void showReview(Event event){
-
-        Alert alert=new Alert(Alert.AlertType.INFORMATION);
-
-        alert.setTitle("Review Event Request");
-        alert.setHeaderText("Event Request Details");
-
-        alert.setContentText(
-                "Customer: "+event.getCustomer()+
-                "\nEvent: "+event.getEvent()+
-                "\nType: "+event.getType()+
-                "\nDate: "+event.getDate()+
-                "\nGuests: "+event.getGuests()+
-                "\nLocation: "+event.getLocation()+
-                "\nBudget: "+event.getBudget()+
-                "\nStatus: "+event.getStatus()
-        );
-
-        alert.showAndWait();
-    }
-
-    public static class Event{
-
-        String customer,event,type,date,guests,location,budget,status;
-
-        Event(String customer,String event,String type,String date,
-              String guests,String location,String budget,String status){
-
-            this.customer=customer;
-            this.event=event;
-            this.type=type;
-            this.date=date;
-            this.guests=guests;
-            this.location=location;
-            this.budget=budget;
-            this.status=status;
+        if (active) {
+            btn.setStyle("-fx-background-color:" + LIGHT + ";-fx-text-fill:" + PRIMARY + ";-fx-font-weight:bold;-fx-font-size:12px;-fx-background-radius:6;");
+        } else {
+            btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;-fx-cursor:hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color:rgba(255,255,255,0.08);-fx-text-fill:white;-fx-font-size:12px;-fx-background-radius:6;-fx-cursor:hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color:transparent;-fx-text-fill:#CBD5E1;-fx-font-size:12px;"));
         }
 
-        String getCustomer(){return customer;}
-        String getEvent(){return event;}
-        String getType(){return type;}
-        String getDate(){return date;}
-        String getGuests(){return guests;}
-        String getLocation(){return location;}
-        String getBudget(){return budget;}
-        String getStatus(){return status;}
+        btn.setOnAction(e -> {
+            Stage stage = (Stage) btn.getScene().getWindow();
+            NavigationManager.navigate(name, stage);
+        });
 
-            
+        return btn;
+    }
+
+    // ⭐ Event Completed झाल्यावर "Assigned & Done" मध्ये मोजणे
+    private void loadEventsDataAsync() {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                AdminController controller = new AdminController();
+                List<Event> events = controller.getAllEvents();
+                List<CustomerProfile> customers = controller.getAllCustomerProfiles();
+
+                Platform.runLater(() -> {
+                    table.getItems().clear();
+                    int pending = 0;
+                    int underReview = 0;
+                    int assignment = 0;
+                    int assignedAndDone = 0;
+
+                    if (events != null) {
+                        for (Event ev : events) {
+                            String st = ev.getStatus() != null ? ev.getStatus().toUpperCase().trim() : "PENDING";
+
+                            if ("PENDING".equals(st)) {
+                                pending++;
+                            } else if ("UNDER_REVIEW".equals(st)) {
+                                underReview++;
+                            } else if ("ASSIGNMENT_PENDING".equals(st)) {
+                                assignment++;
+                            } else if ("ASSIGNED".equals(st) || "CONFIRMED".equals(st) || "COMPLETED".equals(st) || "PAID".equals(st)) {
+                                // ⭐ Event Complete झाल्यावर किंवा Confirmed असल्यास Assigned & Done कार्डमध्ये मोजले जाईल!
+                                assignedAndDone++;
+                            }
+
+                            if (customers != null) {
+                                CustomerProfile cust = customers.stream()
+                                        .filter(c -> c.getCustomerId() != null && c.getCustomerId().equals(ev.getCustomerId()))
+                                        .findFirst().orElse(null);
+
+                                if (cust != null && cust.getName() != null) {
+                                    ev.setCustomerId(cust.getName());
+                                }
+                            }
+
+                            table.getItems().add(ev);
+                        }
+                    }
+
+                    pendingCardVal.setText(String.valueOf(pending));
+                    underReviewCardVal.setText(String.valueOf(underReview));
+                    assignmentCardVal.setText(String.valueOf(assignment));
+                    assignedCardVal.setText(String.valueOf(assignedAndDone));
+                });
+                return null;
+            }
+        };
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private VBox card(String title, Label valueLabel, String iconLit, String iconColorHex) {
+        VBox card = new VBox(6);
+        card.setPrefWidth(220);
+        card.setPadding(new Insets(14));
+        card.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:10;-fx-background-radius:10;");
+        HBox.setHgrow(card, Priority.ALWAYS);
+
+        HBox top = new HBox(8);
+        top.setAlignment(Pos.CENTER_LEFT);
+
+        StackPane iconCircle = new StackPane();
+        Circle c = new Circle(14, Color.web(iconColorHex).deriveColor(0, 1, 1, 0.15));
+        FontIcon fontIcon = new FontIcon(iconLit);
+        fontIcon.setIconSize(13);
+        fontIcon.setIconColor(Color.web(iconColorHex));
+        iconCircle.getChildren().addAll(c, fontIcon);
+
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 11));
+        titleLabel.setTextFill(Color.web("#64748B"));
+        top.getChildren().addAll(iconCircle, titleLabel);
+
+        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        valueLabel.setTextFill(Color.web(PRIMARY));
+
+        card.getChildren().addAll(top, valueLabel);
+        return card;
+    }
+
+    private TableColumn<Event, String> col(String name, java.util.function.Function<Event, String> value) {
+        TableColumn<Event, String> column = new TableColumn<>(name);
+        column.setCellValueFactory(data -> new SimpleStringProperty(value.apply(data.getValue())));
+        return column;
     }
 }

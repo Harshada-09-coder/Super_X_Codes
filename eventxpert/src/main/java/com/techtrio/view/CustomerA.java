@@ -1,315 +1,324 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import java.util.List;
+import com.techtrio.context.AdminContext;
+import com.techtrio.controller.AdminController;
+import com.techtrio.controller.NavigationManager;
+import com.techtrio.model.CustomerProfile;
+import com.techtrio.model.Event;
+import org.kordamp.ikonli.javafx.FontIcon;
+
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class CustomerA extends Application {
+public class CustomerA {
+    private Scene customerScene;
 
+    private final String PRIMARY = "#002A60", LIGHT = "#C2E0F4", BG = "#F8FAFC", BORDER = "#E2E8F0";
 
-    final String PRIMARY="#002A60", SECONDARY="#8CAFC6", LIGHT="#C2E0F4", BG="#F6F9FC";
-    final String WHITE="#FFFFFF";
-    
-    
-    TableView<CustomerData> table=new TableView<>();
-    ObservableList<CustomerData> data=FXCollections.observableArrayList();
+    private TableView<CustomerData> table = new TableView<>();
+    private ObservableList<CustomerData> data = FXCollections.observableArrayList();
 
-    TextField search=new TextField();
-    ComboBox<String> status=new ComboBox<>(), activity=new ComboBox<>(), date=new ComboBox<>();
+    private TextField search = new TextField();
+    private Label totalCustomersCardVal;
+    private Label activeCustomersCardVal;
 
-    @Override
-    public void start(Stage stage) {
+    public Scene getcustomerScene() {
+        BorderPane root = new BorderPane();
+        root.setStyle("-fx-background-color:" + BG + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        BorderPane root=new BorderPane();
-        root.setStyle("-fx-background-color:"+BG+";");
+        // 1. Unified Dashboard Sidebar
+        root.setLeft(createAdminSidebar("Customers"));
 
-        //sidebar
+        // 2. Main Scroll Content (No TopBar)
+        VBox content = new VBox(18);
+        content.setPadding(new Insets(24, 32, 28, 32));
+        content.setStyle("-fx-background-color:" + BG + ";");
 
-        VBox sidebar=new VBox(7);
-        sidebar.setPrefWidth(260);
-        sidebar.setMinWidth(260);
-        sidebar.setPadding(new Insets(25,18,18,18));
-        sidebar.setStyle("-fx-background-color:"+PRIMARY+";");
-
-        Label logo=lbl("EventXpert",26,true);
-        Label admin=lbl("ADMIN DASHBOARD",12,true);
-        logo.setTextFill(Color.WHITE);
-        admin.setTextFill(Color.WHITE);
-
-        VBox logoBox=new VBox(1,logo,admin);
-        VBox menu=new VBox(7);
-
-        String[] items={"Dashboard","Event Requests","Events","Calendar","Customers","Organizers","Vendors","Conflict Detection", "Reports & Analytics"};
-
-        for(String s:items){
-            Label m=lbl(s,14,true);
-            m.setTextFill(Color.WHITE);
-            m.setMaxWidth(Double.MAX_VALUE);
-            m.setPadding(new Insets(9,13,9,13));
-            if(s.equals("Event Requests"))
-                m.setStyle("-fx-background-color:#07539A;-fx-background-radius:5;");
-            menu.getChildren().add(m);
-        }
-
-        Region space=new Region();
-        VBox.setVgrow(space,Priority.ALWAYS);
-
-        Label n=lbl("🔔  Notifications",13,true);
-        Label se=lbl("⚙  Settings",13,true);
-        Label pr=lbl("👤  Profile",13,true);
-        Label sp=lbl("?  Support",13,true);
-
-        for(Label x:new Label[]{n,se,pr,sp}){
-            x.setTextFill(Color.WHITE);
-            x.setPadding(new Insets(7,10,7,10));
-        }
-
-        sidebar.getChildren().addAll(logoBox,menu,space,n,se,pr,sp);
-
-        
-        Region hs=new Region();
-        HBox.setHgrow(hs,Priority.ALWAYS);
-
-       
-        TextField topSearch=new TextField();
-        topSearch.setPromptText("Search events, organizers, vendors...");
-        topSearch.setPrefWidth(450);
-
-
-        HBox header=new HBox(topSearch,new Region(),
-                lbl("🔔",18,false),lbl("?",18,true),lbl("⚙",18,false),lbl("👤",18,false));
-        HBox.setHgrow(header.getChildren().get(1),Priority.ALWAYS);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setSpacing(18);
-        header.setPadding(new Insets(12,25,12,25));
-        header.setStyle("-fx-background-color:white;");
-       //sidebar aani search header //
-
-        // TITLE
-        Label title=lbl("Customer Management",30,true);
+        Label title = new Label("Customer Accounts");
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 26));
         title.setTextFill(Color.web(PRIMARY));
 
-        Label sub=lbl("Manage and monitor all registered customers on EventXpert.",15,false);
-        VBox heading=new VBox(3,title,sub);
+        Label sub = new Label("Live monitor of registered event planners, booking counts, and contact records.");
+        sub.setFont(Font.font("Arial", 13));
+        sub.setTextFill(Color.web("#64748B"));
 
-        // CARDS
-        HBox cards=new HBox(20,
-                card("Total Customers","1,248","+12 this month"),
-                card("Active Customers","1,120","Currently active"),
-                card("New Customers","48","This month"),
-                card("Inactive Customers","128","Need attention"));
+        VBox heading = new VBox(2, title, sub);
 
-        // FILTERS
-        search.setPromptText("Search customers...");
-        search.setPrefWidth(280);
+        totalCustomersCardVal = new Label("0");
+        activeCustomersCardVal = new Label("0");
 
-        setup(status,"All Status","Active","Inactive");
-        setup(date,"All Dates","Today","This Week","This Month");
-        setup(activity,"All Activity","Has Events","No Events");
+        HBox cards = new HBox(14,
+                createKpiCard("TOTAL REGISTERED CUSTOMERS", totalCustomersCardVal, "fas-users", PRIMARY),
+                createKpiCard("ACTIVE EVENT PLANNERS", activeCustomersCardVal, "fas-user-check", "#16A34A")
+        );
 
-        Button clear=btn("Clear Filters",false);
-        clear.setOnAction(e->{
-            search.clear();
-            status.setValue("All Status");
-            date.setValue("All Dates");
-            activity.setValue("All Activity");
-        });
+        // Table Card
+        VBox tableBox = new VBox(12);
+        tableBox.setPadding(new Insets(18));
+        tableBox.setStyle("-fx-background-color:white; -fx-border-color:" + BORDER + "; -fx-border-radius:10; -fx-background-radius:10;");
 
-        HBox filters=new HBox(12,search,status,date,activity,clear);
-        filters.setAlignment(Pos.CENTER_LEFT);
-        filters.setPadding(new Insets(14));
-        filters.setStyle("-fx-background-color:white;-fx-border-color:"+SECONDARY+
-                ";-fx-border-radius:8;-fx-background-radius:8;");
+        HBox tableHead = new HBox(12);
+        tableHead.setAlignment(Pos.CENTER_LEFT);
 
-        // TABLE HEADER
-        Label all=lbl("All Customers",20,true);
+        Label all = new Label("All Customers");
+        all.setFont(Font.font("Arial", FontWeight.BOLD, 15));
         all.setTextFill(Color.web(PRIMARY));
 
-        TextField tableSearch=new TextField();
-        tableSearch.setPromptText("Search customers...");
-        tableSearch.setPrefWidth(250);
+        Region ts = new Region();
+        HBox.setHgrow(ts, Priority.ALWAYS);
 
-        Button filter=btn("☰ Filter",false);
-        ComboBox<String> sort=new ComboBox<>();
-        sort.getItems().addAll("Recent","Name");
-        sort.setValue("Recent");
+        search.setPromptText("Search customer by name or email...");
+        search.setPrefWidth(300);
+        search.setStyle("-fx-padding: 6 10; -fx-border-color:" + BORDER + "; -fx-border-radius:6;");
 
-        Region ts=new Region();
-        HBox.setHgrow(ts,Priority.ALWAYS);
+        Button clearBtn = new Button("Clear");
+        clearBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-cursor: hand;");
+        clearBtn.setOnAction(e -> search.clear());
 
-        HBox tableHead=new HBox(all,ts,tableSearch,filter,
-                lbl("Sort by:",13,false),sort);
-        tableHead.setAlignment(Pos.CENTER_LEFT);
-        tableHead.setSpacing(10);
-        tableHead.setPadding(new Insets(15));
+        tableHead.getChildren().addAll(all, ts, search, clearBtn);
 
-        // TABLE
         createTable();
-        loadData();
-
         table.setItems(data);
-        table.setPrefHeight(350);
+        table.setPrefHeight(360);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        // PAGINATION
-        Label showing=lbl("Showing 1–5 of 1,248 customers",13,false);
+        tableBox.getChildren().addAll(tableHead, table);
+        content.getChildren().addAll(heading, cards, tableBox);
 
-        Region ps=new Region();
-        HBox.setHgrow(ps,Priority.ALWAYS);
-
-        Button previous=btn("‹ Previous",false);
-        Button next=btn("Next ›",true);
-
-        HBox pagination=new HBox(showing,ps,previous,next);
-        pagination.setAlignment(Pos.CENTER_LEFT);
-        pagination.setSpacing(10);
-        pagination.setPadding(new Insets(12,15,15,15));
-
-        VBox tableBox=new VBox(tableHead,table,pagination);
-        tableBox.setStyle("-fx-background-color:white;-fx-border-color:"+SECONDARY+
-                ";-fx-border-radius:8;-fx-background-radius:8;");
-
-        VBox content=new VBox(15,heading,cards,filters,tableBox);
-        content.setPadding(new Insets(20,25,25,25));
-
-        ScrollPane scroll=new ScrollPane(content);
+        ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setStyle("-fx-background-color:"+BG+";");
+        scroll.setStyle("-fx-background-color:transparent; -fx-background:" + BG + "; -fx-border-color:transparent;");
 
-        VBox center=new VBox(header,scroll);
+        root.setCenter(scroll);
 
-        root.setLeft(sidebar);
-        root.setCenter(center);
+        loadCustomersDataAsync();
 
-        Scene scene=new Scene(root,1550,750);
-        stage.setTitle("EventXpert - Customer Management");
-        stage.setScene(scene);
-        stage.show();
+        customerScene = new Scene(root, 1550, 785);
+        return customerScene;
     }
 
-    void createTable(){
+    private void createTable() {
+        String[] names = {"Customer", "Email", "Phone", "Events", "Last Event", "Registered", "Status"};
+        String[] props = {"name", "email", "phone", "events", "lastEvent", "registered", "status"};
 
-        String[] names={"Customer","Email","Phone","Events",
-                "Last Event","Registered","Status","Actions"};
-
-        String[] props={"name","email","phone","events",
-                "lastEvent","registered","status"};
-
-        for(int i=0;i<props.length;i++){
-            TableColumn<CustomerData,String> c=new TableColumn<>(names[i]);
+        for (int i = 0; i < props.length; i++) {
+            TableColumn<CustomerData, String> c = new TableColumn<>(names[i]);
             c.setCellValueFactory(new PropertyValueFactory<>(props[i]));
             table.getColumns().add(c);
         }
 
-        TableColumn<CustomerData,Void> action=new TableColumn<>("Actions");
-
-        action.setCellFactory(col->new TableCell<>(){
-            Button view=btn("View",false);
-
+        TableColumn<CustomerData, Void> action = new TableColumn<>("Action");
+        action.setPrefWidth(90);
+        action.setCellFactory(col -> new TableCell<>() {
+            final Button view = new Button("View →");
             {
-                view.setPrefWidth(60);
-                view.setOnAction(e->{
-                    // Navigation later
+                view.setStyle("-fx-background-color: " + PRIMARY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 4 10; -fx-background-radius: 6; -fx-cursor: hand;");
+                view.setOnAction(e -> {
+                    CustomerData selected = getTableView().getItems().get(getIndex());
+                    AdminContext.setSelectedCustomerId(selected.getCustomerId());
+                    Stage stage = (Stage) view.getScene().getWindow();
+                    NavigationManager.navigate("Customer Details", stage);
                 });
             }
-
             @Override
-            protected void updateItem(Void item,boolean empty){
-                super.updateItem(item,empty);
-                setGraphic(empty?null:view);
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : view);
             }
         });
 
         table.getColumns().add(action);
     }
 
-    void loadData(){
-        data.addAll(
-                new CustomerData("Sarah J.","sarah.j@example.com","+91 98765 43210",
-                        "2 Events","College Seminar","Oct 12, 2023","Active"),
-                new CustomerData("Rahul Sharma","rahul.sharma@example.com","+91 98234 56789",
-                        "1 Event","Birthday Celebration","Oct 08, 2023","Active"),
-                new CustomerData("Priya Mehta","priya.mehta@example.com","+91 97654 32109",
-                        "3 Events","Corporate Workshop","Sep 28, 2023","Active"),
-                new CustomerData("Amit Patil","amit.patil@example.com","+91 98989 12345",
-                        "0 Events","—","Sep 15, 2023","Inactive"),
-                new CustomerData("Neha Kulkarni","neha.k@example.com","+91 98123 45678",
-                        "2 Events","Family Reunion","Aug 30, 2023","Active")
-        );
+    private void loadCustomersDataAsync() {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                AdminController controller = new AdminController();
+                List<CustomerProfile> profiles = controller.getAllCustomerProfiles();
+                List<Event> allEvents = controller.getAllEvents();
+
+                Platform.runLater(() -> {
+                    data.clear();
+                    int activeCount = 0;
+
+                    if (profiles != null) {
+                        totalCustomersCardVal.setText(String.valueOf(profiles.size()));
+
+                        for (CustomerProfile cp : profiles) {
+                            List<Event> custEvents = allEvents.stream()
+                                    .filter(ev -> ev.getCustomerId() != null && ev.getCustomerId().equals(cp.getCustomerId()))
+                                    .toList();
+
+                            if (!custEvents.isEmpty()) activeCount++;
+
+                            String eventCountText = custEvents.size() + " Event" + (custEvents.size() == 1 ? "" : "s");
+                            String lastEventText = custEvents.isEmpty() ? "—" : custEvents.get(custEvents.size() - 1).getEventName();
+                            String registeredText = cp.getCreatedAt() != null ? cp.getCreatedAt().substring(0, Math.min(10, cp.getCreatedAt().length())) : "Registered";
+                            String statusText = cp.getOnboardingStatus() != null ? cp.getOnboardingStatus() : "Active";
+
+                            data.add(new CustomerData(cp.getCustomerId(),
+                                    cp.getName() != null && !cp.getName().isBlank() ? cp.getName() : "Customer",
+                                    cp.getEmail() != null ? cp.getEmail() : "N/A",
+                                    cp.getMobileNo() != null ? cp.getMobileNo() : "N/A",
+                                    eventCountText,
+                                    lastEventText,
+                                    registeredText,
+                                    statusText
+                            ));
+                        }
+                    }
+                    activeCustomersCardVal.setText(String.valueOf(activeCount));
+                });
+                return null;
+            }
+        };
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
     }
 
-    void setup(ComboBox<String> box,String... values){
-        box.getItems().addAll(values);
-        box.setValue(values[0]);
-        box.setPrefWidth(140);
+    private VBox createKpiCard(String title, Label valLbl, String iconLit, String colorHex) {
+        VBox card = new VBox(6);
+        card.setPadding(new Insets(14));
+        card.setStyle("-fx-background-color:white; -fx-border-color:" + BORDER + "; -fx-border-radius:10; -fx-background-radius:10;");
+        HBox.setHgrow(card, Priority.ALWAYS);
+
+        HBox top = new HBox(8);
+        top.setAlignment(Pos.CENTER_LEFT);
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(Color.web(colorHex));
+
+        Label t = new Label(title);
+        t.setFont(Font.font("Arial", FontWeight.BOLD, 11));
+        t.setTextFill(Color.web("#64748B"));
+        top.getChildren().addAll(icon, t);
+
+        valLbl.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        valLbl.setTextFill(Color.web(PRIMARY));
+
+        card.getChildren().addAll(top, valLbl);
+        return card;
     }
 
-    Button btn(String text,boolean primary){
-        Button b=new Button(text);
-        b.setPadding(new Insets(8,14,8,14));
-        b.setStyle("-fx-background-color:"+(primary?PRIMARY:"white")+
-                ";-fx-text-fill:"+(primary?"white":PRIMARY)+
-                ";-fx-border-color:"+SECONDARY+
-                ";-fx-border-radius:6;-fx-background-radius:6;-fx-font-weight:bold;");
-        return b;
-    }
+    private VBox createAdminSidebar(String activeTab) {
+        VBox sidebar = new VBox(6);
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+        sidebar.setPrefWidth(240);
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setStyle("-fx-background-color:" + PRIMARY + ";");
 
-    VBox card(String title,String value,String sub){
-        Label a=lbl(title,14,false);
-        Label b=lbl(value,38,true);
-        b.setTextFill(Color.web(PRIMARY));
+        HBox brandBox = new HBox(8);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(0, 6, 12, 6));
 
-        VBox box=new VBox(4,a,b,lbl(sub,13,false));
-        box.setPadding(new Insets(18));
-        box.setPrefHeight(130);
-        HBox.setHgrow(box,Priority.ALWAYS);
-        box.setStyle("-fx-background-color:white;-fx-border-color:#D7DEE7;"+
-                "-fx-border-radius:8;-fx-background-radius:8;");
-        return box;
-    }
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
 
-    Label lbl(String text,int size,boolean bold){
-        Label l=new Label(text);
-        l.setFont(Font.font("Arial",
-                bold?javafx.scene.text.FontWeight.BOLD:javafx.scene.text.FontWeight.NORMAL,size));
-        return l;
-    }
+        VBox brandTexts = new VBox(1);
+        Label logo = new Label("EventXpert");
+        logo.setTextFill(Color.WHITE);
+        logo.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        Label adminLabel = new Label("ADMIN DASHBOARD");
+        adminLabel.setTextFill(Color.web(LIGHT));
+        adminLabel.setFont(Font.font("Arial", FontWeight.BOLD, 9));
+        brandTexts.getChildren().addAll(logo, adminLabel);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
 
-    public static class CustomerData{
+        VBox menu = new VBox(3);
+        String[][] menuItems = {
+                {"Dashboard", "fas-tachometer-alt"},
+                {"Event Requests", "fas-inbox"},
+                {"Events", "fas-calendar-check"},
+                {"Calendar", "fas-calendar"},
+                {"Customers", "fas-users"},
+                {"Organizers", "fas-user-tie"},
+                {"Vendors", "fas-truck"},
+                {"Conflict Detection", "fas-shield-alt"},
+                {"Reports & Analytics", "fas-chart-pie"}
+        };
 
-        private final String name,email,phone,events,lastEvent,registered,status;
-
-        CustomerData(String n,String e,String p,String ev,String le,String r,String s){
-            name=n;email=e;phone=p;events=ev;lastEvent=le;registered=r;status=s;
+        for (String[] item : menuItems) {
+            String name = item[0];
+            String iconLit = item[1];
+            menu.getChildren().add(createSidebarButton(name, iconLit, name.equals(activeTab)));
         }
 
-        public String getName(){return name;}
-        public String getEmail(){return email;}
-        public String getPhone(){return phone;}
-        public String getEvents(){return events;}
-        public String getLastEvent(){return lastEvent;}
-        public String getRegistered(){return registered;}
-        public String getStatus(){return status;}
+        Region sidebarSpace = new Region();
+        VBox.setVgrow(sidebarSpace, Priority.ALWAYS);
+
+        VBox bottomMenu = new VBox(3);
+        bottomMenu.getChildren().addAll(
+                createSidebarButton("Notifications", "fas-bell", false),
+                createSidebarButton("Profile", "fas-user", false),
+                createSidebarButton("Settings", "fas-cog", false),
+                createSidebarButton("Support", "fas-question-circle", false)
+        );
+
+        sidebar.getChildren().addAll(brandBox, menu, sidebarSpace, bottomMenu);
+        return sidebar;
+    }
+
+    private Button createSidebarButton(String name, String iconLit, boolean active) {
+        Button btn = new Button("  " + name);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(PRIMARY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (active) {
+            btn.setStyle("-fx-background-color:" + LIGHT + "; -fx-text-fill:" + PRIMARY + "; -fx-font-weight:bold; -fx-font-size:12px; -fx-background-radius:6;");
+        } else {
+            btn.setStyle("-fx-background-color:transparent; -fx-text-fill:#CBD5E1; -fx-font-size:12px; -fx-cursor:hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color:rgba(255,255,255,0.08); -fx-text-fill:white; -fx-font-size:12px; -fx-background-radius:6; -fx-cursor:hand;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color:transparent; -fx-text-fill:#CBD5E1; -fx-font-size:12px;"));
+        }
+
+        btn.setOnAction(e -> {
+            Stage stage = (Stage) btn.getScene().getWindow();
+            NavigationManager.navigate(name, stage);
+        });
+
+        return btn;
+    }
+
+    public static class CustomerData {
+        private final String customerId, name, email, phone, events, lastEvent, registered, status;
+
+        public CustomerData(String id, String n, String e, String p, String ev, String le, String r, String s) {
+            customerId = id; name = n; email = e; phone = p; events = ev; lastEvent = le; registered = r; status = s;
+        }
+
+        public String getCustomerId() { return customerId; }
+        public String getName() { return name; }
+        public String getEmail() { return email; }
+        public String getPhone() { return phone; }
+        public String getEvents() { return events; }
+        public String getLastEvent() { return lastEvent; }
+        public String getRegistered() { return registered; }
+        public String getStatus() { return status; }
     }
 }

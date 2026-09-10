@@ -111,7 +111,7 @@ public class CommonRegistration {
         );
 
 
-        HBox cards = new HBox(20,customer,organizer,vendor);
+        HBox cards = new HBox(20,customer, organizer, vendor);
         cards.setTranslateY(50);
 
         VBox rightContent = new VBox(14,chooseTitle, chooseText, cards);

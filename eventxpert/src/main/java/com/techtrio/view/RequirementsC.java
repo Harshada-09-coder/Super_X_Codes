@@ -1,684 +1,314 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import com.techtrio.session.UserSession;
+import org.kordamp.ikonli.javafx.FontIcon;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.Stage;
 
-public class RequirementsC extends Application {
+public class RequirementsC {
+
+    private Scene scene;
+    private String uid;
+    private String idToken;
 
     private static final String NAVY = "#061B41";
     private static final String BLUE = "#0D3979";
-    private static final String SELECTED = "#C7E5FA";
     private static final String BG = "#F5F8FC";
     private static final String BORDER = "#D0D5DD";
     private static final String TEXT = "#101828";
     private static final String GREY = "#667085";
 
-    @Override
-    public void start(Stage stage) {
+    private ServiceCardBox cardDecoration;
+    private ServiceCardBox cardCatering;
+    private ServiceCardBox cardPhotography;
+    private ServiceCardBox cardSoundSystem;
+    private ServiceCardBox cardAnchor;
+    private ServiceCardBox cardRentalEquipment;
+    private ServiceCardBox cardInvitationPrinting;
+    private ServiceCardBox cardCakeDessert;
+
+    public RequirementsC(String uid, String idToken) {
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+    }
+
+    public Scene getRequirementsScene() {
+        ReviewPageC.EventData.currentStep = 2;
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color:" + BG + ";");
 
-        
-
+        // SIDEBAR
         VBox sidebar = new VBox();
         sidebar.setPrefWidth(245);
         sidebar.setMinWidth(245);
         sidebar.setMaxWidth(245);
-        sidebar.setFillWidth(true);
         sidebar.setStyle("-fx-background-color:" + NAVY + ";");
 
-        Label logo = label(
-                "EventXpert",
-                22,
-                FontWeight.BOLD,
-                "white"
-        );
+        HBox brandBox = new HBox(10);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+        brandBox.setPadding(new Insets(24, 20, 20, 22));
 
-        Label logoSub = label(
-                "EVENT MANAGEMENT",
-                12,
-                FontWeight.NORMAL,
-                "#BDE3FF"
-        );
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(24);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
 
-        VBox brand = new VBox(3, logo, logoSub);
-        brand.setPadding(
-                new Insets(24, 20, 28, 25)
-        );
+        VBox brandTexts = new VBox(1);
+        Label logo = label("EventXpert", 20, FontWeight.BOLD, "white");
+        Label logoSub = label("EVENT MANAGEMENT", 9, FontWeight.NORMAL, "#BDE3FF");
+        brandTexts.getChildren().addAll(logo, logoSub);
+        brandBox.getChildren().addAll(logoIcon, brandTexts);
 
-        Label create = label(
-                "Create Event",
-                22,
-                FontWeight.BOLD,
-                "white"
-        );
-
-        Label step = label(
-                "Step-by-step setup",
-                14,
-                FontWeight.NORMAL,
-                "#BDE3FF"
-        );
-
+        Label create = label("Create Event", 18, FontWeight.BOLD, "white");
+        Label step = label("Step-by-step setup", 11, FontWeight.NORMAL, "#BDE3FF");
         VBox title = new VBox(2, create, step);
-        title.setPadding(
-                new Insets(0, 20, 20, 25)
-        );
+        title.setPadding(new Insets(0, 20, 20, 25));
 
         VBox menu = new VBox();
-
         menu.getChildren().addAll(
-                sidebarItem("ⓘ", "Event Details", false),
-                sidebarItem("▣", "Requirements", true),
-                sidebarItem("⌖", "Location", false),
-                sidebarItem("▣", "Budget", false),
-                sidebarItem("✦", "AI Planning", false),
-                sidebarItem("▤", "Review", false)
+                sidebarItem("[1]", "Event Details", "fas-info-circle", false),
+                sidebarItem("[2]", "Requirements", "fas-list-ul", true),
+                sidebarItem("[3]", "Venue & Location", "fas-map-marker-alt", false),
+                sidebarItem("[4]", "Budget", "fas-wallet", false),
+                sidebarItem("[5]", "Guest", "fas-users", false),
+                sidebarItem("[6]", "AI Planning", "fas-magic", false),
+                sidebarItem("[7]", "Review", "fas-check-circle", false)
         );
 
-        sidebar.getChildren().addAll(
-                brand,
-                title,
-                menu
-        );
+        Region sideSpace = new Region();
+        VBox.setVgrow(sideSpace, Priority.ALWAYS);
+        sidebar.getChildren().addAll(brandBox, title, menu, sideSpace);
 
-        
-        HBox topBar = new HBox();
-        topBar.setPrefHeight(60);
-        topBar.setMinHeight(60);
-        topBar.setAlignment(Pos.CENTER_RIGHT);
-        topBar.setPadding(
-                new Insets(0, 30, 0, 30)
-        );
+        // CONTENT
+        VBox content = new VBox(14);
+        content.setPadding(new Insets(28, 45, 20, 45));
+        content.setStyle("-fx-background-color:" + BG + ";");
 
-        topBar.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:#E4E7EC;" +
-                "-fx-border-width:0 0 1 0;"
-        );
+        Label stepText = label("STEP 2 OF 7", 10, FontWeight.BOLD, BLUE);
+        Label heading = label("What do you need for your event?", 25, FontWeight.BOLD, NAVY);
+        Label description = label("Select the core services and logistical requirements necessary for a successful execution.", 12, FontWeight.NORMAL, GREY);
 
-        Label topLogo = label(
-                "EventXpert",
-                20,
-                FontWeight.BOLD,
-                NAVY
-        );
+        VBox servicesCard = new VBox(14);
+        servicesCard.setPadding(new Insets(18));
+        servicesCard.setStyle("-fx-background-color:white;-fx-background-radius:10;-fx-border-color:" + BORDER + ";-fx-border-radius:10;");
 
-        Label bell = label(
-                "♧",
-                20,
-                FontWeight.NORMAL,
-                NAVY
-        );
+        Label servicesTitle = label("Core Services", 15, FontWeight.BOLD, TEXT);
 
-        Label help = label(
-                "?",
-                13,
-                FontWeight.BOLD,
-                NAVY
-        );
+        String reqs = ReviewPageC.EventData.requirements != null ? ReviewPageC.EventData.requirements : "";
 
-        help.setMinSize(28, 28);
-        help.setAlignment(Pos.CENTER);
+        cardDecoration = new ServiceCardBox("Decoration", "fas-archway", "#F3E8FF", "#7E22CE", reqs.contains("Decoration"));
+        cardCatering = new ServiceCardBox("Catering", "fas-concierge-bell", "#FEF3C7", "#D97706", reqs.contains("Catering"));
+        cardPhotography = new ServiceCardBox("Photography", "fas-camera", "#E0F2FE", "#0284C7", reqs.contains("Photography"));
+        cardSoundSystem = new ServiceCardBox("Sound System", "fas-volume-up", "#FEE2E2", "#DC2626", reqs.contains("Sound System"));
 
-        help.setStyle(
-                "-fx-border-color:" + NAVY + ";" +
-                "-fx-border-radius:50;" +
-                "-fx-background-radius:50;"
-        );
+        cardAnchor = new ServiceCardBox("Anchor", "fas-microphone", "#DCFCE7", "#16A34A", reqs.contains("Anchor"));
+        cardRentalEquipment = new ServiceCardBox("Rental Equipment", "fas-toolbox", "#E0E7FF", "#4338CA", reqs.contains("Rental Equipment"));
+        cardInvitationPrinting = new ServiceCardBox("Invitation & Printing", "fas-envelope-open-text", "#FCE7F3", "#DB2777", reqs.contains("Invitation & Printing"));
+        cardCakeDessert = new ServiceCardBox("Cake & Dessert Services", "fas-birthday-cake", "#FFEDD5", "#EA580C", reqs.contains("Cake & Dessert Services"));
 
-        Label avatar = label(
-                "●",
-                22,
-                FontWeight.BOLD,
-                "#555555"
-        );
+        GridPane grid = new GridPane();
+        grid.setHgap(16);
+        grid.setVgap(16);
 
-        Region topSpace = new Region();
-        HBox.setHgrow(topSpace, Priority.ALWAYS);
-
-        topBar.getChildren().addAll(
-                topLogo,
-                topSpace,
-                bell,
-                new Region(),
-                help,
-                avatar
-        );
-
-        
-
-        VBox content = new VBox(12);
-
-        content.setPadding(
-                new Insets(25, 32, 18, 32)
-        );
-
-        content.setStyle(
-                "-fx-background-color:" + BG + ";"
-        );
-
-       
-
-        Label heading = label(
-                "What do you need for your event?",
-                25,
-                FontWeight.NORMAL,
-                "#050B16"
-        );
-
-        Label description = label(
-                "Select the core services and logistical requirements necessary for a successful\n" +
-                "execution. You can refine these details later in the planning process.",
-                15,
-                FontWeight.NORMAL,
-                TEXT
-        );
-
-        
-
-        VBox servicesCard = new VBox(12);
-
-        servicesCard.setPadding(
-                new Insets(18)
-        );
-
-        servicesCard.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-background-radius:7;" +
-                "-fx-border-color:" + BORDER + ";" +
-                "-fx-border-radius:7;"
-        );
-
-        Label servicesTitle = label(
-                "Core Services",
-                18,
-                FontWeight.BOLD,
-                TEXT
-        );
-
-        
-
-        ToggleButton venue =
-                serviceCard("▦", "Venue", true);
-
-        ToggleButton catering =
-                serviceCard("♜", "Catering", false);
-
-        ToggleButton decoration =
-                serviceCard("♨", "Decoration", false);
-
-        ToggleButton photography =
-                serviceCard("▣", "Photography", false);
-
-        ToggleButton sound =
-                serviceCard("▣", "Sound System", true);
-
-        ToggleButton seating =
-                serviceCard("▤", "Seating", false);
-
-        ToggleButton other =
-                serviceCard("•••", "Other", false);
-
-        HBox row1 = new HBox(
-                15,
-                venue,
-                catering,
-                decoration,
-                photography
-        );
-
-        HBox row2 = new HBox(
-                15,
-                sound,
-                seating,
-                other
-        );
-
-        for (ToggleButton b : new ToggleButton[]{
-                venue, catering, decoration,
-                photography, sound, seating, other
-        }) {
-            HBox.setHgrow(b, Priority.ALWAYS);
+        for (int i = 0; i < 4; i++) {
+            ColumnConstraints col = new ColumnConstraints();
+            col.setPercentWidth(25);
+            col.setHgrow(Priority.ALWAYS);
+            grid.getColumnConstraints().add(col);
         }
 
-        servicesCard.getChildren().addAll(
-                servicesTitle,
-                row1,
-                row2
-        );
+        grid.add(cardDecoration.getCard(), 0, 0);
+        grid.add(cardCatering.getCard(), 1, 0);
+        grid.add(cardPhotography.getCard(), 2, 0);
+        grid.add(cardSoundSystem.getCard(), 3, 0);
 
-        
+        grid.add(cardAnchor.getCard(), 0, 1);
+        grid.add(cardRentalEquipment.getCard(), 1, 1);
+        grid.add(cardInvitationPrinting.getCard(), 2, 1);
+        grid.add(cardCakeDessert.getCard(), 3, 1);
+
+        servicesCard.getChildren().addAll(servicesTitle, grid);
 
         VBox additionalCard = new VBox(8);
+        additionalCard.setPadding(new Insets(16));
+        additionalCard.setStyle("-fx-background-color:white;-fx-background-radius:10;-fx-border-color:" + BORDER + ";-fx-border-radius:10;");
 
-        additionalCard.setPadding(
-                new Insets(18)
-        );
+        Label additionalTitle = label("Additional Requirements", 15, FontWeight.BOLD, TEXT);
+        Label additionalDescription = label("Specify any unique logistical needs, accessibility requirements, or custom requests.", 11, FontWeight.NORMAL, BLUE);
+        Label customLabel = label("Custom Notes", 11, FontWeight.BOLD, TEXT);
 
-        additionalCard.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-background-radius:7;" +
-                "-fx-border-color:" + BORDER + ";" +
-                "-fx-border-radius:7;"
-        );
-
-        Label additionalTitle = label(
-                "Additional Requirements",
-                18,
-                FontWeight.BOLD,
-                TEXT
-        );
-
-        Label additionalDescription = label(
-                "Specify any unique logistical needs, accessibility requirements, or custom requests.",
-                14,
-                FontWeight.NORMAL,
-                BLUE
-        );
-
-        Label customLabel = label(
-                "Custom Notes",
-                12,
-                FontWeight.NORMAL,
-                TEXT
-        );
-
-        TextArea notes = new TextArea();
-
-        notes.setPromptText(
-                "Tell us anything else you need for your event..."
-        );
-
-        notes.setPrefRowCount(10);
+        TextArea notes = new TextArea(ReviewPageC.EventData.notes != null ? ReviewPageC.EventData.notes : "");
+        notes.setPromptText("Tell us anything else you need for your event...");
+        notes.setPrefRowCount(3);
         notes.setWrapText(true);
+        notes.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-radius:6;-fx-background-radius:6;-fx-font-size:12px;-fx-padding:8;");
 
-        notes.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:" + BORDER + ";" +
-                "-fx-border-radius:6;" +
-                "-fx-background-radius:6;" +
-                "-fx-font-size:11px;" +
-                "-fx-padding:10;"
-        );
+        additionalCard.getChildren().addAll(additionalTitle, additionalDescription, customLabel, notes);
+        content.getChildren().addAll(stepText, heading, description, servicesCard, additionalCard);
 
-        additionalCard.getChildren().addAll(
-                additionalTitle,
-                additionalDescription,
-                customLabel,
-                notes
-        );
-
-        content.getChildren().addAll(
-                
-                heading,
-                description,
-                servicesCard,
-                additionalCard
-        );
-
-        
-
+        // FOOTER
         HBox footer = new HBox(15);
-
         footer.setPrefHeight(60);
         footer.setMinHeight(60);
         footer.setAlignment(Pos.CENTER_RIGHT);
+        footer.setPadding(new Insets(0, 35, 0, 35));
+        footer.setStyle("-fx-background-color:white;-fx-border-color:#E4E7EC;-fx-border-width:1 0 0 0;");
 
-        footer.setPadding(
-                new Insets(0, 30, 0, 30)
-        );
-
-        footer.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-border-color:#E4E7EC;" +
-                "-fx-border-width:1 0 0 0;"
-        );
-
-        Label copyright = label(
-                "© 2026 EventXpert ",
-                12,
-                FontWeight.NORMAL,
-                GREY
-        );
-
+        Label copyright = label("(C) 2026 EventXpert", 11, FontWeight.BOLD, GREY);
         Region footerSpace = new Region();
-        HBox.setHgrow(
-                footerSpace,
-                Priority.ALWAYS
-        );
+        HBox.setHgrow(footerSpace, Priority.ALWAYS);
 
-        Button save = new Button("Save Draft");
         Button back = new Button("Back");
         Button next = new Button("Next");
 
-        save.setPrefSize(110, 38);
         back.setPrefSize(82, 38);
         next.setPrefSize(82, 38);
 
-        save.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-text-fill:" + BLUE + ";" +
-                "-fx-border-color:" + BLUE + ";" +
-                "-fx-border-radius:7;" +
-                "-fx-background-radius:7;" +
-                "-fx-font-size:11px;" +
-                "-fx-font-weight:bold;"
-        );
+        back.setStyle("-fx-background-color:white;-fx-text-fill:" + BLUE + ";-fx-border-color:" + BLUE + ";-fx-border-radius:7;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
+        next.setStyle("-fx-background-color:" + BLUE + ";-fx-text-fill:white;-fx-background-radius:7;-fx-font-size:12px;-fx-font-weight:bold;-fx-cursor:hand;");
 
-        back.setStyle(
-                "-fx-background-color:white;" +
-                "-fx-text-fill:" + BLUE + ";" +
-                "-fx-border-color:" + BLUE + ";" +
-                "-fx-border-radius:7;" +
-                "-fx-background-radius:7;" +
-                "-fx-font-size:11px;" +
-                "-fx-font-weight:bold;"
-        );
+        back.setOnAction(e -> {
+            ReviewPageC.EventData.saveDraft(1);
+            CreateEventC createView = new CreateEventC(uid, idToken);
+            LandingPage.landingPageStage.setScene(createView.getCreateEventScene());
+        });
 
-        next.setStyle(
-                "-fx-background-color:" + BLUE + ";" +
-                "-fx-text-fill:white;" +
-                "-fx-background-radius:7;" +
-                "-fx-font-size:11px;" +
-                "-fx-font-weight:bold;"
-        );
+        next.setOnAction(e -> {
+            StringBuilder selectedReqs = new StringBuilder();
+            if (cardDecoration.isSelected()) selectedReqs.append("Decoration, ");
+            if (cardCatering.isSelected()) selectedReqs.append("Catering, ");
+            if (cardPhotography.isSelected()) selectedReqs.append("Photography, ");
+            if (cardSoundSystem.isSelected()) selectedReqs.append("Sound System, ");
+            if (cardAnchor.isSelected()) selectedReqs.append("Anchor, ");
+            if (cardRentalEquipment.isSelected()) selectedReqs.append("Rental Equipment, ");
+            if (cardInvitationPrinting.isSelected()) selectedReqs.append("Invitation & Printing, ");
+            if (cardCakeDessert.isSelected()) selectedReqs.append("Cake & Dessert Services, ");
 
-        save.setOnAction(e -> showMessage(
-                "Draft Saved",
-                "Your requirements have been saved."
-        ));
+            String result = selectedReqs.toString();
+            if (result.endsWith(", ")) {
+                result = result.substring(0, result.length() - 2);
+            }
 
-        back.setOnAction(e -> showMessage(
-                "Back",
-                "Returning to Event Details."
-        ));
+            ReviewPageC.EventData.requirements = result;
+            ReviewPageC.EventData.notes = notes.getText().trim();
+            ReviewPageC.EventData.saveDraft(3);
 
-        next.setOnAction(e -> showMessage(
-                "Next Step",
-                "Moving to Location."
-        ));
+            LocationC locationPage = new LocationC(uid, idToken);
+            LandingPage.landingPageStage.setScene(locationPage.getLocationScene());
+        });
 
-        footer.getChildren().addAll(
-                copyright,
-                footerSpace,
-                save,
-                back,
-                next
-        );
-
-        
+        footer.getChildren().addAll(copyright, footerSpace, back, next);
 
         VBox rightSide = new VBox();
-
-        rightSide.setFillWidth(true);
-
-        rightSide.getChildren().addAll(
-                topBar,
-                content,
-                footer
-        );
-
-        VBox.setVgrow(
-                content,
-                Priority.ALWAYS
-        );
-
-        
+        rightSide.getChildren().addAll(content, footer);
+        VBox.setVgrow(content, Priority.ALWAYS);
 
         HBox fullPage = new HBox();
-
-        fullPage.setFillHeight(true);
-
-        fullPage.getChildren().addAll(
-                sidebar,
-                rightSide
-        );
-
-        HBox.setHgrow(
-                rightSide,
-                Priority.ALWAYS
-        );
+        fullPage.getChildren().addAll(sidebar, rightSide);
+        HBox.setHgrow(rightSide, Priority.ALWAYS);
 
         root.setCenter(fullPage);
-
-        Scene scene = new Scene(
-                root,
-                1365,
-                850
-        );
-
-        stage.setTitle(
-                "EventXpert - Requirements"
-        );
-
-        stage.setScene(scene);
-
-        stage.setMinWidth(1100);
-        stage.setMinHeight(700);
-
-        stage.show();
+        scene = new Scene(root, 1550, 750);
+        return scene;
     }
 
-    
-    private HBox sidebarItem(
-            String icon,
-            String text,
-            boolean active
-    ) {
+    private static class ServiceCardBox {
+        private final VBox card = new VBox(6);
+        private final CheckBox checkBox = new CheckBox();
 
-        HBox item = new HBox(12);
+        public ServiceCardBox(String title, String iconLiteral, String circleBgColor, String iconColor, boolean initialSelected) {
+            card.setAlignment(Pos.CENTER);
+            card.setPadding(new Insets(10, 10, 12, 10));
+            card.setPrefHeight(135);
+            card.setMinHeight(135);
+            card.setCursor(javafx.scene.Cursor.HAND);
 
-        item.setPrefHeight(44);
-        item.setMinHeight(44);
+            HBox topRow = new HBox();
+            topRow.setAlignment(Pos.CENTER_RIGHT);
+            topRow.setPadding(new Insets(0, 4, 0, 0));
+            checkBox.setSelected(initialSelected);
+            topRow.getChildren().add(checkBox);
 
-        item.setAlignment(
-                Pos.CENTER_LEFT
-        );
+            StackPane iconCircle = new StackPane();
+            Circle circle = new Circle(26, Color.web(circleBgColor));
+            FontIcon fontIcon = new FontIcon(iconLiteral);
+            fontIcon.setIconSize(24);
+            fontIcon.setIconColor(Color.web(iconColor));
+            iconCircle.getChildren().addAll(circle, fontIcon);
 
-        item.setPadding(
-                new Insets(0, 18, 0, 25)
-        );
+            Label titleLabel = new Label(title);
+            titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+            titleLabel.setStyle("-fx-text-fill:" + NAVY + " !important;");
+            titleLabel.setAlignment(Pos.CENTER);
+            titleLabel.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+            titleLabel.setWrapText(true);
 
-        item.setStyle(
-                active
-                        ? "-fx-background-color:" + BLUE + ";" +
-                          "-fx-border-color:#9DD8FF;" +
-                          "-fx-border-width:0 0 0 3;"
-                        : "-fx-background-color:transparent;"
-        );
+            card.getChildren().addAll(topRow, iconCircle, titleLabel);
+            updateStyle();
 
-        item.getChildren().addAll(
-                label(
-                        icon,
-                        16,
-                        FontWeight.NORMAL,
-                        "white"
-                ),
-                label(
-                        text,
-                        12,
-                        FontWeight.BOLD,
-                        active
-                                ? "white"
-                                : "#B7C4D8"
-                )
-        );
+            card.setOnMouseClicked(e -> {
+                checkBox.setSelected(!checkBox.isSelected());
+                updateStyle();
+            });
 
+            checkBox.setOnAction(e -> updateStyle());
+        }
+
+        private void updateStyle() {
+            if (checkBox.isSelected()) {
+                card.setStyle("-fx-background-color:#F0F6FE;-fx-border-color:" + BLUE + ";-fx-border-width:1.5;-fx-border-radius:8;-fx-background-radius:8;");
+            } else {
+                card.setStyle("-fx-background-color:white;-fx-border-color:" + BORDER + ";-fx-border-width:1;-fx-border-radius:8;-fx-background-radius:8;");
+            }
+        }
+
+        public boolean isSelected() {
+            return checkBox.isSelected();
+        }
+
+        public VBox getCard() {
+            return card;
+        }
+    }
+
+    private HBox sidebarItem(String stepNum, String text, String iconLiteral, boolean active) {
+        HBox item = new HBox(10);
+        item.setPrefHeight(42);
+        item.setMinHeight(42);
+        item.setAlignment(Pos.CENTER_LEFT);
+        item.setPadding(new Insets(0, 16, 0, 22));
+
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(13);
+        icon.setIconColor(active ? Color.web(NAVY) : Color.web("#B7C4D8"));
+
+        Label textLbl = label(stepNum + "  " + text, 12, active ? FontWeight.BOLD : FontWeight.NORMAL, active ? NAVY : "#B7C4D8");
+
+        if (active) {
+            item.setStyle("-fx-background-color: #E0F2FE; -fx-background-radius: 7px;");
+        } else {
+            item.setStyle("-fx-background-color: transparent;");
+        }
+
+        item.getChildren().addAll(icon, textLbl);
         return item;
     }
 
-    
-
-    private ToggleButton serviceCard(
-            String icon,
-            String title,
-            boolean selected
-    ) {
-
-        ToggleButton button =
-                new ToggleButton();
-
-        button.setSelected(selected);
-
-        button.setPrefHeight(92);
-        button.setMinHeight(92);
-
-        button.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
-        VBox box = new VBox(8);
-
-        box.setAlignment(
-                Pos.CENTER
-        );
-
-        Label iconLabel = label(
-                icon,
-                21,
-                FontWeight.BOLD,
-                NAVY
-        );
-
-        Label titleLabel = label(
-                title,
-                14,
-                FontWeight.NORMAL,
-                "#050B16"
-        );
-
-        Label check = label(
-                "●",
-                12,
-                FontWeight.BOLD,
-                NAVY
-        );
-
-        StackPane iconPane = new StackPane(
-                iconLabel
-        );
-
-        iconPane.setPrefHeight(28);
-
-        StackPane.setAlignment(
-                check,
-                Pos.TOP_RIGHT
-        );
-
-        check.setVisible(selected);
-
-        iconPane.getChildren().add(check);
-
-        box.getChildren().addAll(
-                iconPane,
-                titleLabel
-        );
-
-        button.setGraphic(box);
-
-        updateServiceStyle(
-                button,
-                selected
-        );
-
-        button.selectedProperty()
-                .addListener(
-                        (obs, oldValue, newValue) -> {
-
-                            updateServiceStyle(
-                                    button,
-                                    newValue
-                            );
-
-                            check.setVisible(
-                                    newValue
-                            );
-                        }
-                );
-
-        return button;
-    }
-
-    
-    private void updateServiceStyle(
-            ToggleButton button,
-            boolean selected
-    ) {
-
-        button.setStyle(
-                selected
-                        ? "-fx-background-color:" + SELECTED + ";" +
-                          "-fx-border-color:" + BLUE + ";" +
-                          "-fx-border-width:1.5;" +
-                          "-fx-border-radius:6;" +
-                          "-fx-background-radius:6;"
-                        : "-fx-background-color:white;" +
-                          "-fx-border-color:" + BORDER + ";" +
-                          "-fx-border-width:1;" +
-                          "-fx-border-radius:6;" +
-                          "-fx-background-radius:6;"
-        );
-    }
-
-    
-
-    private Label label(
-            String text,
-            double size,
-            FontWeight weight,
-            String color
-    ) {
-
+    private Label label(String text, double size, FontWeight weight, String color) {
         Label l = new Label(text);
-
-        l.setFont(
-                Font.font(
-                        "Arial",
-                        weight,
-                        size
-                )
-        );
-
-        l.setTextFill(
-                Color.web(color)
-        );
-
+        l.setFont(Font.font("Arial", weight, size));
+        l.setStyle("-fx-text-fill: " + color + " !important;");
         return l;
-    }
-
-    
-
-    private void showMessage(
-            String title,
-            String message
-    ) {
-
-        Alert alert =
-                new Alert(
-                        Alert.AlertType.INFORMATION
-                );
-
-        alert.setTitle("EventXpert");
-        alert.setHeaderText(title);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    
-    public static void main(
-            String[] args
-    ) {
-
-        launch(args);
     }
 }

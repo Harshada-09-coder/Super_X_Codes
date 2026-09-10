@@ -1,678 +1,308 @@
 package com.techtrio.view;
 
 import com.techtrio.controller.AuthController;
+import com.techtrio.controller.SignUpResult;
+import com.techtrio.controller.VendorController;
+import com.techtrio.model.VendorProfile;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 
 public class VendorRegistration {
+
     private Scene vendorRegistrationScene;
+    private StackPane rootLayer;
 
-    // --- COLOR PALETTE ---
-    private static final String COLOR_NAVY = "#0B2E63";
-    private static final String COLOR_BLUE = "#2563D9";
-    private static final String COLOR_BLUE_HOVER = "#1D4ED8";
-    private static final String COLOR_LIGHT_BLUE = "#EAF2FF";
-    private static final String COLOR_VERY_LIGHT_BLUE = "#F7F9FC";
-    private static final String COLOR_MAIN_TEXT = "#172B4D";
-    private static final String COLOR_SECONDARY_TEXT = "#64748B";
-    private static final String COLOR_BORDER = "#D9E2F0";
-    private static final String COLOR_ERROR = "#DC2626";
-    private static final String COLOR_WHITE = "#FFFFFF";
+    private static final String COLOR_NAVY = "#062A60";
+    private static final String COLOR_PRIMARY_BLUE = "#0B4EA2";
+    private static final String BORDER_COLOR = "#DCE5F0";
 
-    // --- FORM FIELDS ---
     private TextField txtFullName;
     private TextField txtEmailAddress;
+    private TextField txtBusinessName;
     private TextField txtPhone;
     private ComboBox<String> cbCategory;
-    private PasswordField txtPassword;
-    private TextField txtPasswordVisible;
-    private PasswordField txtConfirmPassword;
-    private TextField txtConfirmPasswordVisible;
     private TextField txtAddress;
     private TextField txtExperience;
-    private TextField txtGstNumber;
     private CheckBox chkTerms;
-    private Button btnRegister;
 
-    // --- VALIDATION LABELS ---
-    private Label lblFullNameError;
-    private Label lblEmailError;
-    private Label lblPhoneError;
-    private Label lblCategoryError;
-    private Label lblPasswordError;
-    private Label lblConfirmPasswordError;
-    private Label lblAddressError;
-    private Label lblExperienceError;
-    private Label lblTermsError;
-    private VBox statusBanner;
-    Scene getvendorRegistrationScene(Runnable callBackAction){
+    Scene getvendorRegistrationScene(Runnable callBackAction) {
+        rootLayer = new StackPane();
+        rootLayer.setStyle("-fx-background-color: white; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        Scene scene = new Scene(createRootPane(), 1550, 750);
-        vendorRegistrationScene = scene;
+        Parent content = createRootPane();
+        rootLayer.getChildren().add(content);
+
+        vendorRegistrationScene = new Scene(rootLayer, 1550, 785);
         return vendorRegistrationScene;
     }
 
-    /**
-     * Root container builder - Embeddable in existing JavaFX navigation layouts.
-     */
     public Parent createRootPane() {
         HBox root = new HBox();
-        root.setStyle("-fx-background-color: " + COLOR_WHITE + ";");
+        root.setStyle("-fx-background-color: white;");
 
-        // 1. Left Branding Panel (35% width ratio)
-        VBox leftPanel = createLeftPanel();
-        leftPanel.prefWidthProperty().bind(root.widthProperty().multiply(0.36));
-        leftPanel.setMinWidth(320);
+        // 1. LEFT PANEL
+        VBox leftPanel = new VBox(20);
+        leftPanel.setPrefWidth(450);
+        leftPanel.setPadding(new Insets(40));
+        leftPanel.setAlignment(Pos.TOP_LEFT);
+        leftPanel.setStyle("-fx-background-color: " + COLOR_NAVY + ";");
 
-        // 2. Right Form Panel (64% width ratio)
-        ScrollPane rightPanelScroll = createRightPanelScroll();
-        HBox.setHgrow(rightPanelScroll, Priority.ALWAYS);
+        Button backLink = new Button("← Back to Login");
+        backLink.setStyle("-fx-background-color: transparent; -fx-text-fill: #CBD5E1; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0;");
+        backLink.setOnAction(e -> {
+            LoginPage backToLoginPage = new LoginPage();
+            LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(this::backToVendorRegistration));
+        });
 
-        root.getChildren().addAll(leftPanel, rightPanelScroll);
+        Label brand = new Label("EventXpert");
+        brand.setFont(Font.font("Arial", FontWeight.BOLD, 28));
+        brand.setTextFill(Color.WHITE);
+
+        Image vendor = new Image("assets\\images\\Vendor.png");
+        ImageView vendorImageView = new ImageView(vendor);
+        vendorImageView.setFitWidth(320);
+        vendorImageView.setFitHeight(260);
+        vendorImageView.setPreserveRatio(true);
+
+        Label heading = new Label("Join as a Verified Vendor");
+        heading.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        heading.setTextFill(Color.WHITE);
+
+        Label subtext = new Label("Offer your event services, receive direct assignment bookings, and get secure Escrow payouts.");
+        subtext.setWrapText(true);
+        subtext.setStyle("-fx-font-size: 13.5px; -fx-text-fill: #CBD5E1;");
+
+        leftPanel.getChildren().addAll(backLink, brand, vendorImageView, heading, subtext);
+
+        // 2. RIGHT FORM PANEL
+        VBox formContainer = new VBox(12);
+        formContainer.setPadding(new Insets(35, 60, 35, 60));
+        HBox.setHgrow(formContainer, Priority.ALWAYS);
+
+        Label title = new Label("Vendor Registration");
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 32));
+        title.setTextFill(Color.web(COLOR_NAVY));
+
+        Label subtitle = new Label("Create your business profile to connect with event organizers.");
+        subtitle.setStyle("-fx-font-size: 14px; -fx-text-fill: #64748B;");
+
+        txtFullName = createInput("Enter full name");
+        txtEmailAddress = createInput("Enter email address");
+        txtBusinessName = createInput("Enter registered business name");
+        txtPhone = createInput("Enter contact phone number");
+
+        cbCategory = new ComboBox<>();
+        cbCategory.setPromptText("Select primary service category");
+        cbCategory.setMaxWidth(Double.MAX_VALUE);
+        cbCategory.setPrefHeight(42);
+        cbCategory.getItems().addAll("Decoration", "Sound System", "Photography and Videography", "Rental Equipment", "Invitation and Printing", "Catering", "Anchor", "Cake and Dessert Services");
+
+        PasswordEyeBox passBox = new PasswordEyeBox("Create password (min 6 characters)");
+        PasswordEyeBox confPassBox = new PasswordEyeBox("Confirm password");
+
+        txtAddress = createInput("Enter business address / coverage area");
+        txtExperience = createInput("Experience in years (e.g. 5)");
+
+        chkTerms = new CheckBox("I agree to the Terms & Conditions and Privacy Policy");
+        chkTerms.setStyle("-fx-font-size: 12.5px; -fx-text-fill: #334155;");
+
+        Button btnRegister = new Button("Register as Vendor →");
+        btnRegister.setMaxWidth(Double.MAX_VALUE);
+        btnRegister.setPrefHeight(46);
+        btnRegister.setStyle("-fx-background-color: " + COLOR_PRIMARY_BLUE + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-background-radius: 6px; -fx-cursor: hand;");
+
+        AuthController controller = new AuthController();
+
+        btnRegister.setOnAction(e -> {
+            String p = passBox.getText();
+            String cp = confPassBox.getText();
+
+            if (txtFullName.getText().isBlank() || txtEmailAddress.getText().isBlank() || cbCategory.getValue() == null || p.isBlank() || !chkTerms.isSelected()) {
+                showCompactModal("Incomplete Form", "Please fill in all required fields and select a category.", false);
+                return;
+            }
+
+            if (p.length() < 6) {
+                showCompactModal("Weak Password", "Password must be at least 6 characters long.", false);
+                return;
+            }
+
+            if (!p.equals(cp)) {
+                showCompactModal("Password Mismatch", "Passwords do not match. Please verify them.", false);
+                return;
+            }
+
+            SignUpResult result = controller.signUp(
+                    txtFullName.getText().trim(),
+                    txtEmailAddress.getText().trim(),
+                    txtPhone.getText().trim(),
+                    p,
+                    "vendor"
+            );
+
+            if (result != null) {
+                String uid = result.getUid();
+                String idToken = result.getIdToken();
+
+                VendorProfile profile = new VendorProfile(
+                        uid,
+                        txtFullName.getText().trim(),
+                        txtEmailAddress.getText().trim(),
+                        txtBusinessName.getText().trim(),
+                        txtPhone.getText().trim(),
+                        cbCategory.getValue(),
+                        txtAddress.getText().trim(),
+                        txtExperience.getText().trim(),
+                        "",
+                        "Available"
+                );
+
+                VendorController vendorController = new VendorController();
+                vendorController.createVendorProfile(profile, idToken);
+
+                InactiveVendorDash vendorDash = new InactiveVendorDash(uid, idToken);
+                LandingPage.landingPageStage.setScene(vendorDash.getinactiveVendorScene());
+            } else {
+                showCompactModal("Registration Failed (400)", "Email may already exist or request was rejected by auth.", false);
+            }
+        });
+
+        formContainer.getChildren().addAll(
+                title, subtitle,
+                new Label("Full Name:"), txtFullName,
+                new Label("Business Name:"), txtBusinessName,
+                new Label("Email Address:"), txtEmailAddress,
+                new Label("Phone Number:"), txtPhone,
+                new Label("Service Category:"), cbCategory,
+                new Label("Password:"), passBox.getContainer(),
+                new Label("Confirm Password:"), confPassBox.getContainer(),
+                new Label("Operating Location:"), txtAddress,
+                new Label("Experience (Years):"), txtExperience,
+                chkTerms,
+                btnRegister
+        );
+
+        ScrollPane rightScroll = new ScrollPane(formContainer);
+        rightScroll.setFitToWidth(true);
+        rightScroll.setStyle("-fx-background-color: white; -fx-background: white; -fx-border-color: transparent;");
+        HBox.setHgrow(rightScroll, Priority.ALWAYS);
+
+        root.getChildren().addAll(leftPanel, rightScroll);
         return root;
     }
 
-    // ==========================================
-    // LEFT BRANDING & INFORMATION PANEL
-    // ==========================================
-    private VBox createLeftPanel() {
-        VBox panel = new VBox();
-        panel.setPadding(new Insets(32, 28, 32, 28));
-        panel.setAlignment(Pos.TOP_LEFT);
-        panel.setStyle(
-            "-fx-background-color: linear-gradient(to bottom right, " + COLOR_NAVY + ", " + COLOR_BLUE + ");"
-        );
-
-        // Top Navigation
-        Hyperlink backLink = new Hyperlink("←  Back to Login");
-        backLink.setStyle(
-            "-fx-text-fill: " + COLOR_WHITE + ";" +
-            "-fx-font-size: 13px;" +
-            "-fx-underline: false;" +
-            "-fx-opacity: 0.9;" +
-            "-fx-border-color: transparent;"
-        );
-        backLink.setOnAction(e -> {
-            System.out.println("Back To Login Page");
-            LoginPage backToLoginPage = new LoginPage();
-            Runnable callBackAction = new Runnable() {
-                        public void run(){
-                                backToVendorRegistration();
-                        }
-                };
-
-                LandingPage.landingPageStage.setScene(backToLoginPage.getloginPageScene(callBackAction));
-      
-        });
-
-        // Illustration Area Container
-        VBox illustrationBox = createIllustrationContainer();
-
-        // Descriptive Copy
-        Label heading = new Label("Join as a Vendor");
-        heading.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + COLOR_WHITE + ";");
-
-        Label subtext = new Label("Offer your services, get bookings, and increase your visibility");
-        subtext.setWrapText(true);
-        subtext.setStyle("-fx-font-size: 13px; -fx-text-fill: #D1E0FF; -fx-text-alignment: center;");
-
-        VBox textContainer = new VBox(8, heading, subtext);
-        textContainer.setAlignment(Pos.CENTER);
-
-        // Pagination Dots (3rd dot active for Vendor)
-        HBox dotsBox = new HBox(8);
-        dotsBox.setAlignment(Pos.CENTER);
-        Circle dot1 = new Circle(4, Color.web("#FFFFFF", 0.35));
-        Circle dot2 = new Circle(4, Color.web("#FFFFFF", 0.35));
-        Rectangle dot3 = new Rectangle(20, 8, Color.web(COLOR_WHITE));
-        dot3.setArcWidth(8);
-        dot3.setArcHeight(8);
-        dotsBox.getChildren().addAll(dot1, dot2, dot3);
-
-        // Spacer to push illustration and content
-        Region topSpacer = new Region();
-        Region bottomSpacer = new Region();
-        VBox.setVgrow(topSpacer, Priority.ALWAYS);
-        VBox.setVgrow(bottomSpacer, Priority.ALWAYS);
-
-        panel.getChildren().addAll(
-            backLink,
-            topSpacer,
-            illustrationBox,
-            textContainer,
-            dotsBox,
-            bottomSpacer
-        );
-
-        VBox.setMargin(illustrationBox, new Insets(0, 0, 24, 0));
-        VBox.setMargin(dotsBox, new Insets(20, 0, 0, 0));
-
-        return panel;
+    private TextField createInput(String prompt) {
+        TextField f = new TextField();
+        f.setPromptText(prompt);
+        f.setPrefHeight(42);
+        f.setStyle("-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 0 12;");
+        return f;
     }
 
-    /**
-     * Self-contained Vector Illustration Component
-     */
-    private VBox createIllustrationContainer() {
-        VBox box = new VBox();
-        box.setPrefSize(280, 240);
-        box.setMaxSize(300, 260);
-        box.setAlignment(Pos.CENTER);
-        box.setStyle(
-            "-fx-background-color: rgba(255, 255, 255, 0.12);" +
-            "-fx-background-radius: 16px;" +
-            "-fx-border-color: rgba(255, 255, 255, 0.2);" +
-            "-fx-border-radius: 16px;" +
-            "-fx-padding: 20px;"
-        );
-        Image vendor = new Image("assets\\images\\Vendor.png");
-        ImageView vendorImageView = new ImageView(vendor);
-        vendorImageView.setFitHeight(220);
-        vendorImageView.setFitWidth(280);
+    private static class PasswordEyeBox {
+        private final PasswordField pwdField = new PasswordField();
+        private final TextField txtField = new TextField();
+        private final StackPane pane = new StackPane();
 
-        // Rendered Vendor Booth / Equipment Scene via JavaFX Graphic Primitives
-        StackPane canvas = new StackPane(vendorImageView);
-        canvas.setPrefSize(240, 180);
-        box.getChildren().add(canvas);
-        return box;
-    }
+        public PasswordEyeBox(String prompt) {
+            pwdField.setPromptText(prompt);
+            txtField.setPromptText(prompt);
+            txtField.setVisible(false);
 
-    private ScrollPane createRightPanelScroll() {
-        VBox formContainer = new VBox(16);
-        formContainer.setPadding(new Insets(36, 48, 36, 48));
-        formContainer.setMaxWidth(680);
-        formContainer.setAlignment(Pos.TOP_LEFT);
+            String style = "-fx-background-color: white; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 0 38 0 12;";
+            pwdField.setStyle(style);
+            txtField.setStyle(style);
+            pwdField.setPrefHeight(42);
+            txtField.setPrefHeight(42);
 
-        // Header Title
-        Label title = new Label("Vendor Registration");
-        title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: " + COLOR_MAIN_TEXT + ";");
+            pwdField.textProperty().bindBidirectional(txtField.textProperty());
 
-        Label subtitle = new Label("Create your vendor account");
-        subtitle.setStyle("-fx-font-size: 14px; -fx-text-fill: " + COLOR_SECONDARY_TEXT + ";");
+            Button eyeBtn = new Button("👁");
+            eyeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-size: 14px; -fx-cursor: hand;");
 
-        VBox headerBox = new VBox(4, title, subtitle);
-        headerBox.setPadding(new Insets(0, 0, 8, 0));
+            eyeBtn.setOnAction(e -> {
+                if (pwdField.isVisible()) {
+                    pwdField.setVisible(false);
+                    txtField.setVisible(true);
+                    eyeBtn.setText("🙈");
+                } else {
+                    txtField.setVisible(false);
+                    pwdField.setVisible(true);
+                    eyeBtn.setText("👁");
+                }
+            });
 
-        // Form Status Banner (Success/Error summary)
-        statusBanner = new VBox();
-        statusBanner.setManaged(false);
-        statusBanner.setVisible(false);
-
-        // --- ROW 1: Full Name | Business Name ---
-        lblFullNameError = createErrorLabel();
-        lblEmailError = createErrorLabel();
-        txtFullName = createTextField("Enter full name");
-        txtEmailAddress = createTextField("Enter business name");
-        HBox row1 = createTwoColumnRow(
-            createFieldGroup("Full Name", txtFullName, lblFullNameError),
-            createFieldGroup("Email Address", txtEmailAddress, lblEmailError)
-        );
-
-        // --- ROW 2: Phone | Service Category ---
-        lblPhoneError = createErrorLabel();
-        lblCategoryError = createErrorLabel();
-        txtPhone = createTextField("Enter phone number");
-        cbCategory = new ComboBox<>();
-        cbCategory.setPromptText("Select category");
-        cbCategory.setMaxWidth(Double.MAX_VALUE);
-        cbCategory.getItems().addAll(
-            "Decoration",
-            "Sound System",
-            "Photography and Videography",
-            "Rental Equipment",
-            "Invitation and Printing",
-            "Catering",
-            "Anchor",
-            "Cake and Dessert Services"
-        );
-        cbCategory.setStyle(getControlStyle());
-
-        HBox row2 = createTwoColumnRow(
-            createFieldGroup("Phone Number", txtPhone, lblPhoneError),
-            createFieldGroup("Service Category", cbCategory, lblCategoryError)
-        );
-
-        // --- ROW 3: Password | Confirm Password ---
-        lblPasswordError = createErrorLabel();
-        lblConfirmPasswordError = createErrorLabel();
-
-        StackPane passPane = createPasswordControl(true);
-        StackPane confirmPassPane = createPasswordControl(false);
-
-        HBox row3 = createTwoColumnRow(
-            createFieldGroup("Password", passPane, lblPasswordError),
-            createFieldGroup("Confirm Password", confirmPassPane, lblConfirmPasswordError)
-        );
-
-        // --- ROW 4: Address (Full Width) ---
-        lblAddressError = createErrorLabel();
-        txtAddress = createTextField("Enter business address");
-        VBox row4 = createFieldGroup("Address", txtAddress, lblAddressError);
-
-        // --- ROW 5: Experience | GST Number ---
-        lblExperienceError = createErrorLabel();
-        txtExperience = createTextField("Enter experience");
-        txtGstNumber = createTextField("Enter GST number");
-        HBox row5 = createTwoColumnRow(
-            createFieldGroup("Experience (Years)", txtExperience, lblExperienceError),
-            createFieldGroup("GST Number (Optional)", txtGstNumber, new Label())
-        );
-
-        // Helper Info Box
-        HBox infoBox = createHelperInfoBox();
-
-        // Terms Agreement Checkbox
-        lblTermsError = createErrorLabel();
-        chkTerms = new CheckBox();
-
-        TextFlow termsFlow = new TextFlow();
-        Text text1 = new Text("I agree to the ");
-        text1.setFill(Color.web(COLOR_MAIN_TEXT));
-        Hyperlink termsLink = new Hyperlink("Terms & Conditions");
-        styleInlineLink(termsLink);
-        Text text2 = new Text(" and ");
-        text2.setFill(Color.web(COLOR_MAIN_TEXT));
-        Hyperlink privacyLink = new Hyperlink("Privacy Policy");
-        styleInlineLink(privacyLink);
-        termsFlow.getChildren().addAll(text1, termsLink, text2, privacyLink);
-
-        HBox termsRow = new HBox(8, chkTerms, termsFlow);
-        termsRow.setAlignment(Pos.CENTER_LEFT);
-        VBox termsContainer = new VBox(4, termsRow, lblTermsError);
-
-        // Register Button
-        Text output = new Text();
-        output.setStyle("-fx-fill: white");
-        AuthController controller = new AuthController();
-        btnRegister = new Button("Register as Vendor  →");
-        btnRegister.setMaxWidth(Double.MAX_VALUE);
-        btnRegister.setPrefHeight(44);
-        btnRegister.setStyle(
-            "-fx-background-color: " + COLOR_BLUE + ";" +
-            "-fx-text-fill: " + COLOR_WHITE + ";" +
-            "-fx-font-size: 14px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-radius: 6px;" +
-            "-fx-cursor: hand;"
-        );
-        
-        // Hover & Pressed Effects
-        btnRegister.setOnMouseEntered(e -> btnRegister.setStyle(
-            "-fx-background-color: " + COLOR_BLUE_HOVER + ";" +
-            "-fx-text-fill: " + COLOR_WHITE + ";" +
-            "-fx-font-size: 14px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-radius: 6px;" +
-            "-fx-cursor: hand;"
-        ));
-        btnRegister.setOnMouseExited(e -> btnRegister.setStyle(
-            "-fx-background-color: " + COLOR_BLUE + ";" +
-            "-fx-text-fill: " + COLOR_WHITE + ";" +
-            "-fx-font-size: 14px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-radius: 6px;" +
-            "-fx-cursor: hand;"
-        ));
-        btnRegister.setOnAction(e -> handleRegistration());
-        btnRegister.setOnAction(e -> {
-
-            boolean flag = controller.signUp(txtEmailAddress.getText(), txtPassword.getText());
-            if (flag) {
-                System.out.println("Sign Up Successfully");
-                output.setText("Sign Up Successfully");
-            }else{
-                System.out.println("Sign Up Failed");
-                output.setText("Sign Up Failed");
-            }
-        });
-
-
-        // Footer Login Link
-        HBox footerBox = new HBox();
-        footerBox.setAlignment(Pos.CENTER);
-        Label lblAlready = new Label("Already have an account? ");
-        lblAlready.setStyle("-fx-text-fill: " + COLOR_SECONDARY_TEXT + "; -fx-font-size: 13px;");
-        Hyperlink loginLink = new Hyperlink("Login");
-        loginLink.setStyle(
-            "-fx-text-fill: " + COLOR_BLUE + ";" +
-            "-fx-font-size: 13px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-underline: false;" +
-            "-fx-border-color: transparent;"
-        );
-        loginLink.setOnAction(e -> handleNavigateLogin());
-        footerBox.getChildren().addAll(lblAlready, loginLink);
-
-        // Assemble Form Container
-        formContainer.getChildren().addAll(
-            headerBox,
-            statusBanner,
-            row1,
-            row2,
-            row3,
-            row4,
-            row5,
-            infoBox,
-            termsContainer,
-            btnRegister,
-            footerBox
-        );
-
-        ScrollPane scrollPane = new ScrollPane(formContainer);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + COLOR_WHITE + ";");
-        return scrollPane;
-    }
-
-    // ==========================================
-    // UI BUILDER HELPERS
-    // ==========================================
-    private VBox createFieldGroup(String labelText, Node inputControl, Label errorLabel) {
-        Label label = new Label(labelText);
-        label.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + COLOR_MAIN_TEXT + ";");
-        VBox group = new VBox(4, label, inputControl, errorLabel);
-        HBox.setHgrow(group, Priority.ALWAYS);
-        return group;
-    }
-
-    private HBox createTwoColumnRow(VBox leftGroup, VBox rightGroup) {
-        HBox row = new HBox(16, leftGroup, rightGroup);
-        row.setAlignment(Pos.TOP_LEFT);
-        return row;
-    }
-
-    private TextField createTextField(String placeholder) {
-        TextField field = new TextField();
-        field.setPromptText(placeholder);
-        field.setPrefHeight(38);
-        field.setStyle(getControlStyle());
-        return field;
-    }
-
-    private StackPane createPasswordControl(boolean isPrimaryPassword) {
-        PasswordField pwdField = new PasswordField();
-        pwdField.setPromptText(isPrimaryPassword ? "Create password" : "Confirm password");
-        pwdField.setPrefHeight(38);
-        pwdField.setStyle(getControlStyle());
-
-        TextField visibleField = new TextField();
-        visibleField.setPromptText(pwdField.getPromptText());
-        visibleField.setPrefHeight(38);
-        visibleField.setStyle(getControlStyle());
-        visibleField.setVisible(false);
-
-        if (isPrimaryPassword) {
-            txtPassword = pwdField;
-            txtPasswordVisible = visibleField;
-        } else {
-            txtConfirmPassword = pwdField;
-            txtConfirmPasswordVisible = visibleField;
+            pane.getChildren().addAll(pwdField, txtField, eyeBtn);
+            StackPane.setAlignment(eyeBtn, Pos.CENTER_RIGHT);
+            StackPane.setMargin(eyeBtn, new Insets(0, 8, 0, 0));
         }
 
-        // Eye Toggle Button
-        Button toggleBtn = new Button("👁");
-        toggleBtn.setStyle(
-            "-fx-background-color: transparent;" +
-            "-fx-text-fill: " + COLOR_SECONDARY_TEXT + ";" +
-            "-fx-cursor: hand;" +
-            "-fx-font-size: 13px;"
-        );
-
-        // Bind text fields
-        pwdField.textProperty().bindBidirectional(visibleField.textProperty());
-
-        toggleBtn.setOnAction(e -> {
-            if (pwdField.isVisible()) {
-                pwdField.setVisible(false);
-                visibleField.setVisible(true);
-                toggleBtn.setText("🙈");
-            } else {
-                visibleField.setVisible(false);
-                pwdField.setVisible(true);
-                toggleBtn.setText("👁");
-            }
-        });
-
-        StackPane pane = new StackPane();
-        pane.getChildren().addAll(pwdField, visibleField, toggleBtn);
-        StackPane.setAlignment(toggleBtn, Pos.CENTER);
-        StackPane.setMargin(toggleBtn, new Insets(0, 6, 0, 0));
-        return pane;
+        public StackPane getContainer() { return pane; }
+        public String getText() { return pwdField.getText(); }
     }
 
-    private HBox createHelperInfoBox() {
-        HBox box = new HBox(8);
-        box.setPadding(new Insets(10, 12, 10, 12));
-        box.setAlignment(Pos.CENTER_LEFT);
-        box.setStyle(
-            "-fx-background-color: " + COLOR_VERY_LIGHT_BLUE + ";" +
-            "-fx-border-color: " + COLOR_LIGHT_BLUE + ";" +
-            "-fx-border-radius: 6px;" +
-            "-fx-background-radius: 6px;"
-        );
+    // ⭐ COMPACT RECTANGULAR MODAL POPUP
+    private void showCompactModal(String title, String message, boolean success) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(6, 42, 96, 0.40);");
 
-        Label icon = new Label("ⓘ");
-        icon.setStyle("-fx-text-fill: " + COLOR_BLUE + "; -fx-font-weight: bold;");
+        VBox modal = new VBox(10);
+        modal.setPrefWidth(400);
+        modal.setMaxWidth(420);
+        modal.setMaxHeight(Region.USE_PREF_SIZE);
+        modal.setPadding(new Insets(16, 20, 16, 20));
+        modal.setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-border-color: " + (success ? "#86EFAC" : "#FCA5A5") + "; -fx-border-width: 1px; -fx-border-radius: 8px;");
+        modal.setEffect(new DropShadow(18, Color.rgb(0, 0, 0, 0.20)));
 
-        Label infoText = new Label("You can add and manage more services after registration.");
-        infoText.setStyle("-fx-font-size: 12px; -fx-text-fill: " + COLOR_SECONDARY_TEXT + ";");
+        HBox topH = new HBox(10);
+        topH.setAlignment(Pos.CENTER_LEFT);
 
-        box.getChildren().addAll(icon, infoText);
-        return box;
+        Label ic = new Label(success ? "✓" : "⚠");
+        ic.setStyle("-fx-font-size: 15px; -fx-text-fill: " + (success ? "#16A34A" : "#DC2626") + "; -fx-font-weight: bold;");
+
+        Label t = new Label(title);
+        t.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        t.setTextFill(Color.web(COLOR_NAVY));
+
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
+
+        Button closeX = new Button("✕");
+        closeX.setStyle("-fx-background-color: transparent; -fx-text-fill: #94A3B8; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 0;");
+        closeX.setOnAction(e -> rootLayer.getChildren().remove(overlay));
+
+        topH.getChildren().addAll(ic, t, sp, closeX);
+
+        Label m = new Label(message);
+        m.setWrapText(true);
+        m.setStyle("-fx-font-size: 12px; -fx-text-fill: #475569;");
+
+        HBox bRow = new HBox();
+        bRow.setAlignment(Pos.CENTER_RIGHT);
+        Button okBtn = new Button("OK");
+        okBtn.setStyle("-fx-background-color: " + (success ? "#16A34A" : COLOR_PRIMARY_BLUE) + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11.5px; -fx-padding: 5 18; -fx-background-radius: 4px; -fx-cursor: hand;");
+        okBtn.setOnAction(e -> rootLayer.getChildren().remove(overlay));
+        bRow.getChildren().add(okBtn);
+
+        modal.getChildren().addAll(topH, m, bRow);
+        overlay.getChildren().add(modal);
+        rootLayer.getChildren().add(overlay);
     }
 
-    private Label createErrorLabel() {
-        Label lbl = new Label();
-        lbl.setStyle("-fx-text-fill: " + COLOR_ERROR + "; -fx-font-size: 11px;");
-        lbl.setVisible(false);
-        lbl.setManaged(false);
-        return lbl;
-    }
-
-    private void styleInlineLink(Hyperlink link) {
-        link.setStyle(
-            "-fx-text-fill: " + COLOR_BLUE + ";" +
-            "-fx-font-size: 13px;" +
-            "-fx-border-color: transparent;" +
-            "-fx-padding: 0px;"
-        );
-    }
-
-    private String getControlStyle() {
-        return "-fx-background-color: " + COLOR_WHITE + ";" +
-               "-fx-border-color: " + COLOR_BORDER + ";" +
-               "-fx-border-radius: 6px;" +
-               "-fx-background-radius: 6px;" +
-               "-fx-padding: 6 10 6 10;";
-    }
-
-    private String getErrorControlStyle() {
-        return "-fx-background-color: " + COLOR_WHITE + ";" +
-               "-fx-border-color: " + COLOR_ERROR + ";" +
-               "-fx-border-radius: 6px;" +
-               "-fx-background-radius: 6px;" +
-               "-fx-padding: 6 10 6 10;";
-    }
-
-    // ==========================================
-    // VALIDATION & LOGIC HANDLING
-    // ==========================================
-    private void handleRegistration() {
-        clearErrors();
-        boolean isValid = true;
-
-        // Full Name Validation
-        if (txtFullName.getText().trim().isEmpty()) {
-            showFieldError(txtFullName, lblFullNameError, "Full name is required");
-            isValid = false;
+    public void backToVendorRegistration() {
+        if (vendorRegistrationScene != null && LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(vendorRegistrationScene);
         }
-
-        // Business Name Validation
-        if (txtEmailAddress.getText().trim().isEmpty()) {
-            showFieldError(txtEmailAddress, lblEmailError, "Business name is required");
-            isValid = false;
-        }
-
-        // Phone Validation
-        String phoneStr = txtPhone.getText().trim();
-        if (phoneStr.isEmpty()) {
-            showFieldError(txtPhone, lblPhoneError, "Phone number is required");
-            isValid = false;
-        } else if (!phoneStr.matches("^[0-9\\-\\+\\s\\(\\)]{7,15}$")) {
-            showFieldError(txtPhone, lblPhoneError, "Enter a valid phone number");
-            isValid = false;
-        }
-
-        // Category Validation
-        if (cbCategory.getValue() == null) {
-            cbCategory.setStyle(getErrorControlStyle());
-            lblCategoryError.setText("Select a service category");
-            lblCategoryError.setVisible(true);
-            lblCategoryError.setManaged(true);
-            isValid = false;
-        }
-
-        // Password Validation
-        String password = txtPassword.getText();
-        if (password.isEmpty()) {
-            txtPassword.setStyle(getErrorControlStyle());
-            txtPasswordVisible.setStyle(getErrorControlStyle());
-            lblPasswordError.setText("Password is required");
-            lblPasswordError.setVisible(true);
-            lblPasswordError.setManaged(true);
-            isValid = false;
-        } else if (password.length() < 6) {
-            txtPassword.setStyle(getErrorControlStyle());
-            txtPasswordVisible.setStyle(getErrorControlStyle());
-            lblPasswordError.setText("Password must be at least 6 characters");
-            lblPasswordError.setVisible(true);
-            lblPasswordError.setManaged(true);
-            isValid = false;
-        }
-
-        // Confirm Password Validation
-        String confirmPassword = txtConfirmPassword.getText();
-        if (!confirmPassword.equals(password) || confirmPassword.isEmpty()) {
-            txtConfirmPassword.setStyle(getErrorControlStyle());
-            txtConfirmPasswordVisible.setStyle(getErrorControlStyle());
-            lblConfirmPasswordError.setText("Passwords do not match");
-            lblConfirmPasswordError.setVisible(true);
-            lblConfirmPasswordError.setManaged(true);
-            isValid = false;
-        }
-
-        // Address Validation
-        if (txtAddress.getText().trim().isEmpty()) {
-            showFieldError(txtAddress, lblAddressError, "Address is required");
-            isValid = false;
-        }
-
-        // Experience Validation
-        String expStr = txtExperience.getText().trim();
-        if (expStr.isEmpty()) {
-            showFieldError(txtExperience, lblExperienceError, "Experience is required");
-            isValid = false;
-        } else {
-            try {
-                double exp = Double.parseDouble(expStr);
-                if (exp < 0) throw new NumberFormatException();
-            } catch (NumberFormatException e) {
-                showFieldError(txtExperience, lblExperienceError, "Enter numeric years");
-                isValid = false;
-            }
-        }
-
-        // Terms Checkbox Validation
-        if (!chkTerms.isSelected()) {
-            lblTermsError.setText("You must accept the terms and conditions");
-            lblTermsError.setVisible(true);
-            lblTermsError.setManaged(true);
-            isValid = false;
-        }
-
-        // Form Process Result
-        if (isValid) {
-            showStatusBanner(
-                "Vendor registration successful! Redirecting to your dashboard...",
-                "#10B981", "#E6F4EA"
-            );
-            btnRegister.setDisable(true);
-        } else {
-            showStatusBanner(
-                "Please fix the errors below to complete your registration.",
-                COLOR_ERROR, "#FEE2E2"
-            );
-        }
-    }
-
-    private void showFieldError(Control field, Label errorLabel, String message) {
-        field.setStyle(getErrorControlStyle());
-        errorLabel.setText(message);
-        errorLabel.setVisible(true);
-        errorLabel.setManaged(true);
-    }
-
-    private void clearErrors() {
-        statusBanner.setVisible(false);
-        statusBanner.setManaged(false);
-
-        Control[] controls = {
-            txtFullName, txtEmailAddress, txtPhone, cbCategory, 
-            txtPassword, txtPasswordVisible, txtConfirmPassword, 
-            txtConfirmPasswordVisible, txtAddress, txtExperience, txtGstNumber
-        };
-
-        for (Control c : controls) {
-            c.setStyle(getControlStyle());
-        }
-
-        Label[] labels = {
-            lblFullNameError, lblEmailError, lblPhoneError,
-            lblCategoryError, lblPasswordError, lblConfirmPasswordError,
-            lblAddressError, lblExperienceError, lblTermsError
-        };
-
-        for (Label lbl : labels) {
-            lbl.setVisible(false);
-            lbl.setManaged(false);
-        }
-    }
-
-    private void showStatusBanner(String message, String textColor, String bgColor) {
-        statusBanner.getChildren().clear();
-        Label msg = new Label(message);
-        msg.setStyle("-fx-text-fill: " + textColor + "; -fx-font-weight: bold; -fx-font-size: 13px;");
-        statusBanner.getChildren().add(msg);
-        statusBanner.setPadding(new Insets(10, 14, 10, 14));
-        statusBanner.setStyle(
-            "-fx-background-color: " + bgColor + ";" +
-            "-fx-border-color: " + textColor + ";" +
-            "-fx-border-radius: 6px;" +
-            "-fx-background-radius: 6px;"
-        );
-        statusBanner.setVisible(true);
-        statusBanner.setManaged(true);
-    }
-
-    private void handleNavigateLogin() {
-        System.out.println("Navigating back to Login Screen...");
-    }
-
-    public void backToVendorRegistration(){
-
-        LandingPage.landingPageStage.setScene(vendorRegistrationScene);
     }
 }

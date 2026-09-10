@@ -1,22 +1,32 @@
 package com.techtrio.view;
 
-import javafx.application.Application;
+import java.util.List;
+
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
+import com.techtrio.controller.VendorController;
+import com.techtrio.model.VendorBooking;
+import com.techtrio.session.UserSession;
+import org.kordamp.ikonli.javafx.FontIcon;
+
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.text.Text;
-import javafx.stage.Stage;
 
-public class VendorDashboardV extends Application {
+public class VendorDashboardV {
 
-    // Color Palette Constants
+    private Scene vendorDashboardScene;
+    private String uid;
+    private String idToken;
+
     private static final String SIDEBAR_NAVY = "#062A60";
     private static final String PRIMARY_BLUE = "#0B4EA2";
-    private static final String LIGHT_BLUE = "#EAF3FF";
     private static final String BACKGROUND = "#F7FAFE";
     private static final String WHITE = "#FFFFFF";
     private static final String TEXT_MAIN = "#102A43";
@@ -28,38 +38,37 @@ public class VendorDashboardV extends Application {
     private static final String WARNING_TEXT = "#D97706";
     private static final String ORANGE_BTN = "#EA580C";
 
-    @Override
-    public void start(Stage primaryStage) {
-        // Root BorderPane
+    private VBox requestsContainerBox;
+    private Label newReqValLbl;
+    private Label upcomingValLbl;
+    private Label totalEarningsValLbl;
+    private Label pendingPaymentsValLbl;
+    private GridPane upcomingTableGrid;
+
+    public VendorDashboardV() {
+        this(UserSession.getUid(), UserSession.getIdToken());
+    }
+
+    public VendorDashboardV(String uid, String idToken) {
+        this.uid = (uid != null && !uid.isBlank()) ? uid : UserSession.getUid();
+        this.idToken = (idToken != null && !idToken.isBlank()) ? idToken : UserSession.getIdToken();
+        UserSession.setSession(this.uid, this.idToken, null, "Vendor");
+    }
+
+    public Scene getvendorDashboardScene() {
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + BACKGROUND + ";");
+        root.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-font-family: 'Segoe UI', Arial, sans-serif;");
 
-        // =========================================================================
-        // 1. LEFT SIDEBAR (Full Window Height, Fixed 250px Width)
-        // =========================================================================
-        VBox sidebar = createSidebar();
-        root.setLeft(sidebar); // Attached to root LEFT so it spans 100% height
+        root.setLeft(createCommonVendorSidebar("Dashboard"));
 
-        // =========================================================================
-        // 2. MAIN APPLICATION AREA (Center of Root)
-        // =========================================================================
-        BorderPane mainArea = new BorderPane();
-        mainArea.setStyle("-fx-background-color: " + BACKGROUND + ";");
-
-        // Top Bar (Starts AFTER the sidebar, inside mainArea TOP)
-        HBox topBar = createTopBar();
-        mainArea.setTop(topBar);
-
-        // Scrollable Dashboard Content (Inside mainArea CENTER)
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: " + BACKGROUND + "; -fx-border-color: transparent;");
 
         VBox mainContent = new VBox(20);
-        mainContent.setPadding(new Insets(24));
+        mainContent.setPadding(new Insets(24, 32, 32, 32));
         mainContent.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-        // Assemble Dashboard Sections
         mainContent.getChildren().addAll(
                 createPageHeader(),
                 createTopHeroCardsRow(),
@@ -69,182 +78,179 @@ public class VendorDashboardV extends Application {
         );
 
         scrollPane.setContent(mainContent);
-        mainArea.setCenter(scrollPane);
+        root.setCenter(scrollPane);
 
-        // Attach mainArea to Root Center
-        root.setCenter(mainArea);
+        loadVendorRequestsFromFirestoreAsync();
 
-        // Scene Setup
-        Scene scene = new Scene(root, 1550, 785);
-        primaryStage.setTitle("EventXpert - Vendor Portal Dashboard");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
-        primaryStage.show();
+        vendorDashboardScene = new Scene(root, 1550, 785);
+        return vendorDashboardScene;
     }
 
-    // ==========================================
-    // 1. SIDEBAR (STARTS FROM ABSOLUTE TOP-LEFT)
-    // ==========================================
-    private VBox createSidebar() {
-        VBox sidebar = new VBox();
-        sidebar.setPrefWidth(250);
-        sidebar.setStyle("-fx-background-color: " + SIDEBAR_NAVY + ";");
-        sidebar.setPadding(new Insets(20, 14, 20, 14));
-        sidebar.setSpacing(6);
-
-        // Logo / Branding Area at the Very Top
-        HBox logoBox = new HBox(10);
-        logoBox.setAlignment(Pos.CENTER_LEFT);
-        Label logoIcon = new Label("E");
-        logoIcon.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 4 10; -fx-background-radius: 6px;");
-        
-        VBox brandBox = new VBox(0);
-        Label brandTitle = new Label("EventXpert");
-        brandTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;");
-        Label brandSub = new Label("Plan.Manage.Celebrate");
-        brandSub.setStyle("-fx-font-size: 10px; -fx-text-fill: #94A3B8; -fx-font-weight: bold;");
-        brandBox.getChildren().addAll(brandTitle, brandSub);
-        logoBox.getChildren().addAll(logoIcon, brandBox);
-
-        // Top Action Button
-        Button addServiceBtn = new Button("+ Add Service");
-        addServiceBtn.setMaxWidth(Double.MAX_VALUE);
-        addServiceBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-padding: 10; -fx-background-radius: 8px; -fx-cursor: hand;");
-        addServiceBtn.setOnAction(e -> System.out.println("Add Service Clicked"));
-
-        sidebar.getChildren().addAll(logoBox, new Region(), addServiceBtn);
-
-        sidebar.getChildren().add(createSidebarItem("📊 Dashboard", true));
-        sidebar.getChildren().add(createSidebarItem("📋 Service Requests", false));
-        sidebar.getChildren().add(createSidebarItem("📱 My Bookings", false));
-        sidebar.getChildren().add(createSidebarItem("📦 Services & Packages", false));
-        sidebar.getChildren().add(createSidebarItem("📅 Calendar", false));
-        sidebar.getChildren().add(createSidebarItem("💵 Earnings & Payments", false));       
-        HBox notifItem = createSidebarItemWithBadge("🔔 Notifications", "4");
-        sidebar.getChildren().add(notifItem);
-        sidebar.getChildren().add(createSidebarItem("👤 Settings", false));
-        sidebar.getChildren().add(createSidebarItem("❓ Support", false));
-
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-
-        // Bottom Vendor Profile Pill
-        HBox profilePill = new HBox(10);
-        profilePill.setAlignment(Pos.CENTER_LEFT);
-        profilePill.setPadding(new Insets(10));
-        profilePill.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 8px;");
-
-        Circle avatar = new Circle(16, Color.web(WHITE));
-        Text avatarText = new Text("VP");
-        avatarText.setStyle("-fx-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 11px;");
-        StackPane avatarPane = new StackPane(avatar, avatarText);
-
-        VBox userDetails = new VBox(2);
-        Label userName = new Label("VisionPro ...");
-        userName.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: white;");
-        Label userSub = new Label("Audio & Visu...  • ● Available");
-        userSub.setStyle("-fx-font-size: 10px; -fx-text-fill: #4ADE80;");
-        userDetails.getChildren().addAll(userName, userSub);
-
-        profilePill.getChildren().addAll(avatarPane, userDetails);
-
-        sidebar.getChildren().addAll(spacer, profilePill);
-        return sidebar;
-    }
-
-
-    private Button createSidebarItem(String title, boolean isActive) {
-        Button btn = new Button(title);
-        btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setAlignment(Pos.CENTER_LEFT);
-
-        if (isActive) {
-            btn.setStyle("-fx-background-color: white; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 8px; -fx-padding: 8 12;");
-        } else {
-            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #94A3B8; -fx-font-size: 13px; -fx-padding: 8 12; -fx-cursor: hand;");
-            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.05); -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 8 12; -fx-cursor: hand;"));
-            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #94A3B8; -fx-font-size: 13px; -fx-padding: 8 12;"));
+    public void backToVendorDashboard() {
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(getvendorDashboardScene());
         }
-        btn.setOnAction(e -> System.out.println(title + " Clicked"));
-        return btn;
     }
 
-    private HBox createSidebarItemWithBadge(String title, String badgeCount) {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
+    // ⭐ कडक अट: केवळ आणि केवळ Customer Paid Amount > 0 असेल तरच Earnings मोजले जातील!
+    private void loadVendorRequestsFromFirestoreAsync() {
+        if (uid == null || uid.isBlank()) return;
 
-        Button btn = createSidebarItem(title, false);
-        HBox.setHgrow(btn, Priority.ALWAYS);
+        Task<List<VendorBooking>> task = new Task<>() {
+            @Override
+            protected List<VendorBooking> call() {
+                VendorController controller = new VendorController();
+                return controller.getVendorBookings(uid);
+            }
+        };
 
-        Label badge = new Label(badgeCount);
-        badge.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 6; -fx-background-radius: 10px;");
+        task.setOnSucceeded(evt -> {
+            List<VendorBooking> bookings = task.getValue();
+            Platform.runLater(() -> {
+                if (requestsContainerBox != null) requestsContainerBox.getChildren().clear();
+                if (upcomingTableGrid != null) {
+                    upcomingTableGrid.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) > 0);
+                }
 
-        row.getChildren().addAll(btn, badge);
-        return row;
+                int pendingCount = 0;
+                int confirmedCount = 0;
+                double totalEarningsNet = 0.0;
+                double pendingPaymentsGross = 0.0;
+                int tableRow = 1;
+
+                Firestore db = FirestoreClient.getFirestore();
+
+                if (bookings != null) {
+                    for (VendorBooking b : bookings) {
+                        String st = b.getStatus() != null ? b.getStatus().toUpperCase() : "PENDING";
+                        
+                        double amt = 0.0;
+                        try {
+                            String clean = b.getAmount() != null ? b.getAmount().replaceAll("[^0-9.]", "") : "0";
+                            if (!clean.isEmpty()) amt = Double.parseDouble(clean);
+                        } catch (Exception ignored) {}
+
+                        // ⭐ कडक तपासणी: इव्हेंटमध्ये कस्टमरने प्रत्यक्ष भरलेली रक्कम (paidAmount > 0) आहे का?
+                        boolean isCustomerActuallyPaid = false;
+                        if (db != null && b.getEventId() != null && !b.getEventId().isBlank()) {
+                            try {
+                                DocumentSnapshot evSnap = db.collection("events").document(b.getEventId().trim()).get().get();
+                                if (evSnap.exists()) {
+                                    Double paidAmt = evSnap.getDouble("paidAmount");
+                                    // केवळ आणि केवळ प्रत्यक्ष पैसे भरले असतील तरच (paidAmount > 0)
+                                    if (paidAmt != null && paidAmt > 0) {
+                                        isCustomerActuallyPaid = true;
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        }
+
+                        if ("PENDING".equals(st) || "NEW".equals(st)) {
+                            pendingCount++;
+                            pendingPaymentsGross += amt;
+                            if (requestsContainerBox != null) {
+                                requestsContainerBox.getChildren().add(createRequestBox(b));
+                            }
+                        } else {
+                            confirmedCount++;
+                            if (isCustomerActuallyPaid) {
+                                // कस्टमरने पैसे भरले असल्याने ३% फी वजा करून ९७% कमाई जमा होईल
+                                double netPayout = amt * 0.97;
+                                totalEarningsNet += netPayout;
+                            } else {
+                                // कस्टमरने पैसे न भरल्यामुळे ही रक्कम अजून Pending राहील
+                                pendingPaymentsGross += amt;
+                            }
+
+                            if (upcomingTableGrid != null && tableRow <= 5) {
+                                String tableStatus = isCustomerActuallyPaid ? "Paid" : "Confirmed (Unpaid)";
+                                addTableRow(upcomingTableGrid, tableRow++, b.getEventName(), b.getEventDate(), b.getServiceCategory(), b.getAmount(), tableStatus);
+                            }
+                        }
+                    }
+                }
+
+                if (newReqValLbl != null) newReqValLbl.setText(String.valueOf(pendingCount));
+                if (upcomingValLbl != null) upcomingValLbl.setText(String.valueOf(confirmedCount));
+                if (totalEarningsValLbl != null) totalEarningsValLbl.setText("₹ " + String.format("%,.0f", totalEarningsNet));
+                if (pendingPaymentsValLbl != null) pendingPaymentsValLbl.setText("₹ " + String.format("%,.0f", pendingPaymentsGross));
+
+                if (requestsContainerBox != null && requestsContainerBox.getChildren().isEmpty()) {
+                    Label empty = new Label("No new service requests currently in Firestore.");
+                    empty.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-padding: 12;");
+                    requestsContainerBox.getChildren().add(empty);
+                }
+
+                if (upcomingTableGrid != null && tableRow == 1) {
+                    addTableRow(upcomingTableGrid, 1, "No upcoming bookings yet", "-", "-", "-", "Pending");
+                }
+            });
+        });
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
     }
 
-    // ==========================================
-    // 2. TOP BAR (STARTS AFTER SIDEBAR)
-    // ==========================================
-    private HBox createTopBar() {
-        HBox topBar = new HBox();
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setPadding(new Insets(12, 24, 12, 24));
-        topBar.setStyle("-fx-background-color: " + WHITE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-width: 0 0 1 0;");
-        topBar.setSpacing(16);
+    private VBox createRequestBox(VendorBooking b) {
+        VBox box = new VBox(8);
+        box.setPadding(new Insets(12));
+        box.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 8px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px;");
 
-        TextField searchField = new TextField();
-        searchField.setPromptText("🔍 Search bookings, requests...");
-        searchField.setPrefWidth(380);
-        searchField.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 20px; -fx-background-radius: 20px; -fx-padding: 6 14;");
+        HBox top = new HBox();
+        Label t = new Label(b.getEventName() != null ? b.getEventName() : "Event");
+        t.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + TEXT_MAIN + ";");
+        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+        Label p = new Label(b.getAmount() != null ? b.getAmount() : "₹ 0");
+        p.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        top.getChildren().addAll(t, sp, p);
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label s = new Label("Category: " + (b.getServiceCategory() != null ? b.getServiceCategory() : "General"));
+        s.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        Label d = new Label("Date: " + (b.getEventDate() != null ? b.getEventDate() : "Upcoming") + " • Guests: " + b.getGuests());
+        d.setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        Button helpBtn = new Button("❓");
-        helpBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 14px; -fx-cursor: hand;");
+        HBox btns = new HBox(8);
+        Button acceptBtn = new Button("Accept");
+        acceptBtn.setStyle("-fx-background-color: " + GREEN_TEXT + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        acceptBtn.setOnAction(e -> {
+            VendorController controller = new VendorController();
+            boolean success = controller.acceptBookingRequest(b.getBookingId());
+            if (success) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Booking Request Accepted & Synced with Organizer Budget!");
+                alert.showAndWait();
+                loadVendorRequestsFromFirestoreAsync();
+            }
+        });
 
-        Button notifBtn = new Button("🔔");
-        notifBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 14px; -fx-cursor: hand;");
+        Button rejectBtn = new Button("Reject");
+        rejectBtn.setStyle("-fx-background-color: white; -fx-text-fill: " + TEXT_MAIN + "; -fx-border-color: " + BORDER_COLOR + "; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
+        rejectBtn.setOnAction(e -> {
+            VendorController controller = new VendorController();
+            controller.rejectBookingRequest(b.getBookingId());
+            loadVendorRequestsFromFirestoreAsync();
+        });
 
-        Button settingsBtn = new Button("⚙");
-        settingsBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 14px; -fx-cursor: hand;");
-
-        Button viewCalBtn = createSecondaryButton("📅 View Calendar");
-        viewCalBtn.setOnAction(e -> System.out.println("View Calendar Clicked"));
-
-        Circle topAvatar = new Circle(14, Color.web(PRIMARY_BLUE));
-        Text topAvatarText = new Text("VP");
-        topAvatarText.setStyle("-fx-fill: white; -fx-font-size: 10px; -fx-font-weight: bold;");
-        StackPane profilePill = new StackPane(topAvatar, topAvatarText);
-
-        topBar.getChildren().addAll(searchField, spacer, helpBtn, notifBtn, settingsBtn, viewCalBtn, profilePill);
-        return topBar;
+        btns.getChildren().addAll(acceptBtn, rejectBtn);
+        box.getChildren().addAll(top, s, d, btns);
+        return box;
     }
 
-    // ==========================================
-    // 3. PAGE HEADER
-    // ==========================================
     private VBox createPageHeader() {
         VBox header = new VBox(4);
-
-        Label greeting = new Label("Good Morning, VisionPro Events 👋");
+        Label greeting = new Label("Vendor Workspace 👋");
         greeting.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
-        Label subtitle = new Label("Here's what's happening with your bookings, requests and earnings.");
+        Label subtitle = new Label("Here's what's happening with your bookings, service requests and earnings.");
         subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         header.getChildren().addAll(greeting, subtitle);
         return header;
     }
 
-    // ==========================================
-    // 4. TOP HERO CARDS ROW
-    // ==========================================
     private HBox createTopHeroCardsRow() {
         HBox row = new HBox(16);
 
-        // Left Card: Next Booking
         VBox nextBookingCard = createCardContainer();
         HBox.setHgrow(nextBookingCard, Priority.ALWAYS);
 
@@ -254,144 +260,113 @@ public class VendorDashboardV extends Application {
         Label statusBadge = new Label("Confirmed");
         statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 3 10; -fx-background-radius: 12px;");
 
-        Label categoryTag = new Label("NEXT BOOKING");
+        Label categoryTag = new Label("NEXT UPCOMING BOOKING");
         categoryTag.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + "; -fx-padding: 0 0 0 10;");
 
         Region sp1 = new Region();
         HBox.setHgrow(sp1, Priority.ALWAYS);
 
-        Label iconHome = new Label("🏛");
-        iconHome.setStyle("-fx-font-size: 18px; -fx-background-color: " + LIGHT_BLUE + "; -fx-padding: 6 10; -fx-background-radius: 50%;");
+        FontIcon iconHome = new FontIcon("fas-calendar-check");
+        iconHome.setIconSize(18);
+        iconHome.setIconColor(Color.web(PRIMARY_BLUE));
 
         topRow1.getChildren().addAll(statusBadge, categoryTag, sp1, iconHome);
 
-        Label eventTitle = new Label("TechVision Annual Summit");
+        Label eventTitle = new Label("Upcoming Live Event Assignment");
         eventTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         HBox detailsGrid = new HBox(24);
-        VBox d1 = new VBox(2, new Label("📅 18 May 2026"), new Label("09:00 AM - 06:00 PM"));
+        VBox d1 = new VBox(2, new Label("📅 Date: Live Synced"), new Label("⏰ Working Hours: Standard Event Time"));
         d1.getChildren().get(0).setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
         d1.getChildren().get(1).setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        VBox d2 = new VBox(2, new Label("📍 Grand Convention Center, Pune"), new Label("Hall A, Tech Park"));
+        VBox d2 = new VBox(2, new Label("📍 Venue: Assigned by Organizer"), new Label("👥 Full Technical Support"));
         d2.getChildren().get(0).setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
         d2.getChildren().get(1).setStyle("-fx-font-size: 11px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
         detailsGrid.getChildren().addAll(d1, d2);
 
-        HBox bottomMeta = new HBox();
-        bottomMeta.setAlignment(Pos.CENTER_LEFT);
+        Button viewBookingBtn = new Button("View My Bookings →");
+        viewBookingBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 0; -fx-cursor: hand;");
+        viewBookingBtn.setOnAction(e -> openMyBookings());
 
-        Label serviceGuests = new Label("Service & Guests: Audio & Visual • 250 Guests");
-        serviceGuests.setStyle("-fx-font-size: 12px; -fx-text-fill: " + SECONDARY_TEXT + ";");
+        nextBookingCard.getChildren().addAll(topRow1, eventTitle, detailsGrid, new Separator(), viewBookingBtn);
 
-        Region sp2 = new Region();
-        HBox.setHgrow(sp2, Priority.ALWAYS);
-
-        Label amount = new Label("Amount: ₹85,000");
-        amount.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
-
-        bottomMeta.getChildren().addAll(serviceGuests, sp2, amount);
-
-        Button viewBookingBtn = createLinkButton("View Booking →");
-        viewBookingBtn.setOnAction(e -> System.out.println("View Booking Clicked"));
-
-        nextBookingCard.getChildren().addAll(topRow1, eventTitle, detailsGrid, new Separator(), bottomMeta, viewBookingBtn);
-
-        // Right Card: Action Required
         VBox actionCard = createCardContainer();
         actionCard.setPrefWidth(420);
         actionCard.setStyle("-fx-background-color: #FFFBEB; -fx-border-color: #FCD34D; -fx-border-radius: 12px; -fx-background-radius: 12px; -fx-padding: 18;");
 
-        HBox actionHeader = new HBox(10);
+        HBox actionHeader = new HBox(8);
         actionHeader.setAlignment(Pos.CENTER_LEFT);
 
-        Label warnIcon = new Label("⚠️");
-        warnIcon.setStyle("-fx-font-size: 20px;");
+        FontIcon warnIcon = new FontIcon("fas-exclamation-triangle");
+        warnIcon.setIconSize(16);
+        warnIcon.setIconColor(Color.web("#92400E"));
 
         Label actionTitle = new Label("Action Required");
         actionTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #92400E;");
-
         actionHeader.getChildren().addAll(warnIcon, actionTitle);
 
-        Label actionText = new Label("You have 8 new service requests waiting for your response.");
+        Label actionText = new Label("You have service requests assigned by event organizers awaiting confirmation.");
         actionText.setWrapText(true);
         actionText.setStyle("-fx-font-size: 12px; -fx-text-fill: #78350F;");
-
-        HBox tagsRow = new HBox(8);
-        Label tag1 = new Label("2 High Priority");
-        tag1.setStyle("-fx-background-color: white; -fx-text-fill: #92400E; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 6px; -fx-border-color: #FCD34D; -fx-border-radius: 6px;");
-
-        Label tag2 = new Label("3 This Week");
-        tag2.setStyle("-fx-background-color: white; -fx-text-fill: #92400E; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 6px; -fx-border-color: #FCD34D; -fx-border-radius: 6px;");
-
-        tagsRow.getChildren().addAll(tag1, tag2);
 
         Region flexSpace = new Region();
         VBox.setVgrow(flexSpace, Priority.ALWAYS);
 
         Button reviewBtn = new Button("Review Service Requests →");
         reviewBtn.setStyle("-fx-background-color: " + ORANGE_BTN + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 10 18; -fx-background-radius: 8px; -fx-cursor: hand;");
-        reviewBtn.setOnAction(e -> System.out.println("Review Requests Clicked"));
+        reviewBtn.setOnAction(e -> openServiceRequests());
 
-        actionCard.getChildren().addAll(actionHeader, actionText, tagsRow, flexSpace, reviewBtn);
-
+        actionCard.getChildren().addAll(actionHeader, actionText, flexSpace, reviewBtn);
         row.getChildren().addAll(nextBookingCard, actionCard);
         return row;
     }
 
-    // ==========================================
-    // 5. SUMMARY CARDS ROW
-    // ==========================================
     private HBox createSummaryCardsRow() {
         HBox row = new HBox(14);
+        newReqValLbl = new Label("0");
+        upcomingValLbl = new Label("0");
+        totalEarningsValLbl = new Label("₹ 0");
+        pendingPaymentsValLbl = new Label("₹ 0");
 
         row.getChildren().addAll(
-                createStatCard("New Service Requests", "8", "+3 this week", "✉"),
-                createStatCard("Upcoming Bookings", "12", "Next: 18 May", "📱"),
-                createStatCard("Active Services", "6", "Currently Listed", "📦"),
-                createStatCard("Total Earnings", "₹2.48L", "+12.5% vs last month", "💼"),
-                createStatCard("Pending Payments", "₹42k", "Across 3 payments", "⏳")
+                createStatCard("New Requests", newReqValLbl, "Needs Response", "fas-inbox", PRIMARY_BLUE),
+                createStatCard("Confirmed Bookings", upcomingValLbl, "Active Assignments", "fas-calendar-check", GREEN_TEXT),
+                createStatCard("Total Earnings (Net)", totalEarningsValLbl, "Released Payout (97%)", "fas-wallet", PRIMARY_BLUE),
+                createStatCard("Pending Requests", pendingPaymentsValLbl, "Unpaid Amount", "fas-hourglass-half", WARNING_TEXT)
         );
-
         return row;
     }
 
-    private VBox createStatCard(String title, String val, String sub, String iconStr) {
+    private VBox createStatCard(String title, Label valLbl, String sub, String iconLit, String colorHex) {
         VBox card = createCardContainer();
         HBox.setHgrow(card, Priority.ALWAYS);
         card.setPadding(new Insets(14));
 
-        HBox top = new HBox();
+        HBox top = new HBox(8);
+        top.setAlignment(Pos.CENTER_LEFT);
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(Color.web(colorHex));
+
         Label t = new Label(title);
         t.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        Region sp = new Region();
-        HBox.setHgrow(sp, Priority.ALWAYS);
-        Label ic = new Label(iconStr);
-        ic.setStyle("-fx-font-size: 14px; -fx-text-fill: " + PRIMARY_BLUE + ";");
-        top.getChildren().addAll(t, sp, ic);
+        top.getChildren().addAll(icon, t);
 
-        Label v = new Label(val);
-        v.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
+        valLbl.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Label s = new Label(sub);
-        if (sub.contains("+")) {
-            s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold;");
-        } else {
-            s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-        }
+        s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
 
-        card.getChildren().addAll(top, v, s);
+        card.getChildren().addAll(top, valLbl, s);
         return card;
     }
 
-    // ==========================================
-    // 6. MAIN SPLIT SECTION (TABLE & REQUESTS)
-    // ==========================================
     private HBox createMainSplitSection() {
         HBox row = new HBox(16);
 
-        // Left Table Card
         VBox tableCard = createCardContainer();
         HBox.setHgrow(tableCard, Priority.ALWAYS);
 
@@ -404,33 +379,25 @@ public class VendorDashboardV extends Application {
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
 
-        Label viewAll = new Label("View All");
-        viewAll.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-cursor: hand;");
+        Hyperlink viewAll = new Hyperlink("View All Bookings →");
+        viewAll.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY_BLUE + ";");
+        viewAll.setOnAction(e -> openMyBookings());
 
         tableHeader.getChildren().addAll(tTitle, sp, viewAll);
 
-        // Upcoming Bookings Table Grid
-        GridPane grid = new GridPane();
-        grid.setHgap(16);
-        grid.setVgap(12);
-        grid.setPadding(new Insets(10, 0, 0, 0));
+        upcomingTableGrid = new GridPane();
+        upcomingTableGrid.setHgap(16);
+        upcomingTableGrid.setVgap(12);
+        upcomingTableGrid.setPadding(new Insets(10, 0, 0, 0));
 
-        // Table Headers
-        addTableHeader(grid, "EVENT", 0);
-        addTableHeader(grid, "DATE", 1);
-        addTableHeader(grid, "SERVICE", 2);
-        addTableHeader(grid, "AMOUNT", 3);
-        addTableHeader(grid, "STATUS", 4);
+        addTableHeader(upcomingTableGrid, "EVENT", 0);
+        addTableHeader(upcomingTableGrid, "DATE", 1);
+        addTableHeader(upcomingTableGrid, "SERVICE", 2);
+        addTableHeader(upcomingTableGrid, "AMOUNT", 3);
+        addTableHeader(upcomingTableGrid, "STATUS", 4);
 
-        // Table Rows
-        addTableRow(grid, 1, "TechVision Annual Summit", "18 May 2026", "Audio & Visual", "₹85,000", "Confirmed");
-        addTableRow(grid, 2, "Corporate Leadership Meet", "22 May 2026", "Stage Lighting", "₹45,000", "Confirmed");
-        addTableRow(grid, 3, "Startup Connect 2026", "05 Jun 2026", "Sound System", "₹72,000", "Pending Payment");
-        addTableRow(grid, 4, "Annual Gala Night", "12 Jun 2026", "Full A/V Setup", "₹60,000", "Confirmed");
+        tableCard.getChildren().addAll(tableHeader, upcomingTableGrid);
 
-        tableCard.getChildren().addAll(tableHeader, grid);
-
-        // Right Recent Service Requests Column
         VBox requestsCard = createCardContainer();
         requestsCard.setPrefWidth(380);
 
@@ -440,17 +407,10 @@ public class VendorDashboardV extends Application {
         Label rTitle = new Label("Recent Service Requests");
         rTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
-        Label newBadge = new Label("New");
-        newBadge.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 6; -fx-background-radius: 8px;");
+        reqHeader.getChildren().add(rTitle);
 
-        reqHeader.getChildren().addAll(rTitle, newBadge);
-
-        // Request Item 1
-        VBox req1 = createRequestBox("Global Marketing Expo", "₹1.2L", "📱 Audio & Visual Setup", "📅 25 Aug 2026");
-        // Request Item 2
-        VBox req2 = createRequestBox("Sharma Wedding", "₹85k", "📍 Stage Lighting", "📅 10 Sep 2026");
-
-        requestsCard.getChildren().addAll(reqHeader, req1, req2);
+        requestsContainerBox = new VBox(10);
+        requestsCard.getChildren().addAll(reqHeader, new Separator(), requestsContainerBox);
 
         row.getChildren().addAll(tableCard, requestsCard);
         return row;
@@ -469,7 +429,7 @@ public class VendorDashboardV extends Application {
         Label aLbl = new Label(amount); aLbl.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Label statusBadge = new Label(status);
-        if (status.equals("Confirmed")) {
+        if (status.equalsIgnoreCase("Paid")) {
             statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
         } else {
             statusBadge.setStyle("-fx-background-color: " + WARNING_BG + "; -fx-text-fill: " + WARNING_TEXT + "; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 2 8; -fx-background-radius: 10px;");
@@ -482,73 +442,31 @@ public class VendorDashboardV extends Application {
         grid.add(statusBadge, 4, row);
     }
 
-    private VBox createRequestBox(String title, String price, String service, String date) {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        box.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 8px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px;");
-
-        HBox top = new HBox();
-        Label t = new Label(title);
-        t.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
-        Region sp = new Region();
-        HBox.setHgrow(sp, Priority.ALWAYS);
-        Label p = new Label(price);
-        p.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: " + TEXT_MAIN + ";");
-        top.getChildren().addAll(t, sp, p);
-
-        Label s = new Label(service);
-        s.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        Label d = new Label(date);
-        d.setStyle("-fx-font-size: 10px; -fx-text-fill: " + SECONDARY_TEXT + ";");
-
-        HBox btns = new HBox(8);
-        Button acceptBtn = new Button("Accept");
-        acceptBtn.setStyle("-fx-background-color: " + SIDEBAR_NAVY + "; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
-        acceptBtn.setOnAction(e -> System.out.println("Accepted " + title));
-
-        Button rejectBtn = new Button("Reject");
-        rejectBtn.setStyle("-fx-background-color: #E2E8F0; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 11px; -fx-padding: 5 16; -fx-background-radius: 6px; -fx-cursor: hand;");
-        rejectBtn.setOnAction(e -> System.out.println("Rejected " + title));
-
-        btns.getChildren().addAll(acceptBtn, rejectBtn);
-
-        box.getChildren().addAll(top, s, d, btns);
-        return box;
-    }
-
-    // ==========================================
-    // 7. SERVICES & PACKAGES PREVIEW SECTION
-    // ==========================================
     private VBox createServicesPreviewSection() {
         VBox card = createCardContainer();
-
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
 
-        Label title = new Label("Services & Packages Preview");
+        Label title = new Label("Service Categories Preview");
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_MAIN + ";");
 
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
 
-        Button manageBtn = createLinkButton("Manage All Services →");
-        manageBtn.setOnAction(e -> System.out.println("Manage Services Clicked"));
-
-        header.getChildren().addAll(title, sp, manageBtn);
+        header.getChildren().addAll(title, sp);
 
         FlowPane servicesGrid = new FlowPane();
         servicesGrid.setHgap(10);
         servicesGrid.setVgap(10);
 
         String[] categories = {
-                "🎨 Decoration", "🔊 Sound System", "📷 Photography & Videography",
-                "🎪 Rental Equipment", "🖨 Invitation & Printing", "🍽 Catering",
-                "🎤 Anchor", "🍰 Cake & Dessert Services"
+                "Decoration", "Sound System", "Photography & Videography",
+                "Rental Equipment", "Invitation & Printing", "Catering",
+                "Anchor", "Cake & Dessert Services"
         };
 
         for (String cat : categories) {
-            Label tag = new Label(cat);
+            Label tag = new Label("● " + cat);
             tag.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-text-fill: " + TEXT_MAIN + "; -fx-font-size: 12px; -fx-padding: 8 14; -fx-background-radius: 20px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 20px;");
             servicesGrid.getChildren().add(tag);
         }
@@ -557,25 +475,180 @@ public class VendorDashboardV extends Application {
         return card;
     }
 
-    // ==========================================
-    // HELPER UI UTILITIES
-    // ==========================================
     private VBox createCardContainer() {
         VBox card = new VBox(12);
         card.setPadding(new Insets(16));
-        card.setStyle("-fx-background-color: " + WHITE + "; -fx-background-radius: 12px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);");
+        card.setStyle("-fx-background-color: " + WHITE + "; -fx-background-radius: 12px; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 12px;");
         return card;
     }
 
-    private Button createSecondaryButton(String text) {
-        Button btn = new Button(text);
-        btn.setStyle("-fx-background-color: " + WHITE + "; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-border-color: " + BORDER_COLOR + "; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 6 12; -fx-font-weight: bold; -fx-cursor: hand;");
+    public VBox createCommonVendorSidebar(String activeTab) {
+        VBox sidebar = new VBox(6);
+        sidebar.setPrefWidth(240);
+        sidebar.setMinWidth(240);
+        sidebar.setMaxWidth(240);
+        sidebar.setStyle("-fx-background-color: " + SIDEBAR_NAVY + ";");
+        sidebar.setPadding(new Insets(20, 14, 20, 14));
+
+        HBox logoBox = new HBox(8);
+        logoBox.setAlignment(Pos.CENTER_LEFT);
+        logoBox.setPadding(new Insets(0, 6, 14, 6));
+
+        FontIcon logoIcon = new FontIcon("fas-calendar-alt");
+        logoIcon.setIconSize(20);
+        logoIcon.setIconColor(Color.web("#38BDF8"));
+
+        VBox brandTexts = new VBox(1);
+        Label logo = new Label("EventXpert");
+        logo.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        Label portal = new Label("VENDOR PORTAL");
+        portal.setStyle("-fx-text-fill: #EAF3FF; -fx-font-size: 9px; -fx-font-weight: bold;");
+        brandTexts.getChildren().addAll(logo, portal);
+        logoBox.getChildren().addAll(logoIcon, brandTexts);
+
+        VBox menu = new VBox(3);
+        String[][] menuItems = {
+                {"Dashboard", "fas-tachometer-alt"},
+                {"Service Requests", "fas-inbox"},
+                {"My Bookings", "fas-calendar-check"},
+                {"Services & Packages", "fas-cubes"},
+                {"Calendar", "fas-calendar-alt"},
+                {"Earnings & Payments", "fas-wallet"}
+        };
+
+        for (String[] item : menuItems) {
+            String name = item[0];
+            String iconLit = item[1];
+            menu.getChildren().add(createSidebarButton(name, iconLit, name.equals(activeTab), () -> handleVendorNav(name)));
+        }
+
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        VBox bottomMenu = new VBox(3);
+        bottomMenu.getChildren().addAll(
+                createSidebarButton("Notifications", "fas-bell", false, this::openNotificationsV),
+                createSidebarButton("Profile", "fas-user", false, this::openProfileV),
+                createSidebarButton("Settings", "fas-cog", false, this::openSettingsV),
+                createSidebarButton("Support", "fas-question-circle", false, this::openSupportV)
+        );
+
+        sidebar.getChildren().addAll(logoBox, menu, spacer, bottomMenu);
+        return sidebar;
+    }
+
+    private Button createSidebarButton(String title, String iconLit, boolean isActive, Runnable action) {
+        Button btn = new Button("  " + title);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPrefHeight(34);
+        btn.setPadding(new Insets(0, 10, 0, 10));
+
+        FontIcon icon = new FontIcon(iconLit);
+        icon.setIconSize(13);
+        icon.setIconColor(isActive ? Color.web(SIDEBAR_NAVY) : Color.web("#CBD5E1"));
+        btn.setGraphic(icon);
+
+        if (isActive) {
+            btn.setStyle("-fx-background-color: #EAF3FF; -fx-text-fill: " + SIDEBAR_NAVY + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-background-radius: 6px;");
+        } else {
+            btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #CBD5E1; -fx-font-size: 12px; -fx-cursor: hand;");
+            btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-text-fill: white; -fx-font-size: 12px; -fx-background-radius: 6px;"));
+            btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #CBD5E1; -fx-font-size: 12px;"));
+        }
+
+        if (action != null) btn.setOnAction(e -> action.run());
         return btn;
     }
 
-    private Button createLinkButton(String text) {
-        Button btn = new Button(text);
-        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: " + PRIMARY_BLUE + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 0; -fx-cursor: hand;");
-        return btn;
+    private void handleVendorNav(String screen) {
+        switch (screen) {
+            case "Dashboard" -> LandingPage.landingPageStage.setScene(getvendorDashboardScene());
+            case "Service Requests" -> openServiceRequests();
+            case "My Bookings" -> openMyBookings();
+            case "Services & Packages" -> openServicesPackages();
+            case "Calendar" -> openCalenderV();
+            case "Earnings & Payments" -> openEarningsPaymentsV();
+        }
+    }
+
+    private void openProfileV() {
+        ProfileV profileV = new ProfileV(uid);
+        profileV.setVendorDashboard(this);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(profileV.getprofileVScene());
+        }
+    }
+
+    private void openServiceRequests() {
+        ServiceRequestsV serviceRequestsV = new ServiceRequestsV(uid, idToken);
+        serviceRequestsV.setVendorDashboard(this);
+        Scene serviceScene = serviceRequestsV.getserviceRequestVScene();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(serviceScene);
+        }
+    }
+
+    private void openMyBookings() {
+        MyBookingsV myBookingsV = new MyBookingsV(uid, idToken);
+        myBookingsV.setVendorDashboard(this);
+        Scene bookingScene = myBookingsV.getmyBookingScene();
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(bookingScene);
+        }
+    }
+
+    private void openServicesPackages() {
+        ServicesPackagesV servicesPackagesV = new ServicesPackagesV();
+        servicesPackagesV.setVendorDashboard(this);
+        Scene packagesScene = servicesPackagesV.getservicesPackagesVScene(null, null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(packagesScene);
+        }
+    }
+
+    private void openCalenderV() {
+        CalendarV calendarV = new CalendarV();
+        calendarV.setVendorDashboard(this);
+        Scene calenderScene = calendarV.getcalendarVScene(null, null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(calenderScene);
+        }
+    }
+
+    private void openEarningsPaymentsV() {
+        EarningsPaymentsV earningsPaymentsV = new EarningsPaymentsV();
+        earningsPaymentsV.setVendorDashboard(this);
+        Scene earningScene = earningsPaymentsV.getearningsPaymentsScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(earningScene);
+        }
+    }
+
+    private void openNotificationsV() {
+        NotificationsV notificationsV = new NotificationsV();
+        notificationsV.setVendorDashboard(this);
+        Scene notificationScene = notificationsV.getnotificationsScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(notificationScene);
+        }
+    }
+
+    private void openSettingsV() {
+        SettingsV settingsV = new SettingsV();
+        settingsV.setVendorDashboard(this);
+        Scene settingsVScene = settingsV.getsettingsVScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(settingsVScene);
+        }
+    }
+
+    private void openSupportV() {
+        SupportV supportV = new SupportV();
+        supportV.setVendorDashboard(this);
+        Scene supportVScene = supportV.getsupportVScene(null);
+        if (LandingPage.landingPageStage != null) {
+            LandingPage.landingPageStage.setScene(supportVScene);
+        }
     }
 }
