@@ -224,7 +224,8 @@ public class BudgetExpenseTrackerO {
             }
         }
     }
-// ⭐ महत्त्वाचा बदल: 'Contingency & Other' Organizer च्या खात्यात जमा झाल्याने खालील लिस्टमध्ये समाविष्ट केले आहे!
+
+    // ⭐ सुधारित पद्धत: Venue आणि Vendors दोन्हींसाठी Customer ने प्रत्यक्ष पैसे भरल्याशिवाय (paidAmount > 0) "Paid" दिसणार नाही!
     private void fetchAcceptedVendorExpenses(String eventId) {
         if (eventId == null || eventId.isBlank()) return;
 
@@ -233,10 +234,10 @@ public class BudgetExpenseTrackerO {
             List<VendorBooking> bookings = vendorController.getEventVendorBookings(eventId.trim());
             expenseList.clear();
 
-            // कस्टमरने प्रत्यक्ष पैसे भरले आहेत का ते तपासणे
+            // केवळ प्रत्यक्ष पैसे भरले असतील तरच isPaidByCustomer true होईल
             double actualCustomerPaid = (currentEvent != null) ? currentEvent.getPaidAmount() : 0.0;
             boolean isPaidByCustomer = actualCustomerPaid > 0 
-                    || (currentEvent != null && ("PAID".equalsIgnoreCase(currentEvent.getStatus()) || "CONFIRMED".equalsIgnoreCase(currentEvent.getStatus())));
+                    || (currentEvent != null && "PAID".equalsIgnoreCase(currentEvent.getPaymentStatus()));
 
             String eventDt = (currentEvent != null && currentEvent.getEventDate() != null) 
                     ? currentEvent.getEventDate() 
@@ -245,7 +246,7 @@ public class BudgetExpenseTrackerO {
             String orgName = (currentEvent != null && currentEvent.getOrganizerName() != null && !currentEvent.getOrganizerName().isBlank())
                     ? currentEvent.getOrganizerName() : "Organizer Partner";
 
-            // १. Venue Expense
+            // १. Venue Expense: Customer ने पैसे भरले असतील तरच 'Paid', नाहीतर 'Confirmed' राहील
             if (currentEvent != null && "CONFIRMED".equalsIgnoreCase(currentEvent.getVenueStatus())) {
                 double venueCost = 23180.0;
                 try {
@@ -254,7 +255,7 @@ public class BudgetExpenseTrackerO {
                 } catch (Exception ignored) {}
 
                 String vName = currentEvent.getConfirmedVenueName() != null ? currentEvent.getConfirmedVenueName() : "Confirmed Venue";
-                String venueExpenseStatus = isPaidByCustomer ? "Paid" : "Pending";
+                String venueExpenseStatus = isPaidByCustomer ? "Paid" : "Confirmed";
                 expenseList.add(new ExpenseItem("Venue", vName, eventDt, venueCost, venueExpenseStatus));
             }
 
@@ -272,19 +273,23 @@ public class BudgetExpenseTrackerO {
                     String dt = vb.getEventDate() != null ? vb.getEventDate() : eventDt;
                     
                     String rawStatus = vb.getStatus() != null ? vb.getStatus().toUpperCase() : "PENDING";
+                    boolean isAccepted = "CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus);
                     
+                    // ⭐ कडक अट: Vendor Request असताना 'Pending', Accept झाल्यावर 'Confirmed', आणि Customer ने भरल्यावरच 'Paid'
                     String displayStatus = "Pending";
-                    if (isPaidByCustomer || "PAID".equals(rawStatus)) {
+                    if ("PAID".equals(rawStatus) || (isPaidByCustomer && isAccepted)) {
                         displayStatus = "Paid";
-                    } else if ("CONFIRMED".equals(rawStatus) || "ACCEPTED".equals(rawStatus)) {
+                    } else if (isAccepted) {
                         displayStatus = "Confirmed";
+                    } else {
+                        displayStatus = "Pending";
                     }
 
                     expenseList.add(new ExpenseItem(cat, vName, dt, amt, displayStatus));
                 }
             }
 
-            // ⭐ ३. Contingency & Other (Organizer कडे थेट जाणारा राखीव फंड खालील लिस्टमध्ये ॲड करणे)
+            // ३. Contingency & Other
             double contingencyAmt = 0.0;
             if (currentEvent != null && currentEvent.getBudgetRecommendation() != null) {
                 for (Map.Entry<String, Object> entry : currentEvent.getBudgetRecommendation().entrySet()) {
@@ -297,7 +302,6 @@ public class BudgetExpenseTrackerO {
                 }
             }
 
-            // जर बजेट मॅपमधून मिळाले नाही तर ॲलोकेशनमधून शोधणे
             if (contingencyAmt == 0.0 && currentAllocations != null) {
                 for (BudgetAllocation a : currentAllocations) {
                     String cName = a.getCategory().toLowerCase();
@@ -307,7 +311,6 @@ public class BudgetExpenseTrackerO {
                 }
             }
 
-            // जर Contingency रक्कम असेल तर ती Organizer च्या नावासह खालील लिस्टमध्ये दिसेल:
             if (contingencyAmt > 0) {
                 String contingencyStatus = isPaidByCustomer ? "Paid" : "Pending";
                 expenseList.add(new ExpenseItem("Contingency & Other", orgName, eventDt, contingencyAmt, contingencyStatus));
@@ -342,7 +345,6 @@ public class BudgetExpenseTrackerO {
         if (eventGuestsDetailLabel != null) eventGuestsDetailLabel.setText(guests + " Expected");
         if (eventVenueDetailLabel != null) eventVenueDetailLabel.setText(venue);
 
-        // 1. Overview Card
         if (budgetOverviewTotalLabel != null) budgetOverviewTotalLabel.setText(budgetStr);
         if (budgetOverviewProgressBar != null) budgetOverviewProgressBar.setProgress(Math.min(1.0, allocatedBudget / (approvedBudget > 0 ? approvedBudget : 1)));
 
@@ -364,7 +366,6 @@ public class BudgetExpenseTrackerO {
             }
         }
 
-        // 2. Interactive Editable Allocations Card
         if (budgetBreakdownItemsContainer != null) {
             budgetBreakdownItemsContainer.getChildren().clear();
             for (int i = 0; i < currentAllocations.size(); i++) {
@@ -971,7 +972,6 @@ public class BudgetExpenseTrackerO {
             row.add(amtLbl, 3, 0);
 
             Label statusBadge = new Label(item.status);
-            // ⭐ Paid असेल तर हिरवा, Confirmed असेल तर निळा आणि Pending असेल तर पिवळा
             if (item.status.equalsIgnoreCase("Paid")) {
                 statusBadge.setStyle("-fx-background-color: " + GREEN_BG + "; -fx-text-fill: " + GREEN_TEXT + "; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4px;");
             } else if (item.status.equalsIgnoreCase("Confirmed") || item.status.equalsIgnoreCase("Accepted")) {

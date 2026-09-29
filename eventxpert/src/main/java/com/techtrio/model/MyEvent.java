@@ -3,10 +3,10 @@ package com.techtrio.model;
 public class MyEvent {
 
     private String eventId;
-    private String customerId;     // किंवा uid
+    private String customerId;    
     private String eventName;
-    private String eventType;      // उदा. Academic Event, Family Event, Birthday Event
-    private String eventDate;      // YYYY-MM-DD फॉरमॅट (उदा. 2026-08-15)
+    private String eventType;      
+    private String eventDate;      
     private String eventTime;      // उदा. 10:00 AM - 04:00 PM
     private String city;           // उदा. Pune, Mumbai
     private String venueType;      // उदा. Banquet Hall, Auditorium
